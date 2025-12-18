@@ -10,20 +10,18 @@
   },
   "dependencies": {
     "@privy-io/react-auth": "^3.9.0",
-    "@privy-io/wagmi": "^2.1.1",
     "@supabase/supabase-js": "^2.88.0",
     "lucide-react": "^0.561.0",
     "next": "^16.0.10",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "viem": "^2.43.1",
-    "wagmi": "^2.15.5"
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.23",
+    "ignore-loader": "^0.1.2",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
