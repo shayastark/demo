@@ -133,7 +133,7 @@ export default function AccountPage() {
           <div>
             <label className="block text-sm text-gray-400 mb-1">Email</label>
             <div className="text-sm text-gray-200">
-              {email || user.email?.address || 'Not set'}
+              {email || user?.email?.address || 'Not set'}
             </div>
           </div>
 
