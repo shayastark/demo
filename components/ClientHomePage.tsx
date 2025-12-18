@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useEffect } from 'react'
 
 export default function ClientHomePage() {
-  const { ready, authenticated, user, login } = usePrivy()
+  const { ready, authenticated, user, login, logout } = usePrivy()
 
   if (!ready) {
     return (
@@ -36,28 +36,26 @@ export default function ClientHomePage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="border-b border-gray-900/70 bg-black/80 backdrop-blur px-4 py-3 sticky top-0 z-20">
+      <nav className="border-b border-gray-800 bg-black px-4 py-3 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
             href="/"
-            className="text-lg md:text-xl font-semibold tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent"
+            className="text-xl font-semibold tracking-tight text-white"
           >
             Hubba
           </Link>
-          <div className="flex gap-2 md:gap-3 items-center">
+          <div className="flex gap-3 items-center">
             <Link
               href="/dashboard"
-              className="px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-gray-700/80 bg-gray-900/60 text-xs md:text-sm font-medium hover:bg-gray-800 hover:border-gray-500 transition"
+              className="px-4 py-1.5 rounded-full bg-white text-black text-sm font-medium hover:bg-gray-200 transition"
             >
               Dashboard
             </Link>
             <button
-              onClick={() => {
-                // Logout will be handled by Privy
-              }}
-              className="hidden sm:inline-flex text-xs md:text-sm text-gray-400 hover:text-white"
+              onClick={logout}
+              className="text-xs text-gray-400 hover:text-white"
             >
-              {user?.email?.address || 'Account'}
+              Sign out
             </button>
           </div>
         </div>

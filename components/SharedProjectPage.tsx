@@ -259,29 +259,26 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Lightweight app header so users can discover Hubba from shared links */}
-      <header className="border-b border-gray-900/70 bg-black/80 backdrop-blur px-4 py-3 sticky top-0 z-10">
+      {/* Simple app header so users can discover Hubba from shared links */}
+      <header className="border-b border-gray-800 bg-black px-4 py-3 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link
-            href="/"
-            className="text-base md:text-lg font-semibold tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent"
-          >
+          <Link href="/" className="text-lg font-semibold tracking-tight text-white">
             Hubba
           </Link>
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2">
             {!authenticated ? (
               <button
                 onClick={login}
-                className="text-[11px] md:text-xs px-3 py-1.5 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition"
+                className="px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-gray-200 transition"
               >
-                Sign in to Hubba
+                Sign in / Sign up
               </button>
             ) : (
               <Link
                 href="/dashboard"
-                className="text-[11px] md:text-xs px-3 py-1.5 rounded-full border border-gray-700/80 bg-gray-900/60 text-white font-semibold hover:bg-gray-200 hover:text-black transition"
+                className="px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-gray-200 transition"
               >
-                Open Hubba
+                Open app
               </Link>
             )}
           </div>
