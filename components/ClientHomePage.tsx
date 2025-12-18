@@ -93,9 +93,7 @@ export default function ClientHomePage() {
               href="/account"
               className="text-xs text-gray-300 hover:text-white underline-offset-4 hover:underline"
             >
-              {loadingProfile
-                ? 'Loading profile...'
-                : username || user?.email?.address || 'Set username'}
+              {username || user?.email?.address || 'Set username'}
             </Link>
             <button
               onClick={logout}

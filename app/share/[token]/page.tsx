@@ -3,11 +3,11 @@ import SharedProjectPage from '@/components/SharedProjectPage'
 import { supabaseServer } from '@/lib/supabaseServer'
 
 type SharePageParams = {
-  params: { token: string }
+  params: Promise<{ token: string }>
 }
 
 export async function generateMetadata({ params }: SharePageParams): Promise<Metadata> {
-  const { token } = params
+  const { token } = await params
 
   try {
     const { data: project } = await supabaseServer
@@ -49,8 +49,8 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
   }
 }
 
-export default function SharePage({ params }: SharePageParams) {
-  const { token } = params
+export default async function SharePage({ params }: SharePageParams) {
+  const { token } = await params
   return <SharedProjectPage token={token} />
 }
 
