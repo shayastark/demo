@@ -1,6 +1,7 @@
 import SharedProjectPage from '@/components/SharedProjectPage'
 
-export default function SharePage({ params }: { params: { token: string } }) {
-  return <SharedProjectPage token={params.token} />
+export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params
+  return <SharedProjectPage token={token} />
 }
 

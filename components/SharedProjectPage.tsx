@@ -148,14 +148,18 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         .single()
 
       if (!dbUser) {
-        const { data: newUser } = await supabase
+        const { data: newUser, error: userError } = await supabase
           .from('users')
           .insert({ privy_id: privyId, email: user.email?.address || null })
           .select('id')
           .single()
+        
+        if (userError || !newUser) throw userError || new Error('Failed to create user')
         dbUser = newUser
       }
 
+      if (!dbUser) throw new Error('User not found')
+      
       await supabase
         .from('user_projects')
         .insert({ user_id: dbUser.id, project_id: project.id })

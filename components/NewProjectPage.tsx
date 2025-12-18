@@ -91,17 +91,19 @@ export default function NewProjectPage() {
         .single()
 
       if (!dbUser) {
-        const { data: newUser } = await supabase
+        const { data: newUser, error: userError } = await supabase
           .from('users')
           .insert({ privy_id: privyId, email: user.email?.address || null })
           .select('id')
           .single()
+        
+        if (userError || !newUser) throw userError || new Error('Failed to create user')
         dbUser = newUser
       }
 
       // Upload cover image if provided
       let coverImageUrl: string | undefined
-      if (coverImage) {
+      if (coverImage && dbUser) {
         coverImageUrl = await uploadFile(coverImage, `projects/${dbUser.id}/covers`)
       }
 
@@ -121,6 +123,8 @@ export default function NewProjectPage() {
       if (projectError) throw projectError
 
       // Upload tracks
+      if (!dbUser) throw new Error('User not found')
+      
       for (let i = 0; i < tracks.length; i++) {
         const track = tracks[i]
         if (!track.file) continue

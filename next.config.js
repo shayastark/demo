@@ -9,31 +9,14 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
-    // Exclude test files and dev dependencies from client bundle
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      }
-    }
-    
-    // Ignore test files and dev dependencies
+  // Use webpack (Turbopack doesn't support all webpack features yet)
+  webpack: (config) => {
+    // Ignore optional Solana dependencies that Privy tries to import
     config.resolve.alias = {
       ...config.resolve.alias,
-      'tap': false,
-      'tape': false,
-      'why-is-node-running': false,
+      '@solana-program/system': false,
+      '@solana/web3.js': false,
     }
-    
-    // Ignore test files in node_modules
-    config.module.rules.push({
-      test: /\.test\.(js|jsx|ts|tsx)$/,
-      use: 'ignore-loader',
-    })
-    
     return config
   },
 }

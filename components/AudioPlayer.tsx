@@ -20,6 +20,8 @@ export default function AudioPlayer({ src, title, onPlay }: AudioPlayerProps) {
     const audio = audioRef.current
     if (!audio) return
 
+    audio.volume = volume
+
     const updateTime = () => setCurrentTime(audio.currentTime)
     const updateDuration = () => setDuration(audio.duration)
     const handleEnded = () => setIsPlaying(false)
@@ -33,7 +35,7 @@ export default function AudioPlayer({ src, title, onPlay }: AudioPlayerProps) {
       audio.removeEventListener('loadedmetadata', updateDuration)
       audio.removeEventListener('ended', handleEnded)
     }
-  }, [])
+  }, [volume])
 
   const togglePlay = () => {
     const audio = audioRef.current
@@ -64,7 +66,7 @@ export default function AudioPlayer({ src, title, onPlay }: AudioPlayerProps) {
 
   return (
     <div className="bg-gray-900 rounded-lg p-4">
-      <audio ref={audioRef} src={src} volume={volume} />
+      <audio ref={audioRef} src={src} />
       <div className="flex items-center gap-4">
         <button
           onClick={togglePlay}
