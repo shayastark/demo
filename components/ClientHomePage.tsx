@@ -2,10 +2,13 @@
 
 import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 export default function ClientHomePage() {
   const { ready, authenticated, user, login, logout } = usePrivy()
+  const [username, setUsername] = useState<string | null>(null)
+  const [loadingProfile, setLoadingProfile] = useState(false)
 
   if (!ready) {
     return (
@@ -34,6 +37,47 @@ export default function ClientHomePage() {
     )
   }
 
+  // Load or create user profile and fetch username
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user) return
+      setLoadingProfile(true)
+      try {
+        const privyId = user.id
+
+        let { data: existingUser } = await supabase
+          .from('users')
+          .select('id, username')
+          .eq('privy_id', privyId)
+          .single()
+
+        if (!existingUser) {
+          const { data: newUser, error } = await supabase
+            .from('users')
+            .insert({
+              privy_id: privyId,
+              email: user.email?.address || null,
+            })
+            .select('id, username')
+            .single()
+
+          if (error) throw error
+          existingUser = newUser
+        }
+
+        setUsername(existingUser.username || null)
+      } catch (error) {
+        console.error('Error loading profile:', error)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+
+    if (authenticated && user) {
+      loadProfile()
+    }
+  }, [authenticated, user])
+
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="border-b border-gray-800 bg-black px-4 py-3 sticky top-0 z-20">
@@ -46,10 +90,12 @@ export default function ClientHomePage() {
           </Link>
           <div className="flex gap-3 items-center">
             <Link
-              href="/dashboard"
-              className="px-4 py-1.5 rounded-full bg-white text-black text-sm font-medium hover:bg-gray-200 transition"
+              href="/account"
+              className="text-xs text-gray-300 hover:text-white underline-offset-4 hover:underline"
             >
-              Dashboard
+              {loadingProfile
+                ? 'Loading profile...'
+                : username || user?.email?.address || 'Set username'}
             </Link>
             <button
               onClick={logout}
@@ -70,7 +116,7 @@ export default function ClientHomePage() {
             href="/dashboard"
             className="inline-block bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
           >
-            Go to Dashboard
+            Go to Your Dashboard
           </Link>
         </div>
       </main>
