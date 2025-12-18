@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
+import AudioPlayer from './AudioPlayer'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X } from 'lucide-react'
 
 interface ProjectDetailPageProps {
@@ -419,6 +420,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         </div>
                       </div>
                     </div>
+
+                    {/* Audio player for the track */}
+                    <AudioPlayer src={track.audio_url} title={track.title} />
 
                     {/* Track Notes (Private to Creator) - Only show if user is creator */}
                     {isCreator && (
