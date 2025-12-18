@@ -242,7 +242,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       <main className="px-4 py-8 max-w-4xl mx-auto">
         {/* Cover Image */}
         {project.cover_image_url && (
-          <div className="w-full h-64 md:h-96 rounded-lg overflow-hidden mb-6">
+          <div className="w-full h-40 md:h-56 rounded-lg overflow-hidden mb-6">
             <img
               src={project.cover_image_url}
               alt={project.title}
@@ -407,7 +407,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         <img
                           src={track.image_url}
                           alt={track.title}
-                          className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover flex-shrink-0"
+                          className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover flex-shrink-0"
                         />
                       )}
                       <div className="flex-1">

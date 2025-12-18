@@ -288,7 +288,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Cover Image */}
         {project.cover_image_url && (
-          <div className="w-full h-64 md:h-96 rounded-lg overflow-hidden mb-6">
+          <div className="w-full h-40 md:h-56 rounded-lg overflow-hidden mb-6">
             <img
               src={project.cover_image_url}
               alt={project.title}
@@ -360,7 +360,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                     <img
                       src={track.image_url}
                       alt={track.title}
-                      className="w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover flex-shrink-0"
+                      className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover flex-shrink-0"
                     />
                   )}
                   <div className="flex-1">
