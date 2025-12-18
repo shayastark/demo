@@ -9,10 +9,15 @@ export default function ClientHomePage() {
   const { ready, authenticated, user, login, logout } = usePrivy()
   const [username, setUsername] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  if (!ready) {
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted || !ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="text-center">Loading...</div>
       </div>
     )
