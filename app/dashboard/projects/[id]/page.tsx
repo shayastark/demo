@@ -1,7 +1,6 @@
 import ProjectDetailPage from '@/components/ProjectDetailPage'
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  return <ProjectDetailPage projectId={id} />
+export default function Page({ params }: { params: { id: string } }) {
+  return <ProjectDetailPage projectId={params.id} />
 }
 
