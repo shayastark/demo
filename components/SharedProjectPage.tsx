@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { usePrivy } from '@privy-io/react-auth'
 import { supabase } from '@/lib/supabase'
 import { Project, Track } from '@/lib/types'
@@ -258,6 +259,35 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Lightweight app header so users can discover Hubba from shared links */}
+      <header className="border-b border-gray-900/70 bg-black/80 backdrop-blur px-4 py-3 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-base md:text-lg font-semibold tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent"
+          >
+            Hubba
+          </Link>
+          <div className="flex items-center gap-2 md:gap-3">
+            {!authenticated ? (
+              <button
+                onClick={login}
+                className="text-[11px] md:text-xs px-3 py-1.5 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition"
+              >
+                Sign in to Hubba
+              </button>
+            ) : (
+              <Link
+                href="/dashboard"
+                className="text-[11px] md:text-xs px-3 py-1.5 rounded-full border border-gray-700/80 bg-gray-900/60 text-white font-semibold hover:bg-gray-200 hover:text-black transition"
+              >
+                Open Hubba
+              </Link>
+            )}
+          </div>
+        </div>
+      </header>
+
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Cover Image */}
         {project.cover_image_url && (
