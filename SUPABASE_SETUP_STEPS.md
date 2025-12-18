@@ -37,9 +37,11 @@ Follow these steps after creating your Supabase project.
   - Format: `https://xxxxxxxxxxxxx.supabase.co`
   - Goes in: `NEXT_PUBLIC_SUPABASE_URL`
 
-- **anon public key** - This is the public anonymous key (has RLS restrictions)
+- **Publishable key** (recommended) or **anon public key** (legacy) - This is the public key for client-side use (has RLS restrictions)
   - Format: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (long string)
   - Goes in: `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - ✅ Use the **Publishable key** if available (new projects)
+  - ✅ The legacy anon key will also work (older projects)
   - ✅ This is safe to use in client-side code
 
 ### 🔒 PRIVATE - Never Share:
