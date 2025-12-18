@@ -44,8 +44,10 @@ export default function ClientHomePage() {
 
   // Load or create user profile and fetch username
   useEffect(() => {
+    if (!mounted || !ready) return
+    
     const loadProfile = async () => {
-      if (!user) return
+      if (!user || !authenticated) return
       setLoadingProfile(true)
       try {
         const privyId = user.id
@@ -81,7 +83,15 @@ export default function ClientHomePage() {
     if (authenticated && user) {
       loadProfile()
     }
-  }, [authenticated, user])
+  }, [mounted, ready, authenticated, user])
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <div className="text-center">Loading...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -98,7 +108,7 @@ export default function ClientHomePage() {
               href="/account"
               className="text-xs text-gray-300 hover:text-white underline-offset-4 hover:underline"
             >
-              {username || user?.email?.address || 'Set username'}
+              {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
             <button
               onClick={logout}
