@@ -112,12 +112,16 @@ ALTER TABLE user_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE track_plays ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_shares ENABLE ROW LEVEL SECURITY;
 
--- Users can read their own data, anyone can read public user data
+-- Users policies (using Privy, not Supabase Auth, so we allow all operations)
+-- Security is enforced by application logic
+CREATE POLICY "Users can insert" ON users
+  FOR INSERT WITH CHECK (true);
+
 CREATE POLICY "Users can view own data" ON users
-  FOR SELECT USING (auth.uid()::text = privy_id OR true);
+  FOR SELECT USING (true);
 
 CREATE POLICY "Users can update own data" ON users
-  FOR UPDATE USING (auth.uid()::text = privy_id);
+  FOR UPDATE USING (true);
 
 -- Projects are public for viewing, but only creators can modify
 CREATE POLICY "Projects are viewable by everyone" ON projects

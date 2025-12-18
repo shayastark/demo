@@ -333,7 +333,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                     <img
                       src={track.image_url}
                       alt={track.title}
-                      className="w-24 h-24 rounded object-cover flex-shrink-0"
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover flex-shrink-0"
                     />
                   )}
                   <div className="flex-1">
