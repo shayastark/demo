@@ -32,7 +32,7 @@ CREATE TABLE tracks (
   title TEXT NOT NULL,
   audio_url TEXT NOT NULL,
   image_url TEXT,
-  order INTEGER NOT NULL DEFAULT 0,
+  "order" INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
