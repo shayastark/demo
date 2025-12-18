@@ -16,7 +16,9 @@ export default function ClientHomePage() {
     setMounted(true)
   }, [])
 
-  if (!mounted) {
+  // Always show loading until mounted and ready to prevent hydration mismatch
+  // This ensures server and client render the same initial HTML
+  if (typeof window === 'undefined' || !mounted || !ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="text-center">Loading...</div>
@@ -40,14 +42,6 @@ export default function ClientHomePage() {
             Reload
           </button>
         </div>
-      </div>
-    )
-  }
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <div className="text-center">Loading...</div>
       </div>
     )
   }
