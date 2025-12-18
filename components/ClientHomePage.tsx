@@ -10,12 +10,41 @@ export default function ClientHomePage() {
   const [username, setUsername] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  if (!mounted || !ready) {
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <div className="text-center">Loading...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4 text-red-400">Error</h1>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <button
+            onClick={() => {
+              setError(null)
+              window.location.reload()
+            }}
+            className="bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
+          >
+            Reload
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="text-center">Loading...</div>
@@ -75,6 +104,7 @@ export default function ClientHomePage() {
         setUsername(existingUser.username || null)
       } catch (error) {
         console.error('Error loading profile:', error)
+        setError('Failed to load profile. Please refresh the page.')
       } finally {
         setLoadingProfile(false)
       }
