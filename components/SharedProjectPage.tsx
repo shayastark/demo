@@ -28,7 +28,8 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     if (authenticated && user && project) {
       checkIfAdded()
     }
-  }, [authenticated, user, project])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated, user?.id, project?.id]) // Only depend on user.id and project.id, not the whole objects
 
   const loadProject = async () => {
     try {

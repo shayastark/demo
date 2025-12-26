@@ -16,7 +16,8 @@ export default function ClientDashboard() {
     if (ready && authenticated && user) {
       loadProjects()
     }
-  }, [ready, authenticated, user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, authenticated, user?.id]) // Only depend on user.id, not the whole user object
 
   const loadProjects = async () => {
     try {

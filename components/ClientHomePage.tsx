@@ -25,9 +25,13 @@ export default function ClientHomePage() {
       const timeout = setTimeout(() => {
         setPrivyTimeout(true)
         console.error('Privy initialization timeout - check NEXT_PUBLIC_PRIVY_APP_ID')
+        console.error('This might be caused by Cloudflare challenge blocking Privy scripts')
       }, 10000) // 10 second timeout
 
       return () => clearTimeout(timeout)
+    } else {
+      // Reset timeout if Privy becomes ready
+      setPrivyTimeout(false)
     }
   }, [ready])
 
