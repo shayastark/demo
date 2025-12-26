@@ -1,7 +1,7 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
@@ -12,12 +12,22 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
+  const loadedUserIdRef = useRef<string | null>(null)
+  
   useEffect(() => {
     const loadProfile = async () => {
       if (!user || !user.id) return
+      
+      const privyId = user.id
+      
+      // Prevent loading if already loaded for this user
+      if (loadedUserIdRef.current === privyId) {
+        return
+      }
+      
+      loadedUserIdRef.current = privyId
+      
       try {
-        const privyId = user.id
-
         let { data: existingUser } = await supabase
           .from('users')
           .select('id, username, email')

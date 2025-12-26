@@ -14,7 +14,6 @@ export default function ClientHomePage() {
   const [privyTimeout, setPrivyTimeout] = useState(false)
   const loadingProfileRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
-  const effectRunRef = useRef(false)
   const timeoutSetRef = useRef(false)
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
   
@@ -144,21 +143,21 @@ export default function ClientHomePage() {
   }
 
   // Load or create user profile and fetch username
+  // Only depend on userId - use refs to prevent re-runs for the same user
   useEffect(() => {
     // Early returns with all necessary checks
     if (!mounted || !ready || !authenticated || !user || !userId) {
-      effectRunRef.current = false
       return
     }
     
     // Prevent loading if already loading or if we've already loaded this user
-    if (loadingProfileRef.current || loadedUserIdRef.current === userId || effectRunRef.current) {
+    if (loadingProfileRef.current || loadedUserIdRef.current === userId) {
       return
     }
     
-    // Mark that we're running this effect to prevent re-runs
-    effectRunRef.current = true
+    // Mark that we're loading to prevent concurrent loads
     loadingProfileRef.current = true
+    loadedUserIdRef.current = userId
     
     const privyId = userId
     // Capture userEmail from current user object to avoid stale closure
@@ -167,7 +166,7 @@ export default function ClientHomePage() {
     // Use a separate function to avoid closure issues
     const loadProfile = async () => {
       try {
-        // Update loading state outside the effect to avoid triggering re-renders
+        // Update loading state
         setLoadingProfile(true)
         
         let { data: existingUser } = await supabase
@@ -191,11 +190,8 @@ export default function ClientHomePage() {
         }
 
         setUsername(existingUser.username || null)
-        loadedUserIdRef.current = privyId
       } catch (error) {
         console.error('Error loading profile:', error)
-        // Don't reset loadedUserIdRef on error - mark it as attempted to prevent infinite retries
-        loadedUserIdRef.current = privyId
         setError('Failed to load profile. Please refresh the page.')
       } finally {
         loadingProfileRef.current = false
@@ -205,12 +201,8 @@ export default function ClientHomePage() {
 
     // Run async function
     loadProfile()
-    
-    // Reset effect run flag when dependencies change
-    return () => {
-      effectRunRef.current = false
-    }
-  }, [mounted, ready, authenticated, userId]) // Use stabilized userId
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, ready, authenticated]) // Depend on userId, ready, and authenticated - use refs to prevent duplicate loads
 
   if (!user) {
     return (
