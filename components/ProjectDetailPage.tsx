@@ -14,7 +14,7 @@ interface ProjectDetailPageProps {
 }
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
-  const { user } = usePrivy()
+  const { user, logout } = usePrivy()
   const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
@@ -234,6 +234,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </Link>
+          <button
+            onClick={logout}
+            className="text-sm text-neon-green hover:opacity-80 opacity-70"
+          >
+            Sign out
+          </button>
           <Link href="/" className="text-2xl font-bold">
             Hubba
           </Link>

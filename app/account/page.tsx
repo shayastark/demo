@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 export default function AccountPage() {
-  const { ready, authenticated, user, login } = usePrivy()
+  const { ready, authenticated, user, login, logout } = usePrivy()
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -143,15 +143,23 @@ export default function AccountPage() {
     <div className="min-h-screen bg-black text-white">
       <nav className="border-b border-gray-800 px-4 py-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold">
+          <Link href="/" className="text-2xl font-bold text-white">
             Hubba
           </Link>
-          <Link
-            href="/dashboard"
-            className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
-          >
-            Back to Dashboard
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
+            >
+              Dashboard
+            </Link>
+            <button
+              onClick={logout}
+              className="text-sm text-neon-green hover:opacity-80 opacity-70"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </nav>
 

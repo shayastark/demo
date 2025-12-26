@@ -8,7 +8,7 @@ import { Project } from '@/lib/types'
 import { Plus, Music, Eye } from 'lucide-react'
 
 export default function ClientDashboard() {
-  const { ready, authenticated, user, login } = usePrivy()
+  const { ready, authenticated, user, login, logout } = usePrivy()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const loadingRef = useRef(false)
@@ -132,13 +132,27 @@ export default function ClientDashboard() {
           <Link href="/" className="text-2xl font-bold text-white">
             Hubba
           </Link>
-          <Link
-            href="/dashboard/projects/new"
-            className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
-          >
-            <Plus className="w-4 h-4" />
-            New Project
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/account"
+              className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
+            >
+              Account
+            </Link>
+            <Link
+              href="/dashboard/projects/new"
+              className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
+            >
+              <Plus className="w-4 h-4" />
+              New Project
+            </Link>
+            <button
+              onClick={logout}
+              className="text-sm text-neon-green hover:opacity-80 opacity-70"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </nav>
 
