@@ -414,7 +414,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         <img
                           src={track.image_url}
                           alt={track.title}
-                          className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover flex-shrink-0"
+                          className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
                         />
                       )}
                       <div className="flex-1">
