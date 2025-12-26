@@ -206,7 +206,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div>Loading...</div>
+        <div className="text-neon-green">Loading...</div>
       </div>
     )
   }
@@ -215,8 +215,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Project Not Found</h1>
-          <Link href="/dashboard" className="text-blue-400 hover:text-blue-300">
+          <h1 className="text-2xl font-bold mb-4 text-white">Project Not Found</h1>
+          <Link href="/dashboard" className="text-neon-green hover:opacity-80">
             Back to Dashboard
           </Link>
         </div>
@@ -230,7 +230,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     <div className="min-h-screen bg-black text-white">
       <nav className="border-b border-gray-800 px-4 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-white">
+          <Link href="/dashboard" className="flex items-center gap-2 text-neon-green hover:opacity-80 opacity-70">
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </Link>
@@ -256,16 +256,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">{project.title}</h1>
           {project.description && (
-            <p className="text-gray-400 text-lg mb-6">{project.description}</p>
+            <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
           )}
 
           {/* Share Link */}
           <div className="bg-gray-900 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Share Link</span>
+              <span className="text-sm text-neon-green opacity-70">Share Link</span>
               <button
                 onClick={handleCopyShareLink}
-                className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300"
+                className="flex items-center gap-2 text-sm text-neon-green hover:opacity-80 opacity-70"
               >
                 {shareLinkCopied ? (
                   <>Copied!</>
@@ -277,7 +277,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 )}
               </button>
             </div>
-            <div className="bg-black rounded p-2 text-sm break-all text-gray-300">
+            <div className="bg-black rounded p-2 text-sm break-all text-neon-green">
               {shareUrl}
             </div>
           </div>
@@ -286,30 +286,30 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {metrics && (
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-gray-900 rounded-lg p-4 text-center">
-                <Eye className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                <div className="text-2xl font-bold">{metrics.plays || 0}</div>
-                <div className="text-sm text-gray-400">Plays</div>
+                <Eye className="w-6 h-6 mx-auto mb-2 text-neon-green opacity-70" />
+                <div className="text-2xl font-bold text-neon-green">{metrics.plays || 0}</div>
+                <div className="text-sm text-neon-green opacity-70">Plays</div>
               </div>
               <div className="bg-gray-900 rounded-lg p-4 text-center">
-                <Share2 className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                <div className="text-2xl font-bold">{metrics.shares || 0}</div>
-                <div className="text-sm text-gray-400">Shares</div>
+                <Share2 className="w-6 h-6 mx-auto mb-2 text-neon-green opacity-70" />
+                <div className="text-2xl font-bold text-neon-green">{metrics.shares || 0}</div>
+                <div className="text-sm text-neon-green opacity-70">Shares</div>
               </div>
               <div className="bg-gray-900 rounded-lg p-4 text-center">
-                <Plus className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                <div className="text-2xl font-bold">{metrics.adds || 0}</div>
-                <div className="text-sm text-gray-400">Adds</div>
+                <Plus className="w-6 h-6 mx-auto mb-2 text-neon-green opacity-70" />
+                <div className="text-2xl font-bold text-neon-green">{metrics.adds || 0}</div>
+                <div className="text-sm text-neon-green opacity-70">Adds</div>
               </div>
             </div>
           )}
 
           {/* Settings */}
           <div className="bg-gray-900 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold mb-3">Project Settings</h3>
+            <h3 className="font-semibold mb-3 text-neon-green">Project Settings</h3>
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium">Allow Downloads</div>
-                <div className="text-sm text-gray-400">
+                <div className="font-medium text-neon-green">Allow Downloads</div>
+                <div className="text-sm text-neon-green opacity-70">
                   Users can download tracks from this project
                 </div>
               </div>
@@ -329,13 +329,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-yellow-400" />
-                <h3 className="font-semibold">Project Notes</h3>
+                <h3 className="font-semibold text-neon-green">Project Notes</h3>
                 <span className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">Private</span>
               </div>
               {!editingProjectNote && (
                 <button
                   onClick={() => setEditingProjectNote(true)}
-                  className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                  className="text-sm text-neon-green hover:opacity-80 flex items-center gap-1 opacity-70"
                 >
                   <Edit className="w-4 h-4" />
                   {projectNote ? 'Edit' : 'Add Note'}
@@ -374,11 +374,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 </div>
               </div>
             ) : projectNote ? (
-              <div className="bg-black rounded-lg p-3 text-sm text-gray-300 whitespace-pre-wrap">
-                {projectNote.content}
-              </div>
+                        <div className="bg-black rounded-lg p-3 text-sm text-neon-green whitespace-pre-wrap opacity-90">
+                          {projectNote.content}
+                        </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">No notes yet. Click "Add Note" to add private notes about this project.</p>
+              <p className="text-sm text-neon-green opacity-70 italic">No notes yet. Click "Add Note" to add private notes about this project.</p>
             )}
           </div>
           )}
@@ -392,7 +392,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {tracks.length === 0 ? (
             <div className="text-center py-12 bg-gray-900 rounded-lg">
-              <p className="text-gray-400">No tracks in this project yet.</p>
+              <p className="text-neon-green">No tracks in this project yet.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -414,8 +414,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="text-sm text-gray-400 mb-1">Track {index + 1}</div>
-                            <h3 className="text-xl font-semibold">{track.title}</h3>
+                            <div className="text-sm text-neon-green opacity-70 mb-1">Track {index + 1}</div>
+                            <h3 className="text-xl font-semibold text-neon-green">{track.title}</h3>
                           </div>
                         </div>
                       </div>
@@ -430,13 +430,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-yellow-400" />
-                          <span className="text-sm font-medium">Track Notes</span>
+                          <span className="text-sm font-medium text-neon-green">Track Notes</span>
                           <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded">Private</span>
                         </div>
                         {!isEditingNote && (
                           <button
                             onClick={() => startEditingTrackNote(track.id)}
-                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                            className="text-xs text-neon-green hover:opacity-80 flex items-center gap-1 opacity-70"
                           >
                             <Edit className="w-3 h-3" />
                             {trackNote ? 'Edit' : 'Add Note'}
@@ -476,11 +476,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           </div>
                         </div>
                       ) : trackNote ? (
-                        <div className="bg-black rounded-lg p-2 text-xs text-gray-300 whitespace-pre-wrap">
+                        <div className="bg-black rounded-lg p-2 text-xs text-neon-green whitespace-pre-wrap opacity-90">
                           {trackNote.content}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-500 italic">No notes yet.</p>
+                        <p className="text-xs text-neon-green opacity-70 italic">No notes yet.</p>
                       )}
                     </div>
                     )}

@@ -241,7 +241,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div>Loading...</div>
+        <div className="text-neon-green">Loading...</div>
       </div>
     )
   }
@@ -250,8 +250,8 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Project Not Found</h1>
-          <p className="text-gray-400">This project doesn't exist or the link is invalid.</p>
+          <h1 className="text-2xl font-bold mb-4 text-white">Project Not Found</h1>
+          <p className="text-neon-green opacity-90">This project doesn't exist or the link is invalid.</p>
         </div>
       </div>
     )
@@ -299,9 +299,9 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         {/* Project Info */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">{project.title}</h1>
+          <h1 className="text-4xl font-bold mb-2 text-white">{project.title}</h1>
           {project.description && (
-            <p className="text-gray-400 text-lg mb-6">{project.description}</p>
+            <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
           )}
 
           {/* Actions */}
@@ -351,7 +351,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         <div className="space-y-4">
           <h2 className="text-2xl font-bold mb-4">Tracks</h2>
           {tracks.length === 0 ? (
-            <p className="text-gray-400">No tracks in this project yet.</p>
+            <p className="text-neon-green">No tracks in this project yet.</p>
           ) : (
             tracks.map((track) => (
               <div key={track.id} className="bg-gray-900 rounded-lg p-4">
@@ -364,11 +364,11 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                     />
                   )}
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold mb-2">{track.title}</h3>
+                    <h3 className="text-xl font-semibold mb-2 text-neon-green">{track.title}</h3>
                     {project.allow_downloads && (
                       <button
                         onClick={() => handleDownload(track)}
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition"
+                        className="flex items-center gap-2 text-sm text-neon-green hover:opacity-80 transition opacity-70"
                       >
                         <Download className="w-4 h-4" />
                         Download

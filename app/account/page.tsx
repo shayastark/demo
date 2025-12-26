@@ -89,7 +89,7 @@ export default function AccountPage() {
   if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <div>Loading...</div>
+        <div className="text-neon-green">Loading...</div>
       </div>
     )
   }
@@ -98,7 +98,7 @@ export default function AccountPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="text-center">
-          <p className="mb-4">Please sign in to manage your account</p>
+          <p className="mb-4 text-neon-green opacity-90">Please sign in to manage your account</p>
           <button
             onClick={login}
             className="bg-white text-black px-6 py-2 rounded-full font-semibold"
@@ -119,7 +119,7 @@ export default function AccountPage() {
           </Link>
           <Link
             href="/dashboard"
-            className="text-sm text-gray-300 hover:text-white underline-offset-4 hover:underline"
+            className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
           >
             Back to Dashboard
           </Link>
@@ -127,19 +127,19 @@ export default function AccountPage() {
       </nav>
 
       <main className="px-4 py-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Account</h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Account</h1>
 
         <div className="bg-gray-900 rounded-lg p-4 md:p-6 space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
-            <div className="text-sm text-gray-200">
+            <label className="block text-sm text-neon-green opacity-70 mb-1">Email</label>
+            <div className="text-sm text-neon-green opacity-90">
               {email || user?.email?.address || 'Not set'}
             </div>
           </div>
 
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-neon-green opacity-70 mb-1">
                 Username
               </label>
               <input
@@ -147,9 +147,9 @@ export default function AccountPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Choose a username"
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-white"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-neon-green opacity-70">
                 This will be used to identify you across Hubba.
               </p>
             </div>

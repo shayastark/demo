@@ -21,7 +21,7 @@ export default function ClientHomePage() {
   if (typeof window === 'undefined' || !mounted || !ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <div className="text-center">Loading...</div>
+        <div className="text-center text-neon-green">Loading...</div>
       </div>
     )
   }
@@ -31,7 +31,7 @@ export default function ClientHomePage() {
       <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold mb-4 text-red-400">Error</h1>
-          <p className="text-gray-400 mb-4">{error}</p>
+          <p className="text-neon-green mb-4 opacity-90">{error}</p>
           <button
             onClick={() => {
               setError(null)
@@ -50,8 +50,8 @@ export default function ClientHomePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
         <div className="text-center max-w-md">
-          <h1 className="text-4xl font-bold mb-4">Hubba</h1>
-          <p className="text-lg mb-8 text-gray-300">
+          <h1 className="text-4xl font-bold mb-4 text-white">Hubba</h1>
+          <p className="text-lg mb-8 text-neon-green opacity-90">
             Share your demos and unreleased tracks with the world
           </p>
           <button
@@ -112,7 +112,7 @@ export default function ClientHomePage() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <div className="text-center">Loading...</div>
+        <div className="text-center text-neon-green">Loading...</div>
       </div>
     )
   }
@@ -130,13 +130,13 @@ export default function ClientHomePage() {
           <div className="flex gap-3 items-center">
             <Link
               href="/account"
-              className="text-xs text-gray-300 hover:text-white underline-offset-4 hover:underline"
+              className="text-xs text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
             <button
               onClick={logout}
-              className="text-xs text-gray-400 hover:text-white"
+              className="text-xs text-neon-green hover:opacity-80 opacity-70"
             >
               Sign out
             </button>
@@ -145,8 +145,8 @@ export default function ClientHomePage() {
       </nav>
       <main className="px-4 py-8 max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Welcome to Hubba</h2>
-          <p className="text-gray-400 mb-8">
+          <h2 className="text-3xl font-bold mb-4 text-white">Welcome to Hubba</h2>
+          <p className="text-neon-green mb-8 opacity-90">
             Create and share your music projects
           </p>
           <Link

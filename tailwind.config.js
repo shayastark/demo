@@ -10,6 +10,7 @@ module.exports = {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
+        'neon-green': '#39FF14',
       },
     },
   },

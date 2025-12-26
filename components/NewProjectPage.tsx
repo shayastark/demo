@@ -178,7 +178,7 @@ export default function NewProjectPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Cover Image */}
           <div>
-            <label className="block text-sm font-medium mb-2">Cover Image (Optional)</label>
+            <label className="block text-sm font-medium mb-2 text-neon-green">Cover Image (Optional)</label>
             {coverImagePreview ? (
               <div className="relative w-full h-64 rounded-lg overflow-hidden mb-2">
                 <img src={coverImagePreview} alt="Cover preview" className="w-full h-full object-cover" />
@@ -197,7 +197,7 @@ export default function NewProjectPage() {
               <label className="block w-full h-64 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-gray-600 transition flex items-center justify-center">
                 <div className="text-center">
                   <Upload className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-                  <span className="text-gray-400">Click to upload cover image</span>
+                  <span className="text-neon-green opacity-70">Click to upload cover image</span>
                 </div>
                 <input
                   type="file"
@@ -211,24 +211,24 @@ export default function NewProjectPage() {
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium mb-2">Project Title *</label>
+            <label className="block text-sm font-medium mb-2 text-neon-green">Project Title *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-white"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
+            <label className="block text-sm font-medium mb-2 text-neon-green">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-white resize-none"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green resize-none"
             />
           </div>
 
@@ -241,7 +241,7 @@ export default function NewProjectPage() {
               onChange={(e) => setAllowDownloads(e.target.checked)}
               className="w-4 h-4"
             />
-            <label htmlFor="allowDownloads" className="text-sm">
+            <label htmlFor="allowDownloads" className="text-sm text-neon-green">
               Allow downloads for tracks in this project
             </label>
           </div>
@@ -249,11 +249,11 @@ export default function NewProjectPage() {
           {/* Tracks */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <label className="block text-sm font-medium">Tracks *</label>
+              <label className="block text-sm font-medium text-neon-green">Tracks *</label>
               <button
                 type="button"
                 onClick={handleAddTrack}
-                className="text-sm text-blue-400 hover:text-blue-300"
+                className="text-sm text-neon-green hover:opacity-80"
               >
                 + Add Track
               </button>
@@ -261,8 +261,8 @@ export default function NewProjectPage() {
 
             {tracks.length === 0 ? (
               <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center">
-                <Music className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                <p className="text-gray-400 mb-4">No tracks added yet</p>
+                <Music className="w-12 h-12 mx-auto mb-4 text-neon-green opacity-50" />
+                <p className="text-neon-green mb-4 opacity-90">No tracks added yet</p>
                 <button
                   type="button"
                   onClick={handleAddTrack}
@@ -276,7 +276,7 @@ export default function NewProjectPage() {
                 {tracks.map((track, index) => (
                   <div key={index} className="bg-gray-900 rounded-lg p-4 border border-gray-800">
                     <div className="flex justify-between items-start mb-4">
-                      <h3 className="font-medium">Track {index + 1}</h3>
+                      <h3 className="font-medium text-neon-green">Track {index + 1}</h3>
                       <button
                         type="button"
                         onClick={() => removeTrack(index)}
@@ -288,7 +288,7 @@ export default function NewProjectPage() {
 
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">Audio File (MP3) *</label>
+                        <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File (MP3) *</label>
                         <input
                           type="file"
                           accept="audio/mpeg,audio/mp3"
@@ -302,7 +302,7 @@ export default function NewProjectPage() {
                       </div>
 
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">Track Title *</label>
+                        <label className="block text-xs text-neon-green opacity-70 mb-1">Track Title *</label>
                         <input
                           type="text"
                           value={track.title}
@@ -312,12 +312,12 @@ export default function NewProjectPage() {
                             setTracks(newTracks)
                           }}
                           required
-                          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-white"
+                          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">Track Image (Optional)</label>
+                        <label className="block text-xs text-neon-green opacity-70 mb-1">Track Image (Optional)</label>
                         {track.imagePreview ? (
                           <div className="relative w-32 h-32 rounded overflow-hidden mb-2">
                             <img src={track.imagePreview} alt="Track preview" className="w-full h-full object-cover" />

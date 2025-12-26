@@ -64,7 +64,7 @@ export default function ClientDashboard() {
   if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <div>Loading...</div>
+        <div className="text-neon-green">Loading...</div>
       </div>
     )
   }
@@ -73,7 +73,7 @@ export default function ClientDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="text-center">
-          <p className="mb-4">Please login to access your dashboard</p>
+          <p className="mb-4 text-neon-green opacity-90">Please login to access your dashboard</p>
           <button
             onClick={login}
             className="bg-white text-black px-6 py-2 rounded-full font-semibold"
@@ -106,11 +106,11 @@ export default function ClientDashboard() {
         <h1 className="text-3xl font-bold mb-8">Your Projects</h1>
 
         {loading ? (
-          <div className="text-center py-12">Loading projects...</div>
+          <div className="text-center py-12 text-neon-green">Loading projects...</div>
         ) : projects.length === 0 ? (
           <div className="text-center py-12">
-            <Music className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-            <p className="text-gray-400 mb-4">No projects yet</p>
+            <Music className="w-16 h-16 mx-auto mb-4 text-neon-green opacity-50" />
+            <p className="text-neon-green mb-4">No projects yet</p>
             <Link
               href="/dashboard/projects/new"
               className="inline-block bg-white text-black px-6 py-2 rounded-full font-semibold"
@@ -138,13 +138,13 @@ export default function ClientDashboard() {
                   </div>
                 )}
                 <div className="p-4">
-                  <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
+                  <h3 className="text-xl font-semibold mb-2 text-neon-green">{project.title}</h3>
                   {project.description && (
-                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                    <p className="text-neon-green text-sm mb-3 line-clamp-2 opacity-90">
                       {project.description}
                     </p>
                   )}
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center justify-between text-sm text-neon-green opacity-70">
                     <span>{new Date(project.created_at).toLocaleDateString()}</span>
                     <div className="flex items-center gap-1">
                       <Eye className="w-4 h-4" />

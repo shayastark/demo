@@ -79,7 +79,7 @@ export default function AudioPlayer({ src, title, onPlay }: AudioPlayerProps) {
           )}
         </button>
         <div className="flex-1">
-          <div className="text-sm font-medium mb-1">{title}</div>
+          <div className="text-sm font-medium mb-1 text-neon-green">{title}</div>
           <div className="flex items-center gap-2">
             <input
               type="range"
@@ -89,7 +89,7 @@ export default function AudioPlayer({ src, title, onPlay }: AudioPlayerProps) {
               onChange={handleSeek}
               className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
             />
-            <span className="text-xs text-gray-400 w-20 text-right">
+            <span className="text-xs text-neon-green w-20 text-right">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
