@@ -15,46 +15,47 @@ export default function ClientHomePage() {
   const loadingProfileRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
   const effectRunRef = useRef(false)
-  const renderCountRef = useRef(0)
+  const timeoutSetRef = useRef(false)
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
-  
-  // Track renders to detect infinite loops (in useEffect to avoid render-phase issues)
-  useEffect(() => {
-    renderCountRef.current += 1
-    if (renderCountRef.current > 50 && !ready && !privyTimeout) {
-      console.error('ClientHomePage: Too many re-renders detected, forcing timeout state')
-      setPrivyTimeout(true)
-    }
-  }, [ready, privyTimeout])
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Add a timeout in case Privy never becomes ready (separate effect to avoid re-running)
+  // Add a timeout in case Privy never becomes ready
+  // Use refs to prevent infinite loops - don't depend on privyTimeout state
   useEffect(() => {
-    if (!ready) {
-      // Debug logging only once
-      if (typeof window !== 'undefined' && !privyTimeout) {
-        console.log('ClientHomePage: Privy not ready, starting timeout...')
-      }
+    if (!ready && !timeoutSetRef.current) {
+      // Only set timeout once
+      timeoutSetRef.current = true
+      console.log('ClientHomePage: Privy not ready, starting timeout...')
       
-      const timeout = setTimeout(() => {
+      timeoutIdRef.current = setTimeout(() => {
         console.error('Privy initialization timeout - check NEXT_PUBLIC_PRIVY_APP_ID')
         console.error('This might be caused by Cloudflare challenge blocking Privy scripts')
         setPrivyTimeout(true)
       }, 10000) // 10 second timeout
+    } else if (ready && timeoutSetRef.current) {
+      // Clear timeout if Privy becomes ready
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current)
+        timeoutIdRef.current = null
+      }
+      timeoutSetRef.current = false
+      // Reset timeout state using functional update to avoid stale closure
+      setPrivyTimeout((prev) => prev ? false : prev)
+    }
 
-      return () => clearTimeout(timeout)
-    } else {
-      // Reset timeout if Privy becomes ready
-      if (privyTimeout) {
-        setPrivyTimeout(false)
+    return () => {
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current)
+        timeoutIdRef.current = null
       }
     }
-  }, [ready, privyTimeout])
+  }, [ready]) // Only depend on ready, not privyTimeout
 
   // Always show loading until mounted and ready to prevent hydration mismatch
   // This ensures server and client render the same initial HTML
@@ -160,7 +161,8 @@ export default function ClientHomePage() {
     loadingProfileRef.current = true
     
     const privyId = userId
-    const userEmail = user.email?.address || null
+    // Capture userEmail from current user object to avoid stale closure
+    const userEmail = user?.email?.address || null
     
     // Use a separate function to avoid closure issues
     const loadProfile = async () => {

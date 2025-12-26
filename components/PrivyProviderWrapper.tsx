@@ -34,24 +34,40 @@ export default function PrivyProviderWrapper({
     }
   }, [privyAppId])
 
-  // Add error handler for script loading failures
+  // Add comprehensive error handler for script loading failures
   useEffect(() => {
     if (typeof window === 'undefined') return
     
     const handleError = (event: ErrorEvent) => {
       // Ignore embedded-wallets script errors - they're not critical for basic auth
-      if (event.filename?.includes('embedded-wallets')) {
-        console.warn('Embedded wallets script failed to load, but authentication should still work')
-        event.preventDefault() // Prevent error from propagating
+      if (event.filename?.includes('embedded-wallets') || 
+          event.message?.includes('embedded-wallets') ||
+          event.error?.message?.includes('embedded-wallets')) {
+        console.warn('Embedded wallets script error caught and suppressed:', event.message)
+        event.stopPropagation() // Stop error from bubbling
+        event.stopImmediatePropagation() // Stop other handlers
+        return true
+      }
+      return false
+    }
+    
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // Catch promise rejections from embedded wallets
+      if (event.reason?.message?.includes('embedded-wallets') ||
+          event.reason?.toString()?.includes('embedded-wallets')) {
+        console.warn('Embedded wallets promise rejection caught and suppressed')
+        event.preventDefault() // Prevent unhandled rejection
         return true
       }
       return false
     }
     
     window.addEventListener('error', handleError, true)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
     
     return () => {
       window.removeEventListener('error', handleError, true)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
     }
   }, [])
 
@@ -59,17 +75,15 @@ export default function PrivyProviderWrapper({
     <PrivyProvider
       appId={privyAppId}
       config={{
-        // Temporarily remove 'wallet' to test if it's causing embedded wallet script loading
-        // You can add it back once we confirm the issue is resolved
-        loginMethods: ['email', 'sms'],
+        loginMethods: ['email', 'wallet', 'sms'],
         appearance: {
           theme: 'light',
           accentColor: '#000000',
         },
-        // Explicitly disable embedded wallets
+        // Embedded wallets configuration - restored since they were working before
         embeddedWallets: {
           ethereum: {
-            createOnLogin: 'off',
+            createOnLogin: 'users-without-wallets',
           },
         },
       }}
