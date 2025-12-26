@@ -13,6 +13,7 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true)
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
+  const lastProcessedStateRef = useRef<string | null>(null)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
@@ -28,10 +29,21 @@ export default function ClientDashboard() {
       return
     }
     
-    // Prevent loading if already loading or if we've already loaded this user
-    if (loadingRef.current || loadedUserIdRef.current === userId) {
+    // Create a unique key for this state combination
+    const stateKey = `${userId}-${ready}-${authenticated}`
+    
+    // Prevent loading if we've already processed this exact state
+    if (lastProcessedStateRef.current === stateKey) {
       return
     }
+    
+    // Prevent loading if already loading
+    if (loadingRef.current) {
+      return
+    }
+    
+    // Mark this state as processed
+    lastProcessedStateRef.current = stateKey
     
     // Mark that we're loading to prevent concurrent loads
     loadingRef.current = true
@@ -87,7 +99,7 @@ export default function ClientDashboard() {
     // Run async function
     loadProjects()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, userId, authenticated]) // Depend on ready, userId, and authenticated - but check ready FIRST
+  }, [ready, userId, authenticated]) // Depend on all state, but use ref to prevent duplicate processing
 
   if (!ready) {
     return (

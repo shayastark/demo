@@ -16,6 +16,7 @@ export default function ClientHomePage() {
   const loadedUserIdRef = useRef<string | null>(null)
   const timeoutSetRef = useRef(false)
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
+  const lastProcessedStateRef = useRef<string | null>(null)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
@@ -155,10 +156,21 @@ export default function ClientHomePage() {
       return
     }
     
-    // Prevent loading if already loading or if we've already loaded this user
-    if (loadingProfileRef.current || loadedUserIdRef.current === userId) {
+    // Create a unique key for this state combination
+    const stateKey = `${userId}-${ready}-${authenticated}`
+    
+    // Prevent loading if we've already processed this exact state
+    if (lastProcessedStateRef.current === stateKey) {
       return
     }
+    
+    // Prevent loading if already loading
+    if (loadingProfileRef.current) {
+      return
+    }
+    
+    // Mark this state as processed
+    lastProcessedStateRef.current = stateKey
     
     // Mark that we're loading to prevent concurrent loads
     loadingProfileRef.current = true
@@ -207,7 +219,7 @@ export default function ClientHomePage() {
     // Run async function
     loadProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, ready, userId, authenticated]) // Depend on ready, userId, and authenticated - but check ready FIRST
+  }, [mounted, ready, userId, authenticated]) // Depend on all state, but use ref to prevent duplicate processing
 
   if (!user) {
     return (

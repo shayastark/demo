@@ -13,6 +13,7 @@ export default function AccountPage() {
   const [loaded, setLoaded] = useState(false)
 
   const loadedUserIdRef = useRef<string | null>(null)
+  const lastProcessedStateRef = useRef<string | null>(null)
   
   useEffect(() => {
     // Privy pattern: Always check ready first before checking authenticated
@@ -24,6 +25,17 @@ export default function AccountPage() {
     if (!authenticated || !user || !user.id) {
       return
     }
+    
+    // Create a unique key for this state combination
+    const stateKey = `${user.id}-${ready}-${authenticated}`
+    
+    // Prevent loading if we've already processed this exact state
+    if (lastProcessedStateRef.current === stateKey) {
+      return
+    }
+    
+    // Mark this state as processed
+    lastProcessedStateRef.current = stateKey
     
     const loadProfile = async () => {
       const privyId = user.id
@@ -67,7 +79,7 @@ export default function AccountPage() {
 
     loadProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, user?.id, authenticated]) // Depend on ready, user.id, and authenticated - but check ready FIRST
+  }, [ready, user?.id, authenticated]) // Depend on all state, but use ref to prevent duplicate processing
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
