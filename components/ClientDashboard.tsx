@@ -1,7 +1,7 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project } from '@/lib/types'
@@ -11,11 +11,18 @@ export default function ClientDashboard() {
   const { ready, authenticated, user, login } = usePrivy()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const loadingRef = useRef(false)
+  const loadedUserIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (ready && authenticated && user) {
-      loadProjects()
-    }
+    if (!ready || !authenticated || !user || !user.id) return
+    
+    // Prevent loading if already loading or if we've already loaded this user
+    if (loadingRef.current || loadedUserIdRef.current === user.id) return
+    
+    loadingRef.current = true
+    loadedUserIdRef.current = user.id
+    loadProjects()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, authenticated, user?.id]) // Only depend on user.id, not the whole user object
 
@@ -59,6 +66,7 @@ export default function ClientDashboard() {
       console.error('Error loading projects:', error)
     } finally {
       setLoading(false)
+      loadingRef.current = false
     }
   }
 

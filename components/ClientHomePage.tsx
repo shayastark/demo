@@ -116,7 +116,7 @@ export default function ClientHomePage() {
 
   // Load or create user profile and fetch username
   useEffect(() => {
-    if (!mounted || !ready || !authenticated || !user) return
+    if (!mounted || !ready || !authenticated || !user || !user.id) return
     
     // Use user.id as a stable reference instead of the whole user object
     const privyId = user.id
@@ -126,9 +126,11 @@ export default function ClientHomePage() {
     
     const userEmail = user.email?.address || null
     
+    // Mark as loading immediately to prevent re-runs
+    loadingProfileRef.current = true
+    setLoadingProfile(true)
+    
     const loadProfile = async () => {
-      loadingProfileRef.current = true
-      setLoadingProfile(true)
       try {
         let { data: existingUser } = await supabase
           .from('users')
@@ -154,8 +156,9 @@ export default function ClientHomePage() {
         loadedUserIdRef.current = privyId
       } catch (error) {
         console.error('Error loading profile:', error)
+        // Don't reset loadedUserIdRef on error - mark it as attempted to prevent infinite retries
+        loadedUserIdRef.current = privyId
         setError('Failed to load profile. Please refresh the page.')
-        loadedUserIdRef.current = null // Reset on error so we can retry
       } finally {
         loadingProfileRef.current = false
         setLoadingProfile(false)
