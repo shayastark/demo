@@ -98,7 +98,7 @@ export default function ClientDashboard() {
     <div className="min-h-screen bg-black text-white">
       <nav className="border-b border-gray-800 px-4 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold">
+          <Link href="/" className="text-2xl font-bold text-white">
             Hubba
           </Link>
           <Link
@@ -112,7 +112,7 @@ export default function ClientDashboard() {
       </nav>
 
       <main className="px-4 py-8 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Your Projects</h1>
+        <h1 className="text-3xl font-bold mb-8 text-white">Your Projects</h1>
 
         {loading ? (
           <div className="text-center py-12 text-neon-green">Loading projects...</div>

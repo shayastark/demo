@@ -11,6 +11,9 @@ export default function PrivyProviderWrapper({
 
   // If no app ID, show error message
   if (!privyAppId) {
+    if (typeof window !== 'undefined') {
+      console.error('PrivyProviderWrapper: NEXT_PUBLIC_PRIVY_APP_ID is missing')
+    }
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -21,6 +24,11 @@ export default function PrivyProviderWrapper({
         </div>
       </div>
     )
+  }
+  
+  // Debug logging
+  if (typeof window !== 'undefined') {
+    console.log('PrivyProviderWrapper: Initializing with App ID', privyAppId.substring(0, 10) + '...')
   }
 
   return (

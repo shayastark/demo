@@ -17,6 +17,10 @@ export default function ClientHomePage() {
 
   useEffect(() => {
     setMounted(true)
+    // Debug logging
+    if (typeof window !== 'undefined') {
+      console.log('ClientHomePage: Component mounted')
+    }
   }, [])
 
   // Add a timeout in case Privy never becomes ready (separate effect to avoid re-running)
@@ -46,20 +50,30 @@ export default function ClientHomePage() {
   }
 
   // Show loading while Privy initializes, but add a timeout to prevent infinite loading
+  // After 5 seconds, show the unauthenticated view as a fallback
   if (!ready) {
+    // Debug logging
+    if (typeof window !== 'undefined') {
+      console.log('ClientHomePage: Privy not ready yet', { ready, privyTimeout, mounted })
+    }
+    
     if (privyTimeout) {
+      // After timeout, show unauthenticated view as fallback (Privy might still work)
       return (
         <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
           <div className="text-center max-w-md">
-            <h1 className="text-2xl font-bold mb-4 text-red-400">Initialization Error</h1>
-            <p className="text-neon-green mb-4 opacity-90">
-              Authentication service is taking too long to initialize. Please check your browser console and ensure NEXT_PUBLIC_PRIVY_APP_ID is set correctly.
+            <h1 className="text-4xl font-bold mb-4 text-white">Hubba</h1>
+            <p className="text-lg mb-8 text-neon-green opacity-90">
+              Share your demos and unreleased tracks with the world
+            </p>
+            <p className="text-sm text-neon-green opacity-70 mb-4">
+              Authentication is initializing. If this persists, please refresh.
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
+              className="bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
             >
-              Reload Page
+              Refresh Page
             </button>
           </div>
         </div>
