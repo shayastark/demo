@@ -9,119 +9,18 @@ export default function ClientHomePage() {
   const { ready, authenticated, user, login, logout } = usePrivy()
   const [username, setUsername] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [privyTimeout, setPrivyTimeout] = useState(false)
   const loadingProfileRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
-  const timeoutSetRef = useRef(false)
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
-  const lastProcessTimeRef = useRef<number>(0)
-  const authErrorRef = useRef<boolean>(false)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Add a timeout in case Privy never becomes ready
-  // Use refs to prevent infinite loops - don't depend on privyTimeout state
-  useEffect(() => {
-    if (!ready && !timeoutSetRef.current) {
-      // Only set timeout once
-      timeoutSetRef.current = true
-      console.log('ClientHomePage: Privy not ready, starting timeout...')
-      
-      timeoutIdRef.current = setTimeout(() => {
-        console.error('Privy initialization timeout - check NEXT_PUBLIC_PRIVY_APP_ID')
-        console.error('This might be caused by Cloudflare challenge blocking Privy scripts')
-        setPrivyTimeout(true)
-      }, 10000) // 10 second timeout
-    } else if (ready && timeoutSetRef.current) {
-      // Clear timeout if Privy becomes ready
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current)
-        timeoutIdRef.current = null
-      }
-      timeoutSetRef.current = false
-      // Reset timeout state using functional update to avoid stale closure
-      setPrivyTimeout((prev) => prev ? false : prev)
-    }
-
-    return () => {
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current)
-        timeoutIdRef.current = null
-      }
-    }
-  }, [ready]) // Only depend on ready, not privyTimeout
-
-  // Always show loading until mounted and ready to prevent hydration mismatch
-  // This ensures server and client render the same initial HTML
-  if (typeof window === 'undefined' || !mounted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <div className="text-center text-neon-green">Loading...</div>
-      </div>
-    )
-  }
-
-  // Show loading while Privy initializes, but add a timeout to prevent infinite loading
-  // After 5 seconds, show the unauthenticated view as a fallback
+  // Simplified: Remove mounted state and timeout logic to match dashboard pattern
   if (!ready) {
-    if (privyTimeout) {
-      // After timeout, show unauthenticated view as fallback (Privy might still work)
-      // This allows users to at least see the page even if Privy is slow
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-          <div className="text-center max-w-md">
-            <h1 className="text-4xl font-bold mb-4 text-white">Hubba</h1>
-            <p className="text-lg mb-8 text-neon-green opacity-90">
-              Share your demos and unreleased tracks with the world
-            </p>
-            <p className="text-sm text-neon-green opacity-70 mb-4">
-              Authentication is initializing. If this persists, please refresh.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
-            >
-              Refresh Page
-            </button>
-          </div>
-        </div>
-      )
-    }
-    // Show loading state - use a stable component to prevent re-renders
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <div className="text-center">
-          <div className="text-neon-green mb-2">Loading...</div>
-          <div className="text-xs text-neon-green opacity-50">Initializing authentication</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-        <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-4 text-red-400">Error</h1>
-          <p className="text-neon-green mb-4 opacity-90">{error}</p>
-          <button
-            onClick={() => {
-              setError(null)
-              window.location.reload()
-            }}
-            className="bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
-          >
-            Reload
-          </button>
-        </div>
+        <div className="text-neon-green">Loading...</div>
       </div>
     )
   }
@@ -146,37 +45,15 @@ export default function ClientHomePage() {
   }
 
   // Load or create user profile and fetch username
-  // Follow Privy's pattern: check ready FIRST, then authenticated
+  // Simplified to match dashboard pattern - removed mounted, timeout, and error refs
   useEffect(() => {
-    // Don't run until mounted (prevents SSR issues)
-    if (!mounted) {
-      return
-    }
-    
     // Privy pattern: Always check ready first before checking authenticated
     if (!ready) {
-      // Reset refs when not ready to allow fresh load when ready
-      if (lastProcessedStateRef.current) {
-        lastProcessedStateRef.current = null
-      }
-      authErrorRef.current = false // Reset error flag when not ready
-      return
-    }
-    
-    // If there's an authentication error, don't try to load profile
-    // This prevents infinite loops when Privy is having auth issues
-    if (authErrorRef.current) {
       return
     }
     
     // Only proceed if ready AND authenticated (following Privy's recommended pattern)
     if (!authenticated || !user || !userId) {
-      // Reset refs when not authenticated to allow fresh load on next login
-      if (lastProcessedStateRef.current) {
-        lastProcessedStateRef.current = null
-        loadedUserIdRef.current = null
-      }
-      authErrorRef.current = false // Reset error flag when not authenticated
       return
     }
     
@@ -188,13 +65,6 @@ export default function ClientHomePage() {
       return
     }
     
-    // Prevent rapid re-processing (debounce - wait at least 500ms between attempts)
-    // Longer debounce to prevent loops when Privy is having auth issues
-    const now = Date.now()
-    if (now - lastProcessTimeRef.current < 500) {
-      return
-    }
-    
     // Prevent loading if already loading
     if (loadingProfileRef.current) {
       return
@@ -202,20 +72,18 @@ export default function ClientHomePage() {
     
     // Mark this state as processed
     lastProcessedStateRef.current = stateKey
-    lastProcessTimeRef.current = now
     
     // Mark that we're loading to prevent concurrent loads
     loadingProfileRef.current = true
     loadedUserIdRef.current = userId
     
+    // Capture user data to avoid stale closure
     const privyId = userId
-    // Capture userEmail from current user object to avoid stale closure
     const userEmail = user?.email?.address || null
     
-    // Use a separate function to avoid closure issues
+    // Use a separate async function to avoid closure issues
     const loadProfile = async () => {
       try {
-        // Update loading state
         setLoadingProfile(true)
         
         let { data: existingUser } = await supabase
@@ -239,20 +107,10 @@ export default function ClientHomePage() {
         }
 
         setUsername(existingUser.username || null)
-        authErrorRef.current = false // Clear error flag on success
       } catch (error) {
         console.error('Error loading profile:', error)
-        // Check if it's a Privy authentication error
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        if (errorMessage.includes('authenticate') || errorMessage.includes('422') || errorMessage.includes('session')) {
-          authErrorRef.current = true
-          console.warn('Privy authentication error detected, preventing further attempts for 5 seconds')
-          // Reset error flag after 5 seconds to allow retry
-          setTimeout(() => {
-            authErrorRef.current = false
-          }, 5000)
-        }
-        setError('Failed to load profile. Please refresh the page.')
+        // Don't set error state - just log it and continue
+        // This prevents error UI from blocking the page
       } finally {
         loadingProfileRef.current = false
         setLoadingProfile(false)
@@ -261,14 +119,8 @@ export default function ClientHomePage() {
 
     // Run async function
     loadProfile()
-    
-    // Cleanup: reset refs when component unmounts or dependencies change significantly
-    return () => {
-      // Don't reset here - let the early returns handle it
-      // This cleanup only runs when dependencies change, not on unmount
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, userId, authenticated]) // Don't include mounted - check it inside but don't depend on it
+  }, [ready, userId, authenticated]) // Simplified dependencies - match dashboard pattern
 
   if (!user) {
     return (

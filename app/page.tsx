@@ -1,21 +1,8 @@
-import { Suspense } from 'react'
 import ClientHomePage from '@/components/ClientHomePage'
 
-export const dynamic = 'force-dynamic'
-
-function LoadingFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-black text-white">
-      <div className="text-center text-neon-green">Loading...</div>
-    </div>
-  )
-}
-
+// Removed Suspense and force-dynamic to prevent re-render issues
+// These were causing hydration mismatches and infinite loops
 export default function Home() {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <ClientHomePage />
-    </Suspense>
-  )
+  return <ClientHomePage />
 }
 
