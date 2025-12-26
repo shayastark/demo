@@ -17,6 +17,7 @@ export default function ClientHomePage() {
   const timeoutSetRef = useRef(false)
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
+  const lastProcessTimeRef = useRef<number>(0)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
@@ -146,13 +147,27 @@ export default function ClientHomePage() {
   // Load or create user profile and fetch username
   // Follow Privy's pattern: check ready FIRST, then authenticated
   useEffect(() => {
+    // Don't run until mounted (prevents SSR issues)
+    if (!mounted) {
+      return
+    }
+    
     // Privy pattern: Always check ready first before checking authenticated
-    if (!mounted || !ready) {
+    if (!ready) {
+      // Reset refs when not ready to allow fresh load when ready
+      if (lastProcessedStateRef.current) {
+        lastProcessedStateRef.current = null
+      }
       return
     }
     
     // Only proceed if ready AND authenticated (following Privy's recommended pattern)
     if (!authenticated || !user || !userId) {
+      // Reset refs when not authenticated to allow fresh load on next login
+      if (lastProcessedStateRef.current) {
+        lastProcessedStateRef.current = null
+        loadedUserIdRef.current = null
+      }
       return
     }
     
@@ -164,6 +179,12 @@ export default function ClientHomePage() {
       return
     }
     
+    // Prevent rapid re-processing (debounce - wait at least 100ms between attempts)
+    const now = Date.now()
+    if (now - lastProcessTimeRef.current < 100) {
+      return
+    }
+    
     // Prevent loading if already loading
     if (loadingProfileRef.current) {
       return
@@ -171,6 +192,7 @@ export default function ClientHomePage() {
     
     // Mark this state as processed
     lastProcessedStateRef.current = stateKey
+    lastProcessTimeRef.current = now
     
     // Mark that we're loading to prevent concurrent loads
     loadingProfileRef.current = true
@@ -218,8 +240,14 @@ export default function ClientHomePage() {
 
     // Run async function
     loadProfile()
+    
+    // Cleanup: reset refs when component unmounts or dependencies change significantly
+    return () => {
+      // Don't reset here - let the early returns handle it
+      // This cleanup only runs when dependencies change, not on unmount
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, ready, userId, authenticated]) // Depend on all state, but use ref to prevent duplicate processing
+  }, [ready, userId, authenticated]) // Don't include mounted - check it inside but don't depend on it
 
   if (!user) {
     return (
