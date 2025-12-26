@@ -13,77 +13,75 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true)
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
-  const effectRunRef = useRef(false)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
 
   useEffect(() => {
     if (!ready || !authenticated || !user || !userId) {
-      effectRunRef.current = false
       return
     }
     
     // Prevent loading if already loading or if we've already loaded this user
-    if (loadingRef.current || loadedUserIdRef.current === userId || effectRunRef.current) return
+    if (loadingRef.current || loadedUserIdRef.current === userId) {
+      return
+    }
     
-    // Mark that we're running this effect to prevent re-runs
-    effectRunRef.current = true
+    // Mark that we're loading to prevent concurrent loads
     loadingRef.current = true
     loadedUserIdRef.current = userId
     
-    loadProjects()
+    // Capture user data to avoid stale closure
+    const privyId = userId
+    const userEmail = user?.email?.address || null
     
-    // Reset effect run flag when dependencies change
-    return () => {
-      effectRunRef.current = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, authenticated, userId]) // Use stabilized userId
-
-  const loadProjects = async () => {
-    try {
-      // First, get or create the user in our database
-      const privyId = user?.id || ''
-      
-      // Check if user exists
-      let { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
-
-      // Create user if doesn't exist
-      if (!existingUser) {
-        const { data: newUser, error } = await supabase
+    // Use a separate async function to avoid closure issues
+    const loadProjects = async () => {
+      try {
+        // First, get or create the user in our database
+        // Check if user exists
+        let { data: existingUser } = await supabase
           .from('users')
-          .insert({
-            privy_id: privyId,
-            email: user?.email?.address || null,
-          })
           .select('id')
+          .eq('privy_id', privyId)
           .single()
 
+        // Create user if doesn't exist
+        if (!existingUser) {
+          const { data: newUser, error } = await supabase
+            .from('users')
+            .insert({
+              privy_id: privyId,
+              email: userEmail,
+            })
+            .select('id')
+            .single()
+
+          if (error) throw error
+          existingUser = newUser
+        }
+
+        // Load projects
+        const { data: projectsData, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('creator_id', existingUser.id)
+          .order('created_at', { ascending: false })
+
         if (error) throw error
-        existingUser = newUser
+        setProjects(projectsData || [])
+      } catch (error) {
+        console.error('Error loading projects:', error)
+      } finally {
+        setLoading(false)
+        loadingRef.current = false
       }
-
-      // Load projects
-      const { data: projectsData, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('creator_id', existingUser.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setProjects(projectsData || [])
-    } catch (error) {
-      console.error('Error loading projects:', error)
-    } finally {
-      setLoading(false)
-      loadingRef.current = false
     }
-  }
+
+    // Run async function
+    loadProjects()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, ready, authenticated]) // Depend on userId, ready, and authenticated - use refs to prevent duplicate loads
 
   if (!ready) {
     return (

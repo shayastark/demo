@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { usePrivy } from '@privy-io/react-auth'
 import { supabase } from '@/lib/supabase'
@@ -19,6 +19,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [loading, setLoading] = useState(true)
   const [linkCopied, setLinkCopied] = useState(false)
   const [addedToProject, setAddedToProject] = useState(false)
+  const checkedAddedRef = useRef<string | null>(null) // Track which project/user combo we've checked
 
   useEffect(() => {
     loadProject()
@@ -26,6 +27,12 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
   useEffect(() => {
     if (authenticated && user && project) {
+      const checkKey = `${user.id}-${project.id}`
+      // Prevent duplicate checks for the same user/project combo
+      if (checkedAddedRef.current === checkKey) {
+        return
+      }
+      checkedAddedRef.current = checkKey
       checkIfAdded()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
