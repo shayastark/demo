@@ -27,5 +27,23 @@ body {
   .text-neon-green {
     color: #39FF14 !important;
   }
+  
+  /* Cassette reel animations */
+  @keyframes spin-reel {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin-reel {
+    animation: spin-reel 2s linear infinite;
+  }
+  
+  .animate-spin-reel-reverse {
+    animation: spin-reel 2s linear infinite reverse;
+  }
 }
 

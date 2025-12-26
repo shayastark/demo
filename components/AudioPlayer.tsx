@@ -69,14 +69,12 @@ export default function AudioPlayer({ src, title, onPlay, coverImageUrl, showCas
 
   return (
     <div className="space-y-4">
-      {/* Cassette Player - shows when playing or if showCassette is true */}
-      {(isPlaying || showCassette) && (
-        <CassettePlayer
-          coverImageUrl={coverImageUrl}
-          isPlaying={isPlaying}
-          title={title}
-        />
-      )}
+      {/* Cassette Player - always show */}
+      <CassettePlayer
+        coverImageUrl={coverImageUrl}
+        isPlaying={isPlaying}
+        title={title}
+      />
       
       {/* Audio Controls */}
       <div className="bg-gray-900 rounded-lg p-4">
