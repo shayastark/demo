@@ -34,19 +34,41 @@ export default function PrivyProviderWrapper({
     }
   }, [privyAppId])
 
+  // Add error handler for script loading failures
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const handleError = (event: ErrorEvent) => {
+      // Ignore embedded-wallets script errors - they're not critical for basic auth
+      if (event.filename?.includes('embedded-wallets')) {
+        console.warn('Embedded wallets script failed to load, but authentication should still work')
+        event.preventDefault() // Prevent error from propagating
+        return true
+      }
+      return false
+    }
+    
+    window.addEventListener('error', handleError, true)
+    
+    return () => {
+      window.removeEventListener('error', handleError, true)
+    }
+  }, [])
+
   return (
     <PrivyProvider
       appId={privyAppId}
       config={{
-        loginMethods: ['email', 'wallet', 'sms'],
+        // Temporarily remove 'wallet' to test if it's causing embedded wallet script loading
+        // You can add it back once we confirm the issue is resolved
+        loginMethods: ['email', 'sms'],
         appearance: {
           theme: 'light',
           accentColor: '#000000',
         },
+        // Explicitly disable embedded wallets
         embeddedWallets: {
           ethereum: {
-            // Changed from 'users-without-wallets' to 'off' to prevent initialization delays
-            // Wallets can be created manually later if needed using useCreateWallet hook
             createOnLogin: 'off',
           },
         },
