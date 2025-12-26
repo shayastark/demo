@@ -9,6 +9,20 @@ export default function PrivyProviderWrapper({
 }) {
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || ''
 
+  // If no app ID, show error message
+  if (!privyAppId) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4 text-red-400">Configuration Error</h1>
+          <p className="text-neon-green mb-4 opacity-90">
+            Privy App ID is missing. Please set NEXT_PUBLIC_PRIVY_APP_ID in your environment variables.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <PrivyProvider
       appId={privyAppId}

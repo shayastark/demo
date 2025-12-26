@@ -11,17 +11,58 @@ export default function ClientHomePage() {
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [privyTimeout, setPrivyTimeout] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    
+    // Add a timeout in case Privy never becomes ready
+    const timeout = setTimeout(() => {
+      if (!ready) {
+        setPrivyTimeout(true)
+        console.error('Privy initialization timeout - check NEXT_PUBLIC_PRIVY_APP_ID')
+      }
+    }, 10000) // 10 second timeout
+
+    return () => clearTimeout(timeout)
+  }, [ready])
 
   // Always show loading until mounted and ready to prevent hydration mismatch
   // This ensures server and client render the same initial HTML
-  if (typeof window === 'undefined' || !mounted || !ready) {
+  if (typeof window === 'undefined' || !mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="text-center text-neon-green">Loading...</div>
+      </div>
+    )
+  }
+
+  // Show loading while Privy initializes, but add a timeout to prevent infinite loading
+  if (!ready) {
+    if (privyTimeout) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
+          <div className="text-center max-w-md">
+            <h1 className="text-2xl font-bold mb-4 text-red-400">Initialization Error</h1>
+            <p className="text-neon-green mb-4 opacity-90">
+              Authentication service is taking too long to initialize. Please check your browser console and ensure NEXT_PUBLIC_PRIVY_APP_ID is set correctly.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <div className="text-center">
+          <div className="text-neon-green mb-2">Loading...</div>
+          <div className="text-xs text-neon-green opacity-50">Initializing authentication</div>
+        </div>
       </div>
     )
   }
