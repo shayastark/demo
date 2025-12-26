@@ -20,15 +20,14 @@ export default function ClientHomePage() {
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
   
-  // Prevent excessive re-renders - if we've rendered too many times without ready, stop
-  renderCountRef.current += 1
-  if (renderCountRef.current > 50 && !ready) {
-    console.error('ClientHomePage: Too many re-renders detected, forcing timeout state')
-    if (!privyTimeout) {
-      // Force timeout state to break the loop
-      setTimeout(() => setPrivyTimeout(true), 0)
+  // Track renders to detect infinite loops (in useEffect to avoid render-phase issues)
+  useEffect(() => {
+    renderCountRef.current += 1
+    if (renderCountRef.current > 50 && !ready && !privyTimeout) {
+      console.error('ClientHomePage: Too many re-renders detected, forcing timeout state')
+      setPrivyTimeout(true)
     }
-  }
+  }, [ready, privyTimeout])
 
   useEffect(() => {
     setMounted(true)

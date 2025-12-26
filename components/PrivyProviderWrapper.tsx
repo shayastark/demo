@@ -45,7 +45,9 @@ export default function PrivyProviderWrapper({
         },
         embeddedWallets: {
           ethereum: {
-            createOnLogin: 'users-without-wallets',
+            // Changed from 'users-without-wallets' to 'off' to prevent initialization delays
+            // Wallets can be created manually later if needed using useCreateWallet hook
+            createOnLogin: 'off',
           },
         },
       }}

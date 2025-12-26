@@ -14,7 +14,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      if (!user) return
+      if (!user || !user.id) return
       try {
         const privyId = user.id
 
@@ -47,10 +47,11 @@ export default function AccountPage() {
       }
     }
 
-    if (authenticated && user) {
+    if (authenticated && user && user.id) {
       loadProfile()
     }
-  }, [authenticated, user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated, user?.id]) // Only depend on user.id, not the whole user object
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
