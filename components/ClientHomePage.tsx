@@ -18,6 +18,7 @@ export default function ClientHomePage() {
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
   const lastProcessTimeRef = useRef<number>(0)
+  const authErrorRef = useRef<boolean>(false)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
@@ -158,6 +159,13 @@ export default function ClientHomePage() {
       if (lastProcessedStateRef.current) {
         lastProcessedStateRef.current = null
       }
+      authErrorRef.current = false // Reset error flag when not ready
+      return
+    }
+    
+    // If there's an authentication error, don't try to load profile
+    // This prevents infinite loops when Privy is having auth issues
+    if (authErrorRef.current) {
       return
     }
     
@@ -168,6 +176,7 @@ export default function ClientHomePage() {
         lastProcessedStateRef.current = null
         loadedUserIdRef.current = null
       }
+      authErrorRef.current = false // Reset error flag when not authenticated
       return
     }
     
@@ -179,9 +188,10 @@ export default function ClientHomePage() {
       return
     }
     
-    // Prevent rapid re-processing (debounce - wait at least 100ms between attempts)
+    // Prevent rapid re-processing (debounce - wait at least 500ms between attempts)
+    // Longer debounce to prevent loops when Privy is having auth issues
     const now = Date.now()
-    if (now - lastProcessTimeRef.current < 100) {
+    if (now - lastProcessTimeRef.current < 500) {
       return
     }
     
@@ -229,8 +239,19 @@ export default function ClientHomePage() {
         }
 
         setUsername(existingUser.username || null)
+        authErrorRef.current = false // Clear error flag on success
       } catch (error) {
         console.error('Error loading profile:', error)
+        // Check if it's a Privy authentication error
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        if (errorMessage.includes('authenticate') || errorMessage.includes('422') || errorMessage.includes('session')) {
+          authErrorRef.current = true
+          console.warn('Privy authentication error detected, preventing further attempts for 5 seconds')
+          // Reset error flag after 5 seconds to allow retry
+          setTimeout(() => {
+            authErrorRef.current = false
+          }, 5000)
+        }
         setError('Failed to load profile. Please refresh the page.')
       } finally {
         loadingProfileRef.current = false

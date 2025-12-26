@@ -48,6 +48,17 @@ export default function PrivyProviderWrapper({
         event.stopImmediatePropagation() // Stop other handlers
         return true
       }
+      
+      // Catch Privy authentication errors (422, etc.)
+      if (event.message?.includes('authenticate') || 
+          event.message?.includes('session') ||
+          event.filename?.includes('privy.io')) {
+        console.warn('Privy authentication error caught:', event.message)
+        // Don't stop propagation - let it be handled by Privy
+        // But log it so we know what's happening
+        return false
+      }
+      
       return false
     }
     
@@ -59,6 +70,16 @@ export default function PrivyProviderWrapper({
         event.preventDefault() // Prevent unhandled rejection
         return true
       }
+      
+      // Catch Privy authentication promise rejections
+      if (event.reason?.message?.includes('authenticate') ||
+          event.reason?.message?.includes('422') ||
+          event.reason?.toString()?.includes('authenticate')) {
+        console.warn('Privy authentication promise rejection caught:', event.reason)
+        // Don't prevent - let Privy handle it, but log it
+        return false
+      }
+      
       return false
     }
     
