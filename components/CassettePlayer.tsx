@@ -12,9 +12,9 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
       {/* Cassette Tape Container */}
       <div className="relative bg-gradient-to-b from-gray-700 to-gray-800 rounded-lg p-3 shadow-xl border-2 border-gray-400">
         {/* Cassette Label Area - Shows cover art */}
-        <div className="bg-black rounded-md p-2 mb-2 border-2 border-gray-400 shadow-inner">
+        <div className="bg-black rounded-md p-2 mb-2 border-2 border-gray-400 shadow-inner flex justify-center">
           {coverImageUrl ? (
-            <div className="aspect-square w-full rounded overflow-hidden bg-gray-900 border border-gray-700">
+            <div className="aspect-square w-24 h-24 rounded overflow-hidden bg-gray-900 border border-gray-700">
               <img
                 src={coverImageUrl}
                 alt={title}
@@ -22,10 +22,10 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               />
             </div>
           ) : (
-            <div className="aspect-square w-full rounded bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center border border-gray-700">
+            <div className="aspect-square w-24 h-24 rounded bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center border border-gray-700">
               <div className="text-center">
-                <div className="text-2xl mb-1">🎵</div>
-                <div className="text-[10px] text-neon-green opacity-70 px-1">{title}</div>
+                <div className="text-xl mb-0.5">🎵</div>
+                <div className="text-[9px] text-neon-green opacity-70 px-1">{title}</div>
               </div>
             </div>
           )}
