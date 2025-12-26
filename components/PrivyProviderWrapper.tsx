@@ -1,6 +1,7 @@
 'use client'
 
 import { PrivyProvider } from '@privy-io/react-auth'
+import { useEffect } from 'react'
 
 export default function PrivyProviderWrapper({
   children,
@@ -26,10 +27,12 @@ export default function PrivyProviderWrapper({
     )
   }
   
-  // Debug logging
-  if (typeof window !== 'undefined') {
-    console.log('PrivyProviderWrapper: Initializing with App ID', privyAppId.substring(0, 10) + '...')
-  }
+  // Debug logging (only once, not in render)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      console.log('PrivyProviderWrapper: Initializing with App ID', privyAppId.substring(0, 10) + '...')
+    }
+  }, [privyAppId])
 
   return (
     <PrivyProvider

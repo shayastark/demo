@@ -15,33 +15,47 @@ export default function ClientHomePage() {
   const loadingProfileRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
   const effectRunRef = useRef(false)
+  const renderCountRef = useRef(0)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
+  
+  // Prevent excessive re-renders - if we've rendered too many times without ready, stop
+  renderCountRef.current += 1
+  if (renderCountRef.current > 50 && !ready) {
+    console.error('ClientHomePage: Too many re-renders detected, forcing timeout state')
+    if (!privyTimeout) {
+      // Force timeout state to break the loop
+      setTimeout(() => setPrivyTimeout(true), 0)
+    }
+  }
 
   useEffect(() => {
     setMounted(true)
-    // Debug logging
-    if (typeof window !== 'undefined') {
-      console.log('ClientHomePage: Component mounted')
-    }
   }, [])
 
   // Add a timeout in case Privy never becomes ready (separate effect to avoid re-running)
   useEffect(() => {
     if (!ready) {
+      // Debug logging only once
+      if (typeof window !== 'undefined' && !privyTimeout) {
+        console.log('ClientHomePage: Privy not ready, starting timeout...')
+      }
+      
       const timeout = setTimeout(() => {
-        setPrivyTimeout(true)
         console.error('Privy initialization timeout - check NEXT_PUBLIC_PRIVY_APP_ID')
         console.error('This might be caused by Cloudflare challenge blocking Privy scripts')
+        setPrivyTimeout(true)
       }, 10000) // 10 second timeout
 
       return () => clearTimeout(timeout)
     } else {
       // Reset timeout if Privy becomes ready
-      setPrivyTimeout(false)
+      if (privyTimeout) {
+        setPrivyTimeout(false)
+      }
     }
-  }, [ready])
+  }, [ready, privyTimeout])
 
   // Always show loading until mounted and ready to prevent hydration mismatch
   // This ensures server and client render the same initial HTML
@@ -56,13 +70,9 @@ export default function ClientHomePage() {
   // Show loading while Privy initializes, but add a timeout to prevent infinite loading
   // After 5 seconds, show the unauthenticated view as a fallback
   if (!ready) {
-    // Debug logging
-    if (typeof window !== 'undefined') {
-      console.log('ClientHomePage: Privy not ready yet', { ready, privyTimeout, mounted })
-    }
-    
     if (privyTimeout) {
       // After timeout, show unauthenticated view as fallback (Privy might still work)
+      // This allows users to at least see the page even if Privy is slow
       return (
         <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
           <div className="text-center max-w-md">
@@ -83,6 +93,7 @@ export default function ClientHomePage() {
         </div>
       )
     }
+    // Show loading state - use a stable component to prevent re-renders
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="text-center">
