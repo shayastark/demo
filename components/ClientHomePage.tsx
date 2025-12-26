@@ -143,10 +143,15 @@ export default function ClientHomePage() {
   }
 
   // Load or create user profile and fetch username
-  // Only depend on userId - use refs to prevent re-runs for the same user
+  // Follow Privy's pattern: check ready FIRST, then authenticated
   useEffect(() => {
-    // Early returns with all necessary checks
-    if (!mounted || !ready || !authenticated || !user || !userId) {
+    // Privy pattern: Always check ready first before checking authenticated
+    if (!mounted || !ready) {
+      return
+    }
+    
+    // Only proceed if ready AND authenticated (following Privy's recommended pattern)
+    if (!authenticated || !user || !userId) {
       return
     }
     
@@ -202,7 +207,7 @@ export default function ClientHomePage() {
     // Run async function
     loadProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, ready, authenticated]) // Depend on userId, ready, and authenticated - use refs to prevent duplicate loads
+  }, [mounted, ready, userId, authenticated]) // Depend on ready, userId, and authenticated - but check ready FIRST
 
   if (!user) {
     return (

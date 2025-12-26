@@ -15,9 +15,17 @@ export default function AccountPage() {
   const loadedUserIdRef = useRef<string | null>(null)
   
   useEffect(() => {
+    // Privy pattern: Always check ready first before checking authenticated
+    if (!ready) {
+      return
+    }
+    
+    // Only proceed if ready AND authenticated (following Privy's recommended pattern)
+    if (!authenticated || !user || !user.id) {
+      return
+    }
+    
     const loadProfile = async () => {
-      if (!user || !user.id) return
-      
       const privyId = user.id
       
       // Prevent loading if already loaded for this user
@@ -57,11 +65,9 @@ export default function AccountPage() {
       }
     }
 
-    if (authenticated && user && user.id) {
-      loadProfile()
-    }
+    loadProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authenticated, user?.id]) // Only depend on user.id, not the whole user object
+  }, [ready, user?.id, authenticated]) // Depend on ready, user.id, and authenticated - but check ready FIRST
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()

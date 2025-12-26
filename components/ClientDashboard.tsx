@@ -18,7 +18,13 @@ export default function ClientDashboard() {
   const userId = useMemo(() => user?.id || null, [user?.id])
 
   useEffect(() => {
-    if (!ready || !authenticated || !user || !userId) {
+    // Privy pattern: Always check ready first before checking authenticated
+    if (!ready) {
+      return
+    }
+    
+    // Only proceed if ready AND authenticated (following Privy's recommended pattern)
+    if (!authenticated || !user || !userId) {
       return
     }
     
@@ -81,7 +87,7 @@ export default function ClientDashboard() {
     // Run async function
     loadProjects()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, ready, authenticated]) // Depend on userId, ready, and authenticated - use refs to prevent duplicate loads
+  }, [ready, userId, authenticated]) // Depend on ready, userId, and authenticated - but check ready FIRST
 
   if (!ready) {
     return (
