@@ -13,7 +13,7 @@ interface SharedProjectPageProps {
 }
 
 export default function SharedProjectPage({ token }: SharedProjectPageProps) {
-  const { authenticated, user, login } = usePrivy()
+  const { ready, authenticated, user, login } = usePrivy()
   const [project, setProject] = useState<Project | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,6 +26,11 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }, [token])
 
   useEffect(() => {
+    // Privy pattern: Always check ready first before checking authenticated
+    if (!ready) {
+      return
+    }
+    
     if (authenticated && user && project) {
       const checkKey = `${user.id}-${project.id}`
       // Prevent duplicate checks for the same user/project combo
@@ -36,7 +41,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       checkIfAdded()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authenticated, user?.id, project?.id]) // Only depend on user.id and project.id, not the whole objects
+  }, [ready, authenticated, user?.id, project?.id]) // Add ready check following Privy's pattern
 
   const loadProject = async () => {
     try {
