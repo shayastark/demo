@@ -1,7 +1,7 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project } from '@/lib/types'
@@ -13,18 +13,33 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true)
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
+  const effectRunRef = useRef(false)
+  
+  // Stabilize user ID to prevent unnecessary re-renders
+  const userId = useMemo(() => user?.id || null, [user?.id])
 
   useEffect(() => {
-    if (!ready || !authenticated || !user || !user.id) return
+    if (!ready || !authenticated || !user || !userId) {
+      effectRunRef.current = false
+      return
+    }
     
     // Prevent loading if already loading or if we've already loaded this user
-    if (loadingRef.current || loadedUserIdRef.current === user.id) return
+    if (loadingRef.current || loadedUserIdRef.current === userId || effectRunRef.current) return
     
+    // Mark that we're running this effect to prevent re-runs
+    effectRunRef.current = true
     loadingRef.current = true
-    loadedUserIdRef.current = user.id
+    loadedUserIdRef.current = userId
+    
     loadProjects()
+    
+    // Reset effect run flag when dependencies change
+    return () => {
+      effectRunRef.current = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, authenticated, user?.id]) // Only depend on user.id, not the whole user object
+  }, [ready, authenticated, userId]) // Use stabilized userId
 
   const loadProjects = async () => {
     try {

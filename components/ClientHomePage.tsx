@@ -2,7 +2,7 @@
 
 import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function ClientHomePage() {
@@ -14,6 +14,10 @@ export default function ClientHomePage() {
   const [privyTimeout, setPrivyTimeout] = useState(false)
   const loadingProfileRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
+  const effectRunRef = useRef(false)
+  
+  // Stabilize user ID to prevent unnecessary re-renders
+  const userId = useMemo(() => user?.id || null, [user?.id])
 
   useEffect(() => {
     setMounted(true)
@@ -130,22 +134,30 @@ export default function ClientHomePage() {
 
   // Load or create user profile and fetch username
   useEffect(() => {
-    if (!mounted || !ready || !authenticated || !user || !user.id) return
-    
-    // Use user.id as a stable reference instead of the whole user object
-    const privyId = user.id
+    // Early returns with all necessary checks
+    if (!mounted || !ready || !authenticated || !user || !userId) {
+      effectRunRef.current = false
+      return
+    }
     
     // Prevent loading if already loading or if we've already loaded this user
-    if (loadingProfileRef.current || loadedUserIdRef.current === privyId) return
+    if (loadingProfileRef.current || loadedUserIdRef.current === userId || effectRunRef.current) {
+      return
+    }
     
+    // Mark that we're running this effect to prevent re-runs
+    effectRunRef.current = true
+    loadingProfileRef.current = true
+    
+    const privyId = userId
     const userEmail = user.email?.address || null
     
-    // Mark as loading immediately to prevent re-runs
-    loadingProfileRef.current = true
-    setLoadingProfile(true)
-    
+    // Use a separate function to avoid closure issues
     const loadProfile = async () => {
       try {
+        // Update loading state outside the effect to avoid triggering re-renders
+        setLoadingProfile(true)
+        
         let { data: existingUser } = await supabase
           .from('users')
           .select('id, username')
@@ -179,9 +191,14 @@ export default function ClientHomePage() {
       }
     }
 
+    // Run async function
     loadProfile()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, ready, authenticated, user?.id]) // Only depend on user.id, not the whole user object
+    
+    // Reset effect run flag when dependencies change
+    return () => {
+      effectRunRef.current = false
+    }
+  }, [mounted, ready, authenticated, userId]) // Use stabilized userId
 
   if (!user) {
     return (
