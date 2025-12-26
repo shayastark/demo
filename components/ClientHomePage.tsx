@@ -15,16 +15,18 @@ export default function ClientHomePage() {
 
   useEffect(() => {
     setMounted(true)
-    
-    // Add a timeout in case Privy never becomes ready
-    const timeout = setTimeout(() => {
-      if (!ready) {
+  }, [])
+
+  // Add a timeout in case Privy never becomes ready (separate effect to avoid re-running)
+  useEffect(() => {
+    if (!ready) {
+      const timeout = setTimeout(() => {
         setPrivyTimeout(true)
         console.error('Privy initialization timeout - check NEXT_PUBLIC_PRIVY_APP_ID')
-      }
-    }, 10000) // 10 second timeout
+      }, 10000) // 10 second timeout
 
-    return () => clearTimeout(timeout)
+      return () => clearTimeout(timeout)
+    }
   }, [ready])
 
   // Always show loading until mounted and ready to prevent hydration mismatch
@@ -108,14 +110,18 @@ export default function ClientHomePage() {
 
   // Load or create user profile and fetch username
   useEffect(() => {
-    if (!mounted || !ready) return
+    if (!mounted || !ready || !authenticated || !user) return
+    
+    // Use user.id as a stable reference instead of the whole user object
+    const privyId = user.id
+    const userEmail = user.email?.address || null
+    
+    // Prevent multiple simultaneous loads
+    if (loadingProfile) return
     
     const loadProfile = async () => {
-      if (!user || !authenticated) return
       setLoadingProfile(true)
       try {
-        const privyId = user.id
-
         let { data: existingUser } = await supabase
           .from('users')
           .select('id, username')
@@ -127,7 +133,7 @@ export default function ClientHomePage() {
             .from('users')
             .insert({
               privy_id: privyId,
-              email: user.email?.address || null,
+              email: userEmail,
             })
             .select('id, username')
             .single()
@@ -145,10 +151,9 @@ export default function ClientHomePage() {
       }
     }
 
-    if (authenticated && user) {
-      loadProfile()
-    }
-  }, [mounted, ready, authenticated, user])
+    loadProfile()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, ready, authenticated, user?.id]) // Only depend on user.id, not the whole user object
 
   if (!user) {
     return (
