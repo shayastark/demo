@@ -34,6 +34,26 @@ export default function PrivyProviderWrapper({
     }
   }, [privyAppId])
 
+  // Suppress WalletConnect double initialization warning
+  // This is a known harmless warning from Privy's internal WalletConnect setup
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const originalWarn = console.warn
+    console.warn = (...args: any[]) => {
+      // Suppress WalletConnect Core double initialization warning
+      const message = args.join(' ')
+      if (message.includes('WalletConnect Core is already initialized')) {
+        return // Suppress this specific warning
+      }
+      originalWarn.apply(console, args)
+    }
+    
+    return () => {
+      console.warn = originalWarn
+    }
+  }, [])
+
   // Add comprehensive error handler for script loading failures
   useEffect(() => {
     if (typeof window === 'undefined') return

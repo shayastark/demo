@@ -393,6 +393,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   src={track.audio_url}
                   title={track.title}
                   onPlay={() => handleTrackPlay(track.id)}
+                  coverImageUrl={track.image_url || project.cover_image_url}
                 />
               </div>
             ))

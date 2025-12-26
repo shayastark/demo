@@ -428,7 +428,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     </div>
 
                     {/* Audio player for the track */}
-                    <AudioPlayer src={track.audio_url} title={track.title} />
+                    <AudioPlayer 
+                      src={track.audio_url} 
+                      title={track.title}
+                      coverImageUrl={track.image_url || project.cover_image_url}
+                    />
 
                     {/* Track Notes (Private to Creator) - Only show if user is creator */}
                     {isCreator && (

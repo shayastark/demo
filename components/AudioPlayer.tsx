@@ -2,14 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Play, Pause, Volume2 } from 'lucide-react'
+import CassettePlayer from './CassettePlayer'
 
 interface AudioPlayerProps {
   src: string
   title: string
   onPlay?: () => void
+  coverImageUrl?: string | null
+  showCassette?: boolean
 }
 
-export default function AudioPlayer({ src, title, onPlay }: AudioPlayerProps) {
+export default function AudioPlayer({ src, title, onPlay, coverImageUrl, showCassette = true }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -65,33 +68,48 @@ export default function AudioPlayer({ src, title, onPlay }: AudioPlayerProps) {
   }
 
   return (
-    <div className="bg-gray-900 rounded-lg p-4">
-      <audio ref={audioRef} src={src} />
-      <div className="flex items-center gap-4">
-        <button
-          onClick={togglePlay}
-          className="flex-shrink-0 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 transition"
-        >
-          {isPlaying ? (
-            <Pause className="w-5 h-5" />
-          ) : (
-            <Play className="w-5 h-5 ml-1" />
-          )}
-        </button>
-        <div className="flex-1">
-          <div className="text-sm font-medium mb-1 text-neon-green">{title}</div>
-          <div className="flex items-center gap-2">
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleSeek}
-              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-            />
-            <span className="text-xs text-neon-green w-20 text-right">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
+    <div className="space-y-4">
+      {/* Cassette Player - shows when playing or if showCassette is true */}
+      {(isPlaying || showCassette) && (
+        <CassettePlayer
+          coverImageUrl={coverImageUrl}
+          isPlaying={isPlaying}
+          title={title}
+        />
+      )}
+      
+      {/* Audio Controls */}
+      <div className="bg-gray-900 rounded-lg p-4">
+        <audio ref={audioRef} src={src} />
+        <div className="flex items-center gap-4">
+          <button
+            onClick={togglePlay}
+            className="flex-shrink-0 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 transition"
+          >
+            {isPlaying ? (
+              <Pause className="w-5 h-5" />
+            ) : (
+              <Play className="w-5 h-5 ml-1" />
+            )}
+          </button>
+          <div className="flex-1">
+            <div className="text-sm font-medium mb-1 text-neon-green">{title}</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min="0"
+                max={duration || 0}
+                value={currentTime}
+                onChange={handleSeek}
+                className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-neon-green"
+                style={{
+                  background: `linear-gradient(to right, #39FF14 0%, #39FF14 ${(currentTime / (duration || 1)) * 100}%, #374151 ${(currentTime / (duration || 1)) * 100}%, #374151 100%)`
+                }}
+              />
+              <span className="text-xs text-neon-green w-20 text-right">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

@@ -10,7 +10,11 @@ module.exports = {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
-        'neon-green': '#39FF14',
+        'neon-green': 'var(--neon-green)',
+      },
+      animation: {
+        'spin-reel': 'spin 2s linear infinite',
+        'spin-reel-reverse': 'spin 2s linear infinite reverse',
       },
     },
   },
