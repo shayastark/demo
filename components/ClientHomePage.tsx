@@ -2,7 +2,7 @@
 
 import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function ClientHomePage() {
@@ -12,6 +12,8 @@ export default function ClientHomePage() {
   const [mounted, setMounted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [privyTimeout, setPrivyTimeout] = useState(false)
+  const loadingProfileRef = useRef(false)
+  const loadedUserIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -114,12 +116,14 @@ export default function ClientHomePage() {
     
     // Use user.id as a stable reference instead of the whole user object
     const privyId = user.id
+    
+    // Prevent loading if already loading or if we've already loaded this user
+    if (loadingProfileRef.current || loadedUserIdRef.current === privyId) return
+    
     const userEmail = user.email?.address || null
     
-    // Prevent multiple simultaneous loads
-    if (loadingProfile) return
-    
     const loadProfile = async () => {
+      loadingProfileRef.current = true
       setLoadingProfile(true)
       try {
         let { data: existingUser } = await supabase
@@ -143,10 +147,13 @@ export default function ClientHomePage() {
         }
 
         setUsername(existingUser.username || null)
+        loadedUserIdRef.current = privyId
       } catch (error) {
         console.error('Error loading profile:', error)
         setError('Failed to load profile. Please refresh the page.')
+        loadedUserIdRef.current = null // Reset on error so we can retry
       } finally {
+        loadingProfileRef.current = false
         setLoadingProfile(false)
       }
     }
