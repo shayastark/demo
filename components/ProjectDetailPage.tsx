@@ -658,65 +658,85 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
                     onClick={() => setIsProjectMenuOpen(false)}
                   />
-                  {/* Menu */}
-                  <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 bg-gray-900 border-t sm:border sm:rounded-lg border-gray-700 shadow-xl z-50 sm:w-auto sm:min-w-[200px] sm:max-w-[280px] rounded-t-lg overflow-y-auto" style={{ maxHeight: '80vh', paddingBottom: 'env(safe-area-inset-bottom, 1rem)' }}>
-                    <button
-                      onClick={handleCopyShareLink}
-                      className="w-full px-4 py-4 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words border-b border-gray-800 sm:border-b-0 first:rounded-t-lg"
-                    >
-                      <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                      <span className="flex-1 min-w-0">Share</span>
-                    </button>
-                    {user && (
+                  {/* Menu - Side panel on mobile, dropdown on desktop */}
+                  <div className="fixed top-0 right-0 bottom-0 w-64 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:w-auto sm:min-w-[200px] sm:max-w-[280px] sm:rounded-lg sm:border sm:border-gray-700">
+                    <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
                       <button
-                        onClick={handleAddToQueue}
-                        className="w-full px-4 py-4 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words border-b border-gray-800 sm:border-b-0"
-                      >
-                        <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span className="flex-1 min-w-0">Add to Queue</span>
-                      </button>
-                    )}
-                    {user && (
-                      <button
-                        onClick={() => {
-                          setShowNotesModal(true)
-                          setIsProjectMenuOpen(false)
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleCopyShareLink()
                         }}
-                        className="w-full px-4 py-4 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words border-b border-gray-800 sm:border-b-0"
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
                       >
-                        <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span className="flex-1 min-w-0">Notes</span>
+                        <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span className="flex-1">Share</span>
                       </button>
+                    </div>
+                    {user && (
+                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleAddToQueue()
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        >
+                          <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="flex-1">Add to Queue</span>
+                        </button>
+                      </div>
                     )}
                     {user && (
-                      <button
-                        onClick={handleTogglePin}
-                        className="w-full px-4 py-4 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words border-b border-gray-800 sm:border-b-0"
-                      >
-                        {isPinned ? (
-                          <>
-                            <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="flex-1 min-w-0">Unpin Project</span>
-                          </>
-                        ) : (
-                          <>
-                            <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="flex-1 min-w-0">Pin Project</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowNotesModal(true)
+                            setIsProjectMenuOpen(false)
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        >
+                          <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="flex-1">Notes</span>
+                        </button>
+                      </div>
+                    )}
+                    {user && (
+                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleTogglePin()
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        >
+                          {isPinned ? (
+                            <>
+                              <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                              <span className="flex-1">Unpin Project</span>
+                            </>
+                          ) : (
+                            <>
+                              <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                              <span className="flex-1">Pin Project</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     )}
                     {isCreator && (
-                      <>
-                        <div className="border-t border-gray-700 my-1 sm:block hidden" />
+                      <div className="p-4 border-t border-gray-700 sm:border-t-0 sm:p-0 sm:px-0 sm:mt-1" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={handleDeleteProject}
-                          className="w-full px-4 py-4 sm:py-2 text-left text-base sm:text-sm text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words border-b border-gray-800 sm:border-b-0 last:rounded-b-lg sm:last:rounded-b-lg"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteProject()
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
                         >
                           <Trash2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 min-w-0">Delete Project</span>
+                          <span className="flex-1">Delete Project</span>
                         </button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </>

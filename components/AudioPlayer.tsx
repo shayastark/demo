@@ -89,20 +89,29 @@ export default function AudioPlayer({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Close menu when clicking outside
+  // Close menu when clicking outside (only on desktop)
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false)
+      // Only handle click outside on desktop (sm and up)
+      if (window.innerWidth >= 640) {
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+          setIsMenuOpen(false)
+        }
       }
     }
 
     if (isMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
+      // Use a small delay to avoid closing immediately when opening
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside)
+      }, 100)
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      return () => {
+        clearTimeout(timeoutId)
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
     }
   }, [isMenuOpen])
 
@@ -176,40 +185,51 @@ export default function AudioPlayer({
                       className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
                       onClick={() => setIsMenuOpen(false)}
                     />
-                    {/* Menu */}
-                    <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 bg-gray-900 border-t sm:border sm:rounded-lg border-gray-700 shadow-xl z-50 sm:w-auto sm:min-w-[160px] sm:max-w-[240px] rounded-t-lg overflow-y-auto" style={{ maxHeight: '80vh', paddingBottom: 'env(safe-area-inset-bottom, 1rem)' }}>
+                    {/* Menu - Side panel on mobile, dropdown on desktop */}
+                    <div className="fixed top-0 right-0 bottom-0 w-64 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:w-auto sm:min-w-[160px] sm:max-w-[240px] sm:rounded-lg sm:border sm:border-gray-700">
                       {showEdit && (
-                        <button
-                          onClick={handleEdit}
-                          className="w-full px-4 py-4 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words border-b border-gray-800 sm:border-b-0 first:rounded-t-lg"
-                        >
-                          <Settings className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 min-w-0">Edit</span>
-                        </button>
+                        <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEdit()
+                            }}
+                            className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          >
+                            <Settings className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span className="flex-1">Edit</span>
+                          </button>
+                        </div>
                       )}
                       {showDownload && onDownload && (
-                        <button
-                          onClick={() => {
-                            onDownload()
-                            setIsMenuOpen(false)
-                          }}
-                          className="w-full px-4 py-4 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words border-b border-gray-800 sm:border-b-0"
-                        >
-                          <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 min-w-0">Download</span>
-                        </button>
+                        <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDownload()
+                              setIsMenuOpen(false)
+                            }}
+                            className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          >
+                            <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span className="flex-1">Download</span>
+                          </button>
+                        </div>
                       )}
                       {showShare && onShare && (
-                        <button
-                          onClick={() => {
-                            onShare()
-                            setIsMenuOpen(false)
-                          }}
-                          className="w-full px-4 py-4 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words border-b border-gray-800 sm:border-b-0 last:rounded-b-lg sm:last:rounded-b-lg"
-                        >
-                          <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 min-w-0">Share</span>
-                        </button>
+                        <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onShare()
+                              setIsMenuOpen(false)
+                            }}
+                            className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          >
+                            <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span className="flex-1">Share</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </>
