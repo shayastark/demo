@@ -177,7 +177,7 @@ export default function AudioPlayer({
                       onClick={() => setIsMenuOpen(false)}
                     />
                     {/* Menu */}
-                    <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 sm:absolute sm:left-auto sm:right-0 sm:top-11 sm:translate-y-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 sm:w-auto sm:min-w-[160px] sm:max-w-[240px]">
+                    <div className="fixed bottom-4 left-4 right-4 sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 sm:w-auto sm:min-w-[160px] sm:max-w-[240px] max-h-[calc(100vh-2rem)] overflow-y-auto">
                       {showEdit && (
                         <button
                           onClick={handleEdit}

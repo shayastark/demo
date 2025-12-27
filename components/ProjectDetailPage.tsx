@@ -659,7 +659,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     onClick={() => setIsProjectMenuOpen(false)}
                   />
                   {/* Menu */}
-                  <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 sm:absolute sm:left-auto sm:right-0 sm:top-11 sm:translate-y-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 sm:w-auto sm:min-w-[200px] sm:max-w-[280px]">
+                  <div className="fixed bottom-4 left-4 right-4 sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 sm:w-auto sm:min-w-[200px] sm:max-w-[280px] max-h-[calc(100vh-2rem)] overflow-y-auto">
                     <button
                       onClick={handleCopyShareLink}
                       className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
