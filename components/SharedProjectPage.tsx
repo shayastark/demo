@@ -6,7 +6,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { supabase } from '@/lib/supabase'
 import { Project, Track } from '@/lib/types'
 import AudioPlayer from './AudioPlayer'
-import { Share2, Download, Plus, Copy, Check } from 'lucide-react'
+import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, FileText, Trash2 } from 'lucide-react'
 
 interface SharedProjectPageProps {
   token: string
@@ -22,6 +22,11 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const checkedAddedRef = useRef<string | null>(null) // Track which project/user combo we've checked
   const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
   const [trackShareLinkCopied, setTrackShareLinkCopied] = useState<string | null>(null)
+  const [trackShareModal, setTrackShareModal] = useState<{ track: Track | null; isOpen: boolean }>({ track: null, isOpen: false })
+  const [trackSharePrivacy, setTrackSharePrivacy] = useState<'private' | 'direct' | 'public'>('direct')
+  const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false)
+  const [isPinned, setIsPinned] = useState(false)
+  const projectMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadProject()
@@ -246,11 +251,28 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }
 
   const handleShareTrack = async (track: Track) => {
-    // Create a share link for the track (using project share token + track ID)
-    const trackShareUrl = `${window.location.origin}/share/${project?.share_token}?track=${track.id}`
+    setTrackShareModal({ track, isOpen: true })
+  }
+
+  const handleConfirmTrackShare = async () => {
+    if (!trackShareModal.track || !project) return
+
+    let trackShareUrl = ''
+    if (trackSharePrivacy === 'private') {
+      // Private: Only shareable with specific people (for now, just copy the link)
+      trackShareUrl = `${window.location.origin}/share/${project.share_token}?track=${trackShareModal.track.id}&privacy=private`
+    } else if (trackSharePrivacy === 'direct') {
+      // Direct: Share with a direct link
+      trackShareUrl = `${window.location.origin}/share/${project.share_token}?track=${trackShareModal.track.id}`
+    } else {
+      // Public: Can be discovered (for now, same as direct)
+      trackShareUrl = `${window.location.origin}/share/${project.share_token}?track=${trackShareModal.track.id}&privacy=public`
+    }
+
     await navigator.clipboard.writeText(trackShareUrl)
-    setTrackShareLinkCopied(track.id)
+    setTrackShareLinkCopied(trackShareModal.track.id)
     setTimeout(() => setTrackShareLinkCopied(null), 2000)
+    setTrackShareModal({ track: null, isOpen: false })
   }
 
   const handleTrackPlay = async (trackId: string) => {

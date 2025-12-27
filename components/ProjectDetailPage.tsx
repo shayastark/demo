@@ -1,13 +1,13 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
 import AudioPlayer from './AudioPlayer'
-import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2 } from 'lucide-react'
+import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -32,6 +32,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [newTracks, setNewTracks] = useState<Array<{ file: File | null; title: string; image?: File; imagePreview?: string }>>([])
   const [addingTracks, setAddingTracks] = useState(false)
   const [showAddTrackForm, setShowAddTrackForm] = useState(false)
+  const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false)
+  const [isPinned, setIsPinned] = useState(false)
+  const [showNotesModal, setShowNotesModal] = useState(false)
+  const projectMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadProject()
@@ -136,6 +140,88 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     await navigator.clipboard.writeText(url)
     setShareLinkCopied(true)
     setTimeout(() => setShareLinkCopied(false), 2000)
+    setIsProjectMenuOpen(false)
+  }
+
+  const handleAddToQueue = async () => {
+    if (!user || !project) return
+    try {
+      const privyId = user.id
+      let { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', privyId)
+        .single()
+
+      if (!dbUser) {
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert({ privy_id: privyId, email: user.email?.address || null })
+          .select('id')
+          .single()
+        if (userError || !newUser) throw userError || new Error('Failed to create user')
+        dbUser = newUser
+      }
+
+      // Add to user_projects if not already added
+      await supabase
+        .from('user_projects')
+        .upsert({ user_id: dbUser.id, project_id: project.id }, { onConflict: 'user_id,project_id' })
+
+      alert('Project added to queue!')
+      setIsProjectMenuOpen(false)
+    } catch (error) {
+      console.error('Error adding to queue:', error)
+      alert('Failed to add to queue')
+    }
+  }
+
+  const handleTogglePin = async () => {
+    if (!user || !project) return
+    try {
+      const privyId = user.id
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', privyId)
+        .single()
+
+      if (!dbUser) return
+
+      const newPinnedState = !isPinned
+      await supabase
+        .from('user_projects')
+        .upsert(
+          { user_id: dbUser.id, project_id: project.id, pinned: newPinnedState },
+          { onConflict: 'user_id,project_id' }
+        )
+
+      setIsPinned(newPinnedState)
+      setIsProjectMenuOpen(false)
+    } catch (error) {
+      console.error('Error toggling pin:', error)
+    }
+  }
+
+  const handleDeleteProject = async () => {
+    if (!project || !isCreator) return
+    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', project.id)
+
+      if (error) throw error
+
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      alert('Failed to delete project')
+    }
   }
 
   const handleSaveProjectNote = async () => {
@@ -548,11 +634,83 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
         {/* Project Info */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-bold">{project.title}</h1>
-            {creatorUsername && (
-              <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
-            )}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-4xl font-bold">{project.title}</h1>
+              {creatorUsername && (
+                <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
+              )}
+            </div>
+            {/* Project Menu */}
+            <div className="relative" ref={projectMenuRef}>
+              <button
+                onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
+                className="w-10 h-10 bg-gray-800 text-neon-green rounded-lg flex items-center justify-center hover:bg-gray-700 transition"
+                title="More options"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+              
+              {isProjectMenuOpen && (
+                <div className="absolute right-0 top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[200px]">
+                  <button
+                    onClick={handleCopyShareLink}
+                    className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </button>
+                  {user && (
+                    <button
+                      onClick={handleAddToQueue}
+                      className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
+                    >
+                      <ListMusic className="w-4 h-4" />
+                      Add to Queue
+                    </button>
+                  )}
+                  {user && (
+                    <button
+                      onClick={() => {
+                        setShowNotesModal(true)
+                        setIsProjectMenuOpen(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Notes
+                    </button>
+                  )}
+                  {user && (
+                    <button
+                      onClick={handleTogglePin}
+                      className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
+                    >
+                      {isPinned ? (
+                        <>
+                          <PinOff className="w-4 h-4" />
+                          Unpin Project
+                        </>
+                      ) : (
+                        <>
+                          <Pin className="w-4 h-4" />
+                          Pin Project
+                        </>
+                      )}
+                    </button>
+                  )}
+                  {isCreator && (
+                    <button
+                      onClick={handleDeleteProject}
+                      className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-800 flex items-center gap-2 transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Project
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           {project.description && (
             <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
@@ -955,6 +1113,71 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           )}
         </div>
       </main>
+
+      {/* Notes Modal */}
+      {showNotesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">Project Notes</h2>
+              <button
+                onClick={() => setShowNotesModal(false)}
+                className="text-neon-green hover:opacity-80"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            {isCreator ? (
+              <div>
+                {editingProjectNote ? (
+                  <div>
+                    <textarea
+                      value={projectNoteContent}
+                      onChange={(e) => setProjectNoteContent(e.target.value)}
+                      className="w-full bg-black border border-gray-700 rounded p-3 text-sm text-neon-green focus:outline-none focus:border-neon-green h-48 mb-4"
+                      placeholder="Add your private notes about this project..."
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingProjectNote(false)
+                          setProjectNoteContent(projectNote?.content || '')
+                        }}
+                        className="text-sm text-neon-green hover:opacity-80"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await handleSaveProjectNote()
+                          setShowNotesModal(false)
+                        }}
+                        className="text-sm bg-white text-black px-4 py-2 rounded-full hover:bg-gray-200"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-neon-green mb-4">
+                      {projectNote?.content || 'No notes yet. Click "Edit" to add notes.'}
+                    </p>
+                    <button
+                      onClick={() => setEditingProjectNote(true)}
+                      className="text-sm bg-white text-black px-4 py-2 rounded-full hover:bg-gray-200"
+                    >
+                      {projectNote ? 'Edit Notes' : 'Add Notes'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-neon-green">Notes are only available to the project creator.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
