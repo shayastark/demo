@@ -659,21 +659,21 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     onClick={() => setIsProjectMenuOpen(false)}
                   />
                   {/* Menu */}
-                  <div className="absolute right-0 top-14 sm:top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[200px] max-w-[280px]">
+                  <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 sm:absolute sm:left-auto sm:right-0 sm:top-11 sm:translate-y-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 sm:w-auto sm:min-w-[200px] sm:max-w-[280px]">
                     <button
                       onClick={handleCopyShareLink}
-                      className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                      className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
                     >
                       <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                      <span>Share</span>
+                      <span className="flex-1 min-w-0">Share</span>
                     </button>
                     {user && (
                       <button
                         onClick={handleAddToQueue}
-                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
                       >
                         <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span>Add to Queue</span>
+                        <span className="flex-1 min-w-0">Add to Queue</span>
                       </button>
                     )}
                     {user && (
@@ -682,26 +682,26 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           setShowNotesModal(true)
                           setIsProjectMenuOpen(false)
                         }}
-                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
                       >
                         <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span>Notes</span>
+                        <span className="flex-1 min-w-0">Notes</span>
                       </button>
                     )}
                     {user && (
                       <button
                         onClick={handleTogglePin}
-                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
                       >
                         {isPinned ? (
                           <>
                             <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span>Unpin Project</span>
+                            <span className="flex-1 min-w-0">Unpin Project</span>
                           </>
                         ) : (
                           <>
                             <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span>Pin Project</span>
+                            <span className="flex-1 min-w-0">Pin Project</span>
                           </>
                         )}
                       </button>
@@ -711,10 +711,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         <div className="border-t border-gray-700 my-1" />
                         <button
                           onClick={handleDeleteProject}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
                         >
                           <Trash2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span>Delete Project</span>
+                          <span className="flex-1 min-w-0">Delete Project</span>
                         </button>
                       </>
                     )}

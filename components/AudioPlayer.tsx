@@ -177,14 +177,14 @@ export default function AudioPlayer({
                       onClick={() => setIsMenuOpen(false)}
                     />
                     {/* Menu */}
-                    <div className="absolute right-0 top-14 sm:top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[160px] max-w-[240px]">
+                    <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 sm:absolute sm:left-auto sm:right-0 sm:top-11 sm:translate-y-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 sm:w-auto sm:min-w-[160px] sm:max-w-[240px]">
                       {showEdit && (
                         <button
                           onClick={handleEdit}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
                         >
                           <Settings className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span>Edit</span>
+                          <span className="flex-1 min-w-0">Edit</span>
                         </button>
                       )}
                       {showDownload && onDownload && (
@@ -193,10 +193,10 @@ export default function AudioPlayer({
                             onDownload()
                             setIsMenuOpen(false)
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
                         >
                           <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span>Download</span>
+                          <span className="flex-1 min-w-0">Download</span>
                         </button>
                       )}
                       {showShare && onShare && (
@@ -205,10 +205,10 @@ export default function AudioPlayer({
                             onShare()
                             setIsMenuOpen(false)
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation break-words"
                         >
                           <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span>Share</span>
+                          <span className="flex-1 min-w-0">Share</span>
                         </button>
                       )}
                     </div>
