@@ -487,64 +487,67 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                       onClick={() => setIsProjectMenuOpen(false)}
                     />
                     {/* Menu - Side panel on mobile, dropdown on desktop */}
-                    <div className="fixed top-0 right-0 bottom-0 w-64 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:w-auto sm:min-w-[200px] sm:max-w-[280px] sm:rounded-lg sm:border sm:border-gray-700">
-                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
+                    <div 
+                      className="fixed top-0 right-0 bottom-0 w-80 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:right-0 sm:w-auto sm:min-w-[240px] sm:max-w-[320px] sm:rounded-lg sm:border sm:border-gray-700"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleCopyLink()
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                         >
                           <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1">Share</span>
+                          <span className="flex-1 whitespace-nowrap">Share</span>
                         </button>
                       </div>
-                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleAddToProject()
                           }}
                           disabled={addedToProject}
-                          className={`w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation ${
+                          className={`w-full text-left text-base sm:text-sm hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded ${
                             addedToProject ? 'text-gray-400 cursor-not-allowed' : 'text-white'
                           }`}
                         >
                           <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
+                          <span className="flex-1 whitespace-nowrap">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
                         </button>
                       </div>
-                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             alert('Notes feature coming soon!')
                             setIsProjectMenuOpen(false)
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                         >
                           <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1">Notes</span>
+                          <span className="flex-1 whitespace-nowrap">Notes</span>
                         </button>
                       </div>
-                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleTogglePin()
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                         >
                           {isPinned ? (
                             <>
                               <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="flex-1">Unpin Project</span>
+                              <span className="flex-1 whitespace-nowrap">Unpin Project</span>
                             </>
                           ) : (
                             <>
                               <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="flex-1">Pin Project</span>
+                              <span className="flex-1 whitespace-nowrap">Pin Project</span>
                             </>
                           )}
                         </button>

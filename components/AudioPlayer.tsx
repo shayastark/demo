@@ -186,48 +186,51 @@ export default function AudioPlayer({
                       onClick={() => setIsMenuOpen(false)}
                     />
                     {/* Menu - Side panel on mobile, dropdown on desktop */}
-                    <div className="fixed top-0 right-0 bottom-0 w-64 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:w-auto sm:min-w-[160px] sm:max-w-[240px] sm:rounded-lg sm:border sm:border-gray-700">
+                    <div 
+                      className="fixed top-0 right-0 bottom-0 w-80 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:right-0 sm:w-auto sm:min-w-[180px] sm:max-w-[260px] sm:rounded-lg sm:border sm:border-gray-700"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {showEdit && (
-                        <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleEdit()
                             }}
-                            className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                            className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                           >
                             <Settings className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="flex-1">Edit</span>
+                            <span className="flex-1 whitespace-nowrap">Edit</span>
                           </button>
                         </div>
                       )}
                       {showDownload && onDownload && (
-                        <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               onDownload()
                               setIsMenuOpen(false)
                             }}
-                            className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                            className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                           >
                             <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="flex-1">Download</span>
+                            <span className="flex-1 whitespace-nowrap">Download</span>
                           </button>
                         </div>
                       )}
                       {showShare && onShare && (
-                        <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               onShare()
                               setIsMenuOpen(false)
                             }}
-                            className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                            className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                           >
                             <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="flex-1">Share</span>
+                            <span className="flex-1 whitespace-nowrap">Share</span>
                           </button>
                         </div>
                       )}

@@ -41,6 +41,32 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     loadProject()
   }, [projectId])
 
+  // Close project menu when clicking outside (desktop only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only handle click outside on desktop (sm and up)
+      if (window.innerWidth >= 640) {
+        if (projectMenuRef.current && !projectMenuRef.current.contains(event.target as Node)) {
+          setIsProjectMenuOpen(false)
+        }
+      }
+    }
+
+    if (isProjectMenuOpen) {
+      // Use a small delay to avoid closing immediately when opening
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside)
+      }, 100)
+
+      return () => {
+        clearTimeout(timeoutId)
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [isProjectMenuOpen])
+
   const loadProject = async () => {
     try {
       const { data: projectData, error: projectError } = await supabase
@@ -659,82 +685,85 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     onClick={() => setIsProjectMenuOpen(false)}
                   />
                   {/* Menu - Side panel on mobile, dropdown on desktop */}
-                  <div className="fixed top-0 right-0 bottom-0 w-64 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:w-auto sm:min-w-[200px] sm:max-w-[280px] sm:rounded-lg sm:border sm:border-gray-700">
-                    <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0" onClick={(e) => e.stopPropagation()}>
+                  <div 
+                    className="fixed top-0 right-0 bottom-0 w-80 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:right-0 sm:w-auto sm:min-w-[240px] sm:max-w-[320px] sm:rounded-lg sm:border sm:border-gray-700"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           handleCopyShareLink()
                         }}
-                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                       >
                         <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span className="flex-1">Share</span>
+                        <span className="flex-1 whitespace-nowrap">Share</span>
                       </button>
                     </div>
                     {user && (
-                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleAddToQueue()
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                         >
                           <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1">Add to Queue</span>
+                          <span className="flex-1 whitespace-nowrap">Add to Queue</span>
                         </button>
                       </div>
                     )}
                     {user && (
-                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             setShowNotesModal(true)
                             setIsProjectMenuOpen(false)
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                         >
                           <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1">Notes</span>
+                          <span className="flex-1 whitespace-nowrap">Notes</span>
                         </button>
                       </div>
                     )}
                     {user && (
-                      <div className="p-4 border-b border-gray-800 sm:border-b-0 sm:p-0 sm:px-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleTogglePin()
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                         >
                           {isPinned ? (
                             <>
                               <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="flex-1">Unpin Project</span>
+                              <span className="flex-1 whitespace-nowrap">Unpin Project</span>
                             </>
                           ) : (
                             <>
                               <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="flex-1">Pin Project</span>
+                              <span className="flex-1 whitespace-nowrap">Pin Project</span>
                             </>
                           )}
                         </button>
                       </div>
                     )}
                     {isCreator && (
-                      <div className="p-4 border-t border-gray-700 sm:border-t-0 sm:p-0 sm:px-0 sm:mt-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="py-3 px-4 border-t border-gray-700 sm:border-t-0 sm:py-2 sm:px-3 sm:mt-1">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleDeleteProject()
                           }}
-                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                          className="w-full text-left text-base sm:text-sm text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
                         >
                           <Trash2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1">Delete Project</span>
+                          <span className="flex-1 whitespace-nowrap">Delete Project</span>
                         </button>
                       </div>
                     )}
@@ -1038,6 +1067,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       title={track.title}
                       coverImageUrl={track.image_url || project.cover_image_url}
                       showEdit={isCreator}
+                      showDownload={isCreator && project.allow_downloads}
+                      showShare={true}
+                      onDownload={() => alert('Download functionality for tracks coming soon!')}
+                      onShare={() => alert('Share track functionality coming soon!')}
+                      onEdit={() => {}}
                       onPlay={async () => {
                         // Track play in ProjectDetailPage too
                         try {
