@@ -842,7 +842,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   />
                   {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                   <div 
-                    className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-11 sm:left-auto sm:right-0 sm:rounded-lg sm:w-auto sm:min-w-[240px] sm:max-w-[320px]"
+                    className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-11 sm:right-0 sm:left-auto sm:rounded-lg sm:w-[280px] sm:min-w-[280px]"
                     style={{
                       borderRadius: '1rem 1rem 0 0',
                       maxHeight: '80vh',
@@ -850,7 +850,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 1rem)' }}>
-                      <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
+                      <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -862,15 +862,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             lineHeight: '1.75rem',
                             paddingTop: '0.875rem',
                             paddingBottom: '0.875rem',
-                            gap: '1rem'
+                            gap: '1rem',
+                            minWidth: 0
                           }}
                         >
                           <Share2 style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
-                          <span style={{ wordBreak: 'break-word' }}>Share</span>
+                          <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Share</span>
                         </button>
                       </div>
                       {user && (
-                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
+                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -882,16 +883,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               lineHeight: '1.75rem',
                               paddingTop: '0.875rem',
                               paddingBottom: '0.875rem',
-                              gap: '1rem'
+                              gap: '1rem',
+                              minWidth: 0
                             }}
                           >
                             <ListMusic style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
-                            <span style={{ wordBreak: 'break-word' }}>Add to Queue</span>
+                            <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Add to Queue</span>
                           </button>
                         </div>
                       )}
                       {user && (
-                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
+                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -904,16 +906,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               lineHeight: '1.75rem',
                               paddingTop: '0.875rem',
                               paddingBottom: '0.875rem',
-                              gap: '1rem'
+                              gap: '1rem',
+                              minWidth: 0
                             }}
                           >
                             <FileText style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
-                            <span style={{ wordBreak: 'break-word' }}>Notes</span>
+                            <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Notes</span>
                           </button>
                         </div>
                       )}
                       {user && (
-                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
+                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -925,25 +928,26 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               lineHeight: '1.75rem',
                               paddingTop: '0.875rem',
                               paddingBottom: '0.875rem',
-                              gap: '1rem'
+                              gap: '1rem',
+                              minWidth: 0
                             }}
                           >
                             {isPinned ? (
                               <>
                                 <PinOff style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
-                                <span style={{ wordBreak: 'break-word' }}>Unpin Project</span>
+                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Unpin Project</span>
                               </>
                             ) : (
                               <>
                                 <Pin style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
-                                <span style={{ wordBreak: 'break-word' }}>Pin Project</span>
+                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Pin Project</span>
                               </>
                             )}
                           </button>
                         </div>
                       )}
                       {isCreator && (
-                        <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
+                        <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid rgb(55 65 81)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -955,11 +959,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               lineHeight: '1.75rem',
                               paddingTop: '0.875rem',
                               paddingBottom: '0.875rem',
-                              gap: '1rem'
+                              gap: '1rem',
+                              minWidth: 0
                             }}
                           >
                             <Trash2 style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
-                            <span style={{ wordBreak: 'break-word' }}>Delete Project</span>
+                            <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete Project</span>
                           </button>
                         </div>
                       )}

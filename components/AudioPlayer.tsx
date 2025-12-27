@@ -197,7 +197,7 @@ export default function AudioPlayer({
                     />
                     {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                     <div 
-                      className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-11 sm:left-auto sm:right-0 sm:rounded-lg sm:w-auto sm:min-w-[180px] sm:max-w-[260px]"
+                      className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-11 sm:right-0 sm:left-auto sm:rounded-lg sm:w-auto sm:min-w-[220px] sm:max-w-[280px]"
                       style={{
                         borderRadius: '1rem 1rem 0 0',
                         maxHeight: '80vh',
