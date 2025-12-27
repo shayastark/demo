@@ -15,28 +15,31 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
         style={{
           width: '240px',
           height: '160px',
-          backgroundColor: '#1e293b', // Dark blue-gray like vintage cassettes
-          border: '2px solid #0f172a',
-          borderRadius: '8px',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)', // Slightly transparent like clear plastic
+          border: '2px solid #334155',
+          borderRadius: '6px',
           margin: '0 auto',
-          padding: '12px',
-          display: 'block'
+          padding: '8px',
+          display: 'block',
+          backdropFilter: 'blur(1px)',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
         }}
       >
-        {/* Cassette Label Area - Top portion where cover art goes */}
+        {/* Cover Art - Takes up majority of cassette */}
         <div 
           className="relative mb-2"
           style={{
             width: '100%',
-            height: '80px',
+            height: '110px',
             backgroundColor: '#ffffff',
             border: '1px solid #cbd5e1',
             borderRadius: '4px',
-            padding: '4px',
+            padding: '2px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+            overflow: 'hidden'
           }}
         >
           {coverImageUrl ? (
@@ -51,9 +54,9 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               }}
             />
           ) : (
-            <div style={{ textAlign: 'center', color: '#64748b' }}>
-              <div style={{ fontSize: '24px', marginBottom: '4px' }}>🎵</div>
-              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#39FF14' }}>{title}</div>
+            <div style={{ textAlign: 'center', color: '#64748b', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎵</div>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#39FF14' }}>{title}</div>
             </div>
           )}
         </div>
@@ -63,19 +66,19 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
           className="flex justify-between items-center"
           style={{
             width: '100%',
-            height: '60px',
+            height: '40px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '0 8px'
+            padding: '0 12px'
           }}
         >
           {/* Left Reel Window */}
           <div 
             className="relative"
             style={{
-              width: '50px',
-              height: '50px',
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
               backgroundColor: '#0f172a',
               border: '2px solid #334155',
@@ -89,8 +92,8 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             <div
               className={`absolute ${isPlaying ? 'animate-spin-reel' : ''}`}
               style={{
-                width: '42px',
-                height: '42px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 backgroundColor: '#451a03', // Brown tape color
                 border: '1px solid #78350f',
@@ -107,8 +110,8 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               <div style={{ position: 'absolute', width: '100%', height: '1px', backgroundColor: '#92400e', transform: 'rotate(-45deg)' }}></div>
               {/* Center hub */}
               <div style={{
-                width: '8px',
-                height: '8px',
+                width: '6px',
+                height: '6px',
                 borderRadius: '50%',
                 backgroundColor: '#cbd5e1',
                 border: '1px solid #94a3b8'
@@ -120,7 +123,7 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
           <div 
             style={{
               flex: 1,
-              height: '4px',
+              height: '3px',
               margin: '0 8px',
               backgroundColor: '#1e293b',
               borderRadius: '2px',
@@ -141,8 +144,8 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
           <div 
             className="relative"
             style={{
-              width: '50px',
-              height: '50px',
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
               backgroundColor: '#0f172a',
               border: '2px solid #334155',
@@ -152,12 +155,12 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)'
             }}
           >
-            {/* Spinning Reel */}
+            {/* Spinning Reel - Same direction as left */}
             <div
-              className={`absolute ${isPlaying ? 'animate-spin-reel-reverse' : ''}`}
+              className={`absolute ${isPlaying ? 'animate-spin-reel' : ''}`}
               style={{
-                width: '42px',
-                height: '42px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 backgroundColor: '#451a03', // Brown tape color
                 border: '1px solid #78350f',
@@ -174,8 +177,8 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               <div style={{ position: 'absolute', width: '100%', height: '1px', backgroundColor: '#92400e', transform: 'rotate(-45deg)' }}></div>
               {/* Center hub */}
               <div style={{
-                width: '8px',
-                height: '8px',
+                width: '6px',
+                height: '6px',
                 borderRadius: '50%',
                 backgroundColor: '#cbd5e1',
                 border: '1px solid #94a3b8'
@@ -186,16 +189,19 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
 
         {/* Status indicator */}
         <div 
-          className="text-center mt-2"
+          className="text-center mt-1"
           style={{
             position: 'absolute',
-            bottom: '4px',
+            bottom: '2px',
             left: '50%',
             transform: 'translateX(-50%)',
-            fontSize: '9px',
+            fontSize: '8px',
             color: '#39FF14',
             fontWeight: 'bold',
-            fontFamily: 'monospace'
+            fontFamily: 'monospace',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            padding: '2px 6px',
+            borderRadius: '2px'
           }}
         >
           {isPlaying ? '▶ PLAYING' : '⏸ PAUSED'}
