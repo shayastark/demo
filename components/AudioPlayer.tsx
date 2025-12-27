@@ -38,8 +38,19 @@ export default function AudioPlayer({
   const [volume, setVolume] = useState(1)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Detect mobile vs desktop
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     const audio = audioRef.current
@@ -197,12 +208,17 @@ export default function AudioPlayer({
                     />
                     {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                     <div 
-                      className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-11 sm:right-0 sm:left-auto sm:rounded-lg sm:w-auto sm:min-w-[220px] sm:max-w-[280px]"
+                      className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60]"
                       style={{
-                        borderRadius: '1rem 1rem 0 0',
+                        position: isMobile ? 'fixed' : 'absolute',
+                        bottom: isMobile ? 0 : 'auto',
+                        top: isMobile ? 'auto' : '2.75rem',
+                        left: isMobile ? 0 : 'auto',
+                        right: isMobile ? 0 : 0,
+                        width: isMobile ? '100%' : '220px',
+                        maxWidth: isMobile ? '100%' : '280px',
+                        borderRadius: isMobile ? '1rem 1rem 0 0' : '0.5rem',
                         maxHeight: '80vh',
-                        width: '100%',
-                        maxWidth: '100%',
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
