@@ -91,27 +91,32 @@ export default function AudioPlayer({
 
   // Close menu when clicking outside (only on desktop)
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !isMenuOpen) return
     
     const handleClickOutside = (event: MouseEvent) => {
       // Only handle click outside on desktop (sm and up)
       if (window.innerWidth >= 640) {
-        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        const target = event.target as Node
+        // Don't close if clicking the button that opens the menu
+        const menuButton = menuRef.current?.querySelector('button')
+        if (menuButton && menuButton.contains(target)) {
+          return
+        }
+        // Close if clicking outside the menu
+        if (menuRef.current && !menuRef.current.contains(target)) {
           setIsMenuOpen(false)
         }
       }
     }
 
-    if (isMenuOpen) {
-      // Use a small delay to avoid closing immediately when opening
-      const timeoutId = setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside)
-      }, 100)
+    // Add listener with a small delay to avoid immediate closure
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside, true)
+    }, 50)
 
-      return () => {
-        clearTimeout(timeoutId)
-        document.removeEventListener('mousedown', handleClickOutside)
-      }
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside, true)
     }
   }, [isMenuOpen])
 
@@ -190,53 +195,53 @@ export default function AudioPlayer({
                       className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
                       onClick={() => setIsMenuOpen(false)}
                     />
-                    {/* Menu - Side panel that slides in from right */}
+                    {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                     <div 
-                      className="fixed top-0 right-0 bottom-0 w-[280px] bg-gray-900 border-l border-gray-700 shadow-xl z-[60] flex flex-col"
+                      className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 shadow-xl z-[60] sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 sm:rounded-lg sm:border sm:w-auto sm:min-w-[180px] sm:max-w-[260px]"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex-1 overflow-y-auto">
+                      <div className="max-h-[70vh] overflow-y-auto">
                         {showEdit && (
-                          <div className="py-4 px-4 border-b border-gray-800">
+                          <div className="py-3 px-4 border-b border-gray-800">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleEdit()
                               }}
-                              className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                              className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3"
                             >
                               <Settings className="w-5 h-5 flex-shrink-0" />
-                              <span className="flex-1">Edit</span>
+                              <span>Edit</span>
                             </button>
                           </div>
                         )}
                         {showDownload && onDownload && (
-                          <div className="py-4 px-4 border-b border-gray-800">
+                          <div className="py-3 px-4 border-b border-gray-800">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onDownload()
                                 setIsMenuOpen(false)
                               }}
-                              className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                              className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3"
                             >
                               <Download className="w-5 h-5 flex-shrink-0" />
-                              <span className="flex-1">Download</span>
+                              <span>Download</span>
                             </button>
                           </div>
                         )}
                         {showShare && onShare && (
-                          <div className="py-4 px-4 border-b border-gray-800">
+                          <div className="py-3 px-4 border-b border-gray-800">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onShare()
                                 setIsMenuOpen(false)
                               }}
-                              className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                              className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3"
                             >
                               <Share2 className="w-5 h-5 flex-shrink-0" />
-                              <span className="flex-1">Share</span>
+                              <span>Share</span>
                             </button>
                           </div>
                         )}
