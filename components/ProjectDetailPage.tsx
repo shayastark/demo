@@ -645,70 +645,81 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             <div className="relative" ref={projectMenuRef}>
               <button
                 onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
-                className="w-10 h-10 bg-gray-800 text-neon-green rounded-lg flex items-center justify-center hover:bg-gray-700 transition"
+                className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
                 title="More options"
               >
-                <MoreVertical className="w-5 h-5" />
+                <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
               </button>
               
               {isProjectMenuOpen && (
-                <div className="absolute right-0 top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[200px]">
-                  <button
-                    onClick={handleCopyShareLink}
-                    className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    Share
-                  </button>
-                  {user && (
+                <>
+                  {/* Backdrop for mobile */}
+                  <div 
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+                    onClick={() => setIsProjectMenuOpen(false)}
+                  />
+                  {/* Menu */}
+                  <div className="absolute right-0 top-14 sm:top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[200px] max-w-[280px]">
                     <button
-                      onClick={handleAddToQueue}
-                      className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
+                      onClick={handleCopyShareLink}
+                      className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
                     >
-                      <ListMusic className="w-4 h-4" />
-                      Add to Queue
+                      <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span>Share</span>
                     </button>
-                  )}
-                  {user && (
-                    <button
-                      onClick={() => {
-                        setShowNotesModal(true)
-                        setIsProjectMenuOpen(false)
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Notes
-                    </button>
-                  )}
-                  {user && (
-                    <button
-                      onClick={handleTogglePin}
-                      className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
-                    >
-                      {isPinned ? (
-                        <>
-                          <PinOff className="w-4 h-4" />
-                          Unpin Project
-                        </>
-                      ) : (
-                        <>
-                          <Pin className="w-4 h-4" />
-                          Pin Project
-                        </>
-                      )}
-                    </button>
-                  )}
-                  {isCreator && (
-                    <button
-                      onClick={handleDeleteProject}
-                      className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-800 flex items-center gap-2 transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete Project
-                    </button>
-                  )}
-                </div>
+                    {user && (
+                      <button
+                        onClick={handleAddToQueue}
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                      >
+                        <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span>Add to Queue</span>
+                      </button>
+                    )}
+                    {user && (
+                      <button
+                        onClick={() => {
+                          setShowNotesModal(true)
+                          setIsProjectMenuOpen(false)
+                        }}
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                      >
+                        <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span>Notes</span>
+                      </button>
+                    )}
+                    {user && (
+                      <button
+                        onClick={handleTogglePin}
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                      >
+                        {isPinned ? (
+                          <>
+                            <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span>Unpin Project</span>
+                          </>
+                        ) : (
+                          <>
+                            <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span>Pin Project</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    {isCreator && (
+                      <>
+                        <div className="border-t border-gray-700 my-1" />
+                        <button
+                          onClick={handleDeleteProject}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        >
+                          <Trash2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span>Delete Project</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>

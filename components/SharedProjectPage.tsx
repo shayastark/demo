@@ -50,6 +50,82 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, authenticated, user?.id, project?.id]) // Add ready check following Privy's pattern
 
+  // Close project menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (projectMenuRef.current && !projectMenuRef.current.contains(event.target as Node)) {
+        setIsProjectMenuOpen(false)
+      }
+    }
+
+    if (isProjectMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isProjectMenuOpen])
+
+  // Check if project is pinned
+  useEffect(() => {
+    if (authenticated && user && project) {
+      checkPinnedStatus()
+    }
+  }, [authenticated, user, project])
+
+  const checkPinnedStatus = async () => {
+    if (!user || !project) return
+    try {
+      const privyId = user.id
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', privyId)
+        .single()
+
+      if (dbUser) {
+        const { data } = await supabase
+          .from('user_projects')
+          .select('pinned')
+          .eq('user_id', dbUser.id)
+          .eq('project_id', project.id)
+          .single()
+
+        setIsPinned(data?.pinned || false)
+      }
+    } catch (error) {
+      setIsPinned(false)
+    }
+  }
+
+  const handleTogglePin = async () => {
+    if (!user || !project) return
+    try {
+      const privyId = user.id
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', privyId)
+        .single()
+
+      if (!dbUser) return
+
+      const newPinnedState = !isPinned
+      await supabase
+        .from('user_projects')
+        .upsert(
+          { user_id: dbUser.id, project_id: project.id, pinned: newPinnedState },
+          { onConflict: 'user_id,project_id' }
+        )
+
+      setIsPinned(newPinnedState)
+      setIsProjectMenuOpen(false)
+    } catch (error) {
+      console.error('Error toggling pin:', error)
+    }
+  }
+
   const loadProject = async () => {
     try {
       const { data: projectData, error: projectError } = await supabase
@@ -385,10 +461,81 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         {/* Project Info */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-bold text-white">{project.title}</h1>
-            {creatorUsername && (
-              <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-4xl font-bold text-white">{project.title}</h1>
+              {creatorUsername && (
+                <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
+              )}
+            </div>
+            {/* Project Menu - Only show if authenticated */}
+            {authenticated && user && (
+              <div className="relative" ref={projectMenuRef}>
+                <button
+                  onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
+                  className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
+                  title="More options"
+                >
+                  <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
+                </button>
+                
+                {isProjectMenuOpen && (
+                  <>
+                    {/* Backdrop for mobile */}
+                    <div 
+                      className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+                      onClick={() => setIsProjectMenuOpen(false)}
+                    />
+                    {/* Menu */}
+                    <div className="absolute right-0 top-14 sm:top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[200px] max-w-[280px]">
+                      <button
+                        onClick={handleCopyLink}
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                      >
+                        <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span>Share</span>
+                      </button>
+                      <button
+                        onClick={handleAddToProject}
+                        disabled={addedToProject}
+                        className={`w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation ${
+                          addedToProject ? 'text-gray-400 cursor-not-allowed' : 'text-white'
+                        }`}
+                      >
+                        <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span>{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Notes functionality - could show a modal or navigate
+                          alert('Notes feature coming soon!')
+                          setIsProjectMenuOpen(false)
+                        }}
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                      >
+                        <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span>Notes</span>
+                      </button>
+                      <button
+                        onClick={handleTogglePin}
+                        className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                      >
+                        {isPinned ? (
+                          <>
+                            <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span>Unpin Project</span>
+                          </>
+                        ) : (
+                          <>
+                            <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span>Pin Project</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
           {project.description && (

@@ -163,48 +163,56 @@ export default function AudioPlayer({
               <div className="relative flex-shrink-0" ref={menuRef}>
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="w-10 h-10 bg-gray-800 text-neon-green rounded-lg flex items-center justify-center hover:bg-gray-700 transition"
+                  className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
                   title="More options"
                 >
-                  <MoreVertical className="w-5 h-5" />
+                  <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
                 </button>
                 
                 {isMenuOpen && (
-                  <div className="absolute right-0 top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[160px]">
-                    {showEdit && (
-                      <button
-                        onClick={handleEdit}
-                        className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Edit
-                      </button>
-                    )}
-                    {showDownload && onDownload && (
-                      <button
-                        onClick={() => {
-                          onDownload()
-                          setIsMenuOpen(false)
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
-                      >
-                        <Download className="w-4 h-4" />
-                        Download
-                      </button>
-                    )}
-                    {showShare && onShare && (
-                      <button
-                        onClick={() => {
-                          onShare()
-                          setIsMenuOpen(false)
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        Share
-                      </button>
-                    )}
-                  </div>
+                  <>
+                    {/* Backdrop for mobile */}
+                    <div 
+                      className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+                      onClick={() => setIsMenuOpen(false)}
+                    />
+                    {/* Menu */}
+                    <div className="absolute right-0 top-14 sm:top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[160px] max-w-[240px]">
+                      {showEdit && (
+                        <button
+                          onClick={handleEdit}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        >
+                          <Settings className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span>Edit</span>
+                        </button>
+                      )}
+                      {showDownload && onDownload && (
+                        <button
+                          onClick={() => {
+                            onDownload()
+                            setIsMenuOpen(false)
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        >
+                          <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span>Download</span>
+                        </button>
+                      )}
+                      {showShare && onShare && (
+                        <button
+                          onClick={() => {
+                            onShare()
+                            setIsMenuOpen(false)
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation"
+                        >
+                          <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span>Share</span>
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}

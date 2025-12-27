@@ -275,11 +275,11 @@ export default function ClientDashboard() {
                   <img
                     src={project.cover_image_url}
                     alt={project.title}
-                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover flex-shrink-0"
+                    className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 object-cover flex-shrink-0 rounded-lg"
                   />
                 ) : (
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-800 flex items-center justify-center flex-shrink-0">
-                    <Music className="w-8 h-8 text-gray-600" />
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 bg-gray-800 flex items-center justify-center flex-shrink-0 rounded-lg">
+                    <Music className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600" />
                   </div>
                 )}
                 <div className="flex-1 py-3 pr-4 min-w-0">
