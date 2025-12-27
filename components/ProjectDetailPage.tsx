@@ -220,6 +220,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     })
   }
 
+  const sanitizeFileName = (fileName: string): string => {
+    // Remove or replace invalid characters for storage paths
+    // Replace colons, commas, and other problematic characters with underscores
+    return fileName
+      .replace(/[:,\/\\?*|"<>]/g, '_') // Replace invalid characters with underscore
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+      .replace(/^_+|_+$/g, '') // Remove leading/trailing underscores
+  }
+
   const uploadFile = async (file: File, path: string): Promise<string> => {
     if (!user) throw new Error('User not authenticated')
     
@@ -251,9 +261,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
     if (!dbUser) throw new Error('User not found')
 
+    // Sanitize the filename
+    const sanitizedName = sanitizeFileName(file.name)
+    const timestamp = Date.now()
+    const uploadPath = `${path}/${timestamp}-${sanitizedName}`
+
     const { data, error } = await supabase.storage
       .from('hubba-files')
-      .upload(`${path}/${Date.now()}-${file.name}`, file)
+      .upload(uploadPath, file)
 
     if (error) {
       console.error('Storage upload error:', error)
