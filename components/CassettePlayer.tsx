@@ -8,9 +8,9 @@ interface CassettePlayerProps {
 
 export default function CassettePlayer({ coverImageUrl, isPlaying, title }: CassettePlayerProps) {
   return (
-    <div className="relative w-full max-w-sm mx-auto mb-4">
+    <div className="relative w-full max-w-md mx-auto mb-4">
       {/* Cassette Player Device */}
-      <div className="relative bg-gradient-to-b from-gray-600 to-gray-800 rounded-lg p-4 shadow-2xl border-2 border-gray-500">
+      <div className="relative bg-gradient-to-b from-gray-400 to-gray-600 rounded-lg p-5 shadow-2xl border-4 border-gray-300">
         {/* Player Top Section */}
         <div className="mb-3">
           <div className="h-1 bg-gray-700 rounded mb-2"></div>
@@ -21,9 +21,9 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
         </div>
 
         {/* Cassette Tape Slot - Where the cassette is inserted */}
-        <div className="bg-gray-900 rounded-lg p-3 border-2 border-gray-600 shadow-inner mb-3">
+        <div className="bg-gray-900 rounded-lg p-4 border-2 border-gray-400 shadow-inner mb-3">
           {/* The Cassette Tape */}
-          <div className="relative bg-gradient-to-b from-gray-700 to-gray-800 rounded-lg p-2 border-2 border-gray-500">
+          <div className="relative bg-gradient-to-b from-gray-500 to-gray-600 rounded-lg p-2.5 border-2 border-gray-300">
             {/* Cassette Label Window - Shows cover art */}
             <div className="bg-black rounded-sm p-1.5 mb-2 border border-gray-600 flex justify-center">
               {coverImageUrl ? (

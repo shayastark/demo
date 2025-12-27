@@ -410,13 +410,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 return (
                   <div key={track.id} className="bg-gray-900 rounded-lg p-4 space-y-4">
                     <div className="flex gap-4">
-                      {track.image_url && (
-                        <img
-                          src={track.image_url}
-                          alt={track.title}
-                          className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
-                        />
-                      )}
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
