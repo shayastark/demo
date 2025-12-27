@@ -225,25 +225,26 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           console.error('Error fetching metrics:', metricsError)
         }
 
-        if (metrics) {
-          const { error: updateError } = await supabase
-            .from('project_metrics')
-            .update({ shares: (metrics.shares || 0) + 1 })
-            .eq('project_id', project.id)
+      if (metrics) {
+        const currentShares = metrics.shares ?? 0
+        const { error: updateError } = await supabase
+          .from('project_metrics')
+          .update({ shares: currentShares + 1 })
+          .eq('project_id', project.id)
 
-          if (updateError) {
-            console.error('Error updating metrics:', updateError)
-          }
-        } else {
-          // Create metrics record if it doesn't exist
-          const { error: insertError } = await supabase
-            .from('project_metrics')
-            .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
-
-          if (insertError) {
-            console.error('Error creating metrics:', insertError)
-          }
+        if (updateError) {
+          console.error('Error updating shares:', updateError)
         }
+      } else {
+        // Create metrics record if it doesn't exist
+        const { error: insertError } = await supabase
+          .from('project_metrics')
+          .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
+
+        if (insertError) {
+          console.error('Error creating metrics:', insertError)
+        }
+      }
       } catch (error) {
         console.error('Error tracking share:', error)
       }
@@ -291,14 +292,23 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         .single()
 
       if (metrics) {
-        await supabase
+        const currentAdds = metrics.adds ?? 0
+        const { error: updateError } = await supabase
           .from('project_metrics')
-          .update({ adds: (metrics.adds || 0) + 1 })
+          .update({ adds: currentAdds + 1 })
           .eq('project_id', project.id)
+        
+        if (updateError) {
+          console.error('Error updating adds:', updateError)
+        }
       } else {
-        await supabase
+        const { error: insertError } = await supabase
           .from('project_metrics')
           .insert({ project_id: project.id, adds: 1, plays: 0, shares: 0 })
+        
+        if (insertError) {
+          console.error('Error creating metrics:', insertError)
+        }
       }
 
       setAddedToProject(true)
@@ -377,13 +387,14 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       }
 
       if (metrics) {
+        const currentPlays = metrics.plays ?? 0
         const { error: updateError } = await supabase
           .from('project_metrics')
-          .update({ plays: (metrics.plays || 0) + 1 })
+          .update({ plays: currentPlays + 1 })
           .eq('project_id', project.id)
 
         if (updateError) {
-          console.error('Error updating metrics:', updateError)
+          console.error('Error updating plays:', updateError)
         }
       } else {
         // Create metrics record if it doesn't exist
@@ -488,67 +499,68 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                     />
                     {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                     <div 
-                      className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 shadow-xl z-[60] sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 sm:rounded-lg sm:border sm:w-auto sm:min-w-[240px] sm:max-w-[320px]"
+                      className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] rounded-t-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 sm:rounded-lg sm:border sm:rounded-t-none sm:w-auto sm:min-w-[240px] sm:max-w-[320px]"
                       onClick={(e) => e.stopPropagation()}
+                      style={{ maxHeight: '80vh' }}
                     >
-                      <div className="max-h-[70vh] overflow-y-auto">
-                        <div className="py-3 px-4 border-b border-gray-800">
+                      <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 1rem)' }}>
+                        <div className="py-4 px-5 border-b border-gray-800">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleCopyLink()
                             }}
-                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3"
+                            className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
                           >
-                            <Share2 className="w-5 h-5 flex-shrink-0" />
-                            <span>Share</span>
+                            <Share2 className="w-6 h-6 flex-shrink-0" />
+                            <span className="break-words">Share</span>
                           </button>
                         </div>
-                        <div className="py-3 px-4 border-b border-gray-800">
+                        <div className="py-4 px-5 border-b border-gray-800">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleAddToProject()
                             }}
                             disabled={addedToProject}
-                            className={`w-full text-left text-base hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 ${
+                            className={`w-full text-left text-lg hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5 ${
                               addedToProject ? 'text-gray-400 cursor-not-allowed' : 'text-white'
                             }`}
                           >
-                            <ListMusic className="w-5 h-5 flex-shrink-0" />
-                            <span>{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
+                            <ListMusic className="w-6 h-6 flex-shrink-0" />
+                            <span className="break-words">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
                           </button>
                         </div>
-                        <div className="py-3 px-4 border-b border-gray-800">
+                        <div className="py-4 px-5 border-b border-gray-800">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               alert('Notes feature coming soon!')
                               setIsProjectMenuOpen(false)
                             }}
-                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3"
+                            className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
                           >
-                            <FileText className="w-5 h-5 flex-shrink-0" />
-                            <span>Notes</span>
+                            <FileText className="w-6 h-6 flex-shrink-0" />
+                            <span className="break-words">Notes</span>
                           </button>
                         </div>
-                        <div className="py-3 px-4 border-b border-gray-800">
+                        <div className="py-4 px-5 border-b border-gray-800">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleTogglePin()
                             }}
-                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3"
+                            className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
                           >
                             {isPinned ? (
                               <>
-                                <PinOff className="w-5 h-5 flex-shrink-0" />
-                                <span>Unpin Project</span>
+                                <PinOff className="w-6 h-6 flex-shrink-0" />
+                                <span className="break-words">Unpin Project</span>
                               </>
                             ) : (
                               <>
-                                <Pin className="w-5 h-5 flex-shrink-0" />
-                                <span>Pin Project</span>
+                                <Pin className="w-6 h-6 flex-shrink-0" />
+                                <span className="break-words">Pin Project</span>
                               </>
                             )}
                           </button>
