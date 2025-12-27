@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
 import AudioPlayer from './AudioPlayer'
-import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload } from 'lucide-react'
+import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2 } from 'lucide-react'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -316,6 +316,63 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     setNewTracks(newTracks.filter((_, i) => i !== index))
     if (newTracks.length === 1) {
       setShowAddTrackForm(false)
+    }
+  }
+
+  const handleDeleteTrack = async (trackId: string) => {
+    if (!project || !isCreator) return
+    
+    if (!confirm('Are you sure you want to delete this track? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      // Delete the track
+      const { error: deleteError } = await supabase
+        .from('tracks')
+        .delete()
+        .eq('id', trackId)
+
+      if (deleteError) throw deleteError
+
+      // Reload tracks
+      const { data: tracksData, error: tracksError } = await supabase
+        .from('tracks')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('order', { ascending: true })
+
+      if (tracksError) throw tracksError
+      setTracks(tracksData || [])
+
+      // Also reload track notes if needed
+      if (tracksData && tracksData.length > 0) {
+        const trackIds = tracksData.map(t => t.id)
+        const { data: trackNotesData } = await supabase
+          .from('track_notes')
+          .select('*')
+          .in('track_id', trackIds)
+
+        if (trackNotesData) {
+          const notesMap: Record<string, TrackNote> = {}
+          const editingMap: Record<string, string> = {}
+          trackNotesData.forEach(note => {
+            notesMap[note.track_id] = note
+            editingMap[note.track_id] = note.content
+          })
+          setTrackNotes(notesMap)
+          setEditingTrackNotes(editingMap)
+        } else {
+          setTrackNotes({})
+          setEditingTrackNotes({})
+        }
+      } else {
+        setTrackNotes({})
+        setEditingTrackNotes({})
+      }
+    } catch (error) {
+      console.error('Error deleting track:', error)
+      alert('Failed to delete track. Please try again.')
     }
   }
 
@@ -773,6 +830,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             <div className="text-sm text-neon-green opacity-70 mb-1">Track {index + 1}</div>
                             <h3 className="text-xl font-semibold text-neon-green">{track.title}</h3>
                           </div>
+                          {isCreator && (
+                            <button
+                              onClick={() => handleDeleteTrack(track.id)}
+                              className="text-red-400 hover:text-red-300 transition p-2"
+                              title="Delete track"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -782,6 +848,43 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       src={track.audio_url} 
                       title={track.title}
                       coverImageUrl={track.image_url || project.cover_image_url}
+                      onPlay={async () => {
+                        // Track play in ProjectDetailPage too
+                        try {
+                          await supabase
+                            .from('track_plays')
+                            .insert({ track_id: track.id })
+
+                          const { data: metrics } = await supabase
+                            .from('project_metrics')
+                            .select('plays')
+                            .eq('project_id', project.id)
+                            .single()
+
+                          if (metrics) {
+                            await supabase
+                              .from('project_metrics')
+                              .update({ plays: (metrics.plays || 0) + 1 })
+                              .eq('project_id', project.id)
+                          } else {
+                            await supabase
+                              .from('project_metrics')
+                              .insert({ project_id: project.id, plays: 1 })
+                          }
+                          
+                          // Reload metrics to show updated count
+                          const { data: updatedMetrics } = await supabase
+                            .from('project_metrics')
+                            .select('*')
+                            .eq('project_id', project.id)
+                            .single()
+                          if (updatedMetrics) {
+                            setMetrics(updatedMetrics)
+                          }
+                        } catch (error) {
+                          console.error('Error tracking play:', error)
+                        }
+                      }}
                     />
 
                     {/* Track Notes (Private to Creator) - Only show if user is creator */}

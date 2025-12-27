@@ -77,23 +77,9 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       if (tracksError) throw tracksError
       setTracks(tracksData || [])
 
-      // Track view - increment plays metric
-      const { data: metrics } = await supabase
-        .from('project_metrics')
-        .select('plays')
-        .eq('project_id', projectData.id)
-        .single()
-
-      if (metrics) {
-        await supabase
-          .from('project_metrics')
-          .update({ plays: (metrics.plays || 0) + 1 })
-          .eq('project_id', projectData.id)
-      } else {
-        await supabase
-          .from('project_metrics')
-          .insert({ project_id: projectData.id, plays: 1 })
-      }
+      // Track view - increment plays metric (only once per page load)
+      // We'll track actual plays when tracks are played, not on page load
+      // This prevents inflating play counts just from viewing the page
     } catch (error) {
       console.error('Error loading project:', error)
     } finally {
@@ -136,25 +122,48 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
     // Track share
     if (project) {
-      await supabase
-        .from('project_shares')
-        .insert({ project_id: project.id })
+      try {
+        // Insert share record
+        const { error: shareError } = await supabase
+          .from('project_shares')
+          .insert({ project_id: project.id })
 
-      const { data: metrics } = await supabase
-        .from('project_metrics')
-        .select('shares')
-        .eq('project_id', project.id)
-        .single()
+        if (shareError) {
+          console.error('Error inserting share:', shareError)
+        }
 
-      if (metrics) {
-        await supabase
+        // Update metrics
+        const { data: metrics, error: metricsError } = await supabase
           .from('project_metrics')
-          .update({ shares: (metrics.shares || 0) + 1 })
+          .select('shares')
           .eq('project_id', project.id)
-      } else {
-        await supabase
-          .from('project_metrics')
-          .insert({ project_id: project.id, shares: 1 })
+          .single()
+
+        if (metricsError && metricsError.code !== 'PGRST116') {
+          console.error('Error fetching metrics:', metricsError)
+        }
+
+        if (metrics) {
+          const { error: updateError } = await supabase
+            .from('project_metrics')
+            .update({ shares: (metrics.shares || 0) + 1 })
+            .eq('project_id', project.id)
+
+          if (updateError) {
+            console.error('Error updating metrics:', updateError)
+          }
+        } else {
+          // Create metrics record if it doesn't exist
+          const { error: insertError } = await supabase
+            .from('project_metrics')
+            .insert({ project_id: project.id, shares: 1 })
+
+          if (insertError) {
+            console.error('Error creating metrics:', insertError)
+          }
+        }
+      } catch (error) {
+        console.error('Error tracking share:', error)
       }
     }
   }
@@ -239,26 +248,45 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     if (!project) return
 
     try {
-      await supabase
+      // Insert track play record
+      const { error: playError } = await supabase
         .from('track_plays')
         .insert({ track_id: trackId })
 
-      // Update metrics
-      const { data: metrics } = await supabase
+      if (playError) {
+        console.error('Error inserting track play:', playError)
+      }
+
+      // Update project metrics
+      const { data: metrics, error: metricsError } = await supabase
         .from('project_metrics')
         .select('plays')
         .eq('project_id', project.id)
         .single()
 
+      if (metricsError && metricsError.code !== 'PGRST116') {
+        // PGRST116 is "not found" - that's okay, we'll create it
+        console.error('Error fetching metrics:', metricsError)
+      }
+
       if (metrics) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('project_metrics')
           .update({ plays: (metrics.plays || 0) + 1 })
           .eq('project_id', project.id)
+
+        if (updateError) {
+          console.error('Error updating metrics:', updateError)
+        }
       } else {
-        await supabase
+        // Create metrics record if it doesn't exist
+        const { error: insertError } = await supabase
           .from('project_metrics')
           .insert({ project_id: project.id, plays: 1 })
+
+        if (insertError) {
+          console.error('Error creating metrics:', insertError)
+        }
       }
     } catch (error) {
       console.error('Error tracking play:', error)
