@@ -481,76 +481,78 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                 
                 {isProjectMenuOpen && (
                   <>
-                    {/* Backdrop for mobile */}
+                    {/* Backdrop */}
                     <div 
-                      className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+                      className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
                       onClick={() => setIsProjectMenuOpen(false)}
                     />
-                    {/* Menu - Side panel on mobile, dropdown on desktop */}
+                    {/* Menu - Side panel that slides in from right */}
                     <div 
-                      className="fixed top-0 right-0 bottom-0 w-80 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:right-0 sm:w-auto sm:min-w-[240px] sm:max-w-[320px] sm:rounded-lg sm:border sm:border-gray-700"
+                      className="fixed top-0 right-0 bottom-0 w-[280px] bg-gray-900 border-l border-gray-700 shadow-xl z-[60] flex flex-col"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleCopyLink()
-                          }}
-                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
-                        >
-                          <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 whitespace-nowrap">Share</span>
-                        </button>
-                      </div>
-                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAddToProject()
-                          }}
-                          disabled={addedToProject}
-                          className={`w-full text-left text-base sm:text-sm hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded ${
-                            addedToProject ? 'text-gray-400 cursor-not-allowed' : 'text-white'
-                          }`}
-                        >
-                          <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 whitespace-nowrap">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
-                        </button>
-                      </div>
-                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            alert('Notes feature coming soon!')
-                            setIsProjectMenuOpen(false)
-                          }}
-                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
-                        >
-                          <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 whitespace-nowrap">Notes</span>
-                        </button>
-                      </div>
-                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleTogglePin()
-                          }}
-                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
-                        >
-                          {isPinned ? (
-                            <>
-                              <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="flex-1 whitespace-nowrap">Unpin Project</span>
-                            </>
-                          ) : (
-                            <>
-                              <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="flex-1 whitespace-nowrap">Pin Project</span>
-                            </>
-                          )}
-                        </button>
+                      <div className="flex-1 overflow-y-auto">
+                        <div className="py-4 px-4 border-b border-gray-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCopyLink()
+                            }}
+                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                          >
+                            <Share2 className="w-5 h-5 flex-shrink-0" />
+                            <span className="flex-1">Share</span>
+                          </button>
+                        </div>
+                        <div className="py-4 px-4 border-b border-gray-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleAddToProject()
+                            }}
+                            disabled={addedToProject}
+                            className={`w-full text-left text-base hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded ${
+                              addedToProject ? 'text-gray-400 cursor-not-allowed' : 'text-white'
+                            }`}
+                          >
+                            <ListMusic className="w-5 h-5 flex-shrink-0" />
+                            <span className="flex-1">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
+                          </button>
+                        </div>
+                        <div className="py-4 px-4 border-b border-gray-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              alert('Notes feature coming soon!')
+                              setIsProjectMenuOpen(false)
+                            }}
+                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                          >
+                            <FileText className="w-5 h-5 flex-shrink-0" />
+                            <span className="flex-1">Notes</span>
+                          </button>
+                        </div>
+                        <div className="py-4 px-4 border-b border-gray-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleTogglePin()
+                            }}
+                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                          >
+                            {isPinned ? (
+                              <>
+                                <PinOff className="w-5 h-5 flex-shrink-0" />
+                                <span className="flex-1">Unpin Project</span>
+                              </>
+                            ) : (
+                              <>
+                                <Pin className="w-5 h-5 flex-shrink-0" />
+                                <span className="flex-1">Pin Project</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </>

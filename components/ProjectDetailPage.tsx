@@ -439,52 +439,52 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
 
     try {
+      // First, delete associated track notes (if any)
+      const { error: notesDeleteError } = await supabase
+        .from('track_notes')
+        .delete()
+        .eq('track_id', trackId)
+
+      if (notesDeleteError) {
+        console.warn('Warning: Could not delete track notes:', notesDeleteError)
+        // Continue anyway - notes might not exist or might be handled by CASCADE
+      }
+
+      // Delete track plays (if any)
+      const { error: playsDeleteError } = await supabase
+        .from('track_plays')
+        .delete()
+        .eq('track_id', trackId)
+
+      if (playsDeleteError) {
+        console.warn('Warning: Could not delete track plays:', playsDeleteError)
+        // Continue anyway
+      }
+
       // Delete the track
-      const { error: deleteError } = await supabase
+      const { data: deleteData, error: deleteError } = await supabase
         .from('tracks')
         .delete()
         .eq('id', trackId)
+        .select()
 
-      if (deleteError) throw deleteError
-
-      // Reload tracks
-      const { data: tracksData, error: tracksError } = await supabase
-        .from('tracks')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('order', { ascending: true })
-
-      if (tracksError) throw tracksError
-      setTracks(tracksData || [])
-
-      // Also reload track notes if needed
-      if (tracksData && tracksData.length > 0) {
-        const trackIds = tracksData.map(t => t.id)
-        const { data: trackNotesData } = await supabase
-          .from('track_notes')
-          .select('*')
-          .in('track_id', trackIds)
-
-        if (trackNotesData) {
-          const notesMap: Record<string, TrackNote> = {}
-          const editingMap: Record<string, string> = {}
-          trackNotesData.forEach(note => {
-            notesMap[note.track_id] = note
-            editingMap[note.track_id] = note.content
-          })
-          setTrackNotes(notesMap)
-          setEditingTrackNotes(editingMap)
-        } else {
-          setTrackNotes({})
-          setEditingTrackNotes({})
-        }
-      } else {
-        setTrackNotes({})
-        setEditingTrackNotes({})
+      if (deleteError) {
+        console.error('Delete error:', deleteError)
+        throw deleteError
       }
-    } catch (error) {
+
+      if (!deleteData || deleteData.length === 0) {
+        throw new Error('Track was not deleted. It may not exist or you may not have permission.')
+      }
+
+      // Reload the entire project to ensure everything is in sync
+      await loadProject()
+
+      alert('Track deleted successfully!')
+    } catch (error: any) {
       console.error('Error deleting track:', error)
-      alert('Failed to delete track. Please try again.')
+      const errorMessage = error?.message || 'Failed to delete track. Please try again.'
+      alert(`Error: ${errorMessage}`)
     }
   }
 
@@ -668,105 +668,112 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               )}
             </div>
             {/* Project Menu */}
-            <div className="relative" ref={projectMenuRef}>
+            <div className="relative z-50" ref={projectMenuRef}>
               <button
-                onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  setIsProjectMenuOpen(!isProjectMenuOpen)
+                }}
                 className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
                 title="More options"
+                type="button"
               >
                 <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
               </button>
               
               {isProjectMenuOpen && (
                 <>
-                  {/* Backdrop for mobile */}
+                  {/* Backdrop - always show on mobile, show on desktop too */}
                   <div 
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+                    className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
                     onClick={() => setIsProjectMenuOpen(false)}
                   />
-                  {/* Menu - Side panel on mobile, dropdown on desktop */}
+                  {/* Menu - Side panel that slides in from right */}
                   <div 
-                    className="fixed top-0 right-0 bottom-0 w-80 bg-gray-900 border-l border-gray-700 shadow-xl z-50 overflow-y-auto sm:absolute sm:top-11 sm:bottom-auto sm:right-0 sm:w-auto sm:min-w-[240px] sm:max-w-[320px] sm:rounded-lg sm:border sm:border-gray-700"
+                    className="fixed top-0 right-0 bottom-0 w-[280px] bg-gray-900 border-l border-gray-700 shadow-xl z-[60] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleCopyShareLink()
-                        }}
-                        className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
-                      >
-                        <Share2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span className="flex-1 whitespace-nowrap">Share</span>
-                      </button>
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="py-4 px-4 border-b border-gray-800">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleCopyShareLink()
+                          }}
+                          className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                        >
+                          <Share2 className="w-5 h-5 flex-shrink-0" />
+                          <span className="flex-1">Share</span>
+                        </button>
+                      </div>
+                      {user && (
+                        <div className="py-4 px-4 border-b border-gray-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleAddToQueue()
+                            }}
+                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                          >
+                            <ListMusic className="w-5 h-5 flex-shrink-0" />
+                            <span className="flex-1">Add to Queue</span>
+                          </button>
+                        </div>
+                      )}
+                      {user && (
+                        <div className="py-4 px-4 border-b border-gray-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setShowNotesModal(true)
+                              setIsProjectMenuOpen(false)
+                            }}
+                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                          >
+                            <FileText className="w-5 h-5 flex-shrink-0" />
+                            <span className="flex-1">Notes</span>
+                          </button>
+                        </div>
+                      )}
+                      {user && (
+                        <div className="py-4 px-4 border-b border-gray-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleTogglePin()
+                            }}
+                            className="w-full text-left text-base text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                          >
+                            {isPinned ? (
+                              <>
+                                <PinOff className="w-5 h-5 flex-shrink-0" />
+                                <span className="flex-1">Unpin Project</span>
+                              </>
+                            ) : (
+                              <>
+                                <Pin className="w-5 h-5 flex-shrink-0" />
+                                <span className="flex-1">Pin Project</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      {isCreator && (
+                        <div className="py-4 px-4 border-t border-gray-700 mt-auto">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteProject()
+                            }}
+                            className="w-full text-left text-base text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 transition py-3 px-3 rounded"
+                          >
+                            <Trash2 className="w-5 h-5 flex-shrink-0" />
+                            <span className="flex-1">Delete Project</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {user && (
-                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAddToQueue()
-                          }}
-                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
-                        >
-                          <ListMusic className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 whitespace-nowrap">Add to Queue</span>
-                        </button>
-                      </div>
-                    )}
-                    {user && (
-                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowNotesModal(true)
-                            setIsProjectMenuOpen(false)
-                          }}
-                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
-                        >
-                          <FileText className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 whitespace-nowrap">Notes</span>
-                        </button>
-                      </div>
-                    )}
-                    {user && (
-                      <div className="py-3 px-4 border-b border-gray-800 sm:border-b-0 sm:py-2 sm:px-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleTogglePin()
-                          }}
-                          className="w-full text-left text-base sm:text-sm text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
-                        >
-                          {isPinned ? (
-                            <>
-                              <PinOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="flex-1 whitespace-nowrap">Unpin Project</span>
-                            </>
-                          ) : (
-                            <>
-                              <Pin className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="flex-1 whitespace-nowrap">Pin Project</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                    {isCreator && (
-                      <div className="py-3 px-4 border-t border-gray-700 sm:border-t-0 sm:py-2 sm:px-3 sm:mt-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteProject()
-                          }}
-                          className="w-full text-left text-base sm:text-sm text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-3 sm:gap-2 transition touch-manipulation py-2 px-2 rounded"
-                        >
-                          <Trash2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="flex-1 whitespace-nowrap">Delete Project</span>
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </>
               )}
@@ -1071,7 +1078,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       showShare={true}
                       onDownload={() => alert('Download functionality for tracks coming soon!')}
                       onShare={() => alert('Share track functionality coming soon!')}
-                      onEdit={() => {}}
+                      onEdit={undefined}
                       onPlay={async () => {
                         // Track play in ProjectDetailPage too
                         try {
