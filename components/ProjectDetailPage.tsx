@@ -28,6 +28,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [trackNotes, setTrackNotes] = useState<Record<string, TrackNote>>({})
   const [editingTrackNotes, setEditingTrackNotes] = useState<Record<string, string>>({})
   const [savingNote, setSavingNote] = useState<string | null>(null)
+  const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
 
   useEffect(() => {
     loadProject()
@@ -43,6 +44,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
       if (projectError) throw projectError
       setProject(projectData)
+
+      // Fetch creator's username
+      if (projectData.creator_id) {
+        const { data: creatorData } = await supabase
+          .from('users')
+          .select('username, email')
+          .eq('id', projectData.creator_id)
+          .single()
+        
+        if (creatorData) {
+          setCreatorUsername(creatorData.username || creatorData.email || null)
+        }
+      }
 
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
@@ -236,7 +250,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           </Link>
           <button
             onClick={logout}
-            className="text-sm text-neon-green hover:opacity-80 opacity-70"
+            className="text-sm text-black hover:opacity-80"
           >
             Sign out
           </button>
@@ -260,7 +274,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
         {/* Project Info */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">{project.title}</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-4xl font-bold">{project.title}</h1>
+            {creatorUsername && (
+              <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
+            )}
+          </div>
           {project.description && (
             <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
           )}
@@ -271,7 +290,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               <span className="text-sm text-neon-green opacity-70">Share Link</span>
               <button
                 onClick={handleCopyShareLink}
-                className="flex items-center gap-2 text-sm text-neon-green hover:opacity-80 opacity-70"
+                className="flex items-center gap-2 text-sm text-black hover:opacity-80"
               >
                 {shareLinkCopied ? (
                   <>Copied!</>
@@ -341,7 +360,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               {!editingProjectNote && (
                 <button
                   onClick={() => setEditingProjectNote(true)}
-                  className="text-sm text-neon-green hover:opacity-80 flex items-center gap-1 opacity-70"
+                  className="text-sm text-black hover:opacity-80 flex items-center gap-1"
                 >
                   <Edit className="w-4 h-4" />
                   {projectNote ? 'Edit' : 'Add Note'}
@@ -439,7 +458,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         {!isEditingNote && (
                           <button
                             onClick={() => startEditingTrackNote(track.id)}
-                            className="text-xs text-neon-green hover:opacity-80 flex items-center gap-1 opacity-70"
+                            className="text-xs text-black hover:opacity-80 flex items-center gap-1"
                           >
                             <Edit className="w-3 h-3" />
                             {trackNote ? 'Edit' : 'Add Note'}

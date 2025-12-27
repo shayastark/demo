@@ -20,6 +20,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [linkCopied, setLinkCopied] = useState(false)
   const [addedToProject, setAddedToProject] = useState(false)
   const checkedAddedRef = useRef<string | null>(null) // Track which project/user combo we've checked
+  const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
 
   useEffect(() => {
     loadProject()
@@ -53,6 +54,19 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
       if (projectError) throw projectError
       setProject(projectData)
+
+      // Fetch creator's username
+      if (projectData.creator_id) {
+        const { data: creatorData } = await supabase
+          .from('users')
+          .select('username, email')
+          .eq('id', projectData.creator_id)
+          .single()
+        
+        if (creatorData) {
+          setCreatorUsername(creatorData.username || creatorData.email || null)
+        }
+      }
 
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
@@ -312,7 +326,12 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         {/* Project Info */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-white">{project.title}</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-4xl font-bold text-white">{project.title}</h1>
+            {creatorUsername && (
+              <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
+            )}
+          </div>
           {project.description && (
             <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
           )}
@@ -374,7 +393,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                     {project.allow_downloads && (
                       <button
                         onClick={() => handleDownload(track)}
-                        className="flex items-center gap-2 text-sm text-neon-green hover:opacity-80 transition opacity-70"
+                        className="flex items-center gap-2 text-sm text-black hover:opacity-80 transition"
                       >
                         <Download className="w-4 h-4" />
                         Download

@@ -11,6 +11,7 @@ export default function ClientDashboard() {
   const { ready, authenticated, user, login, logout } = usePrivy()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [username, setUsername] = useState<string | null>(null)
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -77,6 +78,17 @@ export default function ClientDashboard() {
 
           if (error) throw error
           existingUser = newUser
+        }
+
+        // Load user's username
+        const { data: userData } = await supabase
+          .from('users')
+          .select('username, email')
+          .eq('id', existingUser.id)
+          .single()
+        
+        if (userData) {
+          setUsername(userData.username || userData.email || null)
         }
 
         // Load projects
@@ -148,7 +160,7 @@ export default function ClientDashboard() {
             </Link>
             <button
               onClick={logout}
-              className="text-sm text-neon-green hover:opacity-80 opacity-70"
+              className="text-sm text-black hover:opacity-80"
             >
               Sign out
             </button>
@@ -192,7 +204,12 @@ export default function ClientDashboard() {
                   </div>
                 )}
                 <div className="p-4">
-                  <h3 className="text-xl font-semibold mb-2 text-neon-green">{project.title}</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-xl font-semibold text-neon-green">{project.title}</h3>
+                    {username && (
+                      <span className="text-sm text-neon-green opacity-70">by {username}</span>
+                    )}
+                  </div>
                   {project.description && (
                     <p className="text-neon-green text-sm mb-3 line-clamp-2 opacity-90">
                       {project.description}

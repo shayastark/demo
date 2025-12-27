@@ -149,7 +149,7 @@ export default function ClientHomePage() {
             </Link>
             <button
               onClick={logout}
-              className="text-xs text-neon-green hover:opacity-80 opacity-70"
+              className="text-xs text-black hover:opacity-80"
             >
               Sign out
             </button>
