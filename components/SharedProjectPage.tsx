@@ -205,10 +205,25 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     // Track share
     if (project) {
       try {
-        // Insert share record
+        // Get user ID if authenticated
+        let userId: string | null = null
+        if (user) {
+          const privyId = user.id
+          const { data: dbUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('privy_id', privyId)
+            .single()
+          userId = dbUser?.id || null
+        }
+
+        // Insert share record with user_id
         const { error: shareError } = await supabase
           .from('project_shares')
-          .insert({ project_id: project.id })
+          .insert({ 
+            project_id: project.id,
+            user_id: userId
+          })
 
         if (shareError) {
           console.error('Error inserting share:', shareError)
@@ -225,26 +240,26 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           console.error('Error fetching metrics:', metricsError)
         }
 
-      if (metrics) {
-        const currentShares = metrics.shares ?? 0
-        const { error: updateError } = await supabase
-          .from('project_metrics')
-          .update({ shares: currentShares + 1 })
-          .eq('project_id', project.id)
+        if (metrics) {
+          const currentShares = metrics.shares ?? 0
+          const { error: updateError } = await supabase
+            .from('project_metrics')
+            .update({ shares: currentShares + 1 })
+            .eq('project_id', project.id)
 
-        if (updateError) {
-          console.error('Error updating shares:', updateError)
-        }
-      } else {
-        // Create metrics record if it doesn't exist
-        const { error: insertError } = await supabase
-          .from('project_metrics')
-          .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
+          if (updateError) {
+            console.error('Error updating shares:', updateError)
+          }
+        } else {
+          // Create metrics record if it doesn't exist
+          const { error: insertError } = await supabase
+            .from('project_metrics')
+            .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
 
-        if (insertError) {
-          console.error('Error creating metrics:', insertError)
+          if (insertError) {
+            console.error('Error creating metrics:', insertError)
+          }
         }
-      }
       } catch (error) {
         console.error('Error tracking share:', error)
       }
@@ -365,10 +380,36 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     if (!project) return
 
     try {
-      // Insert track play record
+      // Get user ID if authenticated
+      let userId: string | null = null
+      if (user) {
+        const privyId = user.id
+        const { data: dbUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('privy_id', privyId)
+          .single()
+        userId = dbUser?.id || null
+      }
+
+      // Get IP address (client-side approximation)
+      let ipAddress: string | null = null
+      try {
+        const response = await fetch('https://api.ipify.org?format=json')
+        const data = await response.json()
+        ipAddress = data.ip || null
+      } catch (ipError) {
+        console.warn('Could not fetch IP address:', ipError)
+      }
+
+      // Insert track play record with user_id and ip_address
       const { error: playError } = await supabase
         .from('track_plays')
-        .insert({ track_id: trackId })
+        .insert({ 
+          track_id: trackId,
+          user_id: userId,
+          ip_address: ipAddress
+        })
 
       if (playError) {
         console.error('Error inserting track play:', playError)

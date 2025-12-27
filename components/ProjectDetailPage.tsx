@@ -175,10 +175,29 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
     // Track share
     try {
-      // Insert share record
-      await supabase
+      // Get user ID if authenticated
+      let userId: string | null = null
+      if (user) {
+        const privyId = user.id
+        const { data: dbUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('privy_id', privyId)
+          .single()
+        userId = dbUser?.id || null
+      }
+
+      // Insert share record with user_id
+      const { error: shareError } = await supabase
         .from('project_shares')
-        .insert({ project_id: project.id })
+        .insert({ 
+          project_id: project.id,
+          user_id: userId
+        })
+
+      if (shareError) {
+        console.error('Error inserting share:', shareError)
+      }
 
       // Update metrics
       const { data: metrics, error: metricsError } = await supabase
@@ -1215,15 +1234,53 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       onPlay={async () => {
                         // Track play in ProjectDetailPage too
                         try {
-                          await supabase
-                            .from('track_plays')
-                            .insert({ track_id: track.id })
+                          // Get user ID if authenticated
+                          let userId: string | null = null
+                          if (user) {
+                            const privyId = user.id
+                            const { data: dbUser } = await supabase
+                              .from('users')
+                              .select('id')
+                              .eq('privy_id', privyId)
+                              .single()
+                            userId = dbUser?.id || null
+                          }
 
-                          const { data: metrics } = await supabase
+                          // Get IP address (client-side approximation)
+                          let ipAddress: string | null = null
+                          try {
+                            // Try to get IP from a service (this is a client-side approximation)
+                            // Note: For production, you might want to use a server-side API route
+                            const response = await fetch('https://api.ipify.org?format=json')
+                            const data = await response.json()
+                            ipAddress = data.ip || null
+                          } catch (ipError) {
+                            console.warn('Could not fetch IP address:', ipError)
+                          }
+
+                          // Insert track play with user_id and ip_address
+                          const { error: playError } = await supabase
+                            .from('track_plays')
+                            .insert({ 
+                              track_id: track.id,
+                              user_id: userId,
+                              ip_address: ipAddress
+                            })
+
+                          if (playError) {
+                            console.error('Error inserting track play:', playError)
+                          }
+
+                          // Update project metrics
+                          const { data: metrics, error: metricsError } = await supabase
                             .from('project_metrics')
                             .select('plays')
                             .eq('project_id', project.id)
                             .single()
+
+                          if (metricsError && metricsError.code !== 'PGRST116') {
+                            console.error('Error fetching metrics:', metricsError)
+                          }
 
                           if (metrics) {
                             const currentPlays = metrics.plays ?? 0
