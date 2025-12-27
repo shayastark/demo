@@ -22,9 +22,17 @@ export default function AudioEditor({ src, title, isOpen, audioElement, onClose 
   const gainNodeRef = useRef<GainNode | null>(null)
   const eqNodesRef = useRef<BiquadFilterNode[]>([])
 
-  // Initialize Web Audio API
+  // Initialize Web Audio API only when editor is open and user switches to EQ tab
+  // We delay initialization until EQ is actually needed to avoid breaking normal playback
   useEffect(() => {
-    if (!audioElement || !isOpen) return
+    if (!audioElement || !isOpen || activeTab !== 'eq') {
+      return
+    }
+
+    // Check if source already exists (can only create once per element)
+    if (sourceNodeRef.current) {
+      return
+    }
 
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
@@ -33,7 +41,7 @@ export default function AudioEditor({ src, title, isOpen, audioElement, onClose 
       const source = audioContext.createMediaElementSource(audioElement)
       sourceNodeRef.current = source
 
-      // Create gain node for speed/pitch control
+      // Create gain node
       const gainNode = audioContext.createGain()
       gainNodeRef.current = gainNode
 
@@ -57,26 +65,26 @@ export default function AudioEditor({ src, title, isOpen, audioElement, onClose 
         currentNode = node
       })
       currentNode.connect(audioContext.destination)
-
-      return () => {
-        // Cleanup
-        source.disconnect()
-        gainNode.disconnect()
-        eqNodes.forEach(node => node.disconnect())
-      }
     } catch (error) {
       console.error('Error initializing audio context:', error)
+      // If error (e.g., already created), we'll just use playbackRate for speed/pitch
     }
-  }, [audioElement, isOpen])
+  }, [audioElement, isOpen, activeTab])
 
-  // Apply speed and pitch changes
+  // Apply speed and pitch changes (only when editor is open)
   useEffect(() => {
-    if (!audioElement) return
+    if (!audioElement || !isOpen) {
+      // Reset to normal when editor is closed
+      if (audioElement && !isOpen) {
+        audioElement.playbackRate = 1
+      }
+      return
+    }
     // Pitch shift: 2^(semitones/12) = playback rate multiplier
     const pitchMultiplier = Math.pow(2, pitch / 12)
     // Combine speed and pitch
     audioElement.playbackRate = (speed / 100) * pitchMultiplier
-  }, [pitch, speed, audioElement])
+  }, [pitch, speed, audioElement, isOpen])
 
   // Apply EQ changes
   useEffect(() => {
@@ -86,14 +94,20 @@ export default function AudioEditor({ src, title, isOpen, audioElement, onClose 
     })
   }, [eqBands, eqBypass])
 
-  if (!isOpen) return null
+  if (!isOpen) {
+    // Reset to defaults when closed
+    if (audioElement) {
+      audioElement.playbackRate = 1
+    }
+    return null
+  }
 
   // EQ frequency bands (Hz)
   const eqFrequencies = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
   const eqLabels = ['31', '62', '125', '250', '500', '1k', '2k', '4k', '8k', '16k']
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
         <button
