@@ -540,68 +540,99 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                     />
                     {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                     <div 
-                      className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] rounded-t-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 sm:rounded-lg sm:border sm:rounded-t-none sm:w-auto sm:min-w-[240px] sm:max-w-[320px]"
+                      className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-11 sm:left-auto sm:right-0 sm:rounded-lg sm:w-auto sm:min-w-[240px] sm:max-w-[320px]"
+                      style={{
+                        borderRadius: '1rem 1rem 0 0',
+                        maxHeight: '80vh',
+                      }}
                       onClick={(e) => e.stopPropagation()}
-                      style={{ maxHeight: '80vh' }}
                     >
                       <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 1rem)' }}>
-                        <div className="py-4 px-5 border-b border-gray-800">
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleCopyLink()
                             }}
-                            className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
+                            className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                            style={{ 
+                              fontSize: '1.125rem',
+                              lineHeight: '1.75rem',
+                              paddingTop: '0.875rem',
+                              paddingBottom: '0.875rem',
+                              gap: '1rem'
+                            }}
                           >
-                            <Share2 className="w-6 h-6 flex-shrink-0" />
-                            <span className="break-words">Share</span>
+                            <Share2 style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                            <span style={{ wordBreak: 'break-word' }}>Share</span>
                           </button>
                         </div>
-                        <div className="py-4 px-5 border-b border-gray-800">
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleAddToProject()
                             }}
                             disabled={addedToProject}
-                            className={`w-full text-left text-lg hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5 ${
+                            className={`w-full text-left hover:bg-gray-800 active:bg-gray-700 flex items-center transition ${
                               addedToProject ? 'text-gray-400 cursor-not-allowed' : 'text-white'
                             }`}
+                            style={{ 
+                              fontSize: '1.125rem',
+                              lineHeight: '1.75rem',
+                              paddingTop: '0.875rem',
+                              paddingBottom: '0.875rem',
+                              gap: '1rem'
+                            }}
                           >
-                            <ListMusic className="w-6 h-6 flex-shrink-0" />
-                            <span className="break-words">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
+                            <ListMusic style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                            <span style={{ wordBreak: 'break-word' }}>{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
                           </button>
                         </div>
-                        <div className="py-4 px-5 border-b border-gray-800">
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               alert('Notes feature coming soon!')
                               setIsProjectMenuOpen(false)
                             }}
-                            className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
+                            className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                            style={{ 
+                              fontSize: '1.125rem',
+                              lineHeight: '1.75rem',
+                              paddingTop: '0.875rem',
+                              paddingBottom: '0.875rem',
+                              gap: '1rem'
+                            }}
                           >
-                            <FileText className="w-6 h-6 flex-shrink-0" />
-                            <span className="break-words">Notes</span>
+                            <FileText style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                            <span style={{ wordBreak: 'break-word' }}>Notes</span>
                           </button>
                         </div>
-                        <div className="py-4 px-5 border-b border-gray-800">
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleTogglePin()
                             }}
-                            className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
+                            className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                            style={{ 
+                              fontSize: '1.125rem',
+                              lineHeight: '1.75rem',
+                              paddingTop: '0.875rem',
+                              paddingBottom: '0.875rem',
+                              gap: '1rem'
+                            }}
                           >
                             {isPinned ? (
                               <>
-                                <PinOff className="w-6 h-6 flex-shrink-0" />
-                                <span className="break-words">Unpin Project</span>
+                                <PinOff style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                                <span style={{ wordBreak: 'break-word' }}>Unpin Project</span>
                               </>
                             ) : (
                               <>
-                                <Pin className="w-6 h-6 flex-shrink-0" />
-                                <span className="break-words">Pin Project</span>
+                                <Pin style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                                <span style={{ wordBreak: 'break-word' }}>Pin Project</span>
                               </>
                             )}
                           </button>

@@ -197,52 +197,76 @@ export default function AudioPlayer({
                     />
                     {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                     <div 
-                      className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] rounded-t-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-11 sm:rounded-lg sm:border sm:rounded-t-none sm:w-auto sm:min-w-[180px] sm:max-w-[260px]"
+                      className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60] fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-11 sm:left-auto sm:right-0 sm:rounded-lg sm:w-auto sm:min-w-[180px] sm:max-w-[260px]"
+                      style={{
+                        borderRadius: '1rem 1rem 0 0',
+                        maxHeight: '80vh',
+                      }}
                       onClick={(e) => e.stopPropagation()}
-                      style={{ maxHeight: '80vh' }}
                     >
                       <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 1rem)' }}>
                         {showEdit && (
-                          <div className="py-4 px-5 border-b border-gray-800">
+                          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleEdit()
                               }}
-                              className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
+                              className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                              style={{ 
+                                fontSize: '1.125rem',
+                                lineHeight: '1.75rem',
+                                paddingTop: '0.875rem',
+                                paddingBottom: '0.875rem',
+                                gap: '1rem'
+                              }}
                             >
-                              <Settings className="w-6 h-6 flex-shrink-0" />
-                              <span className="break-words">Edit</span>
+                              <Settings style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                              <span style={{ wordBreak: 'break-word' }}>Edit</span>
                             </button>
                           </div>
                         )}
                         {showDownload && onDownload && (
-                          <div className="py-4 px-5 border-b border-gray-800">
+                          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onDownload()
                                 setIsMenuOpen(false)
                               }}
-                              className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
+                              className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                              style={{ 
+                                fontSize: '1.125rem',
+                                lineHeight: '1.75rem',
+                                paddingTop: '0.875rem',
+                                paddingBottom: '0.875rem',
+                                gap: '1rem'
+                              }}
                             >
-                              <Download className="w-6 h-6 flex-shrink-0" />
-                              <span className="break-words">Download</span>
+                              <Download style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                              <span style={{ wordBreak: 'break-word' }}>Download</span>
                             </button>
                           </div>
                         )}
                         {showShare && onShare && (
-                          <div className="py-4 px-5 border-b border-gray-800">
+                          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onShare()
                                 setIsMenuOpen(false)
                               }}
-                              className="w-full text-left text-lg text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition py-3.5"
+                              className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                              style={{ 
+                                fontSize: '1.125rem',
+                                lineHeight: '1.75rem',
+                                paddingTop: '0.875rem',
+                                paddingBottom: '0.875rem',
+                                gap: '1rem'
+                              }}
                             >
-                              <Share2 className="w-6 h-6 flex-shrink-0" />
-                              <span className="break-words">Share</span>
+                              <Share2 style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                              <span style={{ wordBreak: 'break-word' }}>Share</span>
                             </button>
                           </div>
                         )}
