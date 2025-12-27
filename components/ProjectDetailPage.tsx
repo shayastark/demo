@@ -848,6 +848,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       src={track.audio_url} 
                       title={track.title}
                       coverImageUrl={track.image_url || project.cover_image_url}
+                      showEdit={isCreator}
                       onPlay={async () => {
                         // Track play in ProjectDetailPage too
                         try {

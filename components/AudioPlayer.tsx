@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Play, Pause, Volume2, Settings } from 'lucide-react'
+import { Play, Pause, Volume2, MoreVertical, Download, Share2, Settings } from 'lucide-react'
 import CassettePlayer from './CassettePlayer'
 import AudioEditor from './AudioEditor'
 
@@ -11,15 +11,35 @@ interface AudioPlayerProps {
   onPlay?: () => void
   coverImageUrl?: string | null
   showCassette?: boolean
+  onDownload?: () => void
+  onShare?: () => void
+  onEdit?: () => void
+  showDownload?: boolean
+  showShare?: boolean
+  showEdit?: boolean
 }
 
-export default function AudioPlayer({ src, title, onPlay, coverImageUrl, showCassette = true }: AudioPlayerProps) {
+export default function AudioPlayer({ 
+  src, 
+  title, 
+  onPlay, 
+  coverImageUrl, 
+  showCassette = true,
+  onDownload,
+  onShare,
+  onEdit,
+  showDownload = false,
+  showShare = false,
+  showEdit = false
+}: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(1)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -69,6 +89,32 @@ export default function AudioPlayer({ src, title, onPlay, coverImageUrl, showCas
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMenuOpen])
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit()
+    } else {
+      setIsEditorOpen(true)
+    }
+    setIsMenuOpen(false)
+  }
+
   return (
     <>
       <div className="space-y-4">
@@ -112,13 +158,56 @@ export default function AudioPlayer({ src, title, onPlay, coverImageUrl, showCas
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => setIsEditorOpen(true)}
-              className="flex-shrink-0 w-10 h-10 bg-gray-800 text-neon-green rounded-lg flex items-center justify-center hover:bg-gray-700 transition"
-              title="Edit audio"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
+            {/* Three-dot menu */}
+            {(showDownload || showShare || showEdit) && (
+              <div className="relative flex-shrink-0" ref={menuRef}>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="w-10 h-10 bg-gray-800 text-neon-green rounded-lg flex items-center justify-center hover:bg-gray-700 transition"
+                  title="More options"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+                
+                {isMenuOpen && (
+                  <div className="absolute right-0 top-11 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[160px]">
+                    {showEdit && (
+                      <button
+                        onClick={handleEdit}
+                        className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Edit
+                      </button>
+                    )}
+                    {showDownload && onDownload && (
+                      <button
+                        onClick={() => {
+                          onDownload()
+                          setIsMenuOpen(false)
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download
+                      </button>
+                    )}
+                    {showShare && onShare && (
+                      <button
+                        onClick={() => {
+                          onShare()
+                          setIsMenuOpen(false)
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-neon-green hover:bg-gray-800 flex items-center gap-2 transition"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        Share
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

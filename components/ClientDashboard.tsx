@@ -5,19 +5,38 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project } from '@/lib/types'
-import { Plus, Music, Eye } from 'lucide-react'
+import { Plus, Music, Eye, List, Grid } from 'lucide-react'
 
 export default function ClientDashboard() {
   const { ready, authenticated, user, login, logout } = usePrivy()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
+
+  // Load view preference from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedView = localStorage.getItem('projectViewMode') as 'list' | 'grid' | null
+      if (savedView === 'list' || savedView === 'grid') {
+        setViewMode(savedView)
+      }
+    }
+  }, [])
+
+  // Save view preference to localStorage
+  const handleViewModeChange = (mode: 'list' | 'grid') => {
+    setViewMode(mode)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('projectViewMode', mode)
+    }
+  }
 
   useEffect(() => {
     // Privy pattern: Always check ready first before checking authenticated
@@ -169,7 +188,35 @@ export default function ClientDashboard() {
       </nav>
 
       <main className="px-4 py-8 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-white">Your Projects</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-white">Your Projects</h1>
+          {!loading && projects.length > 0 && (
+            <div className="flex items-center gap-2 bg-gray-900 rounded-lg p-1">
+              <button
+                onClick={() => handleViewModeChange('grid')}
+                className={`p-2 rounded transition ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-black'
+                    : 'text-neon-green hover:bg-gray-800'
+                }`}
+                title="Grid view"
+              >
+                <Grid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => handleViewModeChange('list')}
+                className={`p-2 rounded transition ${
+                  viewMode === 'list'
+                    ? 'bg-white text-black'
+                    : 'text-neon-green hover:bg-gray-800'
+                }`}
+                title="List view"
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </div>
 
         {loading ? (
           <div className="text-center py-12 text-neon-green">Loading projects...</div>
@@ -184,41 +231,77 @@ export default function ClientDashboard() {
               Create Your First Project
             </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        ) : viewMode === 'grid' ? (
+          // Grid/Icon View - Smaller images for mobile
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {projects.map((project) => (
               <Link
                 key={project.id}
                 href={`/dashboard/projects/${project.id}`}
-                className="bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition"
+                className="bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition active:scale-95"
               >
                 {project.cover_image_url ? (
                   <img
                     src={project.cover_image_url}
                     alt={project.title}
-                    className="w-full h-48 object-cover"
+                    className="w-full aspect-square object-cover"
                   />
                 ) : (
-                  <div className="w-full h-48 bg-gray-800 flex items-center justify-center">
-                    <Music className="w-16 h-16 text-gray-600" />
+                  <div className="w-full aspect-square bg-gray-800 flex items-center justify-center">
+                    <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
                   </div>
                 )}
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-semibold text-neon-green">{project.title}</h3>
+                <div className="p-2 sm:p-3">
+                  <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2 mb-1">
+                    {project.title}
+                  </h3>
+                  <p className="text-xs text-neon-green opacity-70">
+                    {new Date(project.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          // List View
+          <div className="space-y-3">
+            {projects.map((project) => (
+              <Link
+                key={project.id}
+                href={`/dashboard/projects/${project.id}`}
+                className="bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition flex gap-4"
+              >
+                {project.cover_image_url ? (
+                  <img
+                    src={project.cover_image_url}
+                    alt={project.title}
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-800 flex items-center justify-center flex-shrink-0">
+                    <Music className="w-8 h-8 text-gray-600" />
+                  </div>
+                )}
+                <div className="flex-1 py-3 pr-4 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="text-base sm:text-lg font-semibold text-neon-green line-clamp-1">
+                      {project.title}
+                    </h3>
                     {username && (
-                      <span className="text-sm text-neon-green opacity-70">by {username}</span>
+                      <span className="text-xs text-neon-green opacity-70 flex-shrink-0">
+                        by {username}
+                      </span>
                     )}
                   </div>
                   {project.description && (
-                    <p className="text-neon-green text-sm mb-3 line-clamp-2 opacity-90">
+                    <p className="text-sm text-neon-green line-clamp-2 opacity-90 mb-2">
                       {project.description}
                     </p>
                   )}
-                  <div className="flex items-center justify-between text-sm text-neon-green opacity-70">
+                  <div className="flex items-center justify-between text-xs sm:text-sm text-neon-green opacity-70">
                     <span>{new Date(project.created_at).toLocaleDateString()}</span>
                     <div className="flex items-center gap-1">
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                       <span>View</span>
                     </div>
                   </div>

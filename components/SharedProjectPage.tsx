@@ -21,6 +21,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [addedToProject, setAddedToProject] = useState(false)
   const checkedAddedRef = useRef<string | null>(null) // Track which project/user combo we've checked
   const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
+  const [trackShareLinkCopied, setTrackShareLinkCopied] = useState<string | null>(null)
 
   useEffect(() => {
     loadProject()
@@ -244,6 +245,14 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     }
   }
 
+  const handleShareTrack = async (track: Track) => {
+    // Create a share link for the track (using project share token + track ID)
+    const trackShareUrl = `${window.location.origin}/share/${project?.share_token}?track=${track.id}`
+    await navigator.clipboard.writeText(trackShareUrl)
+    setTrackShareLinkCopied(track.id)
+    setTimeout(() => setTrackShareLinkCopied(null), 2000)
+  }
+
   const handleTrackPlay = async (trackId: string) => {
     if (!project) return
 
@@ -418,15 +427,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                 <div className="flex gap-4 mb-4">
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold mb-2 text-neon-green">{track.title}</h3>
-                    {project.allow_downloads && (
-                      <button
-                        onClick={() => handleDownload(track)}
-                        className="flex items-center gap-2 text-sm text-black hover:opacity-80 transition"
-                      >
-                        <Download className="w-4 h-4" />
-                        Download
-                      </button>
-                    )}
                   </div>
                 </div>
                 <AudioPlayer
@@ -434,6 +434,10 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   title={track.title}
                   onPlay={() => handleTrackPlay(track.id)}
                   coverImageUrl={track.image_url || project.cover_image_url}
+                  showDownload={project.allow_downloads || false}
+                  showShare={true}
+                  onDownload={() => handleDownload(track)}
+                  onShare={() => handleShareTrack(track)}
                 />
               </div>
             ))
