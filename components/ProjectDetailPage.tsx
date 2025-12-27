@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
 import AudioPlayer from './AudioPlayer'
-import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X } from 'lucide-react'
+import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload } from 'lucide-react'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -29,6 +29,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [editingTrackNotes, setEditingTrackNotes] = useState<Record<string, string>>({})
   const [savingNote, setSavingNote] = useState<string | null>(null)
   const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
+  const [newTracks, setNewTracks] = useState<Array<{ file: File | null; title: string; image?: File; imagePreview?: string }>>([])
+  const [addingTracks, setAddingTracks] = useState(false)
+  const [showAddTrackForm, setShowAddTrackForm] = useState(false)
 
   useEffect(() => {
     loadProject()
@@ -215,6 +218,129 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       ...editingTrackNotes,
       [trackId]: currentNote?.content || ''
     })
+  }
+
+  const uploadFile = async (file: File, path: string): Promise<string> => {
+    if (!user) throw new Error('User not authenticated')
+    
+    const privyId = user.id
+    const { data: dbUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('privy_id', privyId)
+      .single()
+
+    if (!dbUser) throw new Error('User not found')
+
+    const { data, error } = await supabase.storage
+      .from('hubba-files')
+      .upload(`${path}/${Date.now()}-${file.name}`, file)
+
+    if (error) throw error
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('hubba-files')
+      .getPublicUrl(data.path)
+
+    return publicUrl
+  }
+
+  const handleAddNewTrack = () => {
+    setNewTracks([...newTracks, { file: null, title: '' }])
+    setShowAddTrackForm(true)
+  }
+
+  const handleNewTrackFileChange = (index: number, file: File) => {
+    const updatedTracks = [...newTracks]
+    updatedTracks[index].file = file
+    if (!updatedTracks[index].title) {
+      const name = file.name.replace(/\.[^/.]+$/, '')
+      updatedTracks[index].title = name
+    }
+    setNewTracks(updatedTracks)
+  }
+
+  const handleNewTrackImageChange = (index: number, file: File) => {
+    const updatedTracks = [...newTracks]
+    updatedTracks[index].image = file
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      updatedTracks[index].imagePreview = reader.result as string
+      setNewTracks(updatedTracks)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeNewTrack = (index: number) => {
+    setNewTracks(newTracks.filter((_, i) => i !== index))
+    if (newTracks.length === 1) {
+      setShowAddTrackForm(false)
+    }
+  }
+
+  const handleSaveNewTracks = async () => {
+    if (!project || !user || newTracks.length === 0) return
+
+    setAddingTracks(true)
+    try {
+      const privyId = user.id
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', privyId)
+        .single()
+
+      if (!dbUser) throw new Error('User not found')
+
+      // Get current max order
+      const { data: existingTracks } = await supabase
+        .from('tracks')
+        .select('order')
+        .eq('project_id', project.id)
+        .order('order', { ascending: false })
+        .limit(1)
+
+      let nextOrder = 0
+      if (existingTracks && existingTracks.length > 0) {
+        nextOrder = existingTracks[0].order + 1
+      }
+
+      // Upload and save each new track
+      for (let i = 0; i < newTracks.length; i++) {
+        const track = newTracks[i]
+        if (!track.file) continue
+
+        const audioUrl = await uploadFile(track.file, `projects/${dbUser.id}/tracks`)
+        let trackImageUrl: string | undefined
+        if (track.image) {
+          trackImageUrl = await uploadFile(track.image, `projects/${dbUser.id}/track-images`)
+        }
+
+        const { error: trackError } = await supabase
+          .from('tracks')
+          .insert({
+            project_id: project.id,
+            title: track.title || `Track ${tracks.length + i + 1}`,
+            audio_url: audioUrl,
+            image_url: trackImageUrl,
+            order: nextOrder + i,
+          })
+
+        if (trackError) throw trackError
+      }
+
+      // Reload tracks
+      await loadProject()
+      
+      // Reset form
+      setNewTracks([])
+      setShowAddTrackForm(false)
+    } catch (error) {
+      console.error('Error adding tracks:', error)
+      alert('Failed to add tracks. Please try again.')
+    } finally {
+      setAddingTracks(false)
+    }
   }
 
   if (loading) {
@@ -413,7 +539,128 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         <div>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">Tracks ({tracks.length})</h2>
+            {isCreator && (
+              <button
+                onClick={handleAddNewTrack}
+                className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
+              >
+                <Plus className="w-4 h-4" />
+                Add Track
+              </button>
+            )}
           </div>
+
+          {/* Add Track Form (for creators) */}
+          {isCreator && showAddTrackForm && (
+            <div className="bg-gray-900 rounded-lg p-4 mb-4 border-2 border-neon-green border-opacity-30">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-neon-green">Add New Tracks</h3>
+                <button
+                  onClick={() => {
+                    setShowAddTrackForm(false)
+                    setNewTracks([])
+                  }}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 mb-4">
+                {newTracks.map((track, index) => (
+                  <div key={index} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="font-medium text-neon-green">Track {index + 1}</h4>
+                      <button
+                        onClick={() => removeNewTrack(index)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File (MP3) *</label>
+                        <input
+                          type="file"
+                          accept="audio/mpeg,audio/mp3"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleNewTrackFileChange(index, file)
+                          }}
+                          className="w-full text-sm text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs text-neon-green opacity-70 mb-1">Track Title *</label>
+                        <input
+                          type="text"
+                          value={track.title}
+                          onChange={(e) => {
+                            const updatedTracks = [...newTracks]
+                            updatedTracks[index].title = e.target.value
+                            setNewTracks(updatedTracks)
+                          }}
+                          className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
+                          placeholder="Enter track title"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs text-neon-green opacity-70 mb-1">Track Image (Optional)</label>
+                        {track.imagePreview ? (
+                          <div className="relative w-24 h-24 rounded overflow-hidden mb-2">
+                            <img src={track.imagePreview} alt="Track preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updatedTracks = [...newTracks]
+                                updatedTracks[index].image = undefined
+                                updatedTracks[index].imagePreview = undefined
+                                setNewTracks(updatedTracks)
+                              }}
+                              className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleNewTrackImageChange(index, file)
+                            }}
+                            className="w-full text-sm text-white"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAddNewTrack}
+                  className="flex items-center gap-2 text-sm text-neon-green hover:opacity-80"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Another Track
+                </button>
+                <button
+                  onClick={handleSaveNewTracks}
+                  disabled={addingTracks || newTracks.some(t => !t.file || !t.title)}
+                  className="ml-auto bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {addingTracks ? 'Adding...' : 'Save Tracks'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {tracks.length === 0 ? (
             <div className="text-center py-12 bg-gray-900 rounded-lg">
