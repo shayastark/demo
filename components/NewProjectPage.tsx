@@ -148,10 +148,10 @@ export default function NewProjectPage() {
         if (trackError) throw trackError
       }
 
-      // Initialize metrics
+      // Initialize metrics with explicit 0 values
       await supabase
         .from('project_metrics')
-        .insert({ project_id: project.id })
+        .insert({ project_id: project.id, plays: 0, shares: 0, adds: 0 })
 
       router.push(`/dashboard/projects/${project.id}`)
     } catch (error) {

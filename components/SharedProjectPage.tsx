@@ -238,7 +238,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           // Create metrics record if it doesn't exist
           const { error: insertError } = await supabase
             .from('project_metrics')
-            .insert({ project_id: project.id, shares: 1 })
+            .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
 
           if (insertError) {
             console.error('Error creating metrics:', insertError)
@@ -298,7 +298,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       } else {
         await supabase
           .from('project_metrics')
-          .insert({ project_id: project.id, adds: 1 })
+          .insert({ project_id: project.id, adds: 1, plays: 0, shares: 0 })
       }
 
       setAddedToProject(true)
@@ -389,7 +389,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         // Create metrics record if it doesn't exist
         const { error: insertError } = await supabase
           .from('project_metrics')
-          .insert({ project_id: project.id, plays: 1 })
+          .insert({ project_id: project.id, plays: 1, shares: 0, adds: 0 })
 
         if (insertError) {
           console.error('Error creating metrics:', insertError)

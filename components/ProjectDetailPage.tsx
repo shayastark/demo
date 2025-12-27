@@ -167,6 +167,38 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     setShareLinkCopied(true)
     setTimeout(() => setShareLinkCopied(false), 2000)
     setIsProjectMenuOpen(false)
+
+    // Track share
+    try {
+      // Insert share record
+      await supabase
+        .from('project_shares')
+        .insert({ project_id: project.id })
+
+      // Update metrics
+      const { data: metrics, error: metricsError } = await supabase
+        .from('project_metrics')
+        .select('shares')
+        .eq('project_id', project.id)
+        .single()
+
+      if (metricsError && metricsError.code !== 'PGRST116') {
+        console.error('Error fetching metrics:', metricsError)
+      }
+
+      if (metrics) {
+        await supabase
+          .from('project_metrics')
+          .update({ shares: (metrics.shares || 0) + 1 })
+          .eq('project_id', project.id)
+      } else {
+        await supabase
+          .from('project_metrics')
+          .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
+      }
+    } catch (error) {
+      console.error('Error tracking share:', error)
+    }
   }
 
   const handleAddToQueue = async () => {
@@ -189,12 +221,46 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         dbUser = newUser
       }
 
-      // Add to user_projects if not already added
-      await supabase
+      // Check if already added
+      const { data: existingEntry } = await supabase
         .from('user_projects')
-        .upsert({ user_id: dbUser.id, project_id: project.id }, { onConflict: 'user_id,project_id' })
+        .select('id')
+        .eq('user_id', dbUser.id)
+        .eq('project_id', project.id)
+        .single()
 
-      alert('Project added to queue!')
+      if (!existingEntry) {
+        // Add to user_projects if not already added
+        await supabase
+          .from('user_projects')
+          .upsert({ user_id: dbUser.id, project_id: project.id }, { onConflict: 'user_id,project_id' })
+
+        // Track add
+        const { data: metrics, error: metricsError } = await supabase
+          .from('project_metrics')
+          .select('adds')
+          .eq('project_id', project.id)
+          .single()
+
+        if (metricsError && metricsError.code !== 'PGRST116') {
+          console.error('Error fetching metrics:', metricsError)
+        }
+
+        if (metrics) {
+          await supabase
+            .from('project_metrics')
+            .update({ adds: (metrics.adds || 0) + 1 })
+            .eq('project_id', project.id)
+        } else {
+          await supabase
+            .from('project_metrics')
+            .insert({ project_id: project.id, adds: 1, plays: 0, shares: 0 })
+        }
+
+        alert('Project added to queue!')
+      } else {
+        alert('Project is already in your queue.')
+      }
       setIsProjectMenuOpen(false)
     } catch (error) {
       console.error('Error adding to queue:', error)
@@ -236,17 +302,28 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
 
     try {
-      const { error } = await supabase
+      // Delete the project (cascade will handle tracks, notes, etc.)
+      const { data: deleteData, error: deleteError } = await supabase
         .from('projects')
         .delete()
         .eq('id', project.id)
+        .select()
 
-      if (error) throw error
+      if (deleteError) {
+        console.error('Delete error:', deleteError)
+        throw deleteError
+      }
 
+      if (!deleteData || deleteData.length === 0) {
+        throw new Error('Project was not deleted. It may not exist or you may not have permission.')
+      }
+
+      alert('Project deleted successfully!')
       router.push('/dashboard')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting project:', error)
-      alert('Failed to delete project')
+      const errorMessage = error?.message || 'Failed to delete project. Please try again.'
+      alert(`Error: ${errorMessage}`)
     }
   }
 
@@ -459,6 +536,18 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       if (playsDeleteError) {
         console.warn('Warning: Could not delete track plays:', playsDeleteError)
         // Continue anyway
+      }
+
+      // Verify the track belongs to this project before deleting
+      const { data: trackData, error: trackCheckError } = await supabase
+        .from('tracks')
+        .select('id, project_id')
+        .eq('id', trackId)
+        .eq('project_id', project.id)
+        .single()
+
+      if (trackCheckError || !trackData) {
+        throw new Error('Track not found or does not belong to this project.')
       }
 
       // Delete the track
