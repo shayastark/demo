@@ -224,11 +224,30 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     if (!user) throw new Error('User not authenticated')
     
     const privyId = user.id
-    const { data: dbUser } = await supabase
+    
+    // Get or create user
+    let { data: dbUser, error: userError } = await supabase
       .from('users')
       .select('id')
       .eq('privy_id', privyId)
       .single()
+
+    if (userError || !dbUser) {
+      // Try to create user if doesn't exist
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          privy_id: privyId,
+          email: user.email?.address || null,
+        })
+        .select('id')
+        .single()
+
+      if (createError || !newUser) {
+        throw new Error(createError?.message || 'Failed to get or create user')
+      }
+      dbUser = newUser
+    }
 
     if (!dbUser) throw new Error('User not found')
 
@@ -236,7 +255,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       .from('hubba-files')
       .upload(`${path}/${Date.now()}-${file.name}`, file)
 
-    if (error) throw error
+    if (error) {
+      console.error('Storage upload error:', error)
+      throw new Error(`Failed to upload file: ${error.message}`)
+    }
+
+    if (!data) {
+      throw new Error('Upload succeeded but no data returned')
+    }
 
     const { data: { publicUrl } } = supabase.storage
       .from('hubba-files')
@@ -284,31 +310,60 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     setAddingTracks(true)
     try {
       const privyId = user.id
-      const { data: dbUser } = await supabase
+      
+      // Get or create user
+      let { data: dbUser } = await supabase
         .from('users')
         .select('id')
         .eq('privy_id', privyId)
         .single()
 
+      if (!dbUser) {
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert({
+            privy_id: privyId,
+            email: user.email?.address || null,
+          })
+          .select('id')
+          .single()
+
+        if (userError || !newUser) {
+          throw new Error(userError?.message || 'Failed to create user')
+        }
+        dbUser = newUser
+      }
+
       if (!dbUser) throw new Error('User not found')
 
       // Get current max order
-      const { data: existingTracks } = await supabase
+      const { data: existingTracks, error: orderError } = await supabase
         .from('tracks')
         .select('order')
         .eq('project_id', project.id)
         .order('order', { ascending: false })
         .limit(1)
 
+      if (orderError) {
+        console.error('Error fetching existing tracks:', orderError)
+      }
+
       let nextOrder = 0
-      if (existingTracks && existingTracks.length > 0) {
+      if (existingTracks && existingTracks.length > 0 && existingTracks[0].order !== null) {
         nextOrder = existingTracks[0].order + 1
       }
 
       // Upload and save each new track
       for (let i = 0; i < newTracks.length; i++) {
         const track = newTracks[i]
-        if (!track.file) continue
+        if (!track.file) {
+          console.warn(`Skipping track ${i + 1}: no file provided`)
+          continue
+        }
+
+        if (!track.title || track.title.trim() === '') {
+          throw new Error(`Track ${i + 1} must have a title`)
+        }
 
         const audioUrl = await uploadFile(track.file, `projects/${dbUser.id}/tracks`)
         let trackImageUrl: string | undefined
@@ -320,24 +375,45 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           .from('tracks')
           .insert({
             project_id: project.id,
-            title: track.title || `Track ${tracks.length + i + 1}`,
+            title: track.title.trim(),
             audio_url: audioUrl,
-            image_url: trackImageUrl,
+            image_url: trackImageUrl || null,
             order: nextOrder + i,
           })
 
-        if (trackError) throw trackError
+        if (trackError) {
+          console.error('Error inserting track:', trackError)
+          throw new Error(`Failed to save track "${track.title}": ${trackError.message}`)
+        }
       }
 
+      // Reload project data
+      const { data: projectData, error: projectError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .single()
+
+      if (projectError) throw projectError
+      setProject(projectData)
+
       // Reload tracks
-      await loadProject()
+      const { data: tracksData, error: tracksError } = await supabase
+        .from('tracks')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('order', { ascending: true })
+
+      if (tracksError) throw tracksError
+      setTracks(tracksData || [])
       
       // Reset form
       setNewTracks([])
       setShowAddTrackForm(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding tracks:', error)
-      alert('Failed to add tracks. Please try again.')
+      const errorMessage = error?.message || 'Failed to add tracks. Please try again.'
+      alert(errorMessage)
     } finally {
       setAddingTracks(false)
     }
@@ -653,7 +729,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 </button>
                 <button
                   onClick={handleSaveNewTracks}
-                  disabled={addingTracks || newTracks.some(t => !t.file || !t.title)}
+                  disabled={addingTracks || newTracks.length === 0 || newTracks.some(t => !t.file || !t.title || t.title.trim() === '')}
                   className="ml-auto bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {addingTracks ? 'Adding...' : 'Save Tracks'}
