@@ -201,6 +201,8 @@ export default function AudioPlayer({
                       style={{
                         borderRadius: '1rem 1rem 0 0',
                         maxHeight: '80vh',
+                        width: '100%',
+                        maxWidth: '100%',
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >

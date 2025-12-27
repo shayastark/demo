@@ -846,6 +846,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     style={{
                       borderRadius: '1rem 1rem 0 0',
                       maxHeight: '80vh',
+                      width: '100%',
+                      maxWidth: '100%',
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -871,7 +873,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         </button>
                       </div>
                       {user && (
-                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -879,21 +881,21 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             }}
                             className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
                             style={{ 
-                              fontSize: '1.125rem',
-                              lineHeight: '1.75rem',
-                              paddingTop: '0.875rem',
-                              paddingBottom: '0.875rem',
-                              gap: '1rem',
+                              fontSize: '1rem',
+                              lineHeight: '1.5rem',
+                              paddingTop: '0.75rem',
+                              paddingBottom: '0.75rem',
+                              gap: '0.875rem',
                               minWidth: 0
                             }}
                           >
-                            <ListMusic style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                            <ListMusic style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                             <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Add to Queue</span>
                           </button>
                         </div>
                       )}
                       {user && (
-                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -902,21 +904,21 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             }}
                             className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
                             style={{ 
-                              fontSize: '1.125rem',
-                              lineHeight: '1.75rem',
-                              paddingTop: '0.875rem',
-                              paddingBottom: '0.875rem',
-                              gap: '1rem',
+                              fontSize: '1rem',
+                              lineHeight: '1.5rem',
+                              paddingTop: '0.75rem',
+                              paddingBottom: '0.75rem',
+                              gap: '0.875rem',
                               minWidth: 0
                             }}
                           >
-                            <FileText style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                            <FileText style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                             <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Notes</span>
                           </button>
                         </div>
                       )}
                       {user && (
-                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -924,22 +926,22 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             }}
                             className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
                             style={{ 
-                              fontSize: '1.125rem',
-                              lineHeight: '1.75rem',
-                              paddingTop: '0.875rem',
-                              paddingBottom: '0.875rem',
-                              gap: '1rem',
+                              fontSize: '1rem',
+                              lineHeight: '1.5rem',
+                              paddingTop: '0.75rem',
+                              paddingBottom: '0.75rem',
+                              gap: '0.875rem',
                               minWidth: 0
                             }}
                           >
                             {isPinned ? (
                               <>
-                                <PinOff style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                                <PinOff style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                                 <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Unpin Project</span>
                               </>
                             ) : (
                               <>
-                                <Pin style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                                <Pin style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                                 <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Pin Project</span>
                               </>
                             )}
@@ -947,7 +949,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         </div>
                       )}
                       {isCreator && (
-                        <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid rgb(55 65 81)' }}>
+                        <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -955,15 +957,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             }}
                             className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
                             style={{ 
-                              fontSize: '1.125rem',
-                              lineHeight: '1.75rem',
-                              paddingTop: '0.875rem',
-                              paddingBottom: '0.875rem',
-                              gap: '1rem',
+                              fontSize: '1rem',
+                              lineHeight: '1.5rem',
+                              paddingTop: '0.75rem',
+                              paddingBottom: '0.75rem',
+                              gap: '0.875rem',
                               minWidth: 0
                             }}
                           >
-                            <Trash2 style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
+                            <Trash2 style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                             <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete Project</span>
                           </button>
                         </div>
