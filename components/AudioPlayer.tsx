@@ -5,6 +5,37 @@ import { Play, Pause, Volume2, MoreVertical, Download, Share2, Settings } from '
 import CassettePlayer from './CassettePlayer'
 import AudioEditor from './AudioEditor'
 
+// Global audio manager to ensure only one track plays at a time
+const globalAudioManager = {
+  currentAudio: null as HTMLAudioElement | null,
+  currentSetIsPlaying: null as ((playing: boolean) => void) | null,
+  
+  setCurrent(audio: HTMLAudioElement | null, setIsPlaying: ((playing: boolean) => void) | null) {
+    // Pause the previously playing audio
+    if (this.currentAudio && this.currentAudio !== audio) {
+      this.currentAudio.pause()
+    }
+    // Update the previous player's state
+    if (this.currentSetIsPlaying && this.currentSetIsPlaying !== setIsPlaying) {
+      this.currentSetIsPlaying(false)
+    }
+    // Set the new current audio
+    this.currentAudio = audio
+    this.currentSetIsPlaying = setIsPlaying
+  },
+  
+  clear() {
+    if (this.currentAudio) {
+      this.currentAudio.pause()
+    }
+    if (this.currentSetIsPlaying) {
+      this.currentSetIsPlaying(false)
+    }
+    this.currentAudio = null
+    this.currentSetIsPlaying = null
+  }
+}
+
 interface AudioPlayerProps {
   src: string
   title: string
@@ -60,16 +91,35 @@ export default function AudioPlayer({
 
     const updateTime = () => setCurrentTime(audio.currentTime)
     const updateDuration = () => setDuration(audio.duration)
-    const handleEnded = () => setIsPlaying(false)
+    const handleEnded = () => {
+      setIsPlaying(false)
+      // Clear from global manager when track ends
+      if (globalAudioManager.currentAudio === audio) {
+        globalAudioManager.clear()
+      }
+    }
+
+    // Listen for pause events from other players
+    const handlePause = () => {
+      if (audio.paused) {
+        setIsPlaying(false)
+      }
+    }
 
     audio.addEventListener('timeupdate', updateTime)
     audio.addEventListener('loadedmetadata', updateDuration)
     audio.addEventListener('ended', handleEnded)
+    audio.addEventListener('pause', handlePause)
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime)
       audio.removeEventListener('loadedmetadata', updateDuration)
       audio.removeEventListener('ended', handleEnded)
+      audio.removeEventListener('pause', handlePause)
+      // Clean up if this audio was the current one
+      if (globalAudioManager.currentAudio === audio) {
+        globalAudioManager.clear()
+      }
     }
   }, [volume])
 
@@ -78,12 +128,21 @@ export default function AudioPlayer({
     if (!audio) return
 
     if (isPlaying) {
+      // Pause this track
       audio.pause()
+      setIsPlaying(false)
+      // Clear from global manager if this was the current track
+      if (globalAudioManager.currentAudio === audio) {
+        globalAudioManager.clear()
+      }
     } else {
+      // Stop any currently playing track
+      globalAudioManager.setCurrent(audio, setIsPlaying)
+      // Play this track
       audio.play()
+      setIsPlaying(true)
       onPlay?.()
     }
-    setIsPlaying(!isPlaying)
   }
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
