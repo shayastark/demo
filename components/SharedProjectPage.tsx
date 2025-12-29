@@ -61,22 +61,33 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, authenticated, user?.id, project?.id]) // Add ready check following Privy's pattern
 
-  // Close project menu when clicking outside
+  // Close project menu when clicking outside (desktop only)
   useEffect(() => {
+    if (typeof window === 'undefined' || !isProjectMenuOpen || isMobile) return
+    
     const handleClickOutside = (event: MouseEvent) => {
-      if (projectMenuRef.current && !projectMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      // Don't close if clicking the button that opens the menu
+      const menuButton = projectMenuRef.current?.querySelector('button')
+      if (menuButton && menuButton.contains(target)) {
+        return
+      }
+      // Close if clicking outside the menu container
+      if (projectMenuRef.current && !projectMenuRef.current.contains(target)) {
         setIsProjectMenuOpen(false)
       }
     }
 
-    if (isProjectMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
+    // Add listener with a small delay to avoid immediate closure
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside, true)
+    }, 100)
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside, true)
     }
-  }, [isProjectMenuOpen])
+  }, [isProjectMenuOpen, isMobile])
 
   // Check if project is pinned
   useEffect(() => {
@@ -544,11 +555,13 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                 
                 {isProjectMenuOpen && (
                   <>
-                    {/* Backdrop */}
-                    <div 
-                      className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
-                      onClick={() => setIsProjectMenuOpen(false)}
-                    />
+                    {/* Backdrop - only show on mobile */}
+                    {isMobile && (
+                      <div 
+                        className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
+                        onClick={() => setIsProjectMenuOpen(false)}
+                      />
+                    )}
                     {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                     <div 
                       className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60]"
@@ -561,7 +574,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                         width: isMobile ? '100%' : '280px',
                         maxWidth: isMobile ? '100%' : '320px',
                         borderRadius: isMobile ? '1rem 1rem 0 0' : '0.5rem',
-                        maxHeight: '80vh',
+                        maxHeight: isMobile ? '80vh' : 'auto',
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >

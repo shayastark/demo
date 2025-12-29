@@ -201,11 +201,13 @@ export default function AudioPlayer({
                 
                 {isMenuOpen && (
                   <>
-                    {/* Backdrop */}
-                    <div 
-                      className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
-                      onClick={() => setIsMenuOpen(false)}
-                    />
+                    {/* Backdrop - only show on mobile */}
+                    {isMobile && (
+                      <div 
+                        className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
+                        onClick={() => setIsMenuOpen(false)}
+                      />
+                    )}
                     {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                     <div 
                       className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60]"
@@ -218,7 +220,7 @@ export default function AudioPlayer({
                         width: isMobile ? '100%' : '220px',
                         maxWidth: isMobile ? '100%' : '280px',
                         borderRadius: isMobile ? '1rem 1rem 0 0' : '0.5rem',
-                        maxHeight: '80vh',
+                        maxHeight: isMobile ? '80vh' : 'auto',
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
