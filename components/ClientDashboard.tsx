@@ -260,21 +260,26 @@ export default function ClientDashboard() {
             </Link>
           </div>
         ) : (
-          // Grid View - More gap between cards
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8">
+          // Grid View with proper spacing - using inline styles for guaranteed spacing
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="bg-gray-900 rounded-xl hover:bg-gray-800 transition group p-3 sm:p-4"
+                style={{
+                  backgroundColor: '#111827',
+                  borderRadius: '12px',
+                  padding: '12px',
+                }}
+                className="hover:bg-gray-800 transition group"
               >
-                {/* Image container - relative for menu positioning */}
-                <div className="relative w-full aspect-square mb-3">
+                {/* Image with menu overlay */}
+                <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: '12px' }}>
                   <Link
                     href={`/dashboard/projects/${project.id}`}
-                    className="block w-full h-full"
+                    style={{ display: 'block', width: '100%', height: '100%' }}
                   >
                     {project.cover_image_url ? (
-                      <div className="relative w-full h-full rounded-lg overflow-hidden">
+                      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
                         <Image
                           src={project.cover_image_url}
                           alt={project.title}
@@ -284,16 +289,21 @@ export default function ClientDashboard() {
                         />
                       </div>
                     ) : (
-                      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                      <div style={{ width: '100%', height: '100%', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
                       </div>
                     )}
                   </Link>
                   
-                  {/* Three-dot menu - positioned on image */}
+                  {/* Three-dot menu button - TOP RIGHT of the IMAGE */}
                   <div 
-                    className="absolute top-2 right-2 z-20"
                     ref={(el) => { menuRefs.current[project.id] = el }}
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      zIndex: 20,
+                    }}
                   >
                     <button
                       onClick={(e) => {
@@ -301,93 +311,114 @@ export default function ClientDashboard() {
                         e.stopPropagation()
                         setOpenMenuId(openMenuId === project.id ? null : project.id)
                       }}
-                      className="w-8 h-8 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded-full flex items-center justify-center transition shadow-lg"
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                      className="hover:bg-black text-white transition shadow-lg"
                       title="More options"
                       type="button"
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <MoreVertical style={{ width: '16px', height: '16px' }} />
                     </button>
                   
-                  {openMenuId === project.id && (
-                    <>
-                      {/* Backdrop - only show on mobile */}
-                      {isMobile && (
+                    {openMenuId === project.id && (
+                      <>
+                        {/* Backdrop - only show on mobile */}
+                        {isMobile && (
+                          <div 
+                            onClick={() => setOpenMenuId(null)}
+                            style={{ 
+                              position: 'fixed',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                              zIndex: 55,
+                            }}
+                          />
+                        )}
+                        {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
                         <div 
-                          className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
-                          onClick={() => setOpenMenuId(null)}
-                          style={{ position: 'fixed' }}
-                        />
-                      )}
-                      {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
-                      <div 
-                        className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60]"
-                        style={{
-                          position: isMobile ? 'fixed' : 'absolute',
-                          bottom: isMobile ? 0 : 'auto',
-                          top: isMobile ? 'auto' : '2.5rem',
-                          left: isMobile ? 0 : 'auto',
-                          right: isMobile ? 0 : 0,
-                          width: isMobile ? '100%' : '200px',
-                          maxWidth: isMobile ? '100%' : '200px',
-                          borderRadius: isMobile ? '1rem 1rem 0 0' : '0.5rem',
-                          maxHeight: '80vh',
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 1rem)' }}>
-                          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCopyShareLink(project)
-                              }}
-                              className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                              style={{ 
-                                fontSize: '1rem',
-                                lineHeight: '1.5rem',
-                                paddingTop: '0.75rem',
-                                paddingBottom: '0.75rem',
-                                gap: '0.875rem',
-                                minWidth: 0
-                              }}
-                            >
-                              <Share2 style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                              <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Share</span>
-                            </button>
-                          </div>
-                          <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteProject(project)
-                              }}
-                              className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                              style={{ 
-                                fontSize: '1rem',
-                                lineHeight: '1.5rem',
-                                paddingTop: '0.75rem',
-                                paddingBottom: '0.75rem',
-                                gap: '0.875rem',
-                                minWidth: 0
-                              }}
-                            >
-                              <Trash2 style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                              <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete</span>
-                            </button>
+                          style={{
+                            position: isMobile ? 'fixed' : 'absolute',
+                            bottom: isMobile ? 0 : 'auto',
+                            top: isMobile ? 'auto' : '40px',
+                            left: isMobile ? 0 : 'auto',
+                            right: isMobile ? 0 : 0,
+                            width: isMobile ? '100%' : '200px',
+                            maxWidth: isMobile ? '100%' : '200px',
+                            borderRadius: isMobile ? '16px 16px 0 0' : '8px',
+                            maxHeight: '80vh',
+                            backgroundColor: '#111827',
+                            borderTop: '2px solid #374151',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            zIndex: 60,
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div style={{ overflowY: 'auto', maxHeight: 'calc(80vh - 16px)' }}>
+                            <div style={{ padding: '16px 20px', borderBottom: '1px solid #1f2937' }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCopyShareLink(project)
+                                }}
+                                className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                                style={{ 
+                                  fontSize: '16px',
+                                  lineHeight: '24px',
+                                  paddingTop: '12px',
+                                  paddingBottom: '12px',
+                                  gap: '14px',
+                                  minWidth: 0,
+                                }}
+                              >
+                                <Share2 style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Share</span>
+                              </button>
+                            </div>
+                            <div style={{ padding: '16px 20px', borderTop: '1px solid #374151' }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteProject(project)
+                                }}
+                                className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                                style={{ 
+                                  fontSize: '16px',
+                                  lineHeight: '24px',
+                                  paddingTop: '12px',
+                                  paddingBottom: '12px',
+                                  gap: '14px',
+                                  minWidth: 0,
+                                }}
+                              >
+                                <Trash2 style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
                   </div>
                 </div>
                 
-                {/* Title and date */}
+                {/* Title and date - BELOW the image */}
                 <Link
                   href={`/dashboard/projects/${project.id}`}
-                  className="block"
+                  style={{ display: 'block' }}
                 >
-                  <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2 mb-1">
+                  <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2" style={{ marginBottom: '4px' }}>
                     {project.title}
                   </h3>
                   <p className="text-xs text-neon-green opacity-70">
