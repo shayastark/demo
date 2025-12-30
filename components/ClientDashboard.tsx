@@ -265,14 +265,14 @@ export default function ClientDashboard() {
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition relative group"
+                className="bg-gray-900 rounded-lg hover:bg-gray-800 transition relative group p-3 sm:p-4"
               >
                 <Link
                   href={`/dashboard/projects/${project.id}`}
                   className="block"
                 >
                   {project.cover_image_url ? (
-                    <div className="relative w-full aspect-square p-3 sm:p-4">
+                    <div className="relative w-full aspect-square mb-3">
                       <div className="relative w-full h-full rounded-lg overflow-hidden">
                         <Image
                           src={project.cover_image_url}
@@ -284,13 +284,13 @@ export default function ClientDashboard() {
                       </div>
                     </div>
                   ) : (
-                    <div className="w-full aspect-square p-3 sm:p-4">
+                    <div className="w-full aspect-square mb-3">
                       <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
                         <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
                       </div>
                     </div>
                   )}
-                  <div className="p-2 sm:p-3">
+                  <div>
                     <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2 mb-1">
                       {project.title}
                     </h3>
@@ -302,7 +302,7 @@ export default function ClientDashboard() {
                 
                 {/* Three-dot menu */}
                 <div 
-                  className="absolute top-3 right-3 z-10"
+                  className="absolute top-4 right-4 z-20"
                   ref={(el) => { menuRefs.current[project.id] = el }}
                 >
                   <button
@@ -311,7 +311,7 @@ export default function ClientDashboard() {
                       e.stopPropagation()
                       setOpenMenuId(openMenuId === project.id ? null : project.id)
                     }}
-                    className="w-9 h-9 bg-gray-800 bg-opacity-90 hover:bg-opacity-100 text-white rounded-lg flex items-center justify-center transition shadow-lg"
+                    className="w-10 h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center transition shadow-lg hover:bg-gray-700"
                     title="More options"
                     type="button"
                   >
