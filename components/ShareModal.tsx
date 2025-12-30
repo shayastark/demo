@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Copy, Check, QrCode, Link2 } from 'lucide-react'
+import { X, Copy, Check, QrCode, Link2, Download } from 'lucide-react'
 import { showToast } from './Toast'
 
 interface ShareModalProps {
@@ -64,10 +64,33 @@ export default function ShareModal({ isOpen, onClose, shareUrl, title }: ShareMo
     setShowQR(false)
   }
 
-  if (!isOpen) return null
+  const handleDownloadQR = async () => {
+    try {
+      // Fetch the QR code image
+      const response = await fetch(qrCodeUrl)
+      const blob = await response.blob()
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${title.replace(/[^a-z0-9]/gi, '_')}_qr_code.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      showToast('QR code downloaded!', 'success')
+    } catch (error) {
+      console.error('Failed to download QR code:', error)
+      showToast('Failed to download QR code', 'error')
+    }
+  }
 
-  // Generate QR code using Google Charts API (simple, no dependencies)
+  // Generate QR code URL (moved up so handleDownloadQR can access it)
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`
+
+  if (!isOpen) return null
 
   return (
     <>
@@ -183,12 +206,12 @@ export default function ShareModal({ isOpen, onClose, shareUrl, title }: ShareMo
                   Back
                 </button>
                 <button
-                  onClick={handleCopyLink}
+                  onClick={handleDownloadQR}
                   style={{
                     flex: 1,
                     padding: '14px 20px',
-                    backgroundColor: copied ? '#10B981' : '#fff',
-                    color: copied ? '#fff' : '#000',
+                    backgroundColor: '#fff',
+                    color: '#000',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '16px',
@@ -201,17 +224,8 @@ export default function ShareModal({ isOpen, onClose, shareUrl, title }: ShareMo
                   }}
                   className="hover:opacity-90 transition"
                 >
-                  {copied ? (
-                    <>
-                      <Check style={{ width: '18px', height: '18px' }} />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy style={{ width: '18px', height: '18px' }} />
-                      Copy Link
-                    </>
-                  )}
+                  <Download style={{ width: '18px', height: '18px' }} />
+                  Download
                 </button>
               </div>
             </div>
