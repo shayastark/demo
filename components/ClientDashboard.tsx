@@ -6,10 +6,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Project } from '@/lib/types'
-import { Plus, Music, Eye, MoreVertical, Share2, Trash2, Copy } from 'lucide-react'
+import { Plus, Music, Eye, MoreVertical, Share2, Trash2 } from 'lucide-react'
 import { ProjectCardSkeleton } from './SkeletonLoader'
 import Image from 'next/image'
 import { showToast } from './Toast'
+import ShareModal from './ShareModal'
 
 export default function ClientDashboard() {
   const { ready, authenticated, user, login, logout } = usePrivy()
@@ -19,6 +20,8 @@ export default function ClientDashboard() {
   const [username, setUsername] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [shareModalProject, setShareModalProject] = useState<Project | null>(null)
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -154,11 +157,15 @@ export default function ClientDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, userId, authenticated]) // Depend on all state, but use ref to prevent duplicate processing
 
-  const handleCopyShareLink = async (project: Project) => {
-    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${project.share_token}`
-    await navigator.clipboard.writeText(url)
-    showToast('Share link copied!', 'success')
+  const handleOpenShareModal = (project: Project) => {
+    setShareModalProject(project)
+    setShareModalOpen(true)
     setOpenMenuId(null)
+  }
+
+  const handleCloseShareModal = () => {
+    setShareModalOpen(false)
+    setShareModalProject(null)
   }
 
   const handleDeleteProject = async (project: Project) => {
@@ -370,7 +377,7 @@ export default function ClientDashboard() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleCopyShareLink(project)
+                                  handleOpenShareModal(project)
                                 }}
                                 className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
                                 style={{ 
@@ -430,6 +437,16 @@ export default function ClientDashboard() {
           </div>
         )}
       </main>
+
+      {/* Share Modal */}
+      {shareModalProject && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={handleCloseShareModal}
+          shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${shareModalProject.share_token}`}
+          title={shareModalProject.title}
+        />
+      )}
     </div>
   )
 }
