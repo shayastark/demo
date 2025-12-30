@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
 import AudioPlayer from './AudioPlayer'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
+import { showToast } from './Toast'
+import Image from 'next/image'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -37,6 +39,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [showNotesModal, setShowNotesModal] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const projectMenuRef = useRef<HTMLDivElement>(null)
+  const [editingProject, setEditingProject] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editCoverImage, setEditCoverImage] = useState<File | null>(null)
+  const [editCoverImagePreview, setEditCoverImagePreview] = useState<string | null>(null)
+  const [savingProject, setSavingProject] = useState(false)
+  const [editingTracks, setEditingTracks] = useState<Record<string, { title: string; image?: File; imagePreview?: string }>>({})
+  const [savingTracks, setSavingTracks] = useState<Record<string, boolean>>({})
 
   // Detect mobile vs desktop
   useEffect(() => {
@@ -230,14 +240,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         
         if (updateError) {
           console.error('Error updating shares:', updateError)
+          console.error('Update error details:', JSON.stringify(updateError, null, 2))
         } else {
           // Reload metrics
-          const { data: updatedMetrics } = await supabase
+          const { data: updatedMetrics, error: reloadError } = await supabase
             .from('project_metrics')
             .select('*')
             .eq('project_id', project.id)
             .single()
-          if (updatedMetrics) {
+          if (reloadError) {
+            console.error('Error reloading metrics:', reloadError)
+          } else if (updatedMetrics) {
             setMetrics(updatedMetrics)
           }
         }
@@ -248,14 +261,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         
         if (insertError) {
           console.error('Error creating metrics:', insertError)
+          console.error('Insert error details:', JSON.stringify(insertError, null, 2))
         } else {
           // Reload metrics
-          const { data: newMetrics } = await supabase
+          const { data: newMetrics, error: reloadError } = await supabase
             .from('project_metrics')
             .select('*')
             .eq('project_id', project.id)
             .single()
-          if (newMetrics) {
+          if (reloadError) {
+            console.error('Error reloading new metrics:', reloadError)
+          } else if (newMetrics) {
             setMetrics(newMetrics)
           }
         }
@@ -319,6 +335,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           
           if (updateError) {
             console.error('Error updating adds:', updateError)
+            console.error('Update error details:', JSON.stringify(updateError, null, 2))
+          } else {
+            // Reload metrics to show updated count
+            const { data: updatedMetrics, error: reloadError } = await supabase
+              .from('project_metrics')
+              .select('*')
+              .eq('project_id', project.id)
+              .single()
+            if (reloadError) {
+              console.error('Error reloading metrics:', reloadError)
+            } else if (updatedMetrics) {
+              setMetrics(updatedMetrics)
+            }
           }
         } else {
           const { error: insertError } = await supabase
@@ -327,17 +356,30 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           
           if (insertError) {
             console.error('Error creating metrics:', insertError)
+            console.error('Insert error details:', JSON.stringify(insertError, null, 2))
+          } else {
+            // Reload metrics
+            const { data: newMetrics, error: reloadError } = await supabase
+              .from('project_metrics')
+              .select('*')
+              .eq('project_id', project.id)
+              .single()
+            if (reloadError) {
+              console.error('Error reloading new metrics:', reloadError)
+            } else if (newMetrics) {
+              setMetrics(newMetrics)
+            }
           }
         }
 
-        alert('Project added to queue!')
+        showToast('Project added to queue!', 'success')
       } else {
-        alert('Project is already in your queue.')
+        showToast('Project is already in your queue.', 'info')
       }
       setIsProjectMenuOpen(false)
     } catch (error) {
       console.error('Error adding to queue:', error)
-      alert('Failed to add to queue')
+      showToast('Failed to add to queue', 'error')
     }
   }
 
@@ -368,8 +410,179 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
   }
 
+  const startEditingProject = () => {
+    if (!project) return
+    setEditTitle(project.title)
+    setEditDescription(project.description || '')
+    setEditCoverImagePreview(project.cover_image_url || null)
+    setEditCoverImage(null)
+    setEditingProject(true)
+    setIsProjectMenuOpen(false)
+  }
+
+  const cancelEditingProject = () => {
+    setEditingProject(false)
+    setEditTitle('')
+    setEditDescription('')
+    setEditCoverImage(null)
+    setEditCoverImagePreview(null)
+  }
+
+  const handleSaveProject = async () => {
+    if (!project || !isCreator) return
+    setSavingProject(true)
+
+    try {
+      let coverImageUrl = project.cover_image_url
+
+      // Upload new cover image if provided
+      if (editCoverImage) {
+        const privyId = user?.id
+        if (!privyId) throw new Error('User not authenticated')
+
+        let { data: dbUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('privy_id', privyId)
+          .single()
+
+        if (!dbUser) {
+          const { data: newUser, error: userError } = await supabase
+            .from('users')
+            .insert({ privy_id: privyId, email: user?.email?.address || null })
+            .select('id')
+            .single()
+          if (userError || !newUser) throw new Error('Failed to get or create user')
+          dbUser = newUser
+        }
+
+        coverImageUrl = await uploadFile(editCoverImage, `projects/${dbUser.id}/cover-images`)
+      }
+
+      // Update project
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({
+          title: editTitle,
+          description: editDescription || null,
+          cover_image_url: coverImageUrl || null,
+        })
+        .eq('id', project.id)
+
+      if (updateError) throw updateError
+
+      showToast('Project updated successfully!', 'success')
+      setEditingProject(false)
+      await loadProject()
+    } catch (error: any) {
+      console.error('Error updating project:', error)
+      showToast(error?.message || 'Failed to update project. Please try again.', 'error')
+    } finally {
+      setSavingProject(false)
+    }
+  }
+
+  const handleEditCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setEditCoverImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setEditCoverImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const startEditingTrack = (track: Track) => {
+    setEditingTracks({
+      ...editingTracks,
+      [track.id]: {
+        title: track.title,
+        imagePreview: track.image_url || undefined,
+      },
+    })
+  }
+
+  const cancelEditingTrack = (trackId: string) => {
+    const newEditingTracks = { ...editingTracks }
+    delete newEditingTracks[trackId]
+    setEditingTracks(newEditingTracks)
+  }
+
+  const handleSaveTrack = async (track: Track) => {
+    if (!project || !isCreator) return
+    setSavingTracks({ ...savingTracks, [track.id]: true })
+
+    try {
+      let trackImageUrl = track.image_url
+
+      // Upload new track image if provided
+      const editData = editingTracks[track.id]
+      if (editData?.image) {
+        const privyId = user?.id
+        if (!privyId) throw new Error('User not authenticated')
+
+        let { data: dbUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('privy_id', privyId)
+          .single()
+
+        if (!dbUser) {
+          const { data: newUser, error: userError } = await supabase
+            .from('users')
+            .insert({ privy_id: privyId, email: user?.email?.address || null })
+            .select('id')
+            .single()
+          if (userError || !newUser) throw new Error('Failed to get or create user')
+          dbUser = newUser
+        }
+
+        trackImageUrl = await uploadFile(editData.image, `projects/${dbUser.id}/track-images`)
+      }
+
+      // Update track
+      const { error: updateError } = await supabase
+        .from('tracks')
+        .update({
+          title: editData?.title || track.title,
+          image_url: trackImageUrl || null,
+        })
+        .eq('id', track.id)
+
+      if (updateError) throw updateError
+
+      showToast('Track updated successfully!', 'success')
+      cancelEditingTrack(track.id)
+      await loadProject()
+    } catch (error: any) {
+      console.error('Error updating track:', error)
+      showToast(error?.message || 'Failed to update track. Please try again.', 'error')
+    } finally {
+      setSavingTracks({ ...savingTracks, [track.id]: false })
+    }
+  }
+
+  const handleTrackImageChange = (trackId: string, file: File) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setEditingTracks({
+        ...editingTracks,
+        [trackId]: {
+          ...editingTracks[trackId],
+          image: file,
+          imagePreview: reader.result as string,
+        },
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleDeleteProject = async () => {
     if (!project || !isCreator) return
+    setIsProjectMenuOpen(false)
+
     if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
       return
     }
@@ -391,12 +604,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         throw new Error('Project was not deleted. It may not exist or you may not have permission.')
       }
 
-      alert('Project deleted successfully!')
+      showToast('Project deleted successfully!', 'success')
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Error deleting project:', error)
       const errorMessage = error?.message || 'Failed to delete project. Please try again.'
-      alert(`Error: ${errorMessage}`)
+      showToast(`Error: ${errorMessage}`, 'error')
     }
   }
 
@@ -430,7 +643,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       setEditingProjectNote(false)
     } catch (error) {
       console.error('Error saving project note:', error)
-      alert('Failed to save note')
+        showToast('Failed to save note', 'error')
     } finally {
       setSavingNote(null)
     }
@@ -468,7 +681,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       setEditingTrackNotes({ ...editingTrackNotes, [trackId]: content })
     } catch (error) {
       console.error('Error saving track note:', error)
-      alert('Failed to save note')
+        showToast('Failed to save note', 'error')
     } finally {
       setSavingNote(null)
     }
@@ -642,11 +855,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       // Reload the entire project to ensure everything is in sync
       await loadProject()
 
-      alert('Track deleted successfully!')
+      showToast('Track deleted successfully!', 'success')
     } catch (error: any) {
       console.error('Error deleting track:', error)
       const errorMessage = error?.message || 'Failed to delete track. Please try again.'
-      alert(`Error: ${errorMessage}`)
+      showToast(`Error: ${errorMessage}`, 'error')
     }
   }
 
@@ -759,7 +972,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     } catch (error: any) {
       console.error('Error adding tracks:', error)
       const errorMessage = error?.message || 'Failed to add tracks. Please try again.'
-      alert(errorMessage)
+      showToast(errorMessage, 'error')
     } finally {
       setAddingTracks(false)
     }
@@ -810,25 +1023,110 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
       <main className="px-4 py-8 max-w-4xl mx-auto">
         {/* Cover Image */}
-        {project.cover_image_url && (
-          <div className="w-full h-40 md:h-56 rounded-lg overflow-hidden mb-6">
-            <img
+        {!editingProject && project.cover_image_url && (
+          <div className="w-full h-40 md:h-56 rounded-lg overflow-hidden mb-6 relative">
+            <Image
               src={project.cover_image_url}
               alt={project.title}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 768px"
             />
           </div>
         )}
 
         {/* Project Info */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-bold">{project.title}</h1>
-              {creatorUsername && (
-                <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
-              )}
+          {editingProject ? (
+            <div className="bg-gray-900 rounded-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-neon-green">Edit Project</h2>
+              
+              {/* Cover Image Edit */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-neon-green">Cover Image</label>
+                {editCoverImagePreview ? (
+                  <div className="relative w-full h-40 md:h-56 rounded-lg overflow-hidden mb-2">
+                    <Image
+                      src={editCoverImagePreview}
+                      alt="Cover preview"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 768px"
+                    />
+                    <button
+                      onClick={() => {
+                        setEditCoverImage(null)
+                        setEditCoverImagePreview(project.cover_image_url || null)
+                      }}
+                      className="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEditCoverImageChange}
+                  className="w-full text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                />
+              </div>
+
+              {/* Title Edit */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-neon-green">Title *</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  required
+                  className="w-full bg-black border border-gray-700 rounded px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green"
+                />
+              </div>
+
+              {/* Description Edit */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-neon-green">Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={4}
+                  className="w-full bg-black border border-gray-700 rounded px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green resize-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelEditingProject}
+                  disabled={savingProject}
+                  className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProject}
+                  disabled={savingProject || !editTitle.trim()}
+                  className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {savingProject ? 'Saving...' : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-4xl font-bold">{project.title}</h1>
+                  {creatorUsername && (
+                    <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
+                  )}
+                </div>
             {/* Project Menu */}
             <div className="relative z-50" ref={projectMenuRef}>
               <button
@@ -968,26 +1266,48 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         </div>
                       )}
                       {isCreator && (
-                        <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteProject()
-                            }}
-                            className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                            style={{ 
-                              fontSize: '1rem',
-                              lineHeight: '1.5rem',
-                              paddingTop: '0.75rem',
-                              paddingBottom: '0.75rem',
-                              gap: '0.875rem',
-                              minWidth: 0
-                            }}
-                          >
-                            <Trash2 style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                            <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete Project</span>
-                          </button>
-                        </div>
+                        <>
+                          <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                startEditingProject()
+                              }}
+                              className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                              style={{ 
+                                fontSize: '1rem',
+                                lineHeight: '1.5rem',
+                                paddingTop: '0.75rem',
+                                paddingBottom: '0.75rem',
+                                gap: '0.875rem',
+                                minWidth: 0
+                              }}
+                            >
+                              <Edit style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
+                              <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Edit Project</span>
+                            </button>
+                          </div>
+                          <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteProject()
+                              }}
+                              className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                              style={{ 
+                                fontSize: '1rem',
+                                lineHeight: '1.5rem',
+                                paddingTop: '0.75rem',
+                                paddingBottom: '0.75rem',
+                                gap: '0.875rem',
+                                minWidth: 0
+                              }}
+                            >
+                              <Trash2 style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
+                              <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete Project</span>
+                            </button>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -997,6 +1317,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           </div>
           {project.description && (
             <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
+          )}
+            </>
           )}
 
           {/* Share Link */}
@@ -1115,8 +1437,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               </div>
             ) : projectNote ? (
                         <div className="bg-black rounded-lg p-3 text-sm text-neon-green whitespace-pre-wrap opacity-90">
-                          {projectNote.content}
-                        </div>
+                {projectNote.content}
+              </div>
             ) : (
               <p className="text-sm text-neon-green opacity-70 italic">No notes yet. Click "Add Note" to add private notes about this project.</p>
             )}
@@ -1292,8 +1614,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       showEdit={isCreator}
                       showDownload={isCreator && project.allow_downloads}
                       showShare={true}
-                      onDownload={() => alert('Download functionality for tracks coming soon!')}
-                      onShare={() => alert('Share track functionality coming soon!')}
+                      onDownload={() => showToast('Download functionality for tracks coming soon!', 'info')}
+                      onShare={() => showToast('Share track functionality coming soon!', 'info')}
                       onEdit={undefined}
                       onPlay={async () => {
                         // Track play in ProjectDetailPage too
@@ -1355,14 +1677,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             
                             if (updateError) {
                               console.error('Error updating plays:', updateError)
+                              console.error('Update error details:', JSON.stringify(updateError, null, 2))
                             } else {
                               // Reload metrics to show updated count
-                              const { data: updatedMetrics } = await supabase
+                              const { data: updatedMetrics, error: reloadError } = await supabase
                                 .from('project_metrics')
                                 .select('*')
                                 .eq('project_id', project.id)
                                 .single()
-                              if (updatedMetrics) {
+                              if (reloadError) {
+                                console.error('Error reloading metrics:', reloadError)
+                              } else if (updatedMetrics) {
                                 setMetrics(updatedMetrics)
                               }
                             }
@@ -1373,14 +1698,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             
                             if (insertError) {
                               console.error('Error creating metrics:', insertError)
+                              console.error('Insert error details:', JSON.stringify(insertError, null, 2))
                             } else {
                               // Reload metrics
-                              const { data: newMetrics } = await supabase
+                              const { data: newMetrics, error: reloadError } = await supabase
                                 .from('project_metrics')
                                 .select('*')
                                 .eq('project_id', project.id)
                                 .single()
-                              if (newMetrics) {
+                              if (reloadError) {
+                                console.error('Error reloading new metrics:', reloadError)
+                              } else if (newMetrics) {
                                 setMetrics(newMetrics)
                               }
                             }

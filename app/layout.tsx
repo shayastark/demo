@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import PrivyProviderWrapper from '@/components/PrivyProviderWrapper'
+import ToastContainer from '@/components/Toast'
 
 export const metadata: Metadata = {
   title: 'Hubba - Share Your Music',
@@ -20,7 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <PrivyProviderWrapper>{children}</PrivyProviderWrapper>
+        <PrivyProviderWrapper>
+          {children}
+          <ToastContainer />
+        </PrivyProviderWrapper>
       </body>
     </html>
   )

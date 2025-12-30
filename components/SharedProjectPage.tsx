@@ -271,6 +271,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
           if (updateError) {
             console.error('Error updating shares:', updateError)
+            console.error('Update error details:', JSON.stringify(updateError, null, 2))
           }
         } else {
           // Create metrics record if it doesn't exist
@@ -280,6 +281,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
           if (insertError) {
             console.error('Error creating metrics:', insertError)
+            console.error('Insert error details:', JSON.stringify(insertError, null, 2))
           }
         }
       } catch (error) {
@@ -337,6 +339,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         
         if (updateError) {
           console.error('Error updating adds:', updateError)
+          console.error('Update error details:', JSON.stringify(updateError, null, 2))
         }
       } else {
         const { error: insertError } = await supabase
@@ -345,6 +348,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         
         if (insertError) {
           console.error('Error creating metrics:', insertError)
+          console.error('Insert error details:', JSON.stringify(insertError, null, 2))
         }
       }
 
@@ -458,6 +462,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         if (updateError) {
           console.error('Error updating plays:', updateError)
+          console.error('Update error details:', JSON.stringify(updateError, null, 2))
         }
       } else {
         // Create metrics record if it doesn't exist
@@ -467,6 +472,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         if (insertError) {
           console.error('Error creating metrics:', insertError)
+          console.error('Insert error details:', JSON.stringify(insertError, null, 2))
         }
       }
     } catch (error) {
