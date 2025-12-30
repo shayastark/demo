@@ -10,6 +10,7 @@ import AudioPlayer from './AudioPlayer'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
+import { ProjectDetailSkeleton } from './SkeletonLoader'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -979,11 +980,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-neon-green">Loading...</div>
-      </div>
-    )
+    return <ProjectDetailSkeleton />
   }
 
   if (!project) {
@@ -1586,25 +1583,123 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                 return (
                   <div key={track.id} className="bg-gray-900 rounded-lg p-4 space-y-4">
-                    <div className="flex gap-4">
+                    {editingTracks[track.id] ? (
+                      <div className="bg-gray-800 rounded-lg p-4">
+                        <h4 className="text-lg font-semibold mb-4 text-neon-green">Edit Track</h4>
+                        
+                        {/* Track Title Edit */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium mb-2 text-neon-green">Title *</label>
+                          <input
+                            type="text"
+                            value={editingTracks[track.id].title}
+                            onChange={(e) => {
+                              setEditingTracks({
+                                ...editingTracks,
+                                [track.id]: {
+                                  ...editingTracks[track.id],
+                                  title: e.target.value,
+                                },
+                              })
+                            }}
+                            required
+                            className="w-full bg-black border border-gray-700 rounded px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green"
+                          />
+                        </div>
+
+                        {/* Track Image Edit */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium mb-2 text-neon-green">Track Image</label>
+                          {editingTracks[track.id].imagePreview ? (
+                            <div className="relative w-32 h-32 rounded-lg overflow-hidden mb-2">
+                              <Image
+                                src={editingTracks[track.id].imagePreview || ''}
+                                alt="Track preview"
+                                fill
+                                className="object-cover"
+                                sizes="128px"
+                              />
+                              <button
+                                onClick={() => {
+                                  setEditingTracks({
+                                    ...editingTracks,
+                                    [track.id]: {
+                                      ...editingTracks[track.id],
+                                      image: undefined,
+                                      imagePreview: track.image_url || undefined,
+                                    },
+                                  })
+                                }}
+                                className="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-1 hover:bg-opacity-70"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : null}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleTrackImageChange(track.id, file)
+                            }}
+                            className="w-full text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                          />
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => cancelEditingTrack(track.id)}
+                            disabled={savingTracks[track.id]}
+                            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleSaveTrack(track)}
+                            disabled={savingTracks[track.id] || !editingTracks[track.id].title.trim()}
+                            className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {savingTracks[track.id] ? 'Saving...' : (
+                              <>
+                                <Save className="w-4 h-4" />
+                                Save Changes
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-4">
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="text-sm text-neon-green opacity-70 mb-1">Track {index + 1}</div>
-                            <h3 className="text-xl font-semibold text-neon-green">{track.title}</h3>
+                              <div className="text-sm text-neon-green opacity-70 mb-1">Track {index + 1}</div>
+                              <h3 className="text-xl font-semibold text-neon-green">{track.title}</h3>
                           </div>
-                          {isCreator && (
-                            <button
-                              onClick={() => handleDeleteTrack(track.id)}
-                              className="text-red-400 hover:text-red-300 transition p-2"
-                              title="Delete track"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
+                            {isCreator && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => startEditingTrack(track)}
+                                  className="text-neon-green hover:opacity-80 transition p-2"
+                                  title="Edit track"
+                                >
+                                  <Edit className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTrack(track.id)}
+                                  className="text-red-400 hover:text-red-300 transition p-2"
+                                  title="Delete track"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
                         </div>
+                            )}
                       </div>
                     </div>
+                      </div>
+                    )}
 
                     {/* Audio player for the track */}
                     <AudioPlayer 

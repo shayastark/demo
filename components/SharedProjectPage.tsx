@@ -7,6 +7,9 @@ import { supabase } from '@/lib/supabase'
 import { Project, Track } from '@/lib/types'
 import AudioPlayer from './AudioPlayer'
 import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, FileText, Trash2 } from 'lucide-react'
+import { showToast } from './Toast'
+import Image from 'next/image'
+import { ProjectDetailSkeleton } from './SkeletonLoader'
 
 interface SharedProjectPageProps {
   token: string
@@ -481,11 +484,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-neon-green">Loading...</div>
-      </div>
-    )
+    return <ProjectDetailSkeleton />
   }
 
   if (!project) {
@@ -530,11 +529,13 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Cover Image */}
         {project.cover_image_url && (
-          <div className="w-full h-40 md:h-56 rounded-lg overflow-hidden mb-6">
-            <img
+          <div className="w-full h-40 md:h-56 rounded-lg overflow-hidden mb-6 relative">
+            <Image
               src={project.cover_image_url}
               alt={project.title}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 768px"
             />
           </div>
         )}
@@ -630,7 +631,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
-                              alert('Notes feature coming soon!')
+                              showToast('Notes feature coming soon!', 'info')
                               setIsProjectMenuOpen(false)
                             }}
                             className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"

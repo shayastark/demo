@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project } from '@/lib/types'
 import { Plus, Music, Eye } from 'lucide-react'
+import { ProjectCardSkeleton } from './SkeletonLoader'
+import Image from 'next/image'
 
 export default function ClientDashboard() {
   const { ready, authenticated, user, login, logout } = usePrivy()
@@ -172,7 +174,11 @@ export default function ClientDashboard() {
         <h1 className="text-3xl font-bold mb-6 text-white">Your Projects</h1>
 
         {loading ? (
-          <div className="text-center py-12 text-neon-green">Loading projects...</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+              <ProjectCardSkeleton key={i} />
+            ))}
+          </div>
         ) : projects.length === 0 ? (
           <div className="text-center py-12">
             <Music className="w-16 h-16 mx-auto mb-4 text-neon-green opacity-50" />
@@ -194,11 +200,15 @@ export default function ClientDashboard() {
                 className="bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition active:scale-95"
               >
                 {project.cover_image_url ? (
-                  <img
-                    src={project.cover_image_url}
-                    alt={project.title}
-                    className="w-full aspect-square object-cover"
-                  />
+                  <div className="relative w-full aspect-square">
+                    <Image
+                      src={project.cover_image_url}
+                      alt={project.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    />
+                  </div>
                 ) : (
                   <div className="w-full aspect-square bg-gray-800 flex items-center justify-center">
                     <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
