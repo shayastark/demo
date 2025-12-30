@@ -261,7 +261,7 @@ export default function ClientDashboard() {
           </div>
         ) : (
           // Grid View
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {projects.map((project) => (
               <div
                 key={project.id}
@@ -272,7 +272,7 @@ export default function ClientDashboard() {
                   className="block"
                 >
                   {project.cover_image_url ? (
-                    <div className="relative w-full aspect-square p-2">
+                    <div className="relative w-full aspect-square p-3 sm:p-4">
                       <div className="relative w-full h-full rounded-lg overflow-hidden">
                         <Image
                           src={project.cover_image_url}
@@ -284,7 +284,7 @@ export default function ClientDashboard() {
                       </div>
                     </div>
                   ) : (
-                    <div className="w-full aspect-square p-2">
+                    <div className="w-full aspect-square p-3 sm:p-4">
                       <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
                         <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
                       </div>
@@ -302,7 +302,7 @@ export default function ClientDashboard() {
                 
                 {/* Three-dot menu */}
                 <div 
-                  className="absolute top-2 right-2 z-10"
+                  className="absolute top-3 right-3 z-10"
                   ref={(el) => { menuRefs.current[project.id] = el }}
                 >
                   <button
@@ -311,11 +311,11 @@ export default function ClientDashboard() {
                       e.stopPropagation()
                       setOpenMenuId(openMenuId === project.id ? null : project.id)
                     }}
-                    className="w-8 h-8 bg-gray-800 bg-opacity-80 hover:bg-opacity-100 text-white rounded-lg flex items-center justify-center transition opacity-0 group-hover:opacity-100"
+                    className="w-9 h-9 bg-gray-800 bg-opacity-90 hover:bg-opacity-100 text-white rounded-lg flex items-center justify-center transition shadow-lg"
                     title="More options"
                     type="button"
                   >
-                    <MoreVertical className="w-4 h-4" />
+                    <MoreVertical className="w-5 h-5" />
                   </button>
                   
                   {openMenuId === project.id && (
