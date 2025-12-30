@@ -260,19 +260,20 @@ export default function ClientDashboard() {
             </Link>
           </div>
         ) : (
-          // Grid View
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+          // Grid View - More gap between cards
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8">
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="bg-gray-900 rounded-lg hover:bg-gray-800 transition relative group p-3 sm:p-4"
+                className="bg-gray-900 rounded-xl hover:bg-gray-800 transition group p-3 sm:p-4"
               >
-                <Link
-                  href={`/dashboard/projects/${project.id}`}
-                  className="block"
-                >
-                  {project.cover_image_url ? (
-                    <div className="relative w-full aspect-square mb-3">
+                {/* Image container - relative for menu positioning */}
+                <div className="relative w-full aspect-square mb-3">
+                  <Link
+                    href={`/dashboard/projects/${project.id}`}
+                    className="block w-full h-full"
+                  >
+                    {project.cover_image_url ? (
                       <div className="relative w-full h-full rounded-lg overflow-hidden">
                         <Image
                           src={project.cover_image_url}
@@ -282,41 +283,30 @@ export default function ClientDashboard() {
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                         />
                       </div>
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-square mb-3">
+                    ) : (
                       <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
                         <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
                       </div>
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2 mb-1">
-                      {project.title}
-                    </h3>
-                    <p className="text-xs text-neon-green opacity-70">
-                      {new Date(project.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </Link>
-                
-                {/* Three-dot menu */}
-                <div 
-                  className="absolute top-4 right-4 z-20"
-                  ref={(el) => { menuRefs.current[project.id] = el }}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setOpenMenuId(openMenuId === project.id ? null : project.id)
-                    }}
-                    className="w-10 h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center transition shadow-lg hover:bg-gray-700"
-                    title="More options"
-                    type="button"
+                    )}
+                  </Link>
+                  
+                  {/* Three-dot menu - positioned on image */}
+                  <div 
+                    className="absolute top-2 right-2 z-20"
+                    ref={(el) => { menuRefs.current[project.id] = el }}
                   >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setOpenMenuId(openMenuId === project.id ? null : project.id)
+                      }}
+                      className="w-8 h-8 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded-full flex items-center justify-center transition shadow-lg"
+                      title="More options"
+                      type="button"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
                   
                   {openMenuId === project.id && (
                     <>
@@ -389,7 +379,21 @@ export default function ClientDashboard() {
                       </div>
                     </>
                   )}
+                  </div>
                 </div>
+                
+                {/* Title and date */}
+                <Link
+                  href={`/dashboard/projects/${project.id}`}
+                  className="block"
+                >
+                  <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2 mb-1">
+                    {project.title}
+                  </h3>
+                  <p className="text-xs text-neon-green opacity-70">
+                    {new Date(project.created_at).toLocaleDateString()}
+                  </p>
+                </Link>
               </div>
             ))}
           </div>
