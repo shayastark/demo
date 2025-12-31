@@ -1166,173 +1166,110 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               
               {isProjectMenuOpen && (
                 <>
-                  {/* Backdrop - only show on mobile */}
-                  {isMobile && (
-                    <div 
-                      className="fixed inset-0 bg-black bg-opacity-50 z-[55]"
-                      onClick={() => setIsProjectMenuOpen(false)}
-                      style={{ position: 'fixed' }}
-                    />
-                  )}
-                  {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
+                  {/* Backdrop */}
                   <div 
-                    className="bg-gray-900 border-t-2 border-gray-700 shadow-2xl z-[60]"
-                    style={{
-                      position: isMobile ? 'fixed' : 'absolute',
-                      bottom: isMobile ? 0 : 'auto',
-                      top: isMobile ? 'auto' : '2.75rem',
-                      left: isMobile ? 0 : 'auto',
-                      right: isMobile ? 0 : 0,
-                      width: isMobile ? '100%' : '280px',
-                      maxWidth: isMobile ? '100%' : '280px',
-                      borderRadius: isMobile ? '1rem 1rem 0 0' : '0.5rem',
-                      maxHeight: isMobile ? '80vh' : 'auto',
-                    }}
+                    className="fixed inset-0 bg-black/50 z-[9998]"
+                    onClick={() => setIsProjectMenuOpen(false)}
+                  />
+                  {/* Bottom Tray */}
+                  <div 
+                    className="fixed left-0 right-0 bottom-0 bg-gray-900 rounded-t-2xl shadow-2xl z-[9999]"
+                    style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 1rem)' }}>
-                      <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
+                    {/* Handle bar */}
+                    <div className="flex justify-center pt-3 pb-2">
+                      <div className="w-10 h-1 bg-gray-600 rounded-full" />
+                    </div>
+                    
+                    {/* Project title */}
+                    <div className="px-4 pb-2 border-b border-gray-800">
+                      <p className="text-sm text-gray-400 truncate">{project.title}</p>
+                    </div>
+
+                    {/* Menu options */}
+                    <div className="py-2">
               <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleOpenShareModal()
-                          }}
-                          className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                          style={{ 
-                            fontSize: '1.125rem',
-                            lineHeight: '1.75rem',
-                            paddingTop: '0.875rem',
-                            paddingBottom: '0.875rem',
-                            gap: '1rem',
-                            minWidth: 0
-                          }}
+                        onClick={() => handleOpenShareModal()}
+                        className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                      >
+                        <Share2 className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm">Share</span>
+                      </button>
+                      
+                      {user && (
+                        <button
+                          onClick={() => handleAddToQueue()}
+                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
                         >
-                          <Share2 style={{ width: '1.5rem', height: '1.5rem', flexShrink: 0 }} />
-                          <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Share</span>
+                          <ListMusic className="w-5 h-5 text-gray-400" />
+                          <span className="text-sm">Add to Queue</span>
                         </button>
-                      </div>
-                      {user && (
-                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAddToQueue()
-                            }}
-                            className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                            style={{ 
-                              fontSize: '1rem',
-                              lineHeight: '1.5rem',
-                              paddingTop: '0.75rem',
-                              paddingBottom: '0.75rem',
-                              gap: '0.875rem',
-                              minWidth: 0
-                            }}
-                          >
-                            <ListMusic style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                            <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Add to Queue</span>
-                          </button>
-                        </div>
                       )}
+                      
                       {user && (
-                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setShowNotesModal(true)
-                              setIsProjectMenuOpen(false)
-                            }}
-                            className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                            style={{ 
-                              fontSize: '1rem',
-                              lineHeight: '1.5rem',
-                              paddingTop: '0.75rem',
-                              paddingBottom: '0.75rem',
-                              gap: '0.875rem',
-                              minWidth: 0
-                            }}
-                          >
-                            <FileText style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                            <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Notes</span>
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => {
+                            setShowNotesModal(true)
+                            setIsProjectMenuOpen(false)
+                          }}
+                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                        >
+                          <FileText className="w-5 h-5 text-gray-400" />
+                          <span className="text-sm">Notes</span>
+                        </button>
                       )}
+                      
                       {user && (
-                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgb(31 41 55)' }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleTogglePin()
-                            }}
-                            className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                            style={{ 
-                              fontSize: '1rem',
-                              lineHeight: '1.5rem',
-                              paddingTop: '0.75rem',
-                              paddingBottom: '0.75rem',
-                              gap: '0.875rem',
-                              minWidth: 0
-                            }}
-                          >
-                            {isPinned ? (
-                              <>
-                                <PinOff style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Unpin Project</span>
-                              </>
+                        <button
+                          onClick={() => handleTogglePin()}
+                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                        >
+                          {isPinned ? (
+                            <>
+                              <PinOff className="w-5 h-5 text-gray-400" />
+                              <span className="text-sm">Unpin Project</span>
+                            </>
                 ) : (
                   <>
-                                <Pin style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Pin Project</span>
+                              <Pin className="w-5 h-5 text-gray-400" />
+                              <span className="text-sm">Pin Project</span>
                   </>
                 )}
               </button>
-            </div>
                       )}
+
                       {isCreator && (
                         <>
-                          <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                startEditingProject()
-                              }}
-                              className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                              style={{ 
-                                fontSize: '1rem',
-                                lineHeight: '1.5rem',
-                                paddingTop: '0.75rem',
-                                paddingBottom: '0.75rem',
-                                gap: '0.875rem',
-                                minWidth: 0
-                              }}
-                            >
-                              <Edit style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                              <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Edit Project</span>
-                            </button>
-            </div>
-                          <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteProject()
-                              }}
-                              className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                              style={{ 
-                                fontSize: '1rem',
-                                lineHeight: '1.5rem',
-                                paddingTop: '0.75rem',
-                                paddingBottom: '0.75rem',
-                                gap: '0.875rem',
-                                minWidth: 0
-                              }}
-                            >
-                              <Trash2 style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
-                              <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete Project</span>
-                            </button>
-          </div>
+                          <div className="border-t border-gray-800 my-2" />
+                          <button
+                            onClick={() => startEditingProject()}
+                            className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                          >
+                            <Edit className="w-5 h-5 text-gray-400" />
+                            <span className="text-sm">Edit Project</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProject()}
+                            className="w-full px-4 py-3 text-left text-red-400 hover:bg-gray-800 flex items-center gap-3 transition"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                            <span className="text-sm">Delete Project</span>
+                          </button>
                         </>
                       )}
-                    </div>
-                  </div>
+            </div>
+
+                    {/* Cancel button */}
+                    <div className="px-4 pb-2">
+                      <button
+                        onClick={() => setIsProjectMenuOpen(false)}
+                        className="w-full py-3 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition"
+                      >
+                        Cancel
+                      </button>
+            </div>
+          </div>
                 </>
               )}
             </div>
