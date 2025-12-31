@@ -1149,130 +1149,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     )}
                   </div>
                 </div>
-            {/* Project Menu */}
-            <div className="relative z-50" ref={projectMenuRef}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  setIsProjectMenuOpen(!isProjectMenuOpen)
-                }}
-                className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
-                title="More options"
-                type="button"
-              >
-                <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
-              </button>
-              
-              {isProjectMenuOpen && (
-                <>
-                  {/* Backdrop */}
-                  <div 
-                    className="fixed inset-0 bg-black/50 z-[9998]"
-                    onClick={() => setIsProjectMenuOpen(false)}
-                  />
-                  {/* Bottom Tray */}
-                  <div 
-                    className="fixed left-0 right-0 bottom-0 bg-gray-900 rounded-t-2xl shadow-2xl z-[9999]"
-                    style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* Handle bar */}
-                    <div className="flex justify-center pt-3 pb-2">
-                      <div className="w-10 h-1 bg-gray-600 rounded-full" />
-                    </div>
-                    
-                    {/* Project title */}
-                    <div className="px-4 pb-2 border-b border-gray-800">
-                      <p className="text-sm text-gray-400 truncate">{project.title}</p>
-                    </div>
-
-                    {/* Menu options */}
-                    <div className="py-2">
-              <button
-                        onClick={() => handleOpenShareModal()}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
-                      >
-                        <Share2 className="w-5 h-5 text-gray-400" />
-                        <span className="text-sm">Share</span>
-                      </button>
-                      
-                      {user && (
-                        <button
-                          onClick={() => handleAddToQueue()}
-                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
-                        >
-                          <ListMusic className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm">Add to Queue</span>
-                        </button>
-                      )}
-                      
-                      {user && (
-                        <button
-                          onClick={() => {
-                            setShowNotesModal(true)
-                            setIsProjectMenuOpen(false)
-                          }}
-                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
-                        >
-                          <FileText className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm">Notes</span>
-                        </button>
-                      )}
-                      
-                      {user && (
-                        <button
-                          onClick={() => handleTogglePin()}
-                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
-                        >
-                          {isPinned ? (
-                            <>
-                              <PinOff className="w-5 h-5 text-gray-400" />
-                              <span className="text-sm">Unpin Project</span>
-                            </>
-                ) : (
-                  <>
-                              <Pin className="w-5 h-5 text-gray-400" />
-                              <span className="text-sm">Pin Project</span>
-                  </>
-                )}
-              </button>
-                      )}
-
-                      {isCreator && (
-                        <>
-                          <div className="border-t border-gray-800 my-2" />
-                          <button
-                            onClick={() => startEditingProject()}
-                            className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
-                          >
-                            <Edit className="w-5 h-5 text-gray-400" />
-                            <span className="text-sm">Edit Project</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteProject()}
-                            className="w-full px-4 py-3 text-left text-red-400 hover:bg-gray-800 flex items-center gap-3 transition"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                            <span className="text-sm">Delete Project</span>
-                          </button>
-                        </>
-                      )}
-            </div>
-
-                    {/* Cancel button */}
-                    <div className="px-4 pb-2">
-                      <button
-                        onClick={() => setIsProjectMenuOpen(false)}
-                        className="w-full py-3 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition"
-                      >
-                        Cancel
-                      </button>
-            </div>
-          </div>
-                </>
-              )}
-            </div>
+            {/* Project Menu Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                setIsProjectMenuOpen(!isProjectMenuOpen)
+              }}
+              className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
+              title="More options"
+              type="button"
+            >
+              <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
+            </button>
           </div>
           {project.description && (
             <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
@@ -1808,6 +1697,115 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${project.share_token}`}
           title={project.title}
         />
+      )}
+
+      {/* Project Menu Bottom Tray */}
+      {isProjectMenuOpen && project && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[9998]"
+            onClick={() => setIsProjectMenuOpen(false)}
+          />
+          {/* Bottom Tray */}
+          <div 
+            className="fixed left-0 right-0 bottom-0 bg-gray-900 rounded-t-2xl shadow-2xl z-[9999]"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
+          >
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 bg-gray-600 rounded-full" />
+            </div>
+            
+            {/* Project title */}
+            <div className="px-4 pb-2 border-b border-gray-800">
+              <p className="text-sm text-gray-400 truncate">{project.title}</p>
+            </div>
+
+            {/* Menu options */}
+            <div className="py-2">
+              <button
+                onClick={() => handleOpenShareModal()}
+                className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+              >
+                <Share2 className="w-5 h-5 text-gray-400" />
+                <span className="text-sm">Share</span>
+              </button>
+              
+              {user && (
+                <button
+                  onClick={() => handleAddToQueue()}
+                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                >
+                  <ListMusic className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm">Add to Queue</span>
+                </button>
+              )}
+              
+              {user && (
+                <button
+                  onClick={() => {
+                    setShowNotesModal(true)
+                    setIsProjectMenuOpen(false)
+                  }}
+                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                >
+                  <FileText className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm">Notes</span>
+                </button>
+              )}
+              
+              {user && (
+                <button
+                  onClick={() => handleTogglePin()}
+                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                >
+                  {isPinned ? (
+                    <>
+                      <PinOff className="w-5 h-5 text-gray-400" />
+                      <span className="text-sm">Unpin Project</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pin className="w-5 h-5 text-gray-400" />
+                      <span className="text-sm">Pin Project</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              {isCreator && (
+                <>
+                  <div className="border-t border-gray-800 my-2" />
+                  <button
+                    onClick={() => startEditingProject()}
+                    className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                  >
+                    <Edit className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm">Edit Project</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProject()}
+                    className="w-full px-4 py-3 text-left text-red-400 hover:bg-gray-800 flex items-center gap-3 transition"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    <span className="text-sm">Delete Project</span>
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Cancel button */}
+            <div className="px-4 pb-2">
+              <button
+                onClick={() => setIsProjectMenuOpen(false)}
+                className="w-full py-3 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

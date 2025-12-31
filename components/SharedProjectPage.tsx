@@ -575,103 +575,15 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                 )}
               </div>
             </div>
-            {/* Project Menu - Only show if authenticated */}
+            {/* Project Menu Button - Only show if authenticated */}
             {authenticated && user && (
-              <div className="relative" ref={projectMenuRef}>
-                <button
-                  onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
-                  className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
-                  title="More options"
-                >
-                  <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
-                </button>
-                
-                {isProjectMenuOpen && (
-                  <>
-                    {/* Backdrop */}
-                    <div 
-                      className="fixed inset-0 bg-black/50 z-[9998]"
-                      onClick={() => setIsProjectMenuOpen(false)}
-                    />
-                    {/* Bottom Tray */}
-                    <div 
-                      className="fixed left-0 right-0 bottom-0 bg-gray-900 rounded-t-2xl shadow-2xl z-[9999]"
-                      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {/* Handle bar */}
-                      <div className="flex justify-center pt-3 pb-2">
-                        <div className="w-10 h-1 bg-gray-600 rounded-full" />
-                      </div>
-                      
-                      {/* Project title */}
-                      <div className="px-4 pb-2 border-b border-gray-800">
-                        <p className="text-sm text-gray-400 truncate">{project.title}</p>
-                      </div>
-
-                      {/* Menu options */}
-                      <div className="py-2">
-                        <button
-                          onClick={() => handleCopyLink()}
-                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
-                        >
-                          <Share2 className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm">Share</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => handleAddToProject()}
-                          disabled={addedToProject}
-                          className={`w-full px-4 py-3 text-left hover:bg-gray-800 flex items-center gap-3 transition ${
-                            addedToProject ? 'text-gray-500' : 'text-white'
-                          }`}
-                        >
-                          <ListMusic className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => {
-                            showToast('Notes feature coming soon!', 'info')
-                            setIsProjectMenuOpen(false)
-                          }}
-                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
-                        >
-                          <FileText className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm">Notes</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => handleTogglePin()}
-                          className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
-                        >
-                          {isPinned ? (
-                            <>
-                              <PinOff className="w-5 h-5 text-gray-400" />
-                              <span className="text-sm">Unpin Project</span>
-                            </>
-                          ) : (
-                            <>
-                              <Pin className="w-5 h-5 text-gray-400" />
-                              <span className="text-sm">Pin Project</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Cancel button */}
-                      <div className="px-4 pb-2">
-                        <button
-                          onClick={() => setIsProjectMenuOpen(false)}
-                          className="w-full py-3 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+              <button
+                onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
+                className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
+                title="More options"
+              >
+                <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
+              </button>
             )}
           </div>
           {project.description && (
@@ -735,6 +647,92 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           )}
         </div>
       </div>
+
+      {/* Project Menu Bottom Tray */}
+      {isProjectMenuOpen && project && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[9998]"
+            onClick={() => setIsProjectMenuOpen(false)}
+          />
+          {/* Bottom Tray */}
+          <div 
+            className="fixed left-0 right-0 bottom-0 bg-gray-900 rounded-t-2xl shadow-2xl z-[9999]"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
+          >
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 bg-gray-600 rounded-full" />
+            </div>
+            
+            {/* Project title */}
+            <div className="px-4 pb-2 border-b border-gray-800">
+              <p className="text-sm text-gray-400 truncate">{project.title}</p>
+            </div>
+
+            {/* Menu options */}
+            <div className="py-2">
+              <button
+                onClick={() => handleCopyLink()}
+                className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+              >
+                <Share2 className="w-5 h-5 text-gray-400" />
+                <span className="text-sm">Share</span>
+              </button>
+              
+              <button
+                onClick={() => handleAddToProject()}
+                disabled={addedToProject}
+                className={`w-full px-4 py-3 text-left hover:bg-gray-800 flex items-center gap-3 transition ${
+                  addedToProject ? 'text-gray-500' : 'text-white'
+                }`}
+              >
+                <ListMusic className="w-5 h-5 text-gray-400" />
+                <span className="text-sm">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  showToast('Notes feature coming soon!', 'info')
+                  setIsProjectMenuOpen(false)
+                }}
+                className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+              >
+                <FileText className="w-5 h-5 text-gray-400" />
+                <span className="text-sm">Notes</span>
+              </button>
+              
+              <button
+                onClick={() => handleTogglePin()}
+                className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+              >
+                {isPinned ? (
+                  <>
+                    <PinOff className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm">Unpin Project</span>
+                  </>
+                ) : (
+                  <>
+                    <Pin className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm">Pin Project</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Cancel button */}
+            <div className="px-4 pb-2">
+              <button
+                onClick={() => setIsProjectMenuOpen(false)}
+                className="w-full py-3 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
