@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePrivy } from '@privy-io/react-auth'
 import { supabase } from '@/lib/supabase'
 import { Project, Track } from '@/lib/types'
-import AudioPlayer from './AudioPlayer'
+import TrackPlaylist from './TrackPlaylist'
 import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, FileText, Trash2 } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -753,21 +753,12 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           {tracks.length === 0 ? (
             <p className="text-neon-green">No tracks in this project yet.</p>
           ) : (
-            tracks.map((track) => (
-              <div key={track.id} className="bg-gray-900 rounded-lg p-4">
-                <div className="flex gap-4 mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold mb-2 text-neon-green">{track.title}</h3>
-                  </div>
-                </div>
-                <AudioPlayer
-                  src={track.audio_url}
-                  title={track.title}
-                  onPlay={() => handleTrackPlay(track.id)}
-                  coverImageUrl={track.image_url || project.cover_image_url}
-                />
-              </div>
-            ))
+            <TrackPlaylist
+              tracks={tracks}
+              projectCoverUrl={project.cover_image_url}
+              projectTitle={project.title}
+              onTrackPlay={handleTrackPlay}
+            />
           )}
         </div>
       </div>

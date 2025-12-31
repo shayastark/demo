@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
-import AudioPlayer from './AudioPlayer'
+import TrackPlaylist from './TrackPlaylist'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -1629,277 +1629,127 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               <p className="text-neon-green">No tracks in this project yet.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {tracks.map((track, index) => {
-                const trackNote = trackNotes[track.id]
-                const isEditingNote = editingTrackNotes.hasOwnProperty(track.id)
-                const noteContent = editingTrackNotes[track.id] || ''
+            <TrackPlaylist
+              tracks={tracks}
+              projectCoverUrl={project.cover_image_url}
+              projectTitle={project.title}
+              onTrackPlay={async (trackId) => {
+                // Track play in database
+                try {
+                  let userId: string | null = null
+                  if (user) {
+                    const privyId = user.id
+                    const { data: dbUser } = await supabase
+                      .from('users')
+                      .select('id')
+                      .eq('privy_id', privyId)
+                      .single()
+                    userId = dbUser?.id || null
+                  }
 
-                return (
-                  <div key={track.id} className="bg-gray-900 rounded-lg p-4 space-y-4">
-                    {editingTracks[track.id] ? (
-                      <div className="bg-gray-800 rounded-lg p-4">
-                        <h4 className="text-lg font-semibold mb-4 text-neon-green">Edit Track</h4>
-                        
-                        {/* Track Title Edit */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium mb-2 text-neon-green">Title *</label>
-                          <input
-                            type="text"
-                            value={editingTracks[track.id].title}
-                            onChange={(e) => {
-                              setEditingTracks({
-                                ...editingTracks,
-                                [track.id]: {
-                                  ...editingTracks[track.id],
-                                  title: e.target.value,
-                                },
-                              })
-                            }}
-                            required
-                            className="w-full bg-black border border-gray-700 rounded px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green"
-                          />
-                        </div>
+                  let ipAddress: string | null = null
+                  try {
+                    const response = await fetch('https://api.ipify.org?format=json')
+                    const data = await response.json()
+                    ipAddress = data.ip || null
+                  } catch (ipError) {
+                    console.warn('Could not fetch IP address:', ipError)
+                  }
 
-                        {/* Track Image Edit */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium mb-2 text-neon-green">Track Image</label>
-                          {editingTracks[track.id].imagePreview ? (
-                            <div className="relative w-32 h-32 rounded-lg overflow-hidden mb-2">
-                              <Image
-                                src={editingTracks[track.id].imagePreview || ''}
-                                alt="Track preview"
-                                fill
-                                className="object-cover"
-                                sizes="128px"
-                              />
-                              <button
-                                onClick={() => {
-                                  setEditingTracks({
-                                    ...editingTracks,
-                                    [track.id]: {
-                                      ...editingTracks[track.id],
-                                      image: undefined,
-                                      imagePreview: track.image_url || undefined,
-                                    },
-                                  })
-                                }}
-                                className="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-1 hover:bg-opacity-70"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ) : null}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) handleTrackImageChange(track.id, file)
-                            }}
-                            className="w-full text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                          />
-                        </div>
+                  const { error: playError } = await supabase
+                    .from('track_plays')
+                    .insert({ 
+                      track_id: trackId,
+                      user_id: userId,
+                      ip_address: ipAddress
+                    })
 
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => cancelEditingTrack(track.id)}
-                            disabled={savingTracks[track.id]}
-                            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => handleSaveTrack(track)}
-                            disabled={savingTracks[track.id] || !editingTracks[track.id].title.trim()}
-                            className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
-                          >
-                            {savingTracks[track.id] ? 'Saving...' : (
-                              <>
-                                <Save className="w-4 h-4" />
-                                Save Changes
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                              <div className="text-sm text-neon-green opacity-70 mb-1">Track {index + 1}</div>
-                              <h3 className="text-xl font-semibold text-neon-green">{track.title}</h3>
-                          </div>
-                            {isCreator && (
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => startEditingTrack(track)}
-                                  className="text-neon-green hover:opacity-80 transition p-2"
-                                  title="Edit track"
-                                >
-                                  <Edit className="w-5 h-5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteTrack(track.id)}
-                                  className="text-red-400 hover:text-red-300 transition p-2"
-                                  title="Delete track"
-                                >
-                                  <Trash2 className="w-5 h-5" />
-                                </button>
-                        </div>
-                            )}
-                      </div>
-                    </div>
-                      </div>
-                    )}
+                  if (playError) {
+                    console.error('Error inserting track play:', playError)
+                  }
 
-                    {/* Audio player for the track */}
-                    <AudioPlayer 
-                      src={track.audio_url} 
-                      title={track.title}
-                      coverImageUrl={track.image_url || project.cover_image_url}
-                      showEdit={isCreator}
-                      showDownload={isCreator && project.allow_downloads}
-                      onDownload={() => showToast('Download functionality for tracks coming soon!', 'info')}
-                      onEdit={undefined}
-                      onPlay={async () => {
-                        // Track play in ProjectDetailPage too
-                        try {
-                          // Get user ID if authenticated
-                          let userId: string | null = null
-                          if (user) {
-                            const privyId = user.id
-                            const { data: dbUser } = await supabase
-                              .from('users')
-                              .select('id')
-                              .eq('privy_id', privyId)
-                              .single()
-                            userId = dbUser?.id || null
-                          }
+                  // Update project metrics
+                  const { data: currentMetrics, error: metricsError } = await supabase
+                    .from('project_metrics')
+                    .select('plays')
+                    .eq('project_id', project.id)
+                    .single()
 
-                          // Get IP address (client-side approximation)
-                          let ipAddress: string | null = null
-                          try {
-                            // Try to get IP from a service (this is a client-side approximation)
-                            // Note: For production, you might want to use a server-side API route
-                            const response = await fetch('https://api.ipify.org?format=json')
-                            const data = await response.json()
-                            ipAddress = data.ip || null
-                          } catch (ipError) {
-                            console.warn('Could not fetch IP address:', ipError)
-                          }
+                  if (metricsError && metricsError.code !== 'PGRST116') {
+                    console.error('Error fetching metrics:', metricsError)
+                  }
 
-                          // Insert track play with user_id and ip_address
-                          const { error: playError } = await supabase
-                            .from('track_plays')
-                            .insert({ 
-                              track_id: track.id,
-                              user_id: userId,
-                              ip_address: ipAddress
-                            })
+                  if (currentMetrics) {
+                    const currentPlays = currentMetrics.plays ?? 0
+                    const { error: updateError } = await supabase
+                      .from('project_metrics')
+                      .update({ plays: currentPlays + 1 })
+                      .eq('project_id', project.id)
+                    
+                    if (!updateError) {
+                      const { data: updatedMetrics } = await supabase
+                        .from('project_metrics')
+                        .select('*')
+                        .eq('project_id', project.id)
+                        .single()
+                      if (updatedMetrics) {
+                        setMetrics(updatedMetrics)
+                      }
+                    }
+                  } else {
+                    await supabase
+                      .from('project_metrics')
+                      .insert({ project_id: project.id, plays: 1, shares: 0, adds: 0 })
+                  }
+                } catch (error) {
+                  console.error('Error tracking play:', error)
+                }
+              }}
+            />
+          )}
 
-                          if (playError) {
-                            console.error('Error inserting track play:', playError)
-                          }
+          {/* Track Notes Section - Only for creators */}
+          {isCreator && tracks.length > 0 && (
+            <div className="mt-6 bg-gray-900 rounded-xl p-4">
+              <h3 className="font-semibold text-neon-green mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-yellow-400" />
+                Track Notes
+                <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded">Private</span>
+              </h3>
+              <div className="space-y-3">
+                {tracks.map((track) => {
+                  const trackNote = trackNotes[track.id]
+                  const isEditingNote = editingTrackNotes.hasOwnProperty(track.id)
+                  const noteContent = editingTrackNotes[track.id] || ''
 
-                          // Update project metrics
-                          const { data: metrics, error: metricsError } = await supabase
-                            .from('project_metrics')
-                            .select('plays')
-                            .eq('project_id', project.id)
-                            .single()
-
-                          if (metricsError && metricsError.code !== 'PGRST116') {
-                            console.error('Error fetching metrics:', metricsError)
-                          }
-
-                          if (metrics) {
-                            const currentPlays = metrics.plays ?? 0
-                            const { error: updateError } = await supabase
-                              .from('project_metrics')
-                              .update({ plays: currentPlays + 1 })
-                              .eq('project_id', project.id)
-                            
-                            if (updateError) {
-                              console.error('Error updating plays:', updateError)
-                              console.error('Update error details:', JSON.stringify(updateError, null, 2))
-                            } else {
-                              // Reload metrics to show updated count
-                              const { data: updatedMetrics, error: reloadError } = await supabase
-                                .from('project_metrics')
-                                .select('*')
-                                .eq('project_id', project.id)
-                                .single()
-                              if (reloadError) {
-                                console.error('Error reloading metrics:', reloadError)
-                              } else if (updatedMetrics) {
-                                setMetrics(updatedMetrics)
-                              }
-                            }
-                          } else {
-                            const { error: insertError } = await supabase
-                              .from('project_metrics')
-                              .insert({ project_id: project.id, plays: 1, shares: 0, adds: 0 })
-                            
-                            if (insertError) {
-                              console.error('Error creating metrics:', insertError)
-                              console.error('Insert error details:', JSON.stringify(insertError, null, 2))
-                            } else {
-                              // Reload metrics
-                              const { data: newMetrics, error: reloadError } = await supabase
-                                .from('project_metrics')
-                                .select('*')
-                                .eq('project_id', project.id)
-                                .single()
-                              if (reloadError) {
-                                console.error('Error reloading new metrics:', reloadError)
-                              } else if (newMetrics) {
-                                setMetrics(newMetrics)
-                              }
-                            }
-                          }
-                        } catch (error) {
-                          console.error('Error tracking play:', error)
-                        }
-                      }}
-                    />
-
-                    {/* Track Notes (Private to Creator) - Only show if user is creator */}
-                    {isCreator && (
-                    <div className="border-t border-gray-800 pt-4">
+                  return (
+                    <div key={track.id} className="border-b border-gray-800 pb-3 last:border-0">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-yellow-400" />
-                          <span className="text-sm font-medium text-neon-green">Track Notes</span>
-                          <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded">Private</span>
-                        </div>
+                        <span className="text-sm text-white font-medium">{track.title}</span>
                         {!isEditingNote && (
                           <button
                             onClick={() => startEditingTrackNote(track.id)}
-                            className="text-xs text-black hover:opacity-80 flex items-center gap-1"
+                            className="text-xs text-neon-green hover:opacity-80 flex items-center gap-1"
                           >
                             <Edit className="w-3 h-3" />
-                            {trackNote ? 'Edit' : 'Add Note'}
+                            {trackNote ? 'Edit' : 'Add'}
                           </button>
                         )}
                       </div>
-
                       {isEditingNote ? (
                         <div className="space-y-2">
                           <textarea
                             value={noteContent}
                             onChange={(e) => setEditingTrackNotes({ ...editingTrackNotes, [track.id]: e.target.value })}
-                            placeholder="Add private notes about this track..."
-                            rows={3}
-                            className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-600 resize-none"
+                            placeholder="Add private notes..."
+                            rows={2}
+                            className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neon-green resize-none"
                           />
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleSaveTrackNote(track.id)}
                               disabled={savingNote === track.id}
-                              className="flex items-center gap-1 bg-yellow-600 text-black px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-yellow-500 transition disabled:opacity-50"
+                              className="flex items-center gap-1 bg-neon-green text-black px-3 py-1 rounded text-xs font-semibold hover:opacity-80 transition disabled:opacity-50"
                             >
                               <Save className="w-3 h-3" />
                               {savingNote === track.id ? 'Saving...' : 'Save'}
@@ -1910,27 +1760,24 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                 delete newEditing[track.id]
                                 setEditingTrackNotes(newEditing)
                               }}
-                              className="flex items-center gap-1 bg-gray-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-700 transition"
+                              className="text-xs text-gray-400 hover:text-white"
                             >
-                              <X className="w-3 h-3" />
                               Cancel
                             </button>
                           </div>
                         </div>
                       ) : trackNote ? (
-                        <div className="bg-black rounded-lg p-2 text-xs text-neon-green whitespace-pre-wrap opacity-90">
-                          {trackNote.content}
-                        </div>
+                        <p className="text-xs text-gray-400">{trackNote.content}</p>
                       ) : (
-                        <p className="text-xs text-neon-green opacity-70 italic">No notes yet.</p>
+                        <p className="text-xs text-gray-500 italic">No notes</p>
                       )}
                     </div>
-                    )}
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           )}
+
         </div>
       </main>
 
