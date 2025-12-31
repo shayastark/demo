@@ -1,7 +1,15 @@
 import type { Metadata } from 'next'
+import { Outfit } from 'next/font/google'
 import './globals.css'
 import PrivyProviderWrapper from '@/components/PrivyProviderWrapper'
 import ToastContainer from '@/components/Toast'
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-outfit',
+  weight: ['300', '400', '500', '600', '700', '800'],
+})
 
 export const metadata: Metadata = {
   title: 'Hubba - Share Your Music',
@@ -19,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={outfit.variable}>
+      <body className={outfit.className}>
         <PrivyProviderWrapper>
           {children}
           <ToastContainer />

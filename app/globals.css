@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== ANIMATIONS ===== */
 @keyframes slide-in {
   from {
     transform: translateX(100%);
@@ -13,24 +14,105 @@
   }
 }
 
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(57, 255, 20, 0.3), 0 0 40px rgba(57, 255, 20, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(57, 255, 20, 0.5), 0 0 60px rgba(57, 255, 20, 0.2);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
 
-:root {
-  --background: #000000;
-  --foreground: #ededed;
-  --neon-green: #39FF14;
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
 }
 
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ===== CSS VARIABLES ===== */
+:root {
+  --background: #000000;
+  --background-secondary: #0a0a0a;
+  --background-tertiary: #111111;
+  --foreground: #ededed;
+  --foreground-muted: #a0a0a0;
+  
+  /* Primary - Neon Green */
+  --neon-green: #39FF14;
+  --neon-green-dark: #2dd10f;
+  --neon-green-glow: rgba(57, 255, 20, 0.4);
+  
+  /* Secondary - Electric Teal */
+  --electric-teal: #00D9FF;
+  --electric-teal-dark: #00b8d9;
+  
+  /* Gradient */
+  --gradient-primary: linear-gradient(135deg, #39FF14 0%, #00D9FF 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #2dd10f 0%, #00b8d9 100%);
+  
+  /* Status Colors */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(57, 255, 20, 0.3);
+  --shadow-glow-strong: 0 0 30px rgba(57, 255, 20, 0.5), 0 0 60px rgba(57, 255, 20, 0.2);
+  
+  /* Card styles */
+  --card-bg: rgba(17, 24, 39, 0.8);
+  --card-border: rgba(55, 65, 81, 0.5);
+  --card-hover-border: rgba(57, 255, 20, 0.3);
+  
+  /* Font */
+  --font-outfit: 'Outfit', sans-serif;
+}
+
+/* ===== BODY STYLES ===== */
 body {
   color: var(--foreground);
-  background: #000000;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background: linear-gradient(180deg, #000000 0%, #0a0a0a 50%, #000000 100%);
+  background-attachment: fixed;
+  font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* ===== TYPOGRAPHY ===== */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: 2.5rem; line-height: 1.1; }
+h2 { font-size: 2rem; line-height: 1.2; }
+h3 { font-size: 1.5rem; line-height: 1.3; }
+
+@media (min-width: 640px) {
+  h1 { font-size: 3rem; }
+  h2 { font-size: 2.25rem; }
+  h3 { font-size: 1.75rem; }
 }
 
 /* Global link styling - replace any purple/blue with neon green */
@@ -142,6 +224,80 @@ a:active {
     color: #39FF14 !important;
   }
   
+  /* Gradient text */
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Gradient backgrounds */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-primary-hover:hover {
+    background: var(--gradient-primary-hover);
+  }
+  
+  /* Card styles */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1rem;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+  }
+  
+  .card:hover {
+    border-color: var(--card-hover-border);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+  
+  /* Floating card effect */
+  .card-float {
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+  }
+  
+  .card-float:hover {
+    box-shadow: var(--shadow-xl), var(--shadow-glow);
+    transform: translateY(-4px);
+  }
+  
+  /* Glow effects */
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .glow-strong {
+    box-shadow: var(--shadow-glow-strong);
+  }
+  
+  /* Button styles */
+  .btn-primary {
+    background: var(--gradient-primary);
+    color: #000;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-md);
+  }
+  
+  .btn-primary:hover {
+    background: var(--gradient-primary-hover);
+    box-shadow: var(--shadow-lg), var(--shadow-glow);
+    transform: translateY(-1px);
+  }
+  
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+  
   /* Cassette reel animations */
   @keyframes spin-reel {
     from {
@@ -158,6 +314,26 @@ a:active {
   
   .animate-spin-reel-reverse {
     animation: spin-reel 2s linear infinite reverse;
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #39FF14 0%, #00D9FF 100%);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #2dd10f 0%, #00b8d9 100%);
   }
 }
 

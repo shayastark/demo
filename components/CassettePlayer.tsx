@@ -8,46 +8,94 @@ interface CassettePlayerProps {
 
 export default function CassettePlayer({ coverImageUrl, isPlaying, title }: CassettePlayerProps) {
   return (
-    <div className="relative w-full max-w-sm mx-auto mb-4">
-      {/* Cassette Tape */}
+    <div className="relative w-full max-w-md mx-auto mb-6">
+      {/* Outer glow effect when playing */}
       <div 
-        className="relative shadow-2xl"
+        className={`absolute inset-0 rounded-2xl transition-all duration-500 ${
+          isPlaying ? 'opacity-100' : 'opacity-0'
+        }`}
         style={{
-          width: '280px',
-          height: '180px',
-          backgroundColor: 'rgba(226, 232, 240, 0.15)', // Slightly transparent like clear plastic
-          border: '3px solid #475569',
-          borderRadius: '8px',
+          background: 'radial-gradient(ellipse at center, rgba(57, 255, 20, 0.15) 0%, transparent 70%)',
+          filter: 'blur(20px)',
+          transform: 'scale(1.1)',
+        }}
+      />
+      
+      {/* Cassette Tape Body */}
+      <div 
+        className={`relative transition-all duration-300 ${isPlaying ? 'animate-glow-pulse' : ''}`}
+        style={{
+          width: '320px',
+          height: '200px',
           margin: '0 auto',
-          padding: '10px',
-          display: 'block',
-          backdropFilter: 'blur(2px)',
-          boxShadow: '0 6px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.2)',
-          position: 'relative'
+          background: 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%)',
+          borderRadius: '12px',
+          padding: '12px',
+          border: '2px solid #3a3a3a',
+          boxShadow: isPlaying 
+            ? '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 40px rgba(57, 255, 20, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            : '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          position: 'relative',
         }}
       >
-        {/* Corner Screws */}
-        <div style={{ position: 'absolute', top: '4px', left: '4px', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#cbd5e1', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)' }}></div>
-        <div style={{ position: 'absolute', top: '4px', right: '4px', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#cbd5e1', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)' }}></div>
-        <div style={{ position: 'absolute', bottom: '4px', left: '4px', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#cbd5e1', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)' }}></div>
-        <div style={{ position: 'absolute', bottom: '4px', right: '4px', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#cbd5e1', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)' }}></div>
+        {/* Top edge highlight */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: '20px',
+          right: '20px',
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+        }} />
 
-        {/* Cover Art - Takes up majority of cassette with even margins */}
+        {/* Corner screws with metallic look */}
+        {[
+          { top: '8px', left: '8px' },
+          { top: '8px', right: '8px' },
+          { bottom: '8px', left: '8px' },
+          { bottom: '8px', right: '8px' },
+        ].map((pos, i) => (
+          <div 
+            key={i}
+            style={{
+              position: 'absolute',
+              ...pos,
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 50%, #1a1a1a 100%)',
+              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.2), inset 0 -1px 2px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
+            }}
+          >
+            {/* Screw slot */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '6px',
+              height: '1px',
+              backgroundColor: '#1a1a1a',
+            }} />
+          </div>
+        ))}
+
+        {/* Label/Cover Art Area */}
         <div 
-          className="relative"
           style={{
-            width: 'calc(100% - 20px)',
-            height: '120px',
-            margin: '0 auto 8px auto',
-            backgroundColor: '#ffffff',
-            border: '1.5px solid #e2e8f0',
-            borderRadius: '3px',
-            padding: '3px',
+            width: 'calc(100% - 24px)',
+            height: '110px',
+            margin: '8px auto 10px auto',
+            background: coverImageUrl 
+              ? 'transparent' 
+              : 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)',
+            borderRadius: '6px',
+            overflow: 'hidden',
+            border: '1px solid #3a3a3a',
+            boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1), 0 1px 0 rgba(255,255,255,0.5)',
-            overflow: 'hidden'
           }}
         >
           {coverImageUrl ? (
@@ -58,168 +106,235 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                borderRadius: '2px'
               }}
             />
           ) : (
-            <div style={{ textAlign: 'center', color: '#64748b', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎵</div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#39FF14' }}>{title}</div>
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '16px',
+            }}>
+              <div style={{ 
+                fontSize: '32px', 
+                marginBottom: '8px',
+                filter: 'drop-shadow(0 0 8px rgba(57, 255, 20, 0.5))',
+              }}>🎵</div>
+              <div style={{ 
+                fontSize: '14px', 
+                fontWeight: '600',
+                color: '#39FF14',
+                textShadow: '0 0 10px rgba(57, 255, 20, 0.5)',
+                letterSpacing: '0.5px',
+              }}>{title}</div>
             </div>
           )}
         </div>
 
-        {/* Tape Reels Section - Bottom portion with reel windows */}
+        {/* Tape Window Section */}
         <div 
-          className="flex justify-between items-center"
           style={{
-            width: 'calc(100% - 20px)',
-            height: '42px',
+            width: 'calc(100% - 24px)',
+            height: '52px',
             margin: '0 auto',
+            background: 'linear-gradient(180deg, #0a0a0a 0%, #151515 50%, #0a0a0a 100%)',
+            borderRadius: '8px',
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '0 16px'
+            justifyContent: 'space-between',
+            padding: '0 20px',
+            border: '1px solid #2a2a2a',
+            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.5)',
           }}
         >
-          {/* Left Reel Window */}
-          <div 
-            className="relative"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#0f172a',
-              border: '2.5px solid #475569',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.2)'
-            }}
-          >
-            {/* Spinning Reel */}
+          {/* Left Reel */}
+          <div style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            background: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
+            border: '2px solid #2a2a2a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)',
+          }}>
             <div
-              className={`absolute ${isPlaying ? 'animate-spin-reel' : ''}`}
+              className={isPlaying ? 'animate-spin-reel' : ''}
               style={{
-                width: '32px',
-                height: '32px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '50%',
-                backgroundColor: '#451a03', // Brown tape color
-                border: '1.5px solid #78350f',
+                background: `conic-gradient(from 0deg, #3d2817 0deg, #5c3d24 60deg, #3d2817 120deg, #5c3d24 180deg, #3d2817 240deg, #5c3d24 300deg, #3d2817 360deg)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: isPlaying 
+                  ? '0 0 12px rgba(57, 255, 20, 0.3), inset 0 0 4px rgba(0,0,0,0.4)'
+                  : 'inset 0 0 4px rgba(0,0,0,0.4)',
                 position: 'relative',
-                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)'
               }}
             >
               {/* Reel spokes */}
-              <div style={{ position: 'absolute', width: '100%', height: '1.5px', backgroundColor: '#92400e' }}></div>
-              <div style={{ position: 'absolute', width: '100%', height: '1.5px', backgroundColor: '#92400e', transform: 'rotate(90deg)' }}></div>
-              <div style={{ position: 'absolute', width: '100%', height: '1.5px', backgroundColor: '#92400e', transform: 'rotate(45deg)' }}></div>
-              <div style={{ position: 'absolute', width: '100%', height: '1.5px', backgroundColor: '#92400e', transform: 'rotate(-45deg)' }}></div>
+              {[0, 45, 90, 135].map((deg) => (
+                <div 
+                  key={deg}
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '2px',
+                    background: 'linear-gradient(90deg, transparent 0%, #7a5530 30%, #7a5530 70%, transparent 100%)',
+                    transform: `rotate(${deg}deg)`,
+                  }}
+                />
+              ))}
               {/* Center hub */}
               <div style={{
-                width: '8px',
-                height: '8px',
+                width: '12px',
+                height: '12px',
                 borderRadius: '50%',
-                backgroundColor: '#e2e8f0',
-                border: '1.5px solid #cbd5e1',
-                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)'
-              }}></div>
+                background: 'linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%)',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  backgroundColor: '#505050',
+                }} />
+              </div>
             </div>
           </div>
 
-          {/* Center Section - Tape path indicator */}
-          <div 
-            style={{
-              flex: 1,
-              height: '4px',
-              margin: '0 12px',
-              backgroundColor: '#1e293b',
-              borderRadius: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)'
-            }}
-          >
+          {/* Center - Tape path with window */}
+          <div style={{
+            flex: 1,
+            height: '20px',
+            margin: '0 16px',
+            background: 'linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%)',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Tape strip */}
             <div style={{
               width: '100%',
-              height: '2px',
-              background: 'linear-gradient(to right, transparent, #451a03, transparent)',
-              borderRadius: '1px'
-            }}></div>
+              height: '4px',
+              background: 'linear-gradient(90deg, transparent, #4a3020, #5c3d24, #4a3020, transparent)',
+              boxShadow: isPlaying ? '0 0 8px rgba(57, 255, 20, 0.2)' : 'none',
+            }} />
+            {/* Tape guides */}
+            <div style={{ position: 'absolute', left: '8px', width: '3px', height: '12px', backgroundColor: '#2a2a2a', borderRadius: '1px' }} />
+            <div style={{ position: 'absolute', right: '8px', width: '3px', height: '12px', backgroundColor: '#2a2a2a', borderRadius: '1px' }} />
           </div>
 
-          {/* Right Reel Window */}
-          <div 
-            className="relative"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#0f172a',
-              border: '2.5px solid #475569',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.2)'
-            }}
-          >
-            {/* Spinning Reel - Same direction as left */}
+          {/* Right Reel */}
+          <div style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            background: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
+            border: '2px solid #2a2a2a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)',
+          }}>
             <div
-              className={`absolute ${isPlaying ? 'animate-spin-reel' : ''}`}
+              className={isPlaying ? 'animate-spin-reel' : ''}
               style={{
-                width: '32px',
-                height: '32px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '50%',
-                backgroundColor: '#451a03', // Brown tape color
-                border: '1.5px solid #78350f',
+                background: `conic-gradient(from 45deg, #3d2817 0deg, #5c3d24 60deg, #3d2817 120deg, #5c3d24 180deg, #3d2817 240deg, #5c3d24 300deg, #3d2817 360deg)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: isPlaying 
+                  ? '0 0 12px rgba(57, 255, 20, 0.3), inset 0 0 4px rgba(0,0,0,0.4)'
+                  : 'inset 0 0 4px rgba(0,0,0,0.4)',
                 position: 'relative',
-                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)'
               }}
             >
               {/* Reel spokes */}
-              <div style={{ position: 'absolute', width: '100%', height: '1.5px', backgroundColor: '#92400e' }}></div>
-              <div style={{ position: 'absolute', width: '100%', height: '1.5px', backgroundColor: '#92400e', transform: 'rotate(90deg)' }}></div>
-              <div style={{ position: 'absolute', width: '100%', height: '1.5px', backgroundColor: '#92400e', transform: 'rotate(45deg)' }}></div>
-              <div style={{ position: 'absolute', width: '100%', height: '1.5px', backgroundColor: '#92400e', transform: 'rotate(-45deg)' }}></div>
+              {[0, 45, 90, 135].map((deg) => (
+                <div 
+                  key={deg}
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '2px',
+                    background: 'linear-gradient(90deg, transparent 0%, #7a5530 30%, #7a5530 70%, transparent 100%)',
+                    transform: `rotate(${deg}deg)`,
+                  }}
+                />
+              ))}
               {/* Center hub */}
               <div style={{
-                width: '8px',
-                height: '8px',
+                width: '12px',
+                height: '12px',
                 borderRadius: '50%',
-                backgroundColor: '#e2e8f0',
-                border: '1.5px solid #cbd5e1',
-                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)'
-              }}></div>
+                background: 'linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%)',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  backgroundColor: '#505050',
+                }} />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Status indicator */}
+        {/* Status LED and label */}
         <div 
-          className="text-center"
           style={{
             position: 'absolute',
-            bottom: '6px',
+            bottom: '8px',
             left: '50%',
             transform: 'translateX(-50%)',
-            fontSize: '9px',
-            color: '#39FF14',
-            fontWeight: 'bold',
-            fontFamily: 'monospace',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            padding: '3px 8px',
-            borderRadius: '3px',
-            letterSpacing: '0.5px'
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '4px 12px',
+            background: 'rgba(0, 0, 0, 0.6)',
+            borderRadius: '12px',
+            backdropFilter: 'blur(4px)',
           }}
         >
-          {isPlaying ? '▶ PLAYING' : '⏸ PAUSED'}
+          {/* LED indicator */}
+          <div style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: isPlaying ? '#39FF14' : '#666',
+            boxShadow: isPlaying ? '0 0 8px #39FF14, 0 0 16px rgba(57, 255, 20, 0.5)' : 'none',
+            transition: 'all 0.3s ease',
+          }} />
+          <span style={{
+            fontSize: '10px',
+            fontWeight: '600',
+            color: isPlaying ? '#39FF14' : '#888',
+            fontFamily: 'var(--font-outfit), monospace',
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+            textShadow: isPlaying ? '0 0 10px rgba(57, 255, 20, 0.5)' : 'none',
+            transition: 'all 0.3s ease',
+          }}>
+            {isPlaying ? 'Playing' : 'Paused'}
+          </span>
         </div>
       </div>
     </div>
