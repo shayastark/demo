@@ -140,16 +140,16 @@ export default function ClientHomePage() {
           >
             Hubba
           </Link>
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-6 items-center">
             <Link
               href="/account"
-              className="text-xs text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
+              className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
             <button
               onClick={logout}
-              className="text-xs text-black hover:opacity-80"
+              className="text-sm text-gray-400 hover:text-white transition"
             >
               Sign out
             </button>

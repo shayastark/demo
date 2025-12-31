@@ -4,10 +4,13 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { Edit, Check, X } from 'lucide-react'
 
 export default function AccountPage() {
   const { ready, authenticated, user, login, logout } = usePrivy()
   const [username, setUsername] = useState('')
+  const [editingUsername, setEditingUsername] = useState('')
+  const [isEditingUsername, setIsEditingUsername] = useState(false)
   const [email, setEmail] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -81,40 +84,6 @@ export default function AccountPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, user?.id, authenticated]) // Depend on all state, but use ref to prevent duplicate processing
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!user) return
-    setSaving(true)
-    try {
-      const privyId = user.id
-
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
-
-      if (fetchError || !existingUser) {
-        alert('Unable to load your profile. Please try again.')
-        return
-      }
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ username: username.trim() || null })
-        .eq('id', existingUser.id)
-
-      if (updateError) throw updateError
-
-      alert('Username saved')
-    } catch (error) {
-      console.error('Error saving username:', error)
-      alert('Failed to save username. Please try again.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
   if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
@@ -166,39 +135,98 @@ export default function AccountPage() {
       <main className="px-4 py-8 max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-white">Account</h1>
 
-        <div className="bg-gray-900 rounded-lg p-4 md:p-6 space-y-4">
-          <div>
-            <label className="block text-sm text-neon-green opacity-70 mb-1">Email</label>
-            <div className="text-sm text-neon-green opacity-90">
+        <div className="bg-gray-900 rounded-lg p-4 md:p-6 space-y-6">
+          {/* Email - inline layout */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-white font-medium">Email:</label>
+            <span className="text-sm text-gray-300">
               {email || user?.email?.address || 'Not set'}
-            </div>
+            </span>
           </div>
 
-          <form onSubmit={handleSave} className="space-y-4">
-            <div>
-              <label className="block text-sm text-neon-green opacity-70 mb-1">
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Choose a username"
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
-              />
-              <p className="mt-1 text-xs text-neon-green opacity-70">
-                This will be used to identify you across Hubba.
-              </p>
-            </div>
+          {/* Username - show value with edit button */}
+          <div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-white font-medium">Username:</label>
+              {isEditingUsername ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="text"
+                    value={editingUsername}
+                    onChange={(e) => setEditingUsername(e.target.value)}
+                    placeholder="Choose a username"
+                    className="flex-1 max-w-xs bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:border-gray-500"
+                    autoFocus
+                  />
+                  <button
+                    onClick={async () => {
+                      setSaving(true)
+                      try {
+                        const privyId = user?.id
+                        if (!privyId) return
+                        
+                        const { data: existingUser } = await supabase
+                          .from('users')
+                          .select('id')
+                          .eq('privy_id', privyId)
+                          .single()
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-white text-black px-6 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-          </form>
+                        if (existingUser) {
+                          const { error: updateError } = await supabase
+                            .from('users')
+                            .update({ username: editingUsername.trim() || null })
+                            .eq('id', existingUser.id)
+
+                          if (updateError) throw updateError
+                          setUsername(editingUsername.trim())
+                          setIsEditingUsername(false)
+                        }
+                      } catch (error) {
+                        console.error('Error saving username:', error)
+                        alert('Failed to save username. Please try again.')
+                      } finally {
+                        setSaving(false)
+                      }
+                    }}
+                    disabled={saving}
+                    className="p-2 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50"
+                    title="Save"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingUsername(false)
+                      setEditingUsername(username)
+                    }}
+                    className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+                    title="Cancel"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-300">
+                    {username || 'Not set'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setEditingUsername(username)
+                      setIsEditingUsername(true)
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-white transition rounded-lg hover:bg-gray-800"
+                    title="Edit username"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              This will be used to identify you across Hubba.
+            </p>
+          </div>
         </div>
       </main>
     </div>
