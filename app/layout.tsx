@@ -3,6 +3,7 @@ import { Outfit } from 'next/font/google'
 import './globals.css'
 import PrivyProviderWrapper from '@/components/PrivyProviderWrapper'
 import ToastContainer from '@/components/Toast'
+import BottomTabBar from '@/components/BottomTabBar'
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -32,6 +33,7 @@ export default function RootLayout({
         <PrivyProviderWrapper>
           {children}
           <ToastContainer />
+          <BottomTabBar />
         </PrivyProviderWrapper>
       </body>
     </html>

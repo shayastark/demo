@@ -12,6 +12,7 @@ import { showToast } from './Toast'
 import Image from 'next/image'
 import { ProjectDetailSkeleton } from './SkeletonLoader'
 import ShareModal from './ShareModal'
+import { addToQueue } from './BottomTabBar'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -391,9 +392,37 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           }
         }
 
-        showToast('Project added to queue!', 'success')
+        // Also add all tracks to local playback queue
+        let addedCount = 0
+        for (const track of tracks) {
+          const added = addToQueue({
+            id: track.id,
+            title: track.title,
+            projectTitle: project.title,
+            audioUrl: track.audio_url,
+          })
+          if (added) addedCount++
+        }
+        
+        showToast(`Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to queue!`, 'success')
       } else {
-        showToast('Project is already in your queue.', 'info')
+        // Still add to local playback queue even if already in user's collection
+        let addedCount = 0
+        for (const track of tracks) {
+          const added = addToQueue({
+            id: track.id,
+            title: track.title,
+            projectTitle: project.title,
+            audioUrl: track.audio_url,
+          })
+          if (added) addedCount++
+        }
+        
+        if (addedCount > 0) {
+          showToast(`Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to queue!`, 'success')
+        } else {
+          showToast('All tracks already in queue', 'info')
+        }
       }
       setIsProjectMenuOpen(false)
     } catch (error) {

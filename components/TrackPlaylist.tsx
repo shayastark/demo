@@ -6,6 +6,7 @@ import CassettePlayer from './CassettePlayer'
 import SoundwaveVisualizer from './SoundwaveVisualizer'
 import { Track } from '@/lib/types'
 import { showToast } from './Toast'
+import { addToQueue } from './BottomTabBar'
 
 interface TrackPlaylistProps {
   tracks: Track[]
@@ -225,8 +226,18 @@ export default function TrackPlaylist({
   }
 
   const handleAddToQueue = (track: Track) => {
-    // For now, just show a toast - queue functionality can be expanded later
-    showToast(`Added to queue: ${track.title}`, 'success')
+    const added = addToQueue({
+      id: track.id,
+      title: track.title,
+      projectTitle: projectTitle,
+      audioUrl: track.audio_url,
+    })
+    
+    if (added) {
+      showToast(`Added to queue: ${track.title}`, 'success')
+    } else {
+      showToast(`Already in queue: ${track.title}`, 'info')
+    }
     setOpenMenuIndex(null)
   }
 
@@ -292,12 +303,20 @@ export default function TrackPlaylist({
           {/* Repeat */}
           <button
             onClick={() => setIsRepeat(!isRepeat)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
-              isRepeat 
-                ? 'bg-neon-green text-black' 
-                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
-            }`}
-            title="Repeat"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: isRepeat ? '#39FF14' : '#1f2937',
+              color: isRepeat ? '#000' : '#9ca3af',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            title={isRepeat ? 'Repeat On' : 'Repeat Off'}
           >
             <Repeat className="w-4 h-4" />
           </button>
@@ -336,13 +355,37 @@ export default function TrackPlaylist({
           {/* Volume */}
           <div className="relative group">
             <button
-              className="w-10 h-10 rounded-full bg-gray-800 text-gray-400 flex items-center justify-center hover:text-white hover:bg-gray-700 transition"
-              title="Volume"
+              onClick={() => {
+                // Toggle mute on click
+                if (audioRef.current) {
+                  if (volume > 0) {
+                    audioRef.current.volume = 0
+                    setVolume(0)
+                  } else {
+                    audioRef.current.volume = 1
+                    setVolume(1)
+                  }
+                }
+              }}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#1f2937',
+                color: volume === 0 ? '#ef4444' : '#9ca3af',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              title={volume === 0 ? 'Unmute' : 'Mute'}
             >
               <Volume2 className="w-4 h-4" />
             </button>
             {/* Volume slider - shows on hover */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-gray-800 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-gray-800 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto shadow-lg">
               <input
                 type="range"
                 min="0"
@@ -350,7 +393,7 @@ export default function TrackPlaylist({
                 step="0.1"
                 value={volume}
                 onChange={handleVolumeChange}
-                className="w-20 h-1 rounded-lg appearance-none cursor-pointer accent-neon-green"
+                style={{ width: '80px', accentColor: '#39FF14' }}
               />
             </div>
           </div>
@@ -358,7 +401,7 @@ export default function TrackPlaylist({
 
         {/* Current track name */}
         {currentTrack && (
-          <div className="text-center mt-4 text-neon-green font-medium truncate">
+          <div className="text-center text-neon-green font-medium truncate" style={{ marginTop: '20px', marginBottom: '8px' }}>
             Now Playing: {currentTrack.title}
           </div>
         )}
@@ -377,24 +420,38 @@ export default function TrackPlaylist({
             return (
               <div
                 key={track.id}
-                className={`px-5 py-5 flex items-center hover:bg-gray-800/50 transition rounded-lg mx-2 my-1 ${
-                  isCurrentTrack ? 'bg-gray-800/30' : ''
-                }`}
+                style={{
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '8px',
+                  margin: '4px 8px',
+                  backgroundColor: isCurrentTrack ? 'rgba(57, 255, 20, 0.1)' : 'transparent',
+                  borderLeft: isCurrentTrack ? '3px solid #39FF14' : '3px solid transparent',
+                  transition: 'all 0.2s',
+                }}
+                className="hover:bg-gray-800/50"
               >
                 {/* Track number */}
                 <div 
-                  className="w-10 flex items-center justify-center flex-shrink-0 cursor-pointer hover:opacity-80 transition"
-                  style={{ marginRight: '24px' }}
+                  className="flex items-center flex-shrink-0 cursor-pointer hover:opacity-80 transition"
+                  style={{ marginRight: '24px', minWidth: '50px' }}
                   onClick={() => handleTrackClick(index)}
                 >
-                  {isCurrentTrack && isPlaying ? (
-                    <div className="flex items-end gap-0.5 h-5">
+                  <span style={{ 
+                    color: isCurrentTrack ? '#39FF14' : '#6b7280',
+                    fontSize: '16px',
+                    fontWeight: isCurrentTrack ? 600 : 400,
+                    minWidth: '24px',
+                  }}>
+                    {index + 1}
+                  </span>
+                  {isCurrentTrack && isPlaying && (
+                    <div className="flex items-end gap-0.5 h-4 ml-2">
                       <div className="w-1 bg-neon-green animate-pulse" style={{ height: '60%', animationDelay: '0ms' }} />
                       <div className="w-1 bg-neon-green animate-pulse" style={{ height: '100%', animationDelay: '150ms' }} />
                       <div className="w-1 bg-neon-green animate-pulse" style={{ height: '40%', animationDelay: '300ms' }} />
                     </div>
-                  ) : (
-                    <span className="text-gray-500 text-lg">{index + 1}</span>
                   )}
                 </div>
 

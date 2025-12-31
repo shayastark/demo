@@ -10,6 +10,7 @@ import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, List
 import { showToast } from './Toast'
 import Image from 'next/image'
 import { ProjectDetailSkeleton } from './SkeletonLoader'
+import { addToQueue } from './BottomTabBar'
 
 interface SharedProjectPageProps {
   token: string
@@ -356,6 +357,22 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         }
       }
 
+      // Also add all tracks to local playback queue
+      let addedCount = 0
+      for (const track of tracks) {
+        const added = addToQueue({
+          id: track.id,
+          title: track.title,
+          projectTitle: project.title,
+          audioUrl: track.audio_url,
+        })
+        if (added) addedCount++
+      }
+      
+      if (addedCount > 0) {
+        showToast(`Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to queue!`, 'success')
+      }
+      
       setAddedToProject(true)
     } catch (error) {
       console.error('Error adding to project:', error)
@@ -595,48 +612,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           {project.description && (
             <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
           )}
-
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleAddToProject}
-              disabled={addedToProject}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold transition ${
-                addedToProject
-                  ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
-                  : 'bg-white text-black hover:bg-gray-200'
-              }`}
-            >
-              {addedToProject ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Added
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  Add to My Projects
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={handleCopyLink}
-              className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-full font-semibold hover:bg-gray-700 transition"
-            >
-              {linkCopied ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  Copy Link
-                </>
-              )}
-            </button>
-          </div>
         </div>
 
         {/* Tracks */}
