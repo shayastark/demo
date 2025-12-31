@@ -561,11 +561,19 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         {/* Project Info */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+            <div className="flex flex-col gap-1">
               <h1 className="text-3xl sm:text-4xl font-bold text-white">{project.title}</h1>
-              {creatorUsername && (
-                <span className="text-base sm:text-lg text-neon-green opacity-70">by {creatorUsername}</span>
-              )}
+              <div className="flex items-center gap-3 text-sm text-gray-400">
+                {creatorUsername && (
+                  <span>{creatorUsername}</span>
+                )}
+                {tracks.length > 0 && (
+                  <>
+                    <span>•</span>
+                    <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
+                  </>
+                )}
+              </div>
             </div>
             {/* Project Menu - Only show if authenticated */}
             {authenticated && user && (
@@ -749,7 +757,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         {/* Tracks */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold mb-4">Tracks</h2>
           {tracks.length === 0 ? (
             <p className="text-neon-green">No tracks in this project yet.</p>
           ) : (

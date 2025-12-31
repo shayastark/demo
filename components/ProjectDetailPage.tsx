@@ -1135,11 +1135,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           ) : (
             <>
               <div className="flex items-center justify-between mb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+                <div className="flex flex-col gap-1">
                   <h1 className="text-3xl sm:text-4xl font-bold">{project.title}</h1>
-                  {creatorUsername && (
-                    <span className="text-base sm:text-lg text-neon-green opacity-70">by {creatorUsername}</span>
-                  )}
+                  <div className="flex items-center gap-3 text-sm text-gray-400">
+                    {creatorUsername && (
+                      <span>{creatorUsername}</span>
+                    )}
+                    {tracks.length > 0 && (
+                      <>
+                        <span>•</span>
+                        <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
             {/* Project Menu */}
             <div className="relative z-50" ref={projectMenuRef}>
@@ -1184,7 +1192,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   >
                     <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 1rem)' }}>
                       <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgb(31 41 55)' }}>
-                        <button
+              <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleOpenShareModal()
@@ -1270,14 +1278,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                 <PinOff style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                                 <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Unpin Project</span>
                               </>
-                            ) : (
-                              <>
+                ) : (
+                  <>
                                 <Pin style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                                 <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Pin Project</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
+                  </>
+                )}
+              </button>
+            </div>
                       )}
                       {isCreator && (
                         <>
@@ -1300,7 +1308,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               <Edit style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                               <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Edit Project</span>
                             </button>
-                          </div>
+            </div>
                           <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgb(55 65 81)' }}>
                             <button
                               onClick={(e) => {
@@ -1320,7 +1328,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               <Trash2 style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} />
                               <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete Project</span>
                             </button>
-                          </div>
+          </div>
                         </>
                       )}
                     </div>
@@ -1335,8 +1343,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </>
           )}
 
-          {/* Metrics */}
-          {metrics && (
+          {/* Metrics - Only show for creators */}
+          {isCreator && metrics && (
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-gray-900 rounded-lg p-4 text-center">
                 <Eye className="w-6 h-6 mx-auto mb-2 text-neon-green opacity-70" />
@@ -1405,9 +1413,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <div className="flex-1 mr-4">
                   <div className="font-medium text-white text-base">Allow Downloads</div>
                   <div className="text-sm text-gray-400 mt-1">
-                    Users can download tracks from this project
-                  </div>
+                  Users can download tracks from this project
                 </div>
+              </div>
                 <button
                   onClick={async () => {
                     const newValue = !project.allow_downloads
@@ -1423,7 +1431,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     }
                   }}
                   className={`relative w-16 h-9 rounded-full transition-colors flex-shrink-0 ${
-                    project.allow_downloads
+                project.allow_downloads
                       ? 'bg-neon-green'
                       : 'bg-gray-600'
                   }`}
@@ -1505,9 +1513,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
         {/* Tracks */}
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Tracks ({tracks.length})</h2>
-            {isCreator && (
+          {/* Add Track button for creators */}
+          {isCreator && (
+            <div className="flex justify-end mb-4">
               <button
                 onClick={handleAddNewTrack}
                 className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
@@ -1515,13 +1523,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <Plus className="w-4 h-4" />
                 Add Track
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Add Track Form (for creators) */}
           {isCreator && showAddTrackForm && (
             <div className="bg-gray-900 rounded-lg p-4 mb-4 border-2 border-neon-green border-opacity-30">
-              <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-neon-green">Add New Tracks</h3>
                 <button
                   onClick={() => {
@@ -1532,7 +1540,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 >
                   <X className="w-5 h-5" />
                 </button>
-              </div>
+          </div>
 
               <div className="space-y-4 mb-4">
                 {newTracks.map((track, index) => (
@@ -1545,7 +1553,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       >
                         <X className="w-4 h-4" />
                       </button>
-                    </div>
+            </div>
 
                     <div className="space-y-3">
                       <div>
@@ -1561,7 +1569,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         />
                       </div>
 
-                      <div>
+                          <div>
                         <label className="block text-xs text-neon-green opacity-70 mb-1">Track Title *</label>
                         <input
                           type="text"
@@ -1574,7 +1582,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
                           placeholder="Enter track title"
                         />
-                      </div>
+                          </div>
 
                       <div>
                         <label className="block text-xs text-neon-green opacity-70 mb-1">Track Image (Optional)</label>
@@ -1593,7 +1601,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             >
                               <X className="w-3 h-3" />
                             </button>
-                          </div>
+                        </div>
                         ) : (
                           <input
                             type="file"
@@ -1609,7 +1617,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     </div>
                   </div>
                 ))}
-              </div>
+                    </div>
 
               <div className="flex gap-3">
                 <button
@@ -1633,7 +1641,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {tracks.length === 0 ? (
             <div className="text-center py-12 bg-gray-900 rounded-lg">
               <p className="text-neon-green">No tracks in this project yet.</p>
-            </div>
+                        </div>
           ) : (
             <TrackPlaylist
               tracks={tracks}
@@ -1720,11 +1728,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {/* Track Notes Section - Only for creators */}
           {isCreator && tracks.length > 0 && (
             <div className="mt-6 bg-gray-900 rounded-xl p-4">
-              <h3 className="font-semibold text-neon-green mb-4 flex items-center">
+              <div className="flex items-center mb-4">
                 <FileText className="w-5 h-5 text-yellow-400 mr-2" />
-                Track Notes
+                <h3 className="font-semibold text-neon-green">Track Notes</h3>
                 <span className="text-xs text-white opacity-60 ml-3">(Private)</span>
-              </h3>
+              </div>
               <div className="space-y-3">
                 {tracks.map((track) => {
                   const trackNote = trackNotes[track.id]
@@ -1779,10 +1787,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         <p className="text-xs text-gray-400">{trackNote.content}</p>
                       ) : (
                         <p className="text-xs text-gray-500 italic">No notes</p>
-                      )}
-                    </div>
-                  )
-                })}
+                    )}
+                  </div>
+                )
+              })}
               </div>
             </div>
           )}

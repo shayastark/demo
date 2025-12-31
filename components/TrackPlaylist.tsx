@@ -359,7 +359,7 @@ export default function TrackPlaylist({
       {/* Track List */}
       <div className="bg-gray-900 rounded-xl overflow-visible">
         <div className="px-5 py-4 border-b border-gray-800">
-          <h3 className="font-semibold text-white text-lg">Tracks ({tracks.length})</h3>
+          <h3 className="font-semibold text-white text-lg">{tracks.length} {tracks.length === 1 ? 'Track' : 'Tracks'}</h3>
         </div>
         <div className="py-2">
           {tracks.map((track, index) => {
@@ -375,7 +375,8 @@ export default function TrackPlaylist({
               >
                 {/* Track number */}
                 <div 
-                  className="w-12 h-12 flex items-center justify-center flex-shrink-0 cursor-pointer rounded-full hover:bg-gray-700 transition mr-6"
+                  className="w-10 flex items-center justify-center flex-shrink-0 cursor-pointer hover:opacity-80 transition"
+                  style={{ marginRight: '24px' }}
                   onClick={() => handleTrackClick(index)}
                 >
                   {isCurrentTrack && isPlaying ? (
@@ -385,7 +386,7 @@ export default function TrackPlaylist({
                       <div className="w-1 bg-neon-green animate-pulse" style={{ height: '40%', animationDelay: '300ms' }} />
                     </div>
                   ) : (
-                    <span className="text-gray-400 text-xl font-semibold">{index + 1}</span>
+                    <span className="text-gray-500 text-lg">{index + 1}</span>
                   )}
                 </div>
 
