@@ -418,25 +418,20 @@ export default function TrackPlaylist({
 
       {/* Bottom Sheet Menu - Rendered at root level */}
       {openMenuIndex !== null && tracks[openMenuIndex] && (
-        <>
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/50 z-[9998]"
+            className="absolute inset-0 bg-black/70"
             onClick={() => setOpenMenuIndex(null)}
           />
-          {/* Bottom Tray */}
-          <div 
-            className="fixed left-0 right-0 bottom-0 bg-gray-900 rounded-t-2xl shadow-2xl z-[9999]"
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
-          >
-            {/* Handle bar */}
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-10 h-1 bg-gray-600 rounded-full" />
-            </div>
-            
-            {/* Track title */}
-            <div className="px-4 pb-2 border-b border-gray-800">
-              <p className="text-sm text-gray-400 truncate">{tracks[openMenuIndex].title}</p>
+          {/* Bottom Tray Container */}
+          <div className="relative w-full max-w-lg mx-4 mb-4 bg-gray-900 rounded-2xl shadow-2xl overflow-hidden animate-slideUp">
+            {/* Header with handle bar */}
+            <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700">
+              <div className="flex justify-center mb-2">
+                <div className="w-10 h-1 bg-gray-600 rounded-full" />
+              </div>
+              <p className="text-base text-white font-medium truncate text-center">{tracks[openMenuIndex].title}</p>
             </div>
 
             {/* Menu options */}
@@ -444,61 +439,61 @@ export default function TrackPlaylist({
               {isCreator && onEditTrack && (
                 <button
                   onClick={() => handleEditClick(tracks[openMenuIndex])}
-                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                 >
                   <Edit className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm">Edit Track</span>
+                  <span className="text-base">Edit Track</span>
                 </button>
               )}
               
               {downloadedTracks.has(tracks[openMenuIndex].id) ? (
                 <button
                   onClick={() => handleRemoveDownload(tracks[openMenuIndex])}
-                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                 >
                   <Trash2 className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm">Remove Download</span>
+                  <span className="text-base">Remove Download</span>
                 </button>
               ) : (
                 <button
                   onClick={() => handleDownload(tracks[openMenuIndex])}
-                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                 >
                   <Download className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm">Download</span>
+                  <span className="text-base">Download</span>
                 </button>
               )}
               
               <button
                 onClick={() => handleAddToQueue(tracks[openMenuIndex])}
-                className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
               >
                 <ListPlus className="w-5 h-5 text-gray-400" />
-                <span className="text-sm">Add to Queue</span>
+                <span className="text-base">Add to Queue</span>
               </button>
 
               {isCreator && onDeleteTrack && (
                 <button
                   onClick={() => handleDeleteClick(tracks[openMenuIndex].id)}
-                  className="w-full px-4 py-3 text-left text-red-400 hover:bg-gray-800 flex items-center gap-3 transition"
+                  className="w-full px-5 py-4 text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                 >
                   <Trash2 className="w-5 h-5" />
-                  <span className="text-sm">Delete Track</span>
+                  <span className="text-base">Delete Track</span>
                 </button>
               )}
             </div>
 
             {/* Cancel button */}
-            <div className="px-4 pb-2">
+            <div className="p-4 border-t border-gray-700">
               <button
                 onClick={() => setOpenMenuIndex(null)}
-                className="w-full py-3 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition"
+                className="w-full py-4 bg-gray-800 text-white rounded-xl text-base font-semibold hover:bg-gray-700 active:bg-gray-600 transition"
               >
                 Cancel
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )

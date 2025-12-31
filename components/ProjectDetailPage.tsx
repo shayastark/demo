@@ -1701,44 +1701,39 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
       {/* Project Menu Bottom Tray */}
       {isProjectMenuOpen && project && (
-        <>
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/50 z-[9998]"
+            className="absolute inset-0 bg-black/70"
             onClick={() => setIsProjectMenuOpen(false)}
           />
-          {/* Bottom Tray */}
-          <div 
-            className="fixed left-0 right-0 bottom-0 bg-gray-900 rounded-t-2xl shadow-2xl z-[9999]"
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
-          >
-            {/* Handle bar */}
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-10 h-1 bg-gray-600 rounded-full" />
-            </div>
-            
-            {/* Project title */}
-            <div className="px-4 pb-2 border-b border-gray-800">
-              <p className="text-sm text-gray-400 truncate">{project.title}</p>
+          {/* Bottom Tray Container */}
+          <div className="relative w-full max-w-lg mx-4 mb-4 bg-gray-900 rounded-2xl shadow-2xl overflow-hidden animate-slideUp">
+            {/* Header with handle bar */}
+            <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700">
+              <div className="flex justify-center mb-2">
+                <div className="w-10 h-1 bg-gray-600 rounded-full" />
+              </div>
+              <p className="text-base text-white font-medium truncate text-center">{project.title}</p>
             </div>
 
             {/* Menu options */}
             <div className="py-2">
               <button
                 onClick={() => handleOpenShareModal()}
-                className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
               >
                 <Share2 className="w-5 h-5 text-gray-400" />
-                <span className="text-sm">Share</span>
+                <span className="text-base">Share</span>
               </button>
               
               {user && (
                 <button
                   onClick={() => handleAddToQueue()}
-                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                 >
                   <ListMusic className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm">Add to Queue</span>
+                  <span className="text-base">Add to Queue</span>
                 </button>
               )}
               
@@ -1748,27 +1743,27 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     setShowNotesModal(true)
                     setIsProjectMenuOpen(false)
                   }}
-                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                 >
                   <FileText className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm">Notes</span>
+                  <span className="text-base">Notes</span>
                 </button>
               )}
               
               {user && (
                 <button
                   onClick={() => handleTogglePin()}
-                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                 >
                   {isPinned ? (
                     <>
                       <PinOff className="w-5 h-5 text-gray-400" />
-                      <span className="text-sm">Unpin Project</span>
+                      <span className="text-base">Unpin Project</span>
                     </>
                   ) : (
                     <>
                       <Pin className="w-5 h-5 text-gray-400" />
-                      <span className="text-sm">Pin Project</span>
+                      <span className="text-base">Pin Project</span>
                     </>
                   )}
                 </button>
@@ -1776,36 +1771,36 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
               {isCreator && (
                 <>
-                  <div className="border-t border-gray-800 my-2" />
+                  <div className="border-t border-gray-700 my-2" />
                   <button
                     onClick={() => startEditingProject()}
-                    className="w-full px-4 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-3 transition"
+                    className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                   >
                     <Edit className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm">Edit Project</span>
+                    <span className="text-base">Edit Project</span>
                   </button>
                   <button
                     onClick={() => handleDeleteProject()}
-                    className="w-full px-4 py-3 text-left text-red-400 hover:bg-gray-800 flex items-center gap-3 transition"
+                    className="w-full px-5 py-4 text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
                   >
                     <Trash2 className="w-5 h-5" />
-                    <span className="text-sm">Delete Project</span>
+                    <span className="text-base">Delete Project</span>
                   </button>
                 </>
               )}
             </div>
 
             {/* Cancel button */}
-            <div className="px-4 pb-2">
+            <div className="p-4 border-t border-gray-700">
               <button
                 onClick={() => setIsProjectMenuOpen(false)}
-                className="w-full py-3 bg-gray-800 text-white rounded-xl text-sm font-medium hover:bg-gray-700 transition"
+                className="w-full py-4 bg-gray-800 text-white rounded-xl text-base font-semibold hover:bg-gray-700 active:bg-gray-600 transition"
               >
                 Cancel
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )
