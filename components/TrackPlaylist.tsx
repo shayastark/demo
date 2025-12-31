@@ -357,11 +357,11 @@ export default function TrackPlaylist({
       </div>
 
       {/* Track List */}
-      <div className="bg-gray-900 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-800">
+      <div className="bg-gray-900 rounded-xl overflow-visible">
+        <div className="px-5 py-4 border-b border-gray-800">
           <h3 className="font-semibold text-white text-lg">Tracks ({tracks.length})</h3>
         </div>
-        <div className="divide-y divide-gray-800">
+        <div className="py-2">
           {tracks.map((track, index) => {
             const isCurrentTrack = currentTrackIndex === index
             const isDownloaded = downloadedTracks.has(track.id)
@@ -369,13 +369,13 @@ export default function TrackPlaylist({
             return (
               <div
                 key={track.id}
-                className={`px-4 py-4 flex items-center gap-4 hover:bg-gray-800/50 transition ${
+                className={`px-5 py-5 flex items-center hover:bg-gray-800/50 transition rounded-lg mx-2 my-1 ${
                   isCurrentTrack ? 'bg-gray-800/30' : ''
                 }`}
               >
                 {/* Track number */}
                 <div 
-                  className="w-10 h-10 flex items-center justify-center flex-shrink-0 cursor-pointer rounded-full hover:bg-gray-700 transition"
+                  className="w-12 h-12 flex items-center justify-center flex-shrink-0 cursor-pointer rounded-full hover:bg-gray-700 transition mr-6"
                   onClick={() => handleTrackClick(index)}
                 >
                   {isCurrentTrack && isPlaying ? (
@@ -385,7 +385,7 @@ export default function TrackPlaylist({
                       <div className="w-1 bg-neon-green animate-pulse" style={{ height: '40%', animationDelay: '300ms' }} />
                     </div>
                   ) : (
-                    <span className="text-gray-400 text-lg font-medium">{index + 1}</span>
+                    <span className="text-gray-400 text-xl font-semibold">{index + 1}</span>
                   )}
                 </div>
 
@@ -394,32 +394,46 @@ export default function TrackPlaylist({
                   className="flex-1 min-w-0 cursor-pointer"
                   onClick={() => handleTrackClick(index)}
                 >
-                  <div className="text-white text-lg font-medium truncate">
+                  <div className="text-white text-xl font-medium truncate">
                     {track.title}
                   </div>
                 </div>
 
                 {/* Three-dot menu */}
-                <div className="relative flex-shrink-0" ref={openMenuIndex === index ? menuRef : null}>
+                <div className="relative flex-shrink-0 ml-4" ref={openMenuIndex === index ? menuRef : null}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       setOpenMenuIndex(openMenuIndex === index ? null : index)
                     }}
-                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700 transition text-gray-400 hover:text-white"
+                    className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-700 transition text-gray-400 hover:text-white"
                   >
-                    <MoreVertical className="w-5 h-5" />
+                    <MoreVertical className="w-6 h-6" />
                   </button>
 
                   {/* Dropdown Menu */}
                   {openMenuIndex === index && (
-                    <div className="absolute right-0 top-full mt-1 bg-gray-800 rounded-lg shadow-xl border border-gray-700 py-2 z-50 min-w-[180px]">
+                    <>
+                      {/* Backdrop */}
+                      <div 
+                        className="fixed inset-0 bg-black/60 z-[9998]"
+                        onClick={() => setOpenMenuIndex(null)}
+                      />
+                      <div 
+                        className="fixed bg-gray-900 rounded-xl shadow-2xl border border-gray-700 py-3 z-[9999]"
+                        style={{
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          minWidth: '220px',
+                        }}
+                      >
                       {isCreator && onEditTrack && (
                         <button
                           onClick={() => handleEditClick(track)}
-                          className="w-full px-4 py-2.5 text-left text-white hover:bg-gray-700 flex items-center gap-3 transition"
+                          className="w-full px-5 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-4 transition text-base"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-5 h-5" />
                           <span>Edit Track</span>
                         </button>
                       )}
@@ -427,39 +441,50 @@ export default function TrackPlaylist({
                       {isDownloaded ? (
                         <button
                           onClick={() => handleRemoveDownload(track)}
-                          className="w-full px-4 py-2.5 text-left text-white hover:bg-gray-700 flex items-center gap-3 transition"
+                          className="w-full px-5 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-4 transition text-base"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                           <span>Remove Download</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handleDownload(track)}
-                          className="w-full px-4 py-2.5 text-left text-white hover:bg-gray-700 flex items-center gap-3 transition"
+                          className="w-full px-5 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-4 transition text-base"
                         >
-                          <Download className="w-4 h-4" />
+                          <Download className="w-5 h-5" />
                           <span>Download</span>
                         </button>
                       )}
                       
                       <button
                         onClick={() => handleAddToQueue(track)}
-                        className="w-full px-4 py-2.5 text-left text-white hover:bg-gray-700 flex items-center gap-3 transition"
+                        className="w-full px-5 py-3 text-left text-white hover:bg-gray-800 flex items-center gap-4 transition text-base"
                       >
-                        <ListPlus className="w-4 h-4" />
+                        <ListPlus className="w-5 h-5" />
                         <span>Add to Queue</span>
                       </button>
 
                       {isCreator && onDeleteTrack && (
                         <button
                           onClick={() => handleDeleteClick(track.id)}
-                          className="w-full px-4 py-2.5 text-left text-red-400 hover:bg-gray-700 flex items-center gap-3 transition"
+                          className="w-full px-5 py-3 text-left text-red-400 hover:bg-gray-800 flex items-center gap-4 transition text-base"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                           <span>Delete Track</span>
                         </button>
                       )}
+
+                      {/* Cancel button */}
+                      <div className="border-t border-gray-700 mt-2 pt-2">
+                        <button
+                          onClick={() => setOpenMenuIndex(null)}
+                          className="w-full px-5 py-3 text-left text-gray-400 hover:bg-gray-800 flex items-center justify-center transition text-base"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
+                    </>
                   )}
                 </div>
               </div>
