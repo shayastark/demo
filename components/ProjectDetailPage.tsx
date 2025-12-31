@@ -49,6 +49,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [editingTracks, setEditingTracks] = useState<Record<string, { title: string; image?: File; imagePreview?: string }>>({})
   const [savingTracks, setSavingTracks] = useState<Record<string, boolean>>({})
   const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
 
   // Detect mobile vs desktop
   useEffect(() => {
@@ -1154,6 +1155,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               onClick={(e) => {
                 e.stopPropagation()
                 e.preventDefault()
+                if (!isProjectMenuOpen) {
+                  setTrackMenuOpen(false) // This will trigger forceCloseMenu in TrackPlaylist
+                }
                 setIsProjectMenuOpen(!isProjectMenuOpen)
               }}
               className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
@@ -1476,6 +1480,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               isCreator={isCreator}
               onEditTrack={startEditingTrack}
               onDeleteTrack={handleDeleteTrack}
+              onMenuOpen={() => {
+                setIsProjectMenuOpen(false) // Close project menu when track menu opens
+                setTrackMenuOpen(true)
+              }}
+              forceCloseMenu={isProjectMenuOpen} // Force track menu closed when project menu is open
               onTrackPlay={async (trackId) => {
                 // Track play in database
                 try {
@@ -1699,41 +1708,144 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         />
       )}
 
-      {/* Project Menu Bottom Tray */}
+      {/* Project Menu Bottom Tray - Full width on mobile like ShareModal */}
       {isProjectMenuOpen && project && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+        <>
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/70"
             onClick={() => setIsProjectMenuOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              zIndex: 100,
+            }}
           />
-          {/* Bottom Tray Container */}
-          <div className="relative w-full max-w-lg mx-4 mb-4 bg-gray-900 rounded-2xl shadow-2xl overflow-hidden animate-slideUp">
-            {/* Header with handle bar */}
-            <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-1 bg-gray-600 rounded-full" />
-              </div>
-              <p className="text-base text-white font-medium truncate text-center">{project.title}</p>
+          
+          {/* Bottom Sheet */}
+          <div
+            style={{
+              position: 'fixed',
+              bottom: isMobile ? 0 : '50%',
+              left: isMobile ? 0 : '50%',
+              right: isMobile ? 0 : 'auto',
+              transform: isMobile ? 'none' : 'translate(-50%, 50%)',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: '100%',
+              backgroundColor: '#111827',
+              borderRadius: isMobile ? '16px 16px 0 0' : '16px',
+              zIndex: 101,
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px 20px',
+              borderBottom: '1px solid #374151',
+              flexDirection: 'column',
+            }}>
+              <div style={{ width: '40px', height: '4px', backgroundColor: '#4B5563', borderRadius: '2px', marginBottom: '12px' }} />
+              <h2 style={{ 
+                fontSize: '16px', 
+                fontWeight: 600, 
+                color: '#fff',
+                margin: 0,
+                textAlign: 'center',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {project.title}
+              </h2>
             </div>
 
-            {/* Menu options */}
-            <div className="py-2">
+            {/* Menu Options */}
+            <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
                 onClick={() => handleOpenShareModal()}
-                className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#1f2937',
+                  color: '#fff',
+                  border: '1px solid #374151',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  textAlign: 'left',
+                }}
+                className="hover:bg-gray-700 transition"
               >
-                <Share2 className="w-5 h-5 text-gray-400" />
-                <span className="text-base">Share</span>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  backgroundColor: '#374151',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Share2 style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>Share</div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                    Share this project with others
+                  </div>
+                </div>
               </button>
               
               {user && (
                 <button
                   onClick={() => handleAddToQueue()}
-                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
                 >
-                  <ListMusic className="w-5 h-5 text-gray-400" />
-                  <span className="text-base">Add to Queue</span>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <ListMusic style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Add to Queue</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      Add project to your play queue
+                    </div>
+                  </div>
                 </button>
               )}
               
@@ -1743,64 +1855,193 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     setShowNotesModal(true)
                     setIsProjectMenuOpen(false)
                   }}
-                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
                 >
-                  <FileText className="w-5 h-5 text-gray-400" />
-                  <span className="text-base">Notes</span>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <FileText style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Notes</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      View or add project notes
+                    </div>
+                  </div>
                 </button>
               )}
               
               {user && (
                 <button
                   onClick={() => handleTogglePin()}
-                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
                 >
-                  {isPinned ? (
-                    <>
-                      <PinOff className="w-5 h-5 text-gray-400" />
-                      <span className="text-base">Unpin Project</span>
-                    </>
-                  ) : (
-                    <>
-                      <Pin className="w-5 h-5 text-gray-400" />
-                      <span className="text-base">Pin Project</span>
-                    </>
-                  )}
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    {isPinned ? (
+                      <PinOff style={{ width: '22px', height: '22px', color: '#9ca3af' }} />
+                    ) : (
+                      <Pin style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{isPinned ? 'Unpin Project' : 'Pin Project'}</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      {isPinned ? 'Remove from pinned projects' : 'Pin to top of your dashboard'}
+                    </div>
+                  </div>
                 </button>
               )}
 
               {isCreator && (
                 <>
-                  <div className="border-t border-gray-700 my-2" />
                   <button
                     onClick={() => startEditingProject()}
-                    className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                    style={{
+                      width: '100%',
+                      padding: '16px 20px',
+                      backgroundColor: '#1f2937',
+                      color: '#fff',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      textAlign: 'left',
+                    }}
+                    className="hover:bg-gray-700 transition"
                   >
-                    <Edit className="w-5 h-5 text-gray-400" />
-                    <span className="text-base">Edit Project</span>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      backgroundColor: '#374151',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Edit style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Edit Project</div>
+                      <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                        Modify project details
+                      </div>
+                    </div>
                   </button>
                   <button
                     onClick={() => handleDeleteProject()}
-                    className="w-full px-5 py-4 text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                    style={{
+                      width: '100%',
+                      padding: '16px 20px',
+                      backgroundColor: '#1f2937',
+                      color: '#ef4444',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      textAlign: 'left',
+                    }}
+                    className="hover:bg-gray-700 transition"
                   >
-                    <Trash2 className="w-5 h-5" />
-                    <span className="text-base">Delete Project</span>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      backgroundColor: '#374151',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Trash2 style={{ width: '22px', height: '22px', color: '#ef4444' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Delete Project</div>
+                      <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                        Permanently remove this project
+                      </div>
+                    </div>
                   </button>
                 </>
               )}
             </div>
 
             {/* Cancel button */}
-            <div className="p-4 border-t border-gray-700">
+            <div style={{ padding: '12px 20px 20px' }}>
               <button
                 onClick={() => setIsProjectMenuOpen(false)}
-                className="w-full py-4 bg-gray-800 text-white rounded-xl text-base font-semibold hover:bg-gray-700 active:bg-gray-600 transition"
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#374151',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+                className="hover:bg-gray-600 transition"
               >
                 Cancel
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

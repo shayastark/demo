@@ -30,6 +30,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false)
   const [isPinned, setIsPinned] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
   const projectMenuRef = useRef<HTMLDivElement>(null)
 
   // Detect mobile vs desktop
@@ -578,7 +579,12 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             {/* Project Menu Button - Only show if authenticated */}
             {authenticated && user && (
               <button
-                onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
+                onClick={() => {
+                  if (!isProjectMenuOpen) {
+                    setTrackMenuOpen(false) // This will trigger forceCloseMenu in TrackPlaylist
+                  }
+                  setIsProjectMenuOpen(!isProjectMenuOpen)
+                }}
                 className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
                 title="More options"
               >
@@ -643,48 +649,155 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
               projectCoverUrl={project.cover_image_url}
               projectTitle={project.title}
               onTrackPlay={handleTrackPlay}
+              onMenuOpen={() => {
+                setIsProjectMenuOpen(false) // Close project menu when track menu opens
+                setTrackMenuOpen(true)
+              }}
+              forceCloseMenu={isProjectMenuOpen} // Force track menu closed when project menu is open
             />
           )}
         </div>
       </div>
 
-      {/* Project Menu Bottom Tray */}
+      {/* Project Menu Bottom Tray - Full width on mobile like ShareModal */}
       {isProjectMenuOpen && project && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+        <>
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/70"
             onClick={() => setIsProjectMenuOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              zIndex: 100,
+            }}
           />
-          {/* Bottom Tray Container */}
-          <div className="relative w-full max-w-lg mx-4 mb-4 bg-gray-900 rounded-2xl shadow-2xl overflow-hidden animate-slideUp">
-            {/* Header with handle bar */}
-            <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-1 bg-gray-600 rounded-full" />
-              </div>
-              <p className="text-base text-white font-medium truncate text-center">{project.title}</p>
+          
+          {/* Bottom Sheet */}
+          <div
+            style={{
+              position: 'fixed',
+              bottom: isMobile ? 0 : '50%',
+              left: isMobile ? 0 : '50%',
+              right: isMobile ? 0 : 'auto',
+              transform: isMobile ? 'none' : 'translate(-50%, 50%)',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: '100%',
+              backgroundColor: '#111827',
+              borderRadius: isMobile ? '16px 16px 0 0' : '16px',
+              zIndex: 101,
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px 20px',
+              borderBottom: '1px solid #374151',
+              flexDirection: 'column',
+            }}>
+              <div style={{ width: '40px', height: '4px', backgroundColor: '#4B5563', borderRadius: '2px', marginBottom: '12px' }} />
+              <h2 style={{ 
+                fontSize: '16px', 
+                fontWeight: 600, 
+                color: '#fff',
+                margin: 0,
+                textAlign: 'center',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {project.title}
+              </h2>
             </div>
 
-            {/* Menu options */}
-            <div className="py-2">
+            {/* Menu Options */}
+            <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
                 onClick={() => handleCopyLink()}
-                className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#1f2937',
+                  color: '#fff',
+                  border: '1px solid #374151',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  textAlign: 'left',
+                }}
+                className="hover:bg-gray-700 transition"
               >
-                <Share2 className="w-5 h-5 text-gray-400" />
-                <span className="text-base">Share</span>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  backgroundColor: '#374151',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Share2 style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>Share</div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                    Copy link to share this project
+                  </div>
+                </div>
               </button>
               
               <button
                 onClick={() => handleAddToProject()}
                 disabled={addedToProject}
-                className={`w-full px-5 py-4 text-left hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition ${
-                  addedToProject ? 'text-gray-500' : 'text-white'
-                }`}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#1f2937',
+                  color: addedToProject ? '#6b7280' : '#fff',
+                  border: '1px solid #374151',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  cursor: addedToProject ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  textAlign: 'left',
+                  opacity: addedToProject ? 0.7 : 1,
+                }}
+                className="hover:bg-gray-700 transition"
               >
-                <ListMusic className="w-5 h-5 text-gray-400" />
-                <span className="text-base">{addedToProject ? 'Added to Queue' : 'Add to Queue'}</span>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  backgroundColor: '#374151',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <ListMusic style={{ width: '22px', height: '22px', color: addedToProject ? '#6b7280' : '#39FF14' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{addedToProject ? 'Added to Queue' : 'Add to Queue'}</div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                    {addedToProject ? 'Already in your queue' : 'Add project to your play queue'}
+                  </div>
+                </div>
               </button>
               
               <button
@@ -692,41 +805,109 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   showToast('Notes feature coming soon!', 'info')
                   setIsProjectMenuOpen(false)
                 }}
-                className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#1f2937',
+                  color: '#fff',
+                  border: '1px solid #374151',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  textAlign: 'left',
+                }}
+                className="hover:bg-gray-700 transition"
               >
-                <FileText className="w-5 h-5 text-gray-400" />
-                <span className="text-base">Notes</span>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  backgroundColor: '#374151',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <FileText style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>Notes</div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                    View or add project notes
+                  </div>
+                </div>
               </button>
               
               <button
                 onClick={() => handleTogglePin()}
-                className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#1f2937',
+                  color: '#fff',
+                  border: '1px solid #374151',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  textAlign: 'left',
+                }}
+                className="hover:bg-gray-700 transition"
               >
-                {isPinned ? (
-                  <>
-                    <PinOff className="w-5 h-5 text-gray-400" />
-                    <span className="text-base">Unpin Project</span>
-                  </>
-                ) : (
-                  <>
-                    <Pin className="w-5 h-5 text-gray-400" />
-                    <span className="text-base">Pin Project</span>
-                  </>
-                )}
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  backgroundColor: '#374151',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  {isPinned ? (
+                    <PinOff style={{ width: '22px', height: '22px', color: '#9ca3af' }} />
+                  ) : (
+                    <Pin style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{isPinned ? 'Unpin Project' : 'Pin Project'}</div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                    {isPinned ? 'Remove from pinned projects' : 'Pin to top of your dashboard'}
+                  </div>
+                </div>
               </button>
             </div>
 
             {/* Cancel button */}
-            <div className="p-4 border-t border-gray-700">
+            <div style={{ padding: '12px 20px 20px' }}>
               <button
                 onClick={() => setIsProjectMenuOpen(false)}
-                className="w-full py-4 bg-gray-800 text-white rounded-xl text-base font-semibold hover:bg-gray-700 active:bg-gray-600 transition"
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#374151',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+                className="hover:bg-gray-600 transition"
               >
                 Cancel
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

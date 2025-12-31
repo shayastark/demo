@@ -15,6 +15,8 @@ interface TrackPlaylistProps {
   isCreator?: boolean
   onEditTrack?: (track: Track) => void
   onDeleteTrack?: (trackId: string) => void
+  onMenuOpen?: () => void // Called when a track menu opens, so parent can close its menu
+  forceCloseMenu?: boolean // When true, close any open track menu
 }
 
 export default function TrackPlaylist({ 
@@ -24,7 +26,9 @@ export default function TrackPlaylist({
   onTrackPlay,
   isCreator = false,
   onEditTrack,
-  onDeleteTrack
+  onDeleteTrack,
+  onMenuOpen,
+  forceCloseMenu
 }: TrackPlaylistProps) {
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -34,21 +38,25 @@ export default function TrackPlaylist({
   const [volume, setVolume] = useState(1)
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null)
   const [downloadedTracks, setDownloadedTracks] = useState<Set<string>>(new Set())
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const currentTrack = currentTrackIndex !== null ? tracks[currentTrackIndex] : null
 
-  // Close menu when clicking outside
+  // Close menu when parent requests it
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenMenuIndex(null)
-      }
+    if (forceCloseMenu) {
+      setOpenMenuIndex(null)
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [forceCloseMenu])
 
   // Handle audio element events
   useEffect(() => {
@@ -404,7 +412,12 @@ export default function TrackPlaylist({
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    setOpenMenuIndex(openMenuIndex === index ? null : index)
+                    if (openMenuIndex === index) {
+                      setOpenMenuIndex(null)
+                    } else {
+                      setOpenMenuIndex(index)
+                      onMenuOpen?.() // Notify parent to close its menu
+                    }
                   }}
                   className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-700 transition text-gray-400 hover:text-white flex-shrink-0 ml-4"
                 >
@@ -416,84 +429,291 @@ export default function TrackPlaylist({
         </div>
       </div>
 
-      {/* Bottom Sheet Menu - Rendered at root level */}
+      {/* Bottom Sheet Menu - Full width on mobile like ShareModal */}
       {openMenuIndex !== null && tracks[openMenuIndex] && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+        <>
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/70"
             onClick={() => setOpenMenuIndex(null)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              zIndex: 100,
+            }}
           />
-          {/* Bottom Tray Container */}
-          <div className="relative w-full max-w-lg mx-4 mb-4 bg-gray-900 rounded-2xl shadow-2xl overflow-hidden animate-slideUp">
-            {/* Header with handle bar */}
-            <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-700">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-1 bg-gray-600 rounded-full" />
-              </div>
-              <p className="text-base text-white font-medium truncate text-center">{tracks[openMenuIndex].title}</p>
+          
+          {/* Bottom Sheet */}
+          <div
+            style={{
+              position: 'fixed',
+              bottom: isMobile ? 0 : '50%',
+              left: isMobile ? 0 : '50%',
+              right: isMobile ? 0 : 'auto',
+              transform: isMobile ? 'none' : 'translate(-50%, 50%)',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: '100%',
+              backgroundColor: '#111827',
+              borderRadius: isMobile ? '16px 16px 0 0' : '16px',
+              zIndex: 101,
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px 20px',
+              borderBottom: '1px solid #374151',
+              flexDirection: 'column',
+            }}>
+              <div style={{ width: '40px', height: '4px', backgroundColor: '#4B5563', borderRadius: '2px', marginBottom: '12px' }} />
+              <h2 style={{ 
+                fontSize: '16px', 
+                fontWeight: 600, 
+                color: '#fff',
+                margin: 0,
+                textAlign: 'center',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {tracks[openMenuIndex].title}
+              </h2>
             </div>
 
-            {/* Menu options */}
-            <div className="py-2">
+            {/* Menu Options */}
+            <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {isCreator && onEditTrack && (
                 <button
                   onClick={() => handleEditClick(tracks[openMenuIndex])}
-                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
                 >
-                  <Edit className="w-5 h-5 text-gray-400" />
-                  <span className="text-base">Edit Track</span>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Edit style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Edit Track</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      Modify track details
+                    </div>
+                  </div>
                 </button>
               )}
               
               {downloadedTracks.has(tracks[openMenuIndex].id) ? (
                 <button
                   onClick={() => handleRemoveDownload(tracks[openMenuIndex])}
-                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
                 >
-                  <Trash2 className="w-5 h-5 text-gray-400" />
-                  <span className="text-base">Remove Download</span>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Trash2 style={{ width: '22px', height: '22px', color: '#9ca3af' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Remove Download</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      Remove from offline storage
+                    </div>
+                  </div>
                 </button>
               ) : (
                 <button
                   onClick={() => handleDownload(tracks[openMenuIndex])}
-                  className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
                 >
-                  <Download className="w-5 h-5 text-gray-400" />
-                  <span className="text-base">Download</span>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Download style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Download</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      Save for offline listening
+                    </div>
+                  </div>
                 </button>
               )}
               
               <button
                 onClick={() => handleAddToQueue(tracks[openMenuIndex])}
-                className="w-full px-5 py-4 text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#1f2937',
+                  color: '#fff',
+                  border: '1px solid #374151',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  textAlign: 'left',
+                }}
+                className="hover:bg-gray-700 transition"
               >
-                <ListPlus className="w-5 h-5 text-gray-400" />
-                <span className="text-base">Add to Queue</span>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  backgroundColor: '#374151',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <ListPlus style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>Add to Queue</div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                    Play this track next
+                  </div>
+                </div>
               </button>
 
               {isCreator && onDeleteTrack && (
                 <button
                   onClick={() => handleDeleteClick(tracks[openMenuIndex].id)}
-                  className="w-full px-5 py-4 text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center gap-4 transition"
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#ef4444',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
                 >
-                  <Trash2 className="w-5 h-5" />
-                  <span className="text-base">Delete Track</span>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Trash2 style={{ width: '22px', height: '22px', color: '#ef4444' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Delete Track</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      Permanently remove this track
+                    </div>
+                  </div>
                 </button>
               )}
             </div>
 
             {/* Cancel button */}
-            <div className="p-4 border-t border-gray-700">
+            <div style={{ padding: '12px 20px 20px' }}>
               <button
                 onClick={() => setOpenMenuIndex(null)}
-                className="w-full py-4 bg-gray-800 text-white rounded-xl text-base font-semibold hover:bg-gray-700 active:bg-gray-600 transition"
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#374151',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+                className="hover:bg-gray-600 transition"
               >
                 Cancel
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
