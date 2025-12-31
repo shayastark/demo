@@ -24,7 +24,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [tracks, setTracks] = useState<Track[]>([])
   const [metrics, setMetrics] = useState<ProjectMetrics | null>(null)
   const [loading, setLoading] = useState(true)
-  const [shareLinkCopied, setShareLinkCopied] = useState(false)
   const [isCreator, setIsCreator] = useState(false)
   const [projectNote, setProjectNote] = useState<ProjectNote | null>(null)
   const [projectNoteContent, setProjectNoteContent] = useState('')
@@ -191,6 +190,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
   const handleOpenShareModal = () => {
     if (!project) return
+    
+    // Check if sharing is enabled (default to true if not set)
+    if (project.sharing_enabled === false) {
+      showToast('Sharing is disabled for this project. Enable it in Project Settings.', 'error')
+      setIsProjectMenuOpen(false)
+      return
+    }
+    
     setShareModalOpen(true)
     setIsProjectMenuOpen(false)
     
@@ -202,14 +209,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     setShareModalOpen(false)
   }
 
-  const handleCopyShareLink = async () => {
-    if (!project) return
-    const url = `${window.location.origin}/share/${project.share_token}`
-    await navigator.clipboard.writeText(url)
-    setShareLinkCopied(true)
-    showToast('Link copied to clipboard!', 'success')
-    setTimeout(() => setShareLinkCopied(false), 2000)
-  }
 
   const trackShare = async () => {
     if (!project) return
@@ -1026,7 +1025,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           </Link>
           <button
             onClick={logout}
-            className="text-sm text-black hover:opacity-80"
+            className="text-sm text-white bg-gray-800 px-4 py-2 rounded-lg hover:bg-gray-700 transition"
           >
             Sign out
           </button>
@@ -1135,11 +1134,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-4xl font-bold">{project.title}</h1>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+                  <h1 className="text-3xl sm:text-4xl font-bold">{project.title}</h1>
                   {creatorUsername && (
-                    <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
+                    <span className="text-base sm:text-lg text-neon-green opacity-70">by {creatorUsername}</span>
                   )}
                 </div>
             {/* Project Menu */}
@@ -1336,29 +1335,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </>
           )}
 
-          {/* Share Link */}
-          <div className="bg-gray-900 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-neon-green opacity-70">Share Link</span>
-              <button
-                onClick={handleCopyShareLink}
-                className="flex items-center gap-2 text-sm text-black hover:opacity-80"
-              >
-                {shareLinkCopied ? (
-                  <>Copied!</>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    Copy
-                  </>
-                )}
-              </button>
-            </div>
-            <div className="bg-black rounded p-2 text-sm break-all text-neon-green">
-              {shareUrl}
-            </div>
-          </div>
-
           {/* Metrics */}
           {metrics && (
             <div className="grid grid-cols-3 gap-4 mb-6">
@@ -1380,25 +1356,85 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </div>
           )}
 
-          {/* Settings */}
+          {/* Settings - Only show for creators */}
+          {isCreator && (
           <div className="bg-gray-900 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold mb-3 text-neon-green">Project Settings</h3>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-neon-green">Allow Downloads</div>
-                <div className="text-sm text-neon-green opacity-70">
-                  Users can download tracks from this project
+            <h3 className="font-semibold mb-4 text-neon-green">Project Settings</h3>
+            <div className="space-y-4">
+              {/* Sharing Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-neon-green">Project Sharing</div>
+                  <div className="text-sm text-neon-green opacity-70">
+                    Allow others to view this project via share link
+                  </div>
                 </div>
+                <button
+                  onClick={async () => {
+                    const newValue = !(project.sharing_enabled ?? true)
+                    const { error } = await supabase
+                      .from('projects')
+                      .update({ sharing_enabled: newValue })
+                      .eq('id', project.id)
+                    if (error) {
+                      showToast('Failed to update sharing setting', 'error')
+                    } else {
+                      setProject({ ...project, sharing_enabled: newValue })
+                      showToast(`Sharing ${newValue ? 'enabled' : 'disabled'}`, 'success')
+                    }
+                  }}
+                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                    (project.sharing_enabled ?? true)
+                      ? 'bg-green-600'
+                      : 'bg-gray-700'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${
+                    (project.sharing_enabled ?? true)
+                      ? 'translate-x-7'
+                      : 'translate-x-1'
+                  }`} />
+                </button>
               </div>
-              <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                project.allow_downloads
-                  ? 'bg-green-900 text-green-300'
-                  : 'bg-gray-800 text-gray-400'
-              }`}>
-                {project.allow_downloads ? 'Enabled' : 'Disabled'}
+
+              {/* Downloads Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-neon-green">Allow Downloads</div>
+                  <div className="text-sm text-neon-green opacity-70">
+                    Users can download tracks from this project
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    const newValue = !project.allow_downloads
+                    const { error } = await supabase
+                      .from('projects')
+                      .update({ allow_downloads: newValue })
+                      .eq('id', project.id)
+                    if (error) {
+                      showToast('Failed to update download setting', 'error')
+                    } else {
+                      setProject({ ...project, allow_downloads: newValue })
+                      showToast(`Downloads ${newValue ? 'enabled' : 'disabled'}`, 'success')
+                    }
+                  }}
+                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                    project.allow_downloads
+                      ? 'bg-green-600'
+                      : 'bg-gray-700'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${
+                    project.allow_downloads
+                      ? 'translate-x-7'
+                      : 'translate-x-1'
+                  }`} />
+                </button>
               </div>
             </div>
           </div>
+          )}
 
           {/* Project Notes (Private to Creator) - Only show if user is creator */}
           {isCreator && (

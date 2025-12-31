@@ -244,7 +244,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         // Insert share record with user_id
         const { error: shareError } = await supabase
-          .from('project_shares')
+        .from('project_shares')
           .insert({ 
             project_id: project.id,
             user_id: userId
@@ -256,30 +256,30 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         // Update metrics
         const { data: metrics, error: metricsError } = await supabase
-          .from('project_metrics')
-          .select('shares')
-          .eq('project_id', project.id)
-          .single()
+        .from('project_metrics')
+        .select('shares')
+        .eq('project_id', project.id)
+        .single()
 
         if (metricsError && metricsError.code !== 'PGRST116') {
           console.error('Error fetching metrics:', metricsError)
         }
 
-        if (metrics) {
+      if (metrics) {
           const currentShares = metrics.shares ?? 0
           const { error: updateError } = await supabase
-            .from('project_metrics')
+          .from('project_metrics')
             .update({ shares: currentShares + 1 })
-            .eq('project_id', project.id)
+          .eq('project_id', project.id)
 
           if (updateError) {
             console.error('Error updating shares:', updateError)
             console.error('Update error details:', JSON.stringify(updateError, null, 2))
           }
-        } else {
+      } else {
           // Create metrics record if it doesn't exist
           const { error: insertError } = await supabase
-            .from('project_metrics')
+          .from('project_metrics')
             .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
 
           if (insertError) {
@@ -498,6 +498,24 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     )
   }
 
+  // Check if sharing is disabled
+  if (project.sharing_enabled === false) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4 text-white">Sharing Disabled</h1>
+          <p className="text-neon-green opacity-90">The creator has disabled sharing for this project.</p>
+          <Link 
+            href="/" 
+            className="inline-block mt-6 px-6 py-2 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition"
+          >
+            Go to Hubba
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Simple app header so users can discover Hubba from shared links */}
@@ -542,11 +560,11 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         {/* Project Info */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-bold text-white">{project.title}</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+              <h1 className="text-3xl sm:text-4xl font-bold text-white">{project.title}</h1>
               {creatorUsername && (
-                <span className="text-lg text-neon-green opacity-70">by {creatorUsername}</span>
+                <span className="text-base sm:text-lg text-neon-green opacity-70">by {creatorUsername}</span>
               )}
             </div>
             {/* Project Menu - Only show if authenticated */}
@@ -747,10 +765,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   title={track.title}
                   onPlay={() => handleTrackPlay(track.id)}
                   coverImageUrl={track.image_url || project.cover_image_url}
-                  showDownload={project.allow_downloads || false}
-                  showShare={true}
-                  onDownload={() => handleDownload(track)}
-                  onShare={() => handleShareTrack(track)}
                 />
               </div>
             ))
