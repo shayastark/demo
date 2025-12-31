@@ -26,16 +26,20 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
         className={`relative transition-all duration-300 ${isPlaying ? 'animate-glow-pulse' : ''}`}
         style={{
           width: '320px',
-          height: '200px',
+          height: '210px',
           margin: '0 auto',
           background: 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%)',
           borderRadius: '12px',
-          padding: '12px',
           border: '2px solid #3a3a3a',
           boxShadow: isPlaying 
             ? '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 40px rgba(57, 255, 20, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
             : '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
           position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '16px',
+          boxSizing: 'border-box',
         }}
       >
         {/* Top edge highlight */}
@@ -83,9 +87,9 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
         {/* Label/Cover Art Area */}
         <div 
           style={{
-            width: 'calc(100% - 24px)',
+            width: '272px',
             height: '110px',
-            margin: '8px auto 10px auto',
+            marginBottom: '10px',
             background: coverImageUrl 
               ? 'transparent' 
               : 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)',
@@ -96,6 +100,7 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            flexShrink: 0,
           }}
         >
           {coverImageUrl ? (
@@ -132,23 +137,23 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
         {/* Tape Window Section */}
         <div 
           style={{
-            width: 'calc(100% - 24px)',
-            height: '52px',
-            margin: '0 auto',
+            width: '272px',
+            height: '48px',
             background: 'linear-gradient(180deg, #0a0a0a 0%, #151515 50%, #0a0a0a 100%)',
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 20px',
+            padding: '0 12px',
             border: '1px solid #2a2a2a',
             boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.5)',
+            flexShrink: 0,
           }}
         >
           {/* Left Reel */}
           <div style={{
-            width: '44px',
-            height: '44px',
+            width: '40px',
+            height: '40px',
             borderRadius: '50%',
             background: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
             border: '2px solid #2a2a2a',
@@ -156,12 +161,13 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)',
+            flexShrink: 0,
           }}>
             <div
               className={isPlaying ? 'animate-spin-reel' : ''}
               style={{
-                width: '36px',
-                height: '36px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
                 background: `conic-gradient(from 0deg, #3d2817 0deg, #5c3d24 60deg, #3d2817 120deg, #5c3d24 180deg, #3d2817 240deg, #5c3d24 300deg, #3d2817 360deg)`,
                 display: 'flex',
@@ -188,31 +194,20 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               ))}
               {/* Center hub */}
               <div style={{
-                width: '12px',
-                height: '12px',
+                width: '10px',
+                height: '10px',
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%)',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: '4px',
-                  height: '4px',
-                  borderRadius: '50%',
-                  backgroundColor: '#505050',
-                }} />
-              </div>
+              }} />
             </div>
           </div>
 
           {/* Center - Tape path with window */}
           <div style={{
             flex: 1,
-            height: '20px',
-            margin: '0 16px',
+            height: '18px',
+            margin: '0 12px',
             background: 'linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%)',
             borderRadius: '4px',
             display: 'flex',
@@ -230,14 +225,14 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               boxShadow: isPlaying ? '0 0 8px rgba(57, 255, 20, 0.2)' : 'none',
             }} />
             {/* Tape guides */}
-            <div style={{ position: 'absolute', left: '8px', width: '3px', height: '12px', backgroundColor: '#2a2a2a', borderRadius: '1px' }} />
-            <div style={{ position: 'absolute', right: '8px', width: '3px', height: '12px', backgroundColor: '#2a2a2a', borderRadius: '1px' }} />
+            <div style={{ position: 'absolute', left: '6px', width: '2px', height: '10px', backgroundColor: '#2a2a2a', borderRadius: '1px' }} />
+            <div style={{ position: 'absolute', right: '6px', width: '2px', height: '10px', backgroundColor: '#2a2a2a', borderRadius: '1px' }} />
           </div>
 
           {/* Right Reel */}
           <div style={{
-            width: '44px',
-            height: '44px',
+            width: '40px',
+            height: '40px',
             borderRadius: '50%',
             background: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
             border: '2px solid #2a2a2a',
@@ -245,12 +240,13 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)',
+            flexShrink: 0,
           }}>
             <div
               className={isPlaying ? 'animate-spin-reel' : ''}
               style={{
-                width: '36px',
-                height: '36px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
                 background: `conic-gradient(from 45deg, #3d2817 0deg, #5c3d24 60deg, #3d2817 120deg, #5c3d24 180deg, #3d2817 240deg, #5c3d24 300deg, #3d2817 360deg)`,
                 display: 'flex',
@@ -277,23 +273,12 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               ))}
               {/* Center hub */}
               <div style={{
-                width: '12px',
-                height: '12px',
+                width: '10px',
+                height: '10px',
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%)',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: '4px',
-                  height: '4px',
-                  borderRadius: '50%',
-                  backgroundColor: '#505050',
-                }} />
-              </div>
+              }} />
             </div>
           </div>
         </div>
@@ -302,33 +287,33 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
         <div 
           style={{
             position: 'absolute',
-            bottom: '8px',
+            bottom: '6px',
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '4px 12px',
-            background: 'rgba(0, 0, 0, 0.6)',
-            borderRadius: '12px',
+            gap: '6px',
+            padding: '3px 10px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            borderRadius: '10px',
             backdropFilter: 'blur(4px)',
           }}
         >
           {/* LED indicator */}
           <div style={{
-            width: '6px',
-            height: '6px',
+            width: '5px',
+            height: '5px',
             borderRadius: '50%',
             backgroundColor: isPlaying ? '#39FF14' : '#666',
-            boxShadow: isPlaying ? '0 0 8px #39FF14, 0 0 16px rgba(57, 255, 20, 0.5)' : 'none',
+            boxShadow: isPlaying ? '0 0 6px #39FF14, 0 0 12px rgba(57, 255, 20, 0.5)' : 'none',
             transition: 'all 0.3s ease',
           }} />
           <span style={{
-            fontSize: '10px',
+            fontSize: '9px',
             fontWeight: '600',
             color: isPlaying ? '#39FF14' : '#888',
             fontFamily: 'var(--font-outfit), monospace',
-            letterSpacing: '1px',
+            letterSpacing: '0.5px',
             textTransform: 'uppercase',
             textShadow: isPlaying ? '0 0 10px rgba(57, 255, 20, 0.5)' : 'none',
             transition: 'all 0.3s ease',
