@@ -11,6 +11,7 @@ import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, 
 import { showToast } from './Toast'
 import Image from 'next/image'
 import { ProjectDetailSkeleton } from './SkeletonLoader'
+import ShareModal from './ShareModal'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -48,6 +49,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [savingProject, setSavingProject] = useState(false)
   const [editingTracks, setEditingTracks] = useState<Record<string, { title: string; image?: File; imagePreview?: string }>>({})
   const [savingTracks, setSavingTracks] = useState<Record<string, boolean>>({})
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   // Detect mobile vs desktop
   useEffect(() => {
@@ -187,15 +189,31 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
   }
 
+  const handleOpenShareModal = () => {
+    if (!project) return
+    setShareModalOpen(true)
+    setIsProjectMenuOpen(false)
+    
+    // Track share when modal is opened
+    trackShare()
+  }
+
+  const handleCloseShareModal = () => {
+    setShareModalOpen(false)
+  }
+
   const handleCopyShareLink = async () => {
     if (!project) return
     const url = `${window.location.origin}/share/${project.share_token}`
     await navigator.clipboard.writeText(url)
     setShareLinkCopied(true)
+    showToast('Link copied to clipboard!', 'success')
     setTimeout(() => setShareLinkCopied(false), 2000)
-    setIsProjectMenuOpen(false)
+  }
 
-    // Track share
+  const trackShare = async () => {
+    if (!project) return
+    
     try {
       // Get user ID if authenticated
       let userId: string | null = null
@@ -222,7 +240,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       }
 
       // Update metrics
-      const { data: metrics, error: metricsError } = await supabase
+      const { data: metricsData, error: metricsError } = await supabase
         .from('project_metrics')
         .select('shares')
         .eq('project_id', project.id)
@@ -232,8 +250,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         console.error('Error fetching metrics:', metricsError)
       }
 
-      if (metrics) {
-        const currentShares = metrics.shares ?? 0
+      if (metricsData) {
+        const currentShares = metricsData.shares ?? 0
         const { error: updateError } = await supabase
           .from('project_metrics')
           .update({ shares: currentShares + 1 })
@@ -1170,7 +1188,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleCopyShareLink()
+                            handleOpenShareModal()
                           }}
                           className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
                           style={{ 
@@ -1945,6 +1963,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             )}
           </div>
         </div>
+      )}
+
+      {/* Share Modal */}
+      {project && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={handleCloseShareModal}
+          shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${project.share_token}`}
+          title={project.title}
+        />
       )}
     </div>
   )
