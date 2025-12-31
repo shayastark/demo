@@ -1762,9 +1762,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       coverImageUrl={track.image_url || project.cover_image_url}
                       showEdit={isCreator}
                       showDownload={isCreator && project.allow_downloads}
-                      showShare={true}
                       onDownload={() => showToast('Download functionality for tracks coming soon!', 'info')}
-                      onShare={() => showToast('Share track functionality coming soon!', 'info')}
                       onEdit={undefined}
                       onPlay={async () => {
                         // Track play in ProjectDetailPage too
