@@ -1633,6 +1633,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               tracks={tracks}
               projectCoverUrl={project.cover_image_url}
               projectTitle={project.title}
+              isCreator={isCreator}
+              onEditTrack={startEditingTrack}
+              onDeleteTrack={handleDeleteTrack}
               onTrackPlay={async (trackId) => {
                 // Track play in database
                 try {

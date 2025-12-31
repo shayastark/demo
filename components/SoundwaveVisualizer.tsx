@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 
 interface SoundwaveVisualizerProps {
   audioElement: HTMLAudioElement | null
@@ -12,48 +12,68 @@ export default function SoundwaveVisualizer({ audioElement, isPlaying }: Soundwa
   const animationRef = useRef<number | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
+  const [hasAnalyser, setHasAnalyser] = useState(false)
+  const initAttemptedRef = useRef(false)
 
-  useEffect(() => {
-    if (!audioElement || isInitialized) return
+  // Initialize audio context when audio element is available and playing
+  const initializeAudioContext = useCallback(() => {
+    if (!audioElement || initAttemptedRef.current) return
+    
+    initAttemptedRef.current = true
 
     try {
-      // Check if audio element already has a source connected
-      if ((audioElement as any)._hasAudioContext) {
-        setIsInitialized(true)
+      // Check if already initialized
+      if ((audioElement as any)._audioContext) {
+        audioContextRef.current = (audioElement as any)._audioContext
+        analyserRef.current = (audioElement as any)._analyser
+        setHasAnalyser(true)
         return
       }
 
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioContext) {
+        console.warn('Web Audio API not supported')
+        return
+      }
+
+      const audioContext = new AudioContext()
       audioContextRef.current = audioContext
 
       const analyser = audioContext.createAnalyser()
-      analyser.fftSize = 128
-      analyser.smoothingTimeConstant = 0.8
+      analyser.fftSize = 64
+      analyser.smoothingTimeConstant = 0.85
       analyserRef.current = analyser
 
       const source = audioContext.createMediaElementSource(audioElement)
-      sourceRef.current = source
       source.connect(analyser)
       analyser.connect(audioContext.destination)
 
-      // Mark the audio element as having a context
-      ;(audioElement as any)._hasAudioContext = true
+      // Store references on the audio element
+      ;(audioElement as any)._audioContext = audioContext
+      ;(audioElement as any)._analyser = analyser
 
-      setIsInitialized(true)
+      setHasAnalyser(true)
     } catch (error) {
-      console.error('Error initializing audio context:', error)
-      setIsInitialized(true) // Still set to true to prevent re-attempts
+      console.warn('Could not initialize audio visualizer:', error)
+      // Continue without visualization
     }
+  }, [audioElement])
 
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
+  // Try to initialize when playing starts
+  useEffect(() => {
+    if (isPlaying && audioElement && !initAttemptedRef.current) {
+      // Resume audio context if suspended
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume()
       }
+      initializeAudioContext()
     }
-  }, [audioElement, isInitialized])
+  }, [isPlaying, audioElement, initializeAudioContext])
 
+  // Random heights for animated effect when no analyser
+  const randomHeightsRef = useRef<number[]>(Array(32).fill(0).map(() => Math.random()))
+
+  // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -61,26 +81,49 @@ export default function SoundwaveVisualizer({ audioElement, isPlaying }: Soundwa
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const barCount = 32
+    const barWidth = (canvas.width / barCount) - 2
+    const maxBarHeight = canvas.height * 0.85
+
     const draw = () => {
-      const width = canvas.width
-      const height = canvas.height
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      ctx.clearRect(0, 0, width, height)
-
-      if (analyserRef.current && isPlaying) {
+      if (isPlaying && hasAnalyser && analyserRef.current) {
+        // Real audio visualization
         const bufferLength = analyserRef.current.frequencyBinCount
         const dataArray = new Uint8Array(bufferLength)
         analyserRef.current.getByteFrequencyData(dataArray)
 
-        const barWidth = width / bufferLength
-        const barSpacing = 2
+        // Map frequency data to our bar count
+        const step = Math.floor(bufferLength / barCount)
+        
+        for (let i = 0; i < barCount; i++) {
+          const dataIndex = i * step
+          const value = dataArray[dataIndex] || 0
+          const barHeight = Math.max(4, (value / 255) * maxBarHeight)
+          const x = i * (barWidth + 2)
+          const y = (canvas.height - barHeight) / 2
 
-        for (let i = 0; i < bufferLength; i++) {
-          const barHeight = (dataArray[i] / 255) * height * 0.9
-          const x = i * (barWidth + barSpacing)
-          const y = (height - barHeight) / 2
+          // Gradient from neon green to teal
+          const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight)
+          gradient.addColorStop(0, '#39FF14')
+          gradient.addColorStop(0.5, '#00D9FF')
+          gradient.addColorStop(1, '#39FF14')
 
-          // Create gradient for each bar
+          ctx.fillStyle = gradient
+          ctx.fillRect(x, y, barWidth, barHeight)
+        }
+      } else if (isPlaying) {
+        // Animated bars when playing but no analyser available
+        for (let i = 0; i < barCount; i++) {
+          // Animate random heights
+          const targetHeight = 0.2 + Math.random() * 0.6
+          randomHeightsRef.current[i] += (targetHeight - randomHeightsRef.current[i]) * 0.15
+          
+          const barHeight = Math.max(4, randomHeightsRef.current[i] * maxBarHeight)
+          const x = i * (barWidth + 2)
+          const y = (canvas.height - barHeight) / 2
+
           const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight)
           gradient.addColorStop(0, '#39FF14')
           gradient.addColorStop(0.5, '#00D9FF')
@@ -90,17 +133,14 @@ export default function SoundwaveVisualizer({ audioElement, isPlaying }: Soundwa
           ctx.fillRect(x, y, barWidth, barHeight)
         }
       } else {
-        // Draw idle bars when not playing
-        const barCount = 32
-        const barWidth = width / barCount - 2
-
+        // Static idle bars when paused
         for (let i = 0; i < barCount; i++) {
-          const baseHeight = 4
+          const barHeight = 4
           const x = i * (barWidth + 2)
-          const y = (height - baseHeight) / 2
+          const y = (canvas.height - barHeight) / 2
 
-          ctx.fillStyle = '#333'
-          ctx.fillRect(x, y, barWidth, baseHeight)
+          ctx.fillStyle = '#444'
+          ctx.fillRect(x, y, barWidth, barHeight)
         }
       }
 
@@ -114,23 +154,23 @@ export default function SoundwaveVisualizer({ audioElement, isPlaying }: Soundwa
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [isPlaying])
+  }, [isPlaying, hasAnalyser])
 
   return (
-    <div className="w-full h-16 flex items-center justify-center px-4">
+    <div className="w-full flex items-center justify-center px-4 py-2">
       <canvas
         ref={canvasRef}
         width={320}
-        height={50}
+        height={60}
+        className="rounded-lg"
         style={{
           width: '100%',
           maxWidth: '320px',
-          height: '50px',
-          borderRadius: '8px',
-          background: 'rgba(0, 0, 0, 0.3)',
+          height: '60px',
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%)',
+          border: '1px solid rgba(57, 255, 20, 0.2)',
         }}
       />
     </div>
   )
 }
-
