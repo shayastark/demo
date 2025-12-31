@@ -115,7 +115,7 @@ export default function AccountPage() {
           <Link href="/" className="text-2xl font-bold text-white">
             Hubba
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-6">
             <Link
               href="/dashboard"
               className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
@@ -124,7 +124,7 @@ export default function AccountPage() {
             </Link>
             <button
               onClick={logout}
-              className="text-sm text-neon-green hover:opacity-80 opacity-70"
+              className="text-sm text-gray-400 hover:text-white transition"
             >
               Sign out
             </button>
@@ -137,17 +137,17 @@ export default function AccountPage() {
 
         <div className="bg-gray-900 rounded-lg p-4 md:p-6 space-y-6">
           {/* Email - inline layout */}
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-white font-medium">Email:</label>
-            <span className="text-sm text-gray-300">
+          <div className="flex items-center">
+            <label className="text-sm text-white font-medium w-24">Email</label>
+            <span className="text-sm text-neon-green">
               {email || user?.email?.address || 'Not set'}
             </span>
           </div>
 
           {/* Username - show value with edit button */}
           <div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-white font-medium">Username:</label>
+            <div className="flex items-center">
+              <label className="text-sm text-white font-medium w-24">Username</label>
               {isEditingUsername ? (
                 <div className="flex items-center gap-2 flex-1">
                   <input
@@ -189,25 +189,25 @@ export default function AccountPage() {
                       }
                     }}
                     disabled={saving}
-                    className="p-2 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50"
+                    className="p-1.5 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50"
                     title="Save"
                   >
-                    <Check className="w-4 h-4" />
+                    <Check className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => {
                       setIsEditingUsername(false)
                       setEditingUsername(username)
                     }}
-                    className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+                    className="p-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
                     title="Cancel"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-300">
+                <div className="flex items-center flex-1">
+                  <span className="text-sm text-neon-green">
                     {username || 'Not set'}
                   </span>
                   <button
@@ -215,15 +215,15 @@ export default function AccountPage() {
                       setEditingUsername(username)
                       setIsEditingUsername(true)
                     }}
-                    className="p-1.5 text-gray-400 hover:text-white transition rounded-lg hover:bg-gray-800"
+                    className="ml-auto p-1 text-gray-500 hover:text-white transition"
                     title="Edit username"
                   >
-                    <Edit className="w-4 h-4" />
+                    <Edit className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
             </div>
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-gray-500 ml-24">
               This will be used to identify you across Hubba.
             </p>
           </div>

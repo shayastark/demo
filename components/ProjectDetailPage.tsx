@@ -1068,7 +1068,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 768px"
                     />
-                    <button
+              <button
                       onClick={() => {
                         setEditCoverImage(null)
                         setEditCoverImagePreview(project.cover_image_url || null)
@@ -1128,10 +1128,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <>
                       <Save className="w-4 h-4" />
                       Save Changes
-                    </>
-                  )}
-                </button>
-              </div>
+                  </>
+                )}
+              </button>
+            </div>
             </div>
           ) : (
             <>
@@ -1148,7 +1148,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                       </>
                     )}
-                  </div>
+          </div>
                 </div>
             {/* Project Menu Button */}
             <button
@@ -1221,19 +1221,30 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       showToast(`Sharing ${newValue ? 'enabled' : 'disabled'}`, 'success')
                     }
                   }}
-                  className={`relative w-16 h-9 rounded-full transition-colors flex-shrink-0 ${
-                    (project.sharing_enabled ?? true)
-                      ? 'bg-neon-green'
-                      : 'bg-gray-600'
-                  }`}
-                  style={{ minWidth: '64px' }}
+                  style={{
+                    position: 'relative',
+                    width: '56px',
+                    height: '32px',
+                    borderRadius: '16px',
+                    backgroundColor: (project.sharing_enabled ?? true) ? '#39FF14' : '#4B5563',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    flexShrink: 0,
+                  }}
                 >
                   <div 
-                    className={`absolute top-1 w-7 h-7 rounded-full shadow-md transition-all duration-200 ${
-                      (project.sharing_enabled ?? true)
-                        ? 'translate-x-8 bg-black'
-                        : 'translate-x-1 bg-white'
-                    }`} 
+                    style={{
+                      position: 'absolute',
+                      top: '4px',
+                      left: (project.sharing_enabled ?? true) ? '28px' : '4px',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '12px',
+                      backgroundColor: (project.sharing_enabled ?? true) ? '#000' : '#fff',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      transition: 'left 0.2s, background-color 0.2s',
+                    }}
                   />
                 </button>
               </div>
@@ -1260,19 +1271,30 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       showToast(`Downloads ${newValue ? 'enabled' : 'disabled'}`, 'success')
                     }
                   }}
-                  className={`relative w-16 h-9 rounded-full transition-colors flex-shrink-0 ${
-                project.allow_downloads
-                      ? 'bg-neon-green'
-                      : 'bg-gray-600'
-                  }`}
-                  style={{ minWidth: '64px' }}
+                  style={{
+                    position: 'relative',
+                    width: '56px',
+                    height: '32px',
+                    borderRadius: '16px',
+                    backgroundColor: project.allow_downloads ? '#39FF14' : '#4B5563',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    flexShrink: 0,
+                  }}
                 >
                   <div 
-                    className={`absolute top-1 w-7 h-7 rounded-full shadow-md transition-all duration-200 ${
-                      project.allow_downloads
-                        ? 'translate-x-8 bg-black'
-                        : 'translate-x-1 bg-white'
-                    }`} 
+                    style={{
+                      position: 'absolute',
+                      top: '4px',
+                      left: project.allow_downloads ? '28px' : '4px',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '12px',
+                      backgroundColor: project.allow_downloads ? '#000' : '#fff',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      transition: 'left 0.2s, background-color 0.2s',
+                    }}
                   />
                 </button>
               </div>
