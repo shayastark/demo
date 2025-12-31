@@ -138,7 +138,7 @@ export default function AccountPage() {
         <div className="bg-gray-900 rounded-lg p-4 md:p-6 space-y-6">
           {/* Email - inline layout */}
           <div className="flex items-center">
-            <label className="text-sm text-white font-medium w-24">Email</label>
+            <label style={{ marginRight: '24px', minWidth: '80px' }} className="text-sm text-white font-medium">Email</label>
             <span className="text-sm text-neon-green">
               {email || user?.email?.address || 'Not set'}
             </span>
@@ -147,7 +147,7 @@ export default function AccountPage() {
           {/* Username - show value with edit button */}
           <div>
             <div className="flex items-center">
-              <label className="text-sm text-white font-medium w-24">Username</label>
+              <label style={{ marginRight: '24px', minWidth: '80px' }} className="text-sm text-white font-medium">Username</label>
               {isEditingUsername ? (
                 <div className="flex items-center gap-2 flex-1">
                   <input
@@ -223,7 +223,7 @@ export default function AccountPage() {
                 </div>
               )}
             </div>
-            <p className="mt-2 text-xs text-gray-500 ml-24">
+            <p style={{ marginLeft: '104px' }} className="mt-2 text-xs text-gray-500">
               This will be used to identify you across Hubba.
             </p>
           </div>
