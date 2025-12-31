@@ -1358,14 +1358,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {/* Settings - Only show for creators */}
           {isCreator && (
-          <div className="bg-gray-900 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold mb-4 text-neon-green">Project Settings</h3>
-            <div className="space-y-4">
+          <div className="bg-gray-900 rounded-lg p-5 mb-6 border border-gray-800">
+            <h3 className="font-semibold mb-5 text-neon-green text-lg">Project Settings</h3>
+            <div className="space-y-5">
               {/* Sharing Toggle */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-neon-green">Project Sharing</div>
-                  <div className="text-sm text-neon-green opacity-70">
+              <div className="flex items-center justify-between py-2">
+                <div className="flex-1 mr-4">
+                  <div className="font-medium text-white text-base">Project Sharing</div>
+                  <div className="text-sm text-gray-400 mt-1">
                     Allow others to view this project via share link
                   </div>
                 </div>
@@ -1383,25 +1383,28 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       showToast(`Sharing ${newValue ? 'enabled' : 'disabled'}`, 'success')
                     }
                   }}
-                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                  className={`relative w-16 h-9 rounded-full transition-colors flex-shrink-0 ${
                     (project.sharing_enabled ?? true)
-                      ? 'bg-green-600'
-                      : 'bg-gray-700'
+                      ? 'bg-neon-green'
+                      : 'bg-gray-600'
                   }`}
+                  style={{ minWidth: '64px' }}
                 >
-                  <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                    (project.sharing_enabled ?? true)
-                      ? 'translate-x-7'
-                      : 'translate-x-1'
-                  }`} />
+                  <div 
+                    className={`absolute top-1 w-7 h-7 rounded-full shadow-md transition-all duration-200 ${
+                      (project.sharing_enabled ?? true)
+                        ? 'translate-x-8 bg-black'
+                        : 'translate-x-1 bg-white'
+                    }`} 
+                  />
                 </button>
               </div>
 
               {/* Downloads Toggle */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-neon-green">Allow Downloads</div>
-                  <div className="text-sm text-neon-green opacity-70">
+              <div className="flex items-center justify-between py-2 border-t border-gray-800 pt-5">
+                <div className="flex-1 mr-4">
+                  <div className="font-medium text-white text-base">Allow Downloads</div>
+                  <div className="text-sm text-gray-400 mt-1">
                     Users can download tracks from this project
                   </div>
                 </div>
@@ -1419,17 +1422,20 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       showToast(`Downloads ${newValue ? 'enabled' : 'disabled'}`, 'success')
                     }
                   }}
-                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                  className={`relative w-16 h-9 rounded-full transition-colors flex-shrink-0 ${
                     project.allow_downloads
-                      ? 'bg-green-600'
-                      : 'bg-gray-700'
+                      ? 'bg-neon-green'
+                      : 'bg-gray-600'
                   }`}
+                  style={{ minWidth: '64px' }}
                 >
-                  <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                    project.allow_downloads
-                      ? 'translate-x-7'
-                      : 'translate-x-1'
-                  }`} />
+                  <div 
+                    className={`absolute top-1 w-7 h-7 rounded-full shadow-md transition-all duration-200 ${
+                      project.allow_downloads
+                        ? 'translate-x-8 bg-black'
+                        : 'translate-x-1 bg-white'
+                    }`} 
+                  />
                 </button>
               </div>
             </div>
@@ -1440,10 +1446,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {isCreator && (
           <div className="bg-gray-900 rounded-lg p-4 mb-6 border border-yellow-900/50">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-yellow-400" />
+              <div className="flex items-center">
+                <FileText className="w-5 h-5 text-yellow-400 mr-2" />
                 <h3 className="font-semibold text-neon-green">Project Notes</h3>
-                <span className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">Private</span>
+                <span className="text-xs text-white opacity-60 ml-3">(Private)</span>
               </div>
               {!editingProjectNote && (
                 <button
@@ -1714,10 +1720,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {/* Track Notes Section - Only for creators */}
           {isCreator && tracks.length > 0 && (
             <div className="mt-6 bg-gray-900 rounded-xl p-4">
-              <h3 className="font-semibold text-neon-green mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-yellow-400" />
+              <h3 className="font-semibold text-neon-green mb-4 flex items-center">
+                <FileText className="w-5 h-5 text-yellow-400 mr-2" />
                 Track Notes
-                <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded">Private</span>
+                <span className="text-xs text-white opacity-60 ml-3">(Private)</span>
               </h3>
               <div className="space-y-3">
                 {tracks.map((track) => {
