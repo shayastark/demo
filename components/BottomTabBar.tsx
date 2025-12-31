@@ -236,13 +236,13 @@ export default function BottomTabBar() {
           <div
             style={{
               position: 'fixed',
-              bottom: isMobile ? 0 : '50%',
+              bottom: isMobile ? '70px' : '50%', // Account for tab bar on mobile
               left: isMobile ? 0 : '50%',
               right: isMobile ? 0 : 'auto',
               transform: isMobile ? 'none' : 'translate(-50%, 50%)',
               width: isMobile ? '100%' : '450px',
               maxWidth: '100%',
-              maxHeight: isMobile ? '80vh' : '600px',
+              maxHeight: isMobile ? 'calc(100vh - 140px)' : '600px', // Leave room for tab bar + some top space
               backgroundColor: '#111827',
               borderRadius: isMobile ? '16px 16px 0 0' : '16px',
               zIndex: 101,
