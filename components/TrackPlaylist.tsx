@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Play, Pause, SkipBack, SkipForward, Repeat, Volume2, MoreVertical, Edit, Download, ListPlus, Trash2 } from 'lucide-react'
 import CassettePlayer from './CassettePlayer'
 import SoundwaveVisualizer from './SoundwaveVisualizer'
 import { Track } from '@/lib/types'
 import { showToast } from './Toast'
 import { addToQueue } from './BottomTabBar'
+
+// Unique ID for this component instance
+let instanceId = 0
 
 interface TrackPlaylistProps {
   tracks: Track[]
@@ -41,6 +44,12 @@ export default function TrackPlaylist({
   const [downloadedTracks, setDownloadedTracks] = useState<Set<string>>(new Set())
   const [isMobile, setIsMobile] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const componentIdRef = useRef<number>(0)
+
+  // Initialize unique ID for this component instance
+  useEffect(() => {
+    componentIdRef.current = ++instanceId
+  }, [])
 
   // Detect mobile
   useEffect(() => {
@@ -51,6 +60,42 @@ export default function TrackPlaylist({
   }, [])
 
   const currentTrack = currentTrackIndex !== null ? tracks[currentTrackIndex] : null
+
+  // Dispatch event when playback starts from this component
+  const notifyPlaybackStart = useCallback((track: Track) => {
+    window.dispatchEvent(new CustomEvent('hubba-global-playback', {
+      detail: {
+        source: 'cassette',
+        componentId: componentIdRef.current,
+        track: {
+          id: track.id,
+          title: track.title,
+          audioUrl: track.audio_url,
+          projectTitle: projectTitle,
+          projectCoverUrl: projectCoverUrl,
+        }
+      }
+    }))
+  }, [projectTitle, projectCoverUrl])
+
+  // Listen for playback from other sources (queue player)
+  useEffect(() => {
+    const handleGlobalPlayback = (e: CustomEvent) => {
+      const { source, componentId } = e.detail
+      
+      // If playback started from queue or a different cassette player, stop our playback
+      if (source === 'queue' || (source === 'cassette' && componentId !== componentIdRef.current)) {
+        const audio = audioRef.current
+        if (audio && !audio.paused) {
+          audio.pause()
+          setIsPlaying(false)
+        }
+      }
+    }
+
+    window.addEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
+    return () => window.removeEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
+  }, [])
 
   // Close menu when parent requests it
   useEffect(() => {
@@ -74,8 +119,19 @@ export default function TrackPlaylist({
         handleNext()
       }
     }
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
+    const handlePlay = () => {
+      setIsPlaying(true)
+      // Notify other players that we started playing
+      const track = tracks[currentTrackIndex!]
+      if (track) {
+        notifyPlaybackStart(track)
+      }
+    }
+    const handlePause = () => {
+      setIsPlaying(false)
+      // Notify mini-player that we paused
+      window.dispatchEvent(new CustomEvent('hubba-global-pause'))
+    }
     const handleCanPlay = () => {
       // Audio is ready to play
       if (currentTrackIndex !== null) {

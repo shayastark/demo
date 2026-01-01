@@ -26,6 +26,15 @@ export default function BottomTabBar() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentQueueIndex, setCurrentQueueIndex] = useState<number | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  
+  // External playback state (when cassette player is playing)
+  const [externalTrack, setExternalTrack] = useState<{
+    id: string
+    title: string
+    projectTitle: string
+    projectCoverUrl?: string | null
+  } | null>(null)
+  const [externalIsPlaying, setExternalIsPlaying] = useState(false)
 
   // Detect mobile
   useEffect(() => {
@@ -100,12 +109,63 @@ export default function BottomTabBar() {
     stopPlayback()
   }
 
+  // Listen for playback from cassette players
+  useEffect(() => {
+    const handleGlobalPlayback = (e: CustomEvent) => {
+      const { source, track } = e.detail
+      
+      if (source === 'cassette') {
+        // Cassette player started - stop our queue playback and show their track
+        if (audioRef.current && !audioRef.current.paused) {
+          audioRef.current.pause()
+          audioRef.current.src = ''
+        }
+        setIsPlaying(false)
+        setCurrentQueueIndex(null)
+        
+        // Show the cassette's track in mini player
+        setExternalTrack({
+          id: track.id,
+          title: track.title,
+          projectTitle: track.projectTitle,
+          projectCoverUrl: track.projectCoverUrl,
+        })
+        setExternalIsPlaying(true)
+      } else if (source === 'queue') {
+        // Another queue player started - clear external track display
+        setExternalTrack(null)
+        setExternalIsPlaying(false)
+      }
+    }
+
+    const handleGlobalPause = () => {
+      // Cassette player paused
+      setExternalIsPlaying(false)
+    }
+
+    window.addEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
+    window.addEventListener('hubba-global-pause', handleGlobalPause)
+    return () => {
+      window.removeEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
+      window.removeEventListener('hubba-global-pause', handleGlobalPause)
+    }
+  }, [])
+
   // Queue playback functions
   const playQueue = (startIndex: number = 0) => {
     if (queue.length === 0) return
     
     const index = Math.min(startIndex, queue.length - 1)
     setCurrentQueueIndex(index)
+    
+    // Clear any external track display
+    setExternalTrack(null)
+    setExternalIsPlaying(false)
+    
+    // Dispatch event to stop cassette players
+    window.dispatchEvent(new CustomEvent('hubba-global-playback', {
+      detail: { source: 'queue' }
+    }))
     
     if (audioRef.current) {
       audioRef.current.src = queue[index].audioUrl
@@ -215,15 +275,19 @@ export default function BottomTabBar() {
     return pathname === href
   }
 
-  const currentTrack = currentQueueIndex !== null ? queue[currentQueueIndex] : null
+  // Determine what track to show in mini player
+  const queueTrack = currentQueueIndex !== null ? queue[currentQueueIndex] : null
+  const displayTrack = queueTrack || externalTrack
+  const displayIsPlaying = queueTrack ? isPlaying : externalIsPlaying
+  const isQueuePlayback = queueTrack !== null
 
   return (
     <>
       {/* Hidden Audio Element */}
       <audio ref={audioRef} style={{ display: 'none' }} />
 
-      {/* Mini Player - Shows when playing */}
-      {currentTrack && (
+      {/* Mini Player - Shows when playing (either from queue or cassette) */}
+      {displayTrack && (
         <div
           style={{
             position: 'fixed',
@@ -240,93 +304,153 @@ export default function BottomTabBar() {
             zIndex: 49,
           }}
         >
+          {/* Source indicator */}
+          <div 
+            style={{ 
+              width: '6px', 
+              height: '40px', 
+              backgroundColor: isQueuePlayback ? '#39FF14' : '#14b8a6', // Green for queue, teal for cassette
+              borderRadius: '3px',
+              flexShrink: 0,
+            }} 
+          />
+          
           {/* Track info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {currentTrack.title}
+              {displayTrack.title}
             </div>
             <div style={{ color: '#9ca3af', fontSize: '12px' }}>
-              {currentTrack.projectTitle}
+              {displayTrack.projectTitle}
             </div>
           </div>
 
-          {/* Controls */}
+          {/* Controls - only show full controls for queue playback */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              onClick={playPrevious}
-              disabled={currentQueueIndex === 0}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: currentQueueIndex === 0 ? 'default' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: currentQueueIndex === 0 ? 0.3 : 1,
-              }}
-            >
-              <SkipBack style={{ width: '20px', height: '20px', color: '#fff' }} />
-            </button>
-            
-            <button
-              onClick={togglePlayPause}
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: '#39FF14',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {isPlaying ? (
-                <Pause style={{ width: '20px', height: '20px', color: '#000' }} />
-              ) : (
-                <Play style={{ width: '20px', height: '20px', color: '#000', marginLeft: '2px' }} />
-              )}
-            </button>
-            
-            <button
-              onClick={playNext}
-              disabled={currentQueueIndex === queue.length - 1}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: currentQueueIndex === queue.length - 1 ? 'default' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: currentQueueIndex === queue.length - 1 ? 0.3 : 1,
-              }}
-            >
-              <SkipForward style={{ width: '20px', height: '20px', color: '#fff' }} />
-            </button>
+            {isQueuePlayback ? (
+              <>
+                <button
+                  onClick={playPrevious}
+                  disabled={currentQueueIndex === 0}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: currentQueueIndex === 0 ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: currentQueueIndex === 0 ? 0.3 : 1,
+                  }}
+                >
+                  <SkipBack style={{ width: '20px', height: '20px', color: '#fff' }} />
+                </button>
+                
+                <button
+                  onClick={togglePlayPause}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#39FF14',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {isPlaying ? (
+                    <Pause style={{ width: '20px', height: '20px', color: '#000' }} />
+                  ) : (
+                    <Play style={{ width: '20px', height: '20px', color: '#000', marginLeft: '2px' }} />
+                  )}
+                </button>
+                
+                <button
+                  onClick={playNext}
+                  disabled={currentQueueIndex === queue.length - 1}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: currentQueueIndex === queue.length - 1 ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: currentQueueIndex === queue.length - 1 ? 0.3 : 1,
+                  }}
+                >
+                  <SkipForward style={{ width: '20px', height: '20px', color: '#fff' }} />
+                </button>
 
-            <button
-              onClick={stopPlayback}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <X style={{ width: '18px', height: '18px', color: '#9ca3af' }} />
-            </button>
+                <button
+                  onClick={stopPlayback}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X style={{ width: '18px', height: '18px', color: '#9ca3af' }} />
+                </button>
+              </>
+            ) : (
+              // External playback (cassette) - just show playing indicator and dismiss button
+              <>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: displayIsPlaying ? '#14b8a6' : '#374151',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {displayIsPlaying ? (
+                    <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+                      <div style={{ width: '3px', height: '12px', backgroundColor: '#000', borderRadius: '1px', animation: 'pulse 0.6s ease-in-out infinite' }} />
+                      <div style={{ width: '3px', height: '16px', backgroundColor: '#000', borderRadius: '1px', animation: 'pulse 0.6s ease-in-out infinite 0.1s' }} />
+                      <div style={{ width: '3px', height: '10px', backgroundColor: '#000', borderRadius: '1px', animation: 'pulse 0.6s ease-in-out infinite 0.2s' }} />
+                    </div>
+                  ) : (
+                    <Pause style={{ width: '20px', height: '20px', color: '#9ca3af' }} />
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setExternalTrack(null)
+                    setExternalIsPlaying(false)
+                  }}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X style={{ width: '18px', height: '18px', color: '#9ca3af' }} />
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -662,7 +786,7 @@ export default function BottomTabBar() {
       )}
 
       {/* Spacer to prevent content from being hidden behind tab bar + mini player */}
-      <div style={{ height: currentTrack ? '130px' : '70px' }} />
+      <div style={{ height: displayTrack ? '130px' : '70px' }} />
     </>
   )
 }
