@@ -73,6 +73,29 @@ export default function BottomTabBar() {
     setIsQueueOpen(false)
   }
 
+  // Lock body scroll when queue modal is open (prevents mobile viewport issues)
+  useEffect(() => {
+    if (isQueueOpen) {
+      // Save current scroll position and lock body
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.overflow = 'hidden'
+      
+      return () => {
+        // Restore scroll position when modal closes
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        document.body.style.overflow = ''
+        window.scrollTo(0, scrollY)
+      }
+    }
+  }, [isQueueOpen])
+
   // Don't show on auth pages or if not authenticated
   if (!ready || !authenticated) return null
   if (pathname === '/' || pathname?.startsWith('/share/')) return null
