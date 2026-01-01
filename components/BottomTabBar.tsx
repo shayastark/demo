@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, ListMusic, User, X, Play, Trash2 } from 'lucide-react'
+import { Home, ListMusic, User, X, Play, Pause, Trash2, SkipForward, SkipBack } from 'lucide-react'
 import { usePrivy } from '@privy-io/react-auth'
+import { showToast } from './Toast'
 
 interface QueueItem {
   id: string
@@ -20,6 +21,11 @@ export default function BottomTabBar() {
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [isQueueOpen, setIsQueueOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  
+  // Queue playback state
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentQueueIndex, setCurrentQueueIndex] = useState<number | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Detect mobile
   useEffect(() => {
@@ -64,14 +70,111 @@ export default function BottomTabBar() {
   }
 
   const removeFromQueue = (id: string) => {
+    const itemIndex = queue.findIndex(item => item.id === id)
     const newQueue = queue.filter(item => item.id !== id)
     saveQueue(newQueue)
+    
+    // Handle removal of currently playing track
+    if (currentQueueIndex !== null && itemIndex !== -1) {
+      if (itemIndex === currentQueueIndex) {
+        // Removed the currently playing track
+        if (newQueue.length === 0) {
+          stopPlayback()
+        } else if (itemIndex < newQueue.length) {
+          // Play the next track (which is now at the same index)
+          playQueue(itemIndex)
+        } else {
+          // We removed the last track, play the new last track
+          playQueue(newQueue.length - 1)
+        }
+      } else if (itemIndex < currentQueueIndex) {
+        // Removed a track before the current one, adjust index
+        setCurrentQueueIndex(currentQueueIndex - 1)
+      }
+    }
   }
 
   const clearQueue = () => {
     saveQueue([])
     setIsQueueOpen(false)
+    stopPlayback()
   }
+
+  // Queue playback functions
+  const playQueue = (startIndex: number = 0) => {
+    if (queue.length === 0) return
+    
+    const index = Math.min(startIndex, queue.length - 1)
+    setCurrentQueueIndex(index)
+    
+    if (audioRef.current) {
+      audioRef.current.src = queue[index].audioUrl
+      audioRef.current.load()
+      audioRef.current.play().then(() => {
+        setIsPlaying(true)
+        showToast(`Now playing: ${queue[index].title}`, 'success')
+      }).catch(err => {
+        console.error('Error playing audio:', err)
+        showToast('Failed to play track', 'error')
+      })
+    }
+    setIsQueueOpen(false)
+  }
+
+  const togglePlayPause = () => {
+    if (!audioRef.current) return
+    
+    if (isPlaying) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+    } else {
+      audioRef.current.play().then(() => setIsPlaying(true))
+    }
+  }
+
+  const playNext = () => {
+    if (currentQueueIndex === null || queue.length === 0) return
+    
+    const nextIndex = currentQueueIndex + 1
+    if (nextIndex < queue.length) {
+      playQueue(nextIndex)
+    } else {
+      // End of queue
+      stopPlayback()
+      showToast('Queue finished', 'info')
+    }
+  }
+
+  const playPrevious = () => {
+    if (currentQueueIndex === null || queue.length === 0) return
+    
+    const prevIndex = currentQueueIndex - 1
+    if (prevIndex >= 0) {
+      playQueue(prevIndex)
+    }
+  }
+
+  const stopPlayback = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+    }
+    setIsPlaying(false)
+    setCurrentQueueIndex(null)
+  }
+
+  // Handle audio ended event
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleEnded = () => {
+      playNext()
+    }
+
+    audio.addEventListener('ended', handleEnded)
+    return () => audio.removeEventListener('ended', handleEnded)
+  }, [currentQueueIndex, queue])
 
   // Lock body scroll when queue modal is open (prevents mobile viewport issues)
   useEffect(() => {
@@ -112,8 +215,122 @@ export default function BottomTabBar() {
     return pathname === href
   }
 
+  const currentTrack = currentQueueIndex !== null ? queue[currentQueueIndex] : null
+
   return (
     <>
+      {/* Hidden Audio Element */}
+      <audio ref={audioRef} style={{ display: 'none' }} />
+
+      {/* Mini Player - Shows when playing */}
+      {currentTrack && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '70px',
+            left: 0,
+            right: 0,
+            height: '60px',
+            backgroundColor: '#1f2937',
+            borderTop: '1px solid #374151',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 16px',
+            gap: '12px',
+            zIndex: 49,
+          }}
+        >
+          {/* Track info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {currentTrack.title}
+            </div>
+            <div style={{ color: '#9ca3af', fontSize: '12px' }}>
+              {currentTrack.projectTitle}
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={playPrevious}
+              disabled={currentQueueIndex === 0}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: currentQueueIndex === 0 ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: currentQueueIndex === 0 ? 0.3 : 1,
+              }}
+            >
+              <SkipBack style={{ width: '20px', height: '20px', color: '#fff' }} />
+            </button>
+            
+            <button
+              onClick={togglePlayPause}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#39FF14',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {isPlaying ? (
+                <Pause style={{ width: '20px', height: '20px', color: '#000' }} />
+              ) : (
+                <Play style={{ width: '20px', height: '20px', color: '#000', marginLeft: '2px' }} />
+              )}
+            </button>
+            
+            <button
+              onClick={playNext}
+              disabled={currentQueueIndex === queue.length - 1}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: currentQueueIndex === queue.length - 1 ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: currentQueueIndex === queue.length - 1 ? 0.3 : 1,
+              }}
+            >
+              <SkipForward style={{ width: '20px', height: '20px', color: '#fff' }} />
+            </button>
+
+            <button
+              onClick={stopPlayback}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <X style={{ width: '18px', height: '18px', color: '#9ca3af' }} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Tab Bar */}
       <nav
         style={{
@@ -345,48 +562,71 @@ export default function BottomTabBar() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {queue.map((item, index) => (
-                    <div
-                      key={item.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '12px 16px',
-                        backgroundColor: '#1f2937',
-                        borderRadius: '12px',
-                        gap: '12px',
-                      }}
-                    >
-                      <span style={{ color: '#6b7280', fontSize: '14px', minWidth: '24px' }}>
-                        {index + 1}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {item.title}
-                        </div>
-                        <div style={{ color: '#9ca3af', fontSize: '12px', marginTop: '2px' }}>
-                          {item.projectTitle}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeFromQueue(item.id)}
+                  {queue.map((item, index) => {
+                    const isCurrentTrack = currentQueueIndex === index
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => playQueue(index)}
                         style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
+                          padding: '12px 16px',
+                          backgroundColor: isCurrentTrack ? '#374151' : '#1f2937',
+                          borderRadius: '12px',
+                          gap: '12px',
+                          cursor: 'pointer',
+                          borderLeft: isCurrentTrack ? '3px solid #39FF14' : '3px solid transparent',
+                          transition: 'background-color 0.2s',
                         }}
                         className="hover:bg-gray-700"
                       >
-                        <Trash2 style={{ width: '16px', height: '16px', color: '#9ca3af' }} />
-                      </button>
-                    </div>
-                  ))}
+                        <span style={{ 
+                          color: isCurrentTrack ? '#39FF14' : '#6b7280', 
+                          fontSize: '14px', 
+                          minWidth: '24px',
+                          fontWeight: isCurrentTrack ? 600 : 400,
+                        }}>
+                          {isCurrentTrack && isPlaying ? '▶' : index + 1}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ 
+                            color: isCurrentTrack ? '#39FF14' : '#fff', 
+                            fontSize: '14px', 
+                            fontWeight: 500, 
+                            whiteSpace: 'nowrap', 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis' 
+                          }}>
+                            {item.title}
+                          </div>
+                          <div style={{ color: '#9ca3af', fontSize: '12px', marginTop: '2px' }}>
+                            {item.projectTitle}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeFromQueue(item.id)
+                          }}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          className="hover:bg-gray-600"
+                        >
+                          <Trash2 style={{ width: '16px', height: '16px', color: '#9ca3af' }} />
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -395,10 +635,7 @@ export default function BottomTabBar() {
             {queue.length > 0 && (
               <div style={{ padding: '16px', borderTop: '1px solid #374151' }}>
                 <button
-                  onClick={() => {
-                    // TODO: Implement play queue functionality
-                    setIsQueueOpen(false)
-                  }}
+                  onClick={() => playQueue(0)}
                   style={{
                     width: '100%',
                     padding: '14px',
@@ -424,8 +661,8 @@ export default function BottomTabBar() {
         </>
       )}
 
-      {/* Spacer to prevent content from being hidden behind tab bar */}
-      <div style={{ height: '70px' }} />
+      {/* Spacer to prevent content from being hidden behind tab bar + mini player */}
+      <div style={{ height: currentTrack ? '130px' : '70px' }} />
     </>
   )
 }

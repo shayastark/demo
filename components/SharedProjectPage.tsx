@@ -227,6 +227,8 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     const url = `${window.location.origin}/share/${token}`
     await navigator.clipboard.writeText(url)
     setLinkCopied(true)
+    showToast('Link copied to clipboard!', 'success')
+    setIsProjectMenuOpen(false) // Close the menu
     setTimeout(() => setLinkCopied(false), 2000)
 
     // Track share
