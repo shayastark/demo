@@ -127,7 +127,12 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }
 
   const handleTogglePin = async () => {
+    if (!authenticated) {
+      login()
+      return
+    }
     if (!user || !project) return
+    
     try {
       const privyId = user.id
       const { data: dbUser } = await supabase
@@ -138,18 +143,103 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
       if (!dbUser) return
 
+      // First, ensure the project is saved
+      if (!addedToProject) {
+        // Save the project first
+        await supabase
+          .from('user_projects')
+          .insert({ user_id: dbUser.id, project_id: project.id })
+        setAddedToProject(true)
+      }
+
       const newPinnedState = !isPinned
-      await supabase
+      const { error } = await supabase
         .from('user_projects')
-        .upsert(
-          { user_id: dbUser.id, project_id: project.id, pinned: newPinnedState },
-          { onConflict: 'user_id,project_id' }
-        )
+        .update({ pinned: newPinnedState })
+        .eq('user_id', dbUser.id)
+        .eq('project_id', project.id)
+
+      if (error) throw error
 
       setIsPinned(newPinnedState)
       setIsProjectMenuOpen(false)
+      showToast(newPinnedState ? 'Project pinned to dashboard!' : 'Project unpinned', 'success')
     } catch (error) {
       console.error('Error toggling pin:', error)
+      showToast('Failed to update pin status', 'error')
+    }
+  }
+
+  const handleSaveProject = async () => {
+    if (!authenticated) {
+      login()
+      return
+    }
+    if (!user || !project) return
+
+    try {
+      const privyId = user.id
+      let { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', privyId)
+        .single()
+
+      if (!dbUser) {
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert({ privy_id: privyId, email: user.email?.address || null })
+          .select('id')
+          .single()
+        
+        if (userError || !newUser) throw userError || new Error('Failed to create user')
+        dbUser = newUser
+      }
+
+      if (!dbUser) throw new Error('User not found')
+      
+      // Check if already saved
+      const { data: existing } = await supabase
+        .from('user_projects')
+        .select('id')
+        .eq('user_id', dbUser.id)
+        .eq('project_id', project.id)
+        .single()
+
+      if (existing) {
+        showToast('Project already saved!', 'info')
+        setIsProjectMenuOpen(false)
+        return
+      }
+
+      await supabase
+        .from('user_projects')
+        .insert({ user_id: dbUser.id, project_id: project.id })
+
+      // Track add metric
+      const { data: metrics } = await supabase
+        .from('project_metrics')
+        .select('adds')
+        .eq('project_id', project.id)
+        .single()
+
+      if (metrics) {
+        await supabase
+          .from('project_metrics')
+          .update({ adds: (metrics.adds ?? 0) + 1 })
+          .eq('project_id', project.id)
+      } else {
+        await supabase
+          .from('project_metrics')
+          .insert({ project_id: project.id, adds: 1, plays: 0, shares: 0 })
+      }
+      
+      setAddedToProject(true)
+      setIsProjectMenuOpen(false)
+      showToast('Project saved to your library!', 'success')
+    } catch (error) {
+      console.error('Error saving project:', error)
+      showToast('Failed to save project', 'error')
     }
   }
 
@@ -297,89 +387,32 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     }
   }
 
-  const handleAddToProject = async () => {
-    if (!authenticated) {
-      login()
-      return
+  const handleAddToQueue = async () => {
+    if (!project) return
+
+    // Add all tracks to local playback queue
+    let addedCount = 0
+    for (const track of tracks) {
+      const added = addToQueue({
+        id: track.id,
+        title: track.title,
+        projectTitle: project.title,
+        audioUrl: track.audio_url,
+      })
+      if (added) addedCount++
     }
-
-    if (!user || !project) return
-
-    try {
-      const privyId = user.id
-      let { data: dbUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
-
-      if (!dbUser) {
-        const { data: newUser, error: userError } = await supabase
-          .from('users')
-          .insert({ privy_id: privyId, email: user.email?.address || null })
-          .select('id')
-          .single()
-        
-        if (userError || !newUser) throw userError || new Error('Failed to create user')
-        dbUser = newUser
-      }
-
-      if (!dbUser) throw new Error('User not found')
-      
-      await supabase
-        .from('user_projects')
-        .insert({ user_id: dbUser.id, project_id: project.id })
-
-      // Track add
-      const { data: metrics } = await supabase
-        .from('project_metrics')
-        .select('adds')
-        .eq('project_id', project.id)
-        .single()
-
-      if (metrics) {
-        const currentAdds = metrics.adds ?? 0
-        const { error: updateError } = await supabase
-          .from('project_metrics')
-          .update({ adds: currentAdds + 1 })
-          .eq('project_id', project.id)
-        
-        if (updateError) {
-          console.error('Error updating adds:', updateError)
-          console.error('Update error details:', JSON.stringify(updateError, null, 2))
-        }
-      } else {
-        const { error: insertError } = await supabase
-          .from('project_metrics')
-          .insert({ project_id: project.id, adds: 1, plays: 0, shares: 0 })
-        
-        if (insertError) {
-          console.error('Error creating metrics:', insertError)
-          console.error('Insert error details:', JSON.stringify(insertError, null, 2))
-        }
-      }
-
-      // Also add all tracks to local playback queue
-      let addedCount = 0
-      for (const track of tracks) {
-        const added = addToQueue({
-          id: track.id,
-          title: track.title,
-          projectTitle: project.title,
-          audioUrl: track.audio_url,
-        })
-        if (added) addedCount++
-      }
-      
-      if (addedCount > 0) {
-        showToast(`Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to queue!`, 'success')
-      }
-      
-      setAddedToProject(true)
-    } catch (error) {
-      console.error('Error adding to project:', error)
+    
+    if (addedCount > 0) {
+      showToast(`Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to queue!`, 'success')
+    } else {
+      showToast('Tracks already in queue', 'info')
     }
+    
+    setIsProjectMenuOpen(false)
   }
+
+  // Legacy function name for compatibility
+  const handleAddToProject = handleAddToQueue
 
   const handleDownload = async (track: Track) => {
     if (!project?.allow_downloads) return
@@ -736,8 +769,9 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                 </div>
               </button>
               
+              {/* Save to Library button */}
               <button
-                onClick={() => handleAddToProject()}
+                onClick={() => handleSaveProject()}
                 disabled={addedToProject}
                 style={{
                   width: '100%',
@@ -760,6 +794,46 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                 <div style={{
                   width: '44px',
                   height: '44px',
+                  backgroundColor: addedToProject ? '#374151' : '#39FF14',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Plus style={{ width: '22px', height: '22px', color: addedToProject ? '#6b7280' : '#000' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{addedToProject ? 'Saved to Library' : 'Save to Library'}</div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                    {addedToProject ? 'This project is in your dashboard' : 'Add to your saved projects'}
+                  </div>
+                </div>
+              </button>
+              
+              {/* Add to Queue button */}
+              <button
+                onClick={() => handleAddToProject()}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#1f2937',
+                  color: '#fff',
+                  border: '1px solid #374151',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  textAlign: 'left',
+                }}
+                className="hover:bg-gray-700 transition"
+              >
+                <div style={{
+                  width: '44px',
+                  height: '44px',
                   backgroundColor: '#374151',
                   borderRadius: '10px',
                   display: 'flex',
@@ -767,12 +841,12 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <ListMusic style={{ width: '22px', height: '22px', color: addedToProject ? '#6b7280' : '#39FF14' }} />
+                  <ListMusic style={{ width: '22px', height: '22px', color: '#39FF14' }} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{addedToProject ? 'Added to Queue' : 'Add to Queue'}</div>
+                  <div style={{ fontWeight: 600 }}>Add to Queue</div>
                   <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    {addedToProject ? 'Already in your queue' : 'Add project to your play queue'}
+                    Add all tracks to play queue
                   </div>
                 </div>
               </button>

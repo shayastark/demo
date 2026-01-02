@@ -444,17 +444,23 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       if (!dbUser) return
 
       const newPinnedState = !isPinned
-      await supabase
+      
+      // Use upsert to create or update the user_projects record
+      const { error } = await supabase
         .from('user_projects')
         .upsert(
           { user_id: dbUser.id, project_id: project.id, pinned: newPinnedState },
           { onConflict: 'user_id,project_id' }
         )
 
+      if (error) throw error
+
       setIsPinned(newPinnedState)
       setIsProjectMenuOpen(false)
+      showToast(newPinnedState ? 'Project pinned!' : 'Project unpinned', 'success')
     } catch (error) {
       console.error('Error toggling pin:', error)
+      showToast('Failed to update pin status', 'error')
     }
   }
 
