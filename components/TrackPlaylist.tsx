@@ -43,7 +43,6 @@ export default function TrackPlaylist({
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null)
   const [downloadedTracks, setDownloadedTracks] = useState<Set<string>>(new Set())
   const [isMobile, setIsMobile] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const componentIdRef = useRef<number>(0)
 
   // Initialize unique ID for this component instance
@@ -61,41 +60,56 @@ export default function TrackPlaylist({
 
   const currentTrack = currentTrackIndex !== null ? tracks[currentTrackIndex] : null
 
-  // Dispatch event when playback starts from this component
-  const notifyPlaybackStart = useCallback((track: Track) => {
-    window.dispatchEvent(new CustomEvent('hubba-global-playback', {
-      detail: {
-        source: 'cassette',
-        componentId: componentIdRef.current,
-        track: {
-          id: track.id,
-          title: track.title,
-          audioUrl: track.audio_url,
-          projectTitle: projectTitle,
-          projectCoverUrl: projectCoverUrl,
-        }
-      }
-    }))
-  }, [projectTitle, projectCoverUrl])
-
-  // Listen for playback from other sources (queue player)
+  // Listen for playback state updates from the global player
   useEffect(() => {
-    const handleGlobalPlayback = (e: CustomEvent) => {
-      const { source, componentId } = e.detail
+    const handlePlaybackState = (e: CustomEvent) => {
+      const { isPlaying: playing, trackId, ended } = e.detail
       
-      // If playback started from queue or a different cassette player, stop our playback
-      if (source === 'queue' || (source === 'cassette' && componentId !== componentIdRef.current)) {
-        const audio = audioRef.current
-        if (audio && !audio.paused) {
-          audio.pause()
-          setIsPlaying(false)
+      // Check if this update is for one of our tracks
+      const trackIndex = tracks.findIndex(t => t.id === trackId)
+      if (trackIndex !== -1) {
+        setIsPlaying(playing)
+        if (ended && !isRepeat) {
+          // Track ended, move to next or stop
+          const nextIndex = trackIndex + 1
+          if (nextIndex < tracks.length) {
+            playTrackAtIndex(nextIndex)
+          } else {
+            setCurrentTrackIndex(null)
+            setIsPlaying(false)
+          }
+        } else if (ended && isRepeat) {
+          // Repeat the same track
+          playTrackAtIndex(trackIndex)
         }
       }
     }
 
+    const handlePlaybackTime = (e: CustomEvent) => {
+      const { currentTime: time, duration: dur } = e.detail
+      setCurrentTime(time)
+      setDuration(dur)
+    }
+
+    // Listen for when queue starts playing (stop our display)
+    const handleGlobalPlayback = (e: CustomEvent) => {
+      const { source } = e.detail
+      if (source === 'queue') {
+        setIsPlaying(false)
+        setCurrentTrackIndex(null)
+      }
+    }
+
+    window.addEventListener('hubba-playback-state', handlePlaybackState as EventListener)
+    window.addEventListener('hubba-playback-time', handlePlaybackTime as EventListener)
     window.addEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
-    return () => window.removeEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
-  }, [])
+    
+    return () => {
+      window.removeEventListener('hubba-playback-state', handlePlaybackState as EventListener)
+      window.removeEventListener('hubba-playback-time', handlePlaybackTime as EventListener)
+      window.removeEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
+    }
+  }, [tracks, isRepeat])
 
   // Close menu when parent requests it
   useEffect(() => {
@@ -104,142 +118,107 @@ export default function TrackPlaylist({
     }
   }, [forceCloseMenu])
 
-  // Handle audio element events
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
+  // Play a track by dispatching to the global player
+  const playTrackAtIndex = useCallback((index: number) => {
+    const track = tracks[index]
+    if (!track) return
 
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime)
-    const handleDurationChange = () => setDuration(audio.duration || 0)
-    const handleEnded = () => {
-      if (isRepeat) {
-        audio.currentTime = 0
-        audio.play()
-      } else {
-        handleNext()
+    setCurrentTrackIndex(index)
+    
+    // Dispatch play request to global player
+    window.dispatchEvent(new CustomEvent('hubba-cassette-play', {
+      detail: {
+        track: {
+          id: track.id,
+          title: track.title,
+          audioUrl: track.audio_url,
+        },
+        tracks: tracks.map(t => ({ id: t.id, title: t.title, audio_url: t.audio_url })),
+        currentIndex: index,
+        projectTitle,
+        projectCoverUrl,
       }
-    }
-    const handlePlay = () => {
-      setIsPlaying(true)
-      // Notify other players that we started playing
-      const track = tracks[currentTrackIndex!]
-      if (track) {
-        notifyPlaybackStart(track)
-      }
-    }
-    const handlePause = () => {
-      setIsPlaying(false)
-      // Notify mini-player that we paused
-      window.dispatchEvent(new CustomEvent('hubba-global-pause'))
-    }
-    const handleCanPlay = () => {
-      // Audio is ready to play
-      if (currentTrackIndex !== null) {
-        audio.play().catch(console.error)
-      }
-    }
+    }))
 
-    audio.addEventListener('timeupdate', handleTimeUpdate)
-    audio.addEventListener('durationchange', handleDurationChange)
-    audio.addEventListener('ended', handleEnded)
-    audio.addEventListener('play', handlePlay)
-    audio.addEventListener('pause', handlePause)
-    audio.addEventListener('canplay', handleCanPlay)
-
-    return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate)
-      audio.removeEventListener('durationchange', handleDurationChange)
-      audio.removeEventListener('ended', handleEnded)
-      audio.removeEventListener('play', handlePlay)
-      audio.removeEventListener('pause', handlePause)
-      audio.removeEventListener('canplay', handleCanPlay)
+    if (onTrackPlay) {
+      onTrackPlay(track.id)
     }
-  }, [isRepeat, currentTrackIndex, tracks.length])
-
-  // Update audio source when track changes
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio || currentTrackIndex === null) return
-
-    const track = tracks[currentTrackIndex]
-    if (track && track.audio_url) {
-      audio.src = track.audio_url
-      audio.load()
-      
-      if (onTrackPlay) {
-        onTrackPlay(track.id)
-      }
-    }
-  }, [currentTrackIndex, tracks])
+  }, [tracks, projectTitle, projectCoverUrl, onTrackPlay])
 
   const handleTrackClick = (index: number) => {
-    if (currentTrackIndex === index) {
-      // Toggle play/pause if same track
-      togglePlay()
+    if (currentTrackIndex === index && isPlaying) {
+      // Pause if same track is playing
+      window.dispatchEvent(new Event('hubba-cassette-pause'))
+      setIsPlaying(false)
+    } else if (currentTrackIndex === index && !isPlaying) {
+      // Resume if same track is paused
+      window.dispatchEvent(new Event('hubba-cassette-resume'))
+      setIsPlaying(true)
     } else {
       // Play new track
-      setCurrentTrackIndex(index)
+      playTrackAtIndex(index)
     }
   }
 
   const togglePlay = () => {
-    const audio = audioRef.current
-    if (!audio) return
-
     if (currentTrackIndex === null && tracks.length > 0) {
       // If no track selected, start with first track
-      setCurrentTrackIndex(0)
+      playTrackAtIndex(0)
       return
     }
 
     if (isPlaying) {
-      audio.pause()
+      window.dispatchEvent(new Event('hubba-cassette-pause'))
+      setIsPlaying(false)
     } else {
-      audio.play().catch(console.error)
+      window.dispatchEvent(new Event('hubba-cassette-resume'))
+      setIsPlaying(true)
     }
   }
 
   const handlePrevious = () => {
     if (currentTrackIndex === null) {
-      if (tracks.length > 0) setCurrentTrackIndex(0)
+      if (tracks.length > 0) playTrackAtIndex(0)
       return
     }
     
-    const audio = audioRef.current
-    if (audio && audio.currentTime > 3) {
+    if (currentTime > 3) {
       // If more than 3 seconds in, restart current track
-      audio.currentTime = 0
+      window.dispatchEvent(new CustomEvent('hubba-cassette-seek', {
+        detail: { time: 0 }
+      }))
+      setCurrentTime(0)
     } else {
       // Go to previous track
       const newIndex = currentTrackIndex > 0 ? currentTrackIndex - 1 : tracks.length - 1
-      setCurrentTrackIndex(newIndex)
+      playTrackAtIndex(newIndex)
     }
   }
 
   const handleNext = () => {
     if (currentTrackIndex === null) {
-      if (tracks.length > 0) setCurrentTrackIndex(0)
+      if (tracks.length > 0) playTrackAtIndex(0)
       return
     }
     
     const newIndex = currentTrackIndex < tracks.length - 1 ? currentTrackIndex + 1 : 0
-    setCurrentTrackIndex(newIndex)
+    playTrackAtIndex(newIndex)
   }
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const audio = audioRef.current
-    if (!audio) return
     const newTime = parseFloat(e.target.value)
-    audio.currentTime = newTime
     setCurrentTime(newTime)
+    window.dispatchEvent(new CustomEvent('hubba-cassette-seek', {
+      detail: { time: newTime }
+    }))
   }
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value)
     setVolume(newVolume)
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume
-    }
+    window.dispatchEvent(new CustomEvent('hubba-volume-change', {
+      detail: { volume: newVolume }
+    }))
   }
 
   const formatTime = (seconds: number) => {
@@ -313,12 +292,7 @@ export default function TrackPlaylist({
 
   return (
     <div className="space-y-6">
-      {/* Audio element */}
-      <audio 
-        ref={audioRef} 
-        crossOrigin="anonymous"
-        preload="metadata"
-      />
+      {/* Audio is now handled by the global player in BottomTabBar */}
 
       {/* Cassette Player with project cover */}
       <CassettePlayer
@@ -327,9 +301,9 @@ export default function TrackPlaylist({
         title={currentTrack?.title || projectTitle}
       />
 
-      {/* Soundwave Visualizer */}
+      {/* Soundwave Visualizer - uses fallback animation since audio is global */}
       <SoundwaveVisualizer
-        audioElement={audioRef.current}
+        audioElement={null}
         isPlaying={isPlaying}
       />
 
@@ -413,15 +387,11 @@ export default function TrackPlaylist({
             <button
               onClick={() => {
                 // Toggle mute on click
-                if (audioRef.current) {
-                  if (volume > 0) {
-                    audioRef.current.volume = 0
-                    setVolume(0)
-                  } else {
-                    audioRef.current.volume = 1
-                    setVolume(1)
-                  }
-                }
+                const newVolume = volume > 0 ? 0 : 1
+                setVolume(newVolume)
+                window.dispatchEvent(new CustomEvent('hubba-volume-change', {
+                  detail: { volume: newVolume }
+                }))
               }}
               style={{
                 width: '40px',

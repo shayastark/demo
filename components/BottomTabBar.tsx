@@ -27,14 +27,25 @@ export default function BottomTabBar() {
   const [currentQueueIndex, setCurrentQueueIndex] = useState<number | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   
-  // External playback state (when cassette player is playing)
-  const [externalTrack, setExternalTrack] = useState<{
+  // External/cassette playback state - now handled by this global player
+  const [cassetteTrack, setCassetteTrack] = useState<{
     id: string
     title: string
+    audioUrl: string
     projectTitle: string
     projectCoverUrl?: string | null
+    tracks?: Array<{ id: string; title: string; audio_url: string }>
+    currentIndex?: number
   } | null>(null)
-  const [externalIsPlaying, setExternalIsPlaying] = useState(false)
+  const [cassetteIsPlaying, setCassetteIsPlaying] = useState(false)
+  const [cassetteCurrentTime, setCassetteCurrentTime] = useState(0)
+  const [cassetteDuration, setCassetteDuration] = useState(0)
+  
+  // Legacy compatibility
+  const externalTrack = cassetteTrack
+  const externalIsPlaying = cassetteIsPlaying
+  const setExternalTrack = setCassetteTrack
+  const setExternalIsPlaying = setCassetteIsPlaying
 
   // Detect mobile
   useEffect(() => {
@@ -109,47 +120,219 @@ export default function BottomTabBar() {
     stopPlayback()
   }
 
-  // Listen for playback from cassette players
+  // Handle cassette track playback - this is now the GLOBAL audio player
+  const playCassetteTrack = (track: {
+    id: string
+    title: string
+    audioUrl: string
+    projectTitle: string
+    projectCoverUrl?: string | null
+    tracks?: Array<{ id: string; title: string; audio_url: string }>
+    currentIndex?: number
+  }) => {
+    // Stop queue playback if playing
+    setCurrentQueueIndex(null)
+    setIsPlaying(false)
+    
+    // Set up cassette track
+    setCassetteTrack(track)
+    
+    if (audioRef.current) {
+      audioRef.current.src = track.audioUrl
+      audioRef.current.load()
+      audioRef.current.play().then(() => {
+        setCassetteIsPlaying(true)
+        // Notify cassette UI that playback started
+        window.dispatchEvent(new CustomEvent('hubba-playback-state', {
+          detail: { isPlaying: true, trackId: track.id }
+        }))
+      }).catch(err => {
+        console.error('Error playing cassette track:', err)
+        showToast('Failed to play track', 'error')
+      })
+    }
+  }
+
+  const pauseCassettePlayback = () => {
+    if (audioRef.current && cassetteTrack) {
+      audioRef.current.pause()
+      setCassetteIsPlaying(false)
+      window.dispatchEvent(new CustomEvent('hubba-playback-state', {
+        detail: { isPlaying: false, trackId: cassetteTrack.id }
+      }))
+    }
+  }
+
+  const resumeCassettePlayback = () => {
+    if (audioRef.current && cassetteTrack) {
+      audioRef.current.play().then(() => {
+        setCassetteIsPlaying(true)
+        window.dispatchEvent(new CustomEvent('hubba-playback-state', {
+          detail: { isPlaying: true, trackId: cassetteTrack.id }
+        }))
+      })
+    }
+  }
+
+  const seekCassette = (time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time
+    }
+  }
+
+  const cassetteNext = () => {
+    if (!cassetteTrack?.tracks || cassetteTrack.currentIndex === undefined) return
+    const nextIndex = cassetteTrack.currentIndex + 1
+    if (nextIndex < cassetteTrack.tracks.length) {
+      const nextTrack = cassetteTrack.tracks[nextIndex]
+      playCassetteTrack({
+        ...cassetteTrack,
+        id: nextTrack.id,
+        title: nextTrack.title,
+        audioUrl: nextTrack.audio_url,
+        currentIndex: nextIndex,
+      })
+    }
+  }
+
+  const cassettePrevious = () => {
+    if (!cassetteTrack?.tracks || cassetteTrack.currentIndex === undefined) return
+    const prevIndex = cassetteTrack.currentIndex - 1
+    if (prevIndex >= 0) {
+      const prevTrack = cassetteTrack.tracks[prevIndex]
+      playCassetteTrack({
+        ...cassetteTrack,
+        id: prevTrack.id,
+        title: prevTrack.title,
+        audioUrl: prevTrack.audio_url,
+        currentIndex: prevIndex,
+      })
+    }
+  }
+
+  // Listen for playback requests from cassette players
   useEffect(() => {
+    const handlePlayRequest = (e: CustomEvent) => {
+      const { track, tracks, currentIndex, projectTitle, projectCoverUrl } = e.detail
+      playCassetteTrack({
+        id: track.id,
+        title: track.title,
+        audioUrl: track.audioUrl,
+        projectTitle,
+        projectCoverUrl,
+        tracks,
+        currentIndex,
+      })
+    }
+
+    const handlePauseRequest = () => {
+      pauseCassettePlayback()
+    }
+
+    const handleResumeRequest = () => {
+      resumeCassettePlayback()
+    }
+
+    const handleSeekRequest = (e: CustomEvent) => {
+      seekCassette(e.detail.time)
+    }
+
+    const handleNextRequest = () => {
+      cassetteNext()
+    }
+
+    const handlePreviousRequest = () => {
+      cassettePrevious()
+    }
+
     const handleGlobalPlayback = (e: CustomEvent) => {
-      const { source, track } = e.detail
+      const { source } = e.detail
       
-      if (source === 'cassette') {
-        // Cassette player started - stop our queue playback and show their track
-        if (audioRef.current && !audioRef.current.paused) {
-          audioRef.current.pause()
-          audioRef.current.src = ''
-        }
-        setIsPlaying(false)
-        setCurrentQueueIndex(null)
-        
-        // Show the cassette's track in mini player
-        setExternalTrack({
-          id: track.id,
-          title: track.title,
-          projectTitle: track.projectTitle,
-          projectCoverUrl: track.projectCoverUrl,
-        })
-        setExternalIsPlaying(true)
-      } else if (source === 'queue') {
-        // Another queue player started - clear external track display
-        setExternalTrack(null)
-        setExternalIsPlaying(false)
+      if (source === 'queue') {
+        // Queue player started - clear cassette track display
+        setCassetteTrack(null)
+        setCassetteIsPlaying(false)
       }
     }
 
-    const handleGlobalPause = () => {
-      // Cassette player paused
-      setExternalIsPlaying(false)
+    const handleVolumeChange = (e: CustomEvent) => {
+      if (audioRef.current) {
+        audioRef.current.volume = e.detail.volume
+      }
     }
 
+    window.addEventListener('hubba-cassette-play', handlePlayRequest as EventListener)
+    window.addEventListener('hubba-cassette-pause', handlePauseRequest)
+    window.addEventListener('hubba-cassette-resume', handleResumeRequest)
+    window.addEventListener('hubba-cassette-seek', handleSeekRequest as EventListener)
+    window.addEventListener('hubba-cassette-next', handleNextRequest)
+    window.addEventListener('hubba-cassette-previous', handlePreviousRequest)
     window.addEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
-    window.addEventListener('hubba-global-pause', handleGlobalPause)
+    window.addEventListener('hubba-volume-change', handleVolumeChange as EventListener)
+    
     return () => {
+      window.removeEventListener('hubba-cassette-play', handlePlayRequest as EventListener)
+      window.removeEventListener('hubba-cassette-pause', handlePauseRequest)
+      window.removeEventListener('hubba-cassette-resume', handleResumeRequest)
+      window.removeEventListener('hubba-cassette-seek', handleSeekRequest as EventListener)
+      window.removeEventListener('hubba-cassette-next', handleNextRequest)
+      window.removeEventListener('hubba-cassette-previous', handlePreviousRequest)
       window.removeEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
-      window.removeEventListener('hubba-global-pause', handleGlobalPause)
+      window.removeEventListener('hubba-volume-change', handleVolumeChange as EventListener)
     }
-  }, [])
+  }, [cassetteTrack])
+
+  // Broadcast time updates for cassette playback
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleTimeUpdate = () => {
+      if (cassetteTrack) {
+        setCassetteCurrentTime(audio.currentTime)
+        // Broadcast time update to cassette UI
+        window.dispatchEvent(new CustomEvent('hubba-playback-time', {
+          detail: { currentTime: audio.currentTime, duration: audio.duration || 0 }
+        }))
+      }
+    }
+
+    const handleDurationChange = () => {
+      if (cassetteTrack) {
+        setCassetteDuration(audio.duration || 0)
+      }
+    }
+
+    const handleEnded = () => {
+      if (cassetteTrack) {
+        // Try to play next track if available
+        if (cassetteTrack.tracks && cassetteTrack.currentIndex !== undefined) {
+          const nextIndex = cassetteTrack.currentIndex + 1
+          if (nextIndex < cassetteTrack.tracks.length) {
+            cassetteNext()
+            return
+          }
+        }
+        // End of playlist
+        setCassetteIsPlaying(false)
+        window.dispatchEvent(new CustomEvent('hubba-playback-state', {
+          detail: { isPlaying: false, trackId: cassetteTrack.id, ended: true }
+        }))
+      } else if (currentQueueIndex !== null) {
+        playNext()
+      }
+    }
+
+    audio.addEventListener('timeupdate', handleTimeUpdate)
+    audio.addEventListener('durationchange', handleDurationChange)
+    audio.addEventListener('ended', handleEnded)
+    
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate)
+      audio.removeEventListener('durationchange', handleDurationChange)
+      audio.removeEventListener('ended', handleEnded)
+    }
+  }, [cassetteTrack, currentQueueIndex, queue])
 
   // Queue playback functions
   const playQueue = (startIndex: number = 0) => {
