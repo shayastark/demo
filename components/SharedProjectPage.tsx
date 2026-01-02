@@ -54,6 +54,13 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       return
     }
     
+    // Reset state when not authenticated
+    if (!authenticated || !user) {
+      setAddedToProject(false)
+      checkedAddedRef.current = null
+      return
+    }
+    
     if (authenticated && user && project) {
       const checkKey = `${user.id}-${project.id}`
       // Prevent duplicate checks for the same user/project combo
@@ -298,18 +305,62 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         .single()
 
       if (dbUser) {
-        const { data } = await supabase
+        // Use maybeSingle() instead of single() to avoid throwing on no match
+        const { data, error } = await supabase
           .from('user_projects')
           .select('id')
           .eq('user_id', dbUser.id)
           .eq('project_id', project.id)
-          .single()
+          .maybeSingle()
 
-        setAddedToProject(!!data)
+        // Only set to true if we actually found a record
+        if (!error && data) {
+          setAddedToProject(true)
+        } else {
+          setAddedToProject(false)
+        }
+      } else {
+        setAddedToProject(false)
       }
     } catch (error) {
-      // User not logged in or not added
+      // User not logged in or error occurred
+      console.error('Error checking if added:', error)
       setAddedToProject(false)
+    }
+  }
+
+  const handleRemoveFromLibrary = async () => {
+    if (!authenticated) {
+      login()
+      return
+    }
+    if (!user || !project) return
+
+    try {
+      const privyId = user.id
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', privyId)
+        .single()
+
+      if (!dbUser) return
+
+      const { error } = await supabase
+        .from('user_projects')
+        .delete()
+        .eq('user_id', dbUser.id)
+        .eq('project_id', project.id)
+
+      if (error) throw error
+
+      setAddedToProject(false)
+      setIsPinned(false)
+      setIsProjectMenuOpen(false)
+      showToast('Project removed from library', 'success')
+    } catch (error) {
+      console.error('Error removing from library:', error)
+      showToast('Failed to remove project', 'error')
     }
   }
 
@@ -769,47 +820,86 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                 </div>
               </button>
               
-              {/* Save to Library button */}
-              <button
-                onClick={() => handleSaveProject()}
-                disabled={addedToProject}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  backgroundColor: '#1f2937',
-                  color: addedToProject ? '#6b7280' : '#fff',
-                  border: '1px solid #374151',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  cursor: addedToProject ? 'default' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  textAlign: 'left',
-                  opacity: addedToProject ? 0.7 : 1,
-                }}
-                className="hover:bg-gray-700 transition"
-              >
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  backgroundColor: addedToProject ? '#374151' : '#39FF14',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <Plus style={{ width: '22px', height: '22px', color: addedToProject ? '#6b7280' : '#000' }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{addedToProject ? 'Saved to Library' : 'Save to Library'}</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    {addedToProject ? 'This project is in your dashboard' : 'Add to your saved projects'}
+              {/* Save to Library or Remove from Library button */}
+              {addedToProject ? (
+                <button
+                  onClick={() => handleRemoveFromLibrary()}
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
+                >
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <X style={{ width: '22px', height: '22px', color: '#ef4444' }} />
                   </div>
-                </div>
-              </button>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Remove from Library</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      Remove from your saved projects
+                    </div>
+                  </div>
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleSaveProject()}
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
+                >
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#39FF14',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Plus style={{ width: '22px', height: '22px', color: '#000' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Save to Library</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      Add to your saved projects
+                    </div>
+                  </div>
+                </button>
+              )}
               
               {/* Add to Queue button */}
               <button
