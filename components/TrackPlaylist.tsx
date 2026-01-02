@@ -513,10 +513,23 @@ export default function TrackPlaylist({
 
                 {/* Track info - clickable area */}
                 <div 
-                  className="flex-1 min-w-0 cursor-pointer"
+                  style={{ 
+                    flex: 1, 
+                    minWidth: 0, 
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                  }}
                   onClick={() => handleTrackClick(index)}
                 >
-                  <div className="text-white text-xl font-medium truncate">
+                  <div 
+                    className="text-white text-xl font-medium"
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '100%',
+                    }}
+                  >
                     {track.title}
                   </div>
                 </div>
@@ -532,7 +545,17 @@ export default function TrackPlaylist({
                       onMenuOpen?.() // Notify parent to close its menu
                     }
                   }}
-                  className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-700 transition text-gray-400 hover:text-white flex-shrink-0 ml-4"
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    flexShrink: 0,
+                    marginLeft: '12px',
+                  }}
+                  className="hover:bg-gray-700 transition text-gray-400 hover:text-white"
                 >
                   <MoreVertical className="w-6 h-6" />
                 </button>

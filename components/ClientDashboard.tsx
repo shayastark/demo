@@ -6,22 +6,30 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Project } from '@/lib/types'
-import { Plus, Music, Eye, MoreVertical, Share2, Trash2 } from 'lucide-react'
+import { Plus, Music, Eye, MoreVertical, Share2, Trash2, Pin, X } from 'lucide-react'
 import { ProjectCardSkeleton } from './SkeletonLoader'
 import Image from 'next/image'
 import { showToast } from './Toast'
 import ShareModal from './ShareModal'
 
+// Extended type for saved projects with additional info
+interface SavedProject extends Project {
+  pinned: boolean
+  creator_username?: string
+}
+
 export default function ClientDashboard() {
   const { ready, authenticated, user, login, logout } = usePrivy()
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>([])
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [shareModalProject, setShareModalProject] = useState<Project | null>(null)
+  const [dbUserId, setDbUserId] = useState<string | null>(null)
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -135,7 +143,10 @@ export default function ClientDashboard() {
           setUsername(userData.username || userData.email || null)
         }
 
-        // Load projects
+        // Store db user id for later use
+        setDbUserId(existingUser.id)
+
+        // Load projects created by user
         const { data: projectsData, error } = await supabase
           .from('projects')
           .select('*')
@@ -144,6 +155,58 @@ export default function ClientDashboard() {
 
         if (error) throw error
         setProjects(projectsData || [])
+
+        // Load saved projects (from user_projects table) - excluding projects user created
+        const { data: savedData } = await supabase
+          .from('user_projects')
+          .select(`
+            pinned,
+            project:projects(
+              id,
+              creator_id,
+              title,
+              description,
+              cover_image_url,
+              allow_downloads,
+              sharing_enabled,
+              share_token,
+              created_at,
+              updated_at
+            )
+          `)
+          .eq('user_id', existingUser.id)
+
+        if (savedData) {
+          // Filter out projects the user created and transform the data
+          const savedProjectsWithInfo: SavedProject[] = []
+          
+          for (const item of savedData) {
+            const project = item.project as unknown as Project
+            if (project && project.creator_id !== existingUser.id) {
+              // Fetch creator username
+              const { data: creatorData } = await supabase
+                .from('users')
+                .select('username, email')
+                .eq('id', project.creator_id)
+                .single()
+
+              savedProjectsWithInfo.push({
+                ...project,
+                pinned: item.pinned || false,
+                creator_username: creatorData?.username || creatorData?.email || 'Unknown'
+              })
+            }
+          }
+
+          // Sort: pinned first, then by created_at
+          savedProjectsWithInfo.sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1
+            if (!a.pinned && b.pinned) return 1
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          })
+
+          setSavedProjects(savedProjectsWithInfo)
+        }
       } catch (error) {
         console.error('Error loading projects:', error)
       } finally {
@@ -188,6 +251,67 @@ export default function ClientDashboard() {
     } catch (error: any) {
       console.error('Error deleting project:', error)
       showToast(error?.message || 'Failed to delete project. Please try again.', 'error')
+    }
+  }
+
+  const handleTogglePinSaved = async (project: SavedProject) => {
+    if (!dbUserId) return
+    setOpenMenuId(null)
+
+    try {
+      const newPinnedState = !project.pinned
+      const { error } = await supabase
+        .from('user_projects')
+        .update({ pinned: newPinnedState })
+        .eq('user_id', dbUserId)
+        .eq('project_id', project.id)
+
+      if (error) throw error
+
+      // Update local state
+      setSavedProjects(prev => {
+        const updated = prev.map(p => 
+          p.id === project.id ? { ...p, pinned: newPinnedState } : p
+        )
+        // Re-sort: pinned first
+        updated.sort((a, b) => {
+          if (a.pinned && !b.pinned) return -1
+          if (!a.pinned && b.pinned) return 1
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
+        return updated
+      })
+
+      showToast(newPinnedState ? 'Project pinned!' : 'Project unpinned', 'success')
+    } catch (error: any) {
+      console.error('Error toggling pin:', error)
+      showToast('Failed to update pin status', 'error')
+    }
+  }
+
+  const handleRemoveSavedProject = async (project: SavedProject) => {
+    setOpenMenuId(null)
+
+    if (!dbUserId) return
+
+    if (!confirm(`Remove "${project.title}" from your saved projects?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_projects')
+        .delete()
+        .eq('user_id', dbUserId)
+        .eq('project_id', project.id)
+
+      if (error) throw error
+
+      showToast('Project removed from saved', 'success')
+      setSavedProjects(prev => prev.filter(p => p.id !== project.id))
+    } catch (error: any) {
+      console.error('Error removing saved project:', error)
+      showToast('Failed to remove project', 'error')
     }
   }
 
@@ -434,6 +558,204 @@ export default function ClientDashboard() {
                 </Link>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Saved Projects Section */}
+        {!loading && savedProjects.length > 0 && (
+          <div style={{ marginTop: '48px' }}>
+            <h2 className="text-2xl font-bold mb-6 text-white">Saved Projects</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
+              {savedProjects.map((project) => (
+                <div
+                  key={`saved-${project.id}`}
+                  style={{
+                    backgroundColor: '#111827',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    position: 'relative',
+                  }}
+                  className="hover:bg-gray-800 transition group"
+                >
+                  {/* Pinned badge */}
+                  {project.pinned && (
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        left: '4px',
+                        zIndex: 10,
+                        backgroundColor: '#39FF14',
+                        borderRadius: '4px',
+                        padding: '2px 6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <Pin style={{ width: '10px', height: '10px', color: '#000' }} />
+                      <span style={{ fontSize: '10px', fontWeight: 600, color: '#000' }}>Pinned</span>
+                    </div>
+                  )}
+
+                  {/* Image with menu overlay */}
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: '12px' }}>
+                    <Link
+                      href={`/share/${project.share_token}`}
+                      style={{ display: 'block', width: '100%', height: '100%' }}
+                    >
+                      {project.cover_image_url ? (
+                        <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+                          <Image
+                            src={project.cover_image_url}
+                            alt={project.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          />
+                        </div>
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
+                        </div>
+                      )}
+                    </Link>
+                    
+                    {/* Three-dot menu button */}
+                    <div 
+                      ref={(el) => { menuRefs.current[`saved-${project.id}`] = el }}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        zIndex: 20,
+                      }}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setOpenMenuId(openMenuId === `saved-${project.id}` ? null : `saved-${project.id}`)
+                        }}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                        className="hover:bg-black text-white transition shadow-lg"
+                        title="More options"
+                        type="button"
+                      >
+                        <MoreVertical style={{ width: '16px', height: '16px' }} />
+                      </button>
+                    
+                      {openMenuId === `saved-${project.id}` && (
+                        <>
+                          {isMobile && (
+                            <div 
+                              onClick={() => setOpenMenuId(null)}
+                              style={{ 
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                zIndex: 55,
+                              }}
+                            />
+                          )}
+                          <div 
+                            style={{
+                              position: isMobile ? 'fixed' : 'absolute',
+                              bottom: isMobile ? 0 : 'auto',
+                              top: isMobile ? 'auto' : '40px',
+                              left: isMobile ? 0 : 'auto',
+                              right: isMobile ? 0 : 0,
+                              width: isMobile ? '100%' : '220px',
+                              maxWidth: isMobile ? '100%' : '220px',
+                              borderRadius: isMobile ? '16px 16px 0 0' : '8px',
+                              maxHeight: '80vh',
+                              backgroundColor: '#111827',
+                              borderTop: '2px solid #374151',
+                              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                              zIndex: 60,
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div style={{ overflowY: 'auto', maxHeight: 'calc(80vh - 16px)' }}>
+                              {/* Pin/Unpin */}
+                              <div style={{ padding: '16px 20px', borderBottom: '1px solid #1f2937' }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleTogglePinSaved(project)
+                                  }}
+                                  className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                                  style={{ 
+                                    fontSize: '16px',
+                                    lineHeight: '24px',
+                                    paddingTop: '12px',
+                                    paddingBottom: '12px',
+                                    gap: '14px',
+                                    minWidth: 0,
+                                  }}
+                                >
+                                  <Pin style={{ width: '20px', height: '20px', flexShrink: 0, color: project.pinned ? '#39FF14' : 'currentColor' }} />
+                                  <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>
+                                    {project.pinned ? 'Unpin' : 'Pin to Top'}
+                                  </span>
+                                </button>
+                              </div>
+                              {/* Remove */}
+                              <div style={{ padding: '16px 20px', borderTop: '1px solid #374151' }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleRemoveSavedProject(project)
+                                  }}
+                                  className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                                  style={{ 
+                                    fontSize: '16px',
+                                    lineHeight: '24px',
+                                    paddingTop: '12px',
+                                    paddingBottom: '12px',
+                                    gap: '14px',
+                                    minWidth: 0,
+                                  }}
+                                >
+                                  <X style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                                  <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Remove from Saved</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Title and creator */}
+                  <Link
+                    href={`/share/${project.share_token}`}
+                    style={{ display: 'block' }}
+                  >
+                    <h3 className="text-sm sm:text-base font-semibold text-white line-clamp-2" style={{ marginBottom: '4px' }}>
+                      {project.title}
+                    </h3>
+                    <p className="text-xs text-gray-400">
+                      by {project.creator_username}
+                    </p>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>
