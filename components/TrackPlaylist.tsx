@@ -305,6 +305,7 @@ export default function TrackPlaylist({
       title: track.title,
       projectTitle: projectTitle,
       audioUrl: track.audio_url,
+      projectCoverUrl: projectCoverUrl,
     })
     
     if (added) {

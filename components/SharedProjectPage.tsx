@@ -449,6 +449,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         title: track.title,
         projectTitle: project.title,
         audioUrl: track.audio_url,
+        projectCoverUrl: project.cover_image_url,
       })
       if (added) addedCount++
     }

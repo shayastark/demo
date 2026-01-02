@@ -12,6 +12,7 @@ interface QueueItem {
   title: string
   projectTitle: string
   audioUrl: string
+  projectCoverUrl?: string | null
   addedAt: number
 }
 
@@ -893,15 +894,23 @@ export default function BottomTabBar() {
                   transition: 'box-shadow 0.3s',
                 }}
               >
-                {(cassetteTrack?.projectCoverUrl || (displayTrack as any).projectCoverUrl) ? (
-                  <img 
-                    src={cassetteTrack?.projectCoverUrl || (displayTrack as any).projectCoverUrl} 
-                    alt="Album art"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <ListMusic style={{ width: '64px', height: '64px', color: '#4B5563' }} />
-                )}
+                {(() => {
+                  // Get cover URL from either cassette track or queue item
+                  const coverUrl = cassetteTrack?.projectCoverUrl || 
+                    (queueTrack?.projectCoverUrl) ||
+                    (displayTrack as any)?.projectCoverUrl
+                  
+                  if (coverUrl) {
+                    return (
+                      <img 
+                        src={coverUrl} 
+                        alt="Album art"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    )
+                  }
+                  return <ListMusic style={{ width: '64px', height: '64px', color: '#4B5563' }} />
+                })()}
               </div>
             </div>
 
@@ -1293,7 +1302,7 @@ export default function BottomTabBar() {
 }
 
 // Helper function to add items to queue (can be imported by other components)
-export function addToQueue(item: { id: string; title: string; projectTitle: string; audioUrl: string }) {
+export function addToQueue(item: { id: string; title: string; projectTitle: string; audioUrl: string; projectCoverUrl?: string | null }) {
   const savedQueue = localStorage.getItem('hubba-queue')
   let queue: QueueItem[] = []
   
@@ -1312,6 +1321,7 @@ export function addToQueue(item: { id: string; title: string; projectTitle: stri
 
   queue.push({
     ...item,
+    projectCoverUrl: item.projectCoverUrl || null,
     addedAt: Date.now(),
   })
 
