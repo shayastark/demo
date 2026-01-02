@@ -290,9 +290,13 @@ export default function BottomTabBar() {
     const handleTimeUpdate = () => {
       if (cassetteTrack) {
         setCassetteCurrentTime(audio.currentTime)
-        // Broadcast time update to cassette UI
+        // Broadcast time update to cassette UI with track ID for proper scoping
         window.dispatchEvent(new CustomEvent('hubba-playback-time', {
-          detail: { currentTime: audio.currentTime, duration: audio.duration || 0 }
+          detail: { 
+            currentTime: audio.currentTime, 
+            duration: audio.duration || 0,
+            trackId: cassetteTrack.id 
+          }
         }))
       }
     }

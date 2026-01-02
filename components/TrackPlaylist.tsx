@@ -60,6 +60,9 @@ export default function TrackPlaylist({
 
   const currentTrack = currentTrackIndex !== null ? tracks[currentTrackIndex] : null
 
+  // Track which track ID is currently playing from this component
+  const [activeTrackId, setActiveTrackId] = useState<string | null>(null)
+
   // Listen for playback state updates from the global player
   useEffect(() => {
     const handlePlaybackState = (e: CustomEvent) => {
@@ -68,6 +71,8 @@ export default function TrackPlaylist({
       // Check if this update is for one of our tracks
       const trackIndex = tracks.findIndex(t => t.id === trackId)
       if (trackIndex !== -1) {
+        setActiveTrackId(trackId)
+        setCurrentTrackIndex(trackIndex)
         setIsPlaying(playing)
         if (ended && !isRepeat) {
           // Track ended, move to next or stop
@@ -76,19 +81,38 @@ export default function TrackPlaylist({
             playTrackAtIndex(nextIndex)
           } else {
             setCurrentTrackIndex(null)
+            setActiveTrackId(null)
             setIsPlaying(false)
           }
         } else if (ended && isRepeat) {
           // Repeat the same track
           playTrackAtIndex(trackIndex)
         }
+      } else {
+        // This update is for a track NOT in our project - reset our state
+        if (activeTrackId && !tracks.find(t => t.id === activeTrackId)) {
+          // The active track is no longer in our list (different project)
+          setCurrentTrackIndex(null)
+          setActiveTrackId(null)
+          setIsPlaying(false)
+          setCurrentTime(0)
+          setDuration(0)
+        }
       }
     }
 
     const handlePlaybackTime = (e: CustomEvent) => {
-      const { currentTime: time, duration: dur } = e.detail
-      setCurrentTime(time)
-      setDuration(dur)
+      const { currentTime: time, duration: dur, trackId } = e.detail
+      
+      // Only update time if the playing track belongs to this project
+      if (trackId && tracks.find(t => t.id === trackId)) {
+        setCurrentTime(time)
+        setDuration(dur)
+      } else if (activeTrackId && tracks.find(t => t.id === activeTrackId)) {
+        // Fallback: if no trackId in event but we have an active track in this project
+        setCurrentTime(time)
+        setDuration(dur)
+      }
     }
 
     // Listen for when queue starts playing (stop our display)
@@ -97,6 +121,9 @@ export default function TrackPlaylist({
       if (source === 'queue') {
         setIsPlaying(false)
         setCurrentTrackIndex(null)
+        setActiveTrackId(null)
+        setCurrentTime(0)
+        setDuration(0)
       }
     }
 
@@ -109,7 +136,19 @@ export default function TrackPlaylist({
       window.removeEventListener('hubba-playback-time', handlePlaybackTime as EventListener)
       window.removeEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
     }
-  }, [tracks, isRepeat])
+  }, [tracks, isRepeat, activeTrackId])
+
+  // Reset state when tracks change (navigating to different project)
+  useEffect(() => {
+    // Check if our active track is still in the tracks list
+    if (activeTrackId && !tracks.find(t => t.id === activeTrackId)) {
+      setCurrentTrackIndex(null)
+      setActiveTrackId(null)
+      setIsPlaying(false)
+      setCurrentTime(0)
+      setDuration(0)
+    }
+  }, [tracks, activeTrackId])
 
   // Close menu when parent requests it
   useEffect(() => {
