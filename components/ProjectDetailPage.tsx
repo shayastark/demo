@@ -1438,10 +1438,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File (MP3) *</label>
+                        <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File (MP3, WAV, M4A, FLAC, OGG) *</label>
                         <input
                           type="file"
-                          accept="audio/mpeg,audio/mp3"
+                          accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
                           onChange={(e) => {
                             const file = e.target.files?.[0]
                             if (file) handleNewTrackFileChange(index, file)

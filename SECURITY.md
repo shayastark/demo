@@ -85,7 +85,7 @@ Currently, our app uses the anonymous key in client-side code, which is safe bec
 - Files are stored in Supabase Storage bucket `hubba-files`
 - Consider implementing:
   - File size limits (enforced in Supabase or application)
-  - File type validation (currently accepts MP3 and images)
+  - File type validation (currently accepts MP3, WAV, M4A, FLAC, OGG and images)
   - Virus scanning for production (optional)
 
 ### Best Practices
