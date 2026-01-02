@@ -442,9 +442,22 @@ export default function BottomTabBar() {
     }
   }, [isQueueOpen])
 
-  // Don't show on auth pages or if not authenticated
-  if (!ready || !authenticated) return null
-  if (pathname === '/' || pathname?.startsWith('/share/')) return null
+  // Determine if we should show the full UI (but always keep audio element mounted)
+  const showFullUI = ready && authenticated && pathname !== '/' && !pathname?.startsWith('/share/')
+  
+  // Always render the audio element to persist playback across navigation
+  // But hide the visual UI on certain pages
+  if (!ready || !authenticated) {
+    return (
+      <>
+        {/* Hidden audio element - always mounted for playback persistence */}
+        <audio ref={audioRef} crossOrigin="anonymous" preload="metadata" style={{ display: 'none' }} />
+      </>
+    )
+  }
+  
+  // On homepage and share pages, only show mini-player if something is playing
+  const isMinimalMode = pathname === '/' || pathname?.startsWith('/share/')
 
   const tabs = [
     { href: '/dashboard', icon: Home, label: 'Home' },
@@ -466,15 +479,15 @@ export default function BottomTabBar() {
 
   return (
     <>
-      {/* Hidden Audio Element */}
-      <audio ref={audioRef} style={{ display: 'none' }} />
+      {/* Hidden Audio Element - persists across all pages */}
+      <audio ref={audioRef} crossOrigin="anonymous" preload="metadata" style={{ display: 'none' }} />
 
       {/* Mini Player - Shows when playing (either from queue or cassette) */}
       {displayTrack && (
         <div
           style={{
             position: 'fixed',
-            bottom: '70px',
+            bottom: isMinimalMode ? '0px' : '70px', // At bottom when no tab bar
             left: 0,
             right: 0,
             height: '60px',
@@ -485,6 +498,7 @@ export default function BottomTabBar() {
             padding: '0 16px',
             gap: '12px',
             zIndex: 49,
+            paddingBottom: isMinimalMode ? 'env(safe-area-inset-bottom)' : 0,
           }}
         >
           {/* Source indicator */}
@@ -638,7 +652,8 @@ export default function BottomTabBar() {
         </div>
       )}
 
-      {/* Bottom Tab Bar */}
+      {/* Bottom Tab Bar - hidden on homepage and share pages */}
+      {!isMinimalMode && (
       <nav
         style={{
           position: 'fixed',
@@ -761,6 +776,7 @@ export default function BottomTabBar() {
           )
         })}
       </nav>
+      )}
 
       {/* Queue Modal */}
       {isQueueOpen && (
@@ -969,7 +985,13 @@ export default function BottomTabBar() {
       )}
 
       {/* Spacer to prevent content from being hidden behind tab bar + mini player */}
-      <div style={{ height: displayTrack ? '130px' : '70px' }} />
+      {!isMinimalMode && (
+        <div style={{ height: displayTrack ? '130px' : '70px' }} />
+      )}
+      {/* Spacer for minimal mode - only when mini player is showing */}
+      {isMinimalMode && displayTrack && (
+        <div style={{ height: '60px' }} />
+      )}
     </>
   )
 }
