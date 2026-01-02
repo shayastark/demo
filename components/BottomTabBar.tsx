@@ -20,6 +20,7 @@ export default function BottomTabBar() {
   const { authenticated, ready } = usePrivy()
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [isQueueOpen, setIsQueueOpen] = useState(false)
+  const [isNowPlayingOpen, setIsNowPlayingOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   
   // Queue playback state
@@ -446,6 +447,27 @@ export default function BottomTabBar() {
     }
   }, [isQueueOpen])
 
+  // Lock body scroll when Now Playing modal is open
+  useEffect(() => {
+    if (isNowPlayingOpen) {
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.overflow = 'hidden'
+      
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        document.body.style.overflow = ''
+        window.scrollTo(0, scrollY)
+      }
+    }
+  }, [isNowPlayingOpen])
+
   // Determine if we should show the full UI (but always keep audio element mounted)
   const showFullUI = ready && authenticated && pathname !== '/' && !pathname?.startsWith('/share/')
   
@@ -481,6 +503,14 @@ export default function BottomTabBar() {
   const displayIsPlaying = queueTrack ? isPlaying : externalIsPlaying
   const isQueuePlayback = queueTrack !== null
 
+  // Format time helper
+  const formatTime = (seconds: number) => {
+    if (!isFinite(seconds) || seconds < 0) return '0:00'
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   return (
     <>
       {/* Hidden Audio Element - persists across all pages */}
@@ -505,24 +535,37 @@ export default function BottomTabBar() {
             paddingBottom: isMinimalMode ? 'env(safe-area-inset-bottom)' : 0,
           }}
         >
-          {/* Source indicator */}
+          {/* Clickable area to expand Now Playing modal */}
           <div 
+            onClick={() => setIsNowPlayingOpen(true)}
             style={{ 
-              width: '6px', 
-              height: '40px', 
-              backgroundColor: isQueuePlayback ? '#39FF14' : '#14b8a6', // Green for queue, teal for cassette
-              borderRadius: '3px',
-              flexShrink: 0,
-            }} 
-          />
-          
-          {/* Track info */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {displayTrack.title}
-            </div>
-            <div style={{ color: '#9ca3af', fontSize: '12px' }}>
-              {displayTrack.projectTitle}
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px', 
+              flex: 1, 
+              minWidth: 0,
+              cursor: 'pointer',
+            }}
+          >
+            {/* Source indicator */}
+            <div 
+              style={{ 
+                width: '6px', 
+                height: '40px', 
+                backgroundColor: isQueuePlayback ? '#39FF14' : '#14b8a6', // Green for queue, teal for cassette
+                borderRadius: '3px',
+                flexShrink: 0,
+              }} 
+            />
+            
+            {/* Track info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {displayTrack.title}
+              </div>
+              <div style={{ color: '#9ca3af', fontSize: '12px' }}>
+                {displayTrack.projectTitle}
+              </div>
             </div>
           </div>
 
@@ -780,6 +823,255 @@ export default function BottomTabBar() {
           )
         })}
       </nav>
+      )}
+
+      {/* Now Playing Modal */}
+      {isNowPlayingOpen && displayTrack && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setIsNowPlayingOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.85)',
+              zIndex: 100,
+            }}
+          />
+          
+          {/* Modal Content */}
+          <div
+            style={{
+              position: 'fixed',
+              bottom: isMobile ? 0 : '50%',
+              left: isMobile ? 0 : '50%',
+              right: isMobile ? 0 : 'auto',
+              transform: isMobile ? 'none' : 'translate(-50%, 50%)',
+              width: isMobile ? '100%' : '400px',
+              maxHeight: isMobile ? '85vh' : '600px',
+              backgroundColor: '#111827',
+              borderRadius: isMobile ? '24px 24px 0 0' : '24px',
+              zIndex: 101,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle bar for mobile */}
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '12px' }}>
+              <div 
+                onClick={() => setIsNowPlayingOpen(false)}
+                style={{ 
+                  width: '40px', 
+                  height: '4px', 
+                  backgroundColor: '#4B5563', 
+                  borderRadius: '2px',
+                  cursor: 'pointer',
+                }} 
+              />
+            </div>
+
+            {/* Album Art / Visual */}
+            <div style={{ padding: '24px 32px', display: 'flex', justifyContent: 'center' }}>
+              <div
+                style={{
+                  width: '200px',
+                  height: '200px',
+                  borderRadius: '12px',
+                  backgroundColor: '#1f2937',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  boxShadow: displayIsPlaying 
+                    ? '0 0 40px rgba(57, 255, 20, 0.3)' 
+                    : '0 10px 40px rgba(0, 0, 0, 0.3)',
+                  transition: 'box-shadow 0.3s',
+                }}
+              >
+                {(cassetteTrack?.projectCoverUrl || (displayTrack as any).projectCoverUrl) ? (
+                  <img 
+                    src={cassetteTrack?.projectCoverUrl || (displayTrack as any).projectCoverUrl} 
+                    alt="Album art"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <ListMusic style={{ width: '64px', height: '64px', color: '#4B5563' }} />
+                )}
+              </div>
+            </div>
+
+            {/* Track Info */}
+            <div style={{ padding: '0 32px', textAlign: 'center' }}>
+              <h2 style={{ 
+                color: '#fff', 
+                fontSize: '22px', 
+                fontWeight: 600, 
+                margin: 0,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}>
+                {displayTrack.title}
+              </h2>
+              <p style={{ 
+                color: '#9ca3af', 
+                fontSize: '16px', 
+                margin: '8px 0 0 0',
+              }}>
+                {displayTrack.projectTitle}
+              </p>
+            </div>
+
+            {/* Progress Bar */}
+            <div style={{ padding: '24px 32px 16px' }}>
+              <input
+                type="range"
+                min="0"
+                max={cassetteDuration || 100}
+                value={cassetteCurrentTime}
+                onChange={(e) => {
+                  const newTime = parseFloat(e.target.value)
+                  if (cassetteTrack) {
+                    window.dispatchEvent(new CustomEvent('hubba-cassette-seek', {
+                      detail: { time: newTime }
+                    }))
+                  } else if (audioRef.current) {
+                    audioRef.current.currentTime = newTime
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  height: '6px',
+                  borderRadius: '3px',
+                  appearance: 'none',
+                  background: `linear-gradient(to right, #39FF14 0%, #00D9FF ${(cassetteCurrentTime / (cassetteDuration || 1)) * 100}%, #374151 ${(cassetteCurrentTime / (cassetteDuration || 1)) * 100}%, #374151 100%)`,
+                  cursor: 'pointer',
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                <span style={{ color: '#9ca3af', fontSize: '12px' }}>
+                  {formatTime(cassetteCurrentTime)}
+                </span>
+                <span style={{ color: '#9ca3af', fontSize: '12px' }}>
+                  {formatTime(cassetteDuration)}
+                </span>
+              </div>
+            </div>
+
+            {/* Playback Controls */}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '24px',
+              padding: '16px 32px 32px',
+            }}>
+              {/* Previous */}
+              <button
+                onClick={() => {
+                  if (isQueuePlayback) {
+                    playPrevious()
+                  } else {
+                    window.dispatchEvent(new Event('hubba-cassette-previous'))
+                  }
+                }}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <SkipBack style={{ width: '28px', height: '28px', color: '#fff' }} />
+              </button>
+
+              {/* Play/Pause */}
+              <button
+                onClick={() => {
+                  if (isQueuePlayback) {
+                    togglePlayPause()
+                  } else if (displayIsPlaying) {
+                    window.dispatchEvent(new Event('hubba-cassette-pause'))
+                  } else {
+                    window.dispatchEvent(new Event('hubba-cassette-resume'))
+                  }
+                }}
+                style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '50%',
+                  backgroundColor: '#39FF14',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 20px rgba(57, 255, 20, 0.4)',
+                }}
+              >
+                {displayIsPlaying ? (
+                  <Pause style={{ width: '32px', height: '32px', color: '#000' }} />
+                ) : (
+                  <Play style={{ width: '32px', height: '32px', color: '#000', marginLeft: '4px' }} />
+                )}
+              </button>
+
+              {/* Next */}
+              <button
+                onClick={() => {
+                  if (isQueuePlayback) {
+                    playNext()
+                  } else {
+                    window.dispatchEvent(new Event('hubba-cassette-next'))
+                  }
+                }}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <SkipForward style={{ width: '28px', height: '28px', color: '#fff' }} />
+              </button>
+            </div>
+
+            {/* Close button */}
+            <div style={{ padding: '0 32px 32px' }}>
+              <button
+                onClick={() => setIsNowPlayingOpen(false)}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  backgroundColor: '#374151',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Queue Modal */}
