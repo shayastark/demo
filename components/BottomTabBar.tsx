@@ -895,10 +895,11 @@ export default function BottomTabBar() {
                 }}
               >
                 {(() => {
-                  // Get cover URL from either cassette track or queue item
-                  const coverUrl = cassetteTrack?.projectCoverUrl || 
-                    (queueTrack?.projectCoverUrl) ||
-                    (displayTrack as any)?.projectCoverUrl
+                  // Get cover URL based on what's actually playing
+                  // If queue is playing, use queue track's cover; otherwise use cassette track's cover
+                  const coverUrl = isQueuePlayback 
+                    ? queueTrack?.projectCoverUrl
+                    : cassetteTrack?.projectCoverUrl
                   
                   if (coverUrl) {
                     return (
