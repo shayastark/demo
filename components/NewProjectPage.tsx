@@ -15,7 +15,7 @@ export default function NewProjectPage() {
   const [allowDownloads, setAllowDownloads] = useState(false)
   const [coverImage, setCoverImage] = useState<File | null>(null)
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
-  const [tracks, setTracks] = useState<Array<{ file: File; title: string; image?: File; imagePreview?: string }>>([])
+  const [tracks, setTracks] = useState<Array<{ file: File; title: string }>>([{ file: null as any, title: '' }])
   const [loading, setLoading] = useState(false)
 
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,17 +45,6 @@ export default function NewProjectPage() {
       newTracks[index].title = name
       setTracks(newTracks)
     }
-  }
-
-  const handleTrackImageChange = (index: number, file: File) => {
-    const newTracks = [...tracks]
-    newTracks[index].image = file
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      newTracks[index].imagePreview = reader.result as string
-      setTracks(newTracks)
-    }
-    reader.readAsDataURL(file)
   }
 
   const removeTrack = (index: number) => {
@@ -130,10 +119,6 @@ export default function NewProjectPage() {
         if (!track.file) continue
 
         const audioUrl = await uploadFile(track.file, `projects/${dbUser.id}/tracks`)
-        let trackImageUrl: string | undefined
-        if (track.image) {
-          trackImageUrl = await uploadFile(track.image, `projects/${dbUser.id}/track-images`)
-        }
 
         const { error: trackError } = await supabase
           .from('tracks')
@@ -141,7 +126,6 @@ export default function NewProjectPage() {
             project_id: project.id,
             title: track.title || `Track ${i + 1}`,
             audio_url: audioUrl,
-            image_url: trackImageUrl,
             order: i,
           })
 
@@ -248,35 +232,14 @@ export default function NewProjectPage() {
 
           {/* Tracks */}
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <label className="block text-sm font-medium text-neon-green">Tracks *</label>
-              <button
-                type="button"
-                onClick={handleAddTrack}
-                className="text-sm text-neon-green hover:opacity-80"
-              >
-                + Add Track
-              </button>
-            </div>
+            <label className="block text-sm font-medium text-neon-green mb-4">Tracks *</label>
 
-            {tracks.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center">
-                <Music className="w-12 h-12 mx-auto mb-4 text-neon-green opacity-50" />
-                <p className="text-neon-green mb-4 opacity-90">No tracks added yet</p>
-                <button
-                  type="button"
-                  onClick={handleAddTrack}
-                  className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold"
-                >
-                  Add Your First Track
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {tracks.map((track, index) => (
-                  <div key={index} className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="font-medium text-neon-green">Track {index + 1}</h3>
+            <div className="space-y-4">
+              {tracks.map((track, index) => (
+                <div key={index} className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-medium text-neon-green">Track {index + 1}</h3>
+                    {tracks.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeTrack(index)}
@@ -284,73 +247,52 @@ export default function NewProjectPage() {
                       >
                         <X className="w-4 h-4" />
                       </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File (MP3, WAV, M4A, FLAC, OGG) *</label>
+                      <input
+                        type="file"
+                        accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleTrackFileChange(index, file)
+                        }}
+                        required
+                        className="w-full text-sm"
+                      />
                     </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File (MP3, WAV, M4A, FLAC, OGG) *</label>
-                        <input
-                          type="file"
-                          accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) handleTrackFileChange(index, file)
-                          }}
-                          required
-                          className="w-full text-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-neon-green opacity-70 mb-1">Track Title *</label>
-                        <input
-                          type="text"
-                          value={track.title}
-                          onChange={(e) => {
-                            const newTracks = [...tracks]
-                            newTracks[index].title = e.target.value
-                            setTracks(newTracks)
-                          }}
-                          required
-                          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-neon-green opacity-70 mb-1">Track Image (Optional)</label>
-                        {track.imagePreview ? (
-                          <div className="relative w-32 h-32 rounded overflow-hidden mb-2">
-                            <img src={track.imagePreview} alt="Track preview" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newTracks = [...tracks]
-                                newTracks[index].image = undefined
-                                newTracks[index].imagePreview = undefined
-                                setTracks(newTracks)
-                              }}
-                              className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ) : (
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) handleTrackImageChange(index, file)
-                            }}
-                            className="w-full text-sm"
-                          />
-                        )}
-                      </div>
+                    <div>
+                      <label className="block text-xs text-neon-green opacity-70 mb-1">Track Title *</label>
+                      <input
+                        type="text"
+                        value={track.title}
+                        onChange={(e) => {
+                          const newTracks = [...tracks]
+                          newTracks[index].title = e.target.value
+                          setTracks(newTracks)
+                        }}
+                        required
+                        className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+              
+              {/* Add Another Track button */}
+              <button
+                type="button"
+                onClick={handleAddTrack}
+                className="w-full py-3 border-2 border-dashed border-gray-700 rounded-lg text-gray-400 hover:border-gray-500 hover:text-gray-300 transition flex items-center justify-center gap-2"
+              >
+                <Music className="w-4 h-4" />
+                Add Another Track
+              </button>
+            </div>
           </div>
 
           {/* Submit */}
