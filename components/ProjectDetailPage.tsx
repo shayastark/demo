@@ -107,6 +107,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
       if (projectError) throw projectError
       setProject(projectData)
+      
+      // Set pinned state for creator's own projects
+      if (projectData.pinned) {
+        setIsPinned(projectData.pinned)
+      }
 
       // Fetch creator's username
       if (projectData.creator_id) {
@@ -447,15 +452,25 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
       const newPinnedState = !isPinned
       
-      // Use upsert to create or update the user_projects record
-      const { error } = await supabase
-        .from('user_projects')
-        .upsert(
-          { user_id: dbUser.id, project_id: project.id, pinned: newPinnedState },
-          { onConflict: 'user_id,project_id' }
-        )
+      if (isCreator) {
+        // For creator's own projects, update the projects table
+        const { error } = await supabase
+          .from('projects')
+          .update({ pinned: newPinnedState })
+          .eq('id', project.id)
 
-      if (error) throw error
+        if (error) throw error
+      } else {
+        // For saved projects, use upsert on user_projects table
+        const { error } = await supabase
+          .from('user_projects')
+          .upsert(
+            { user_id: dbUser.id, project_id: project.id, pinned: newPinnedState },
+            { onConflict: 'user_id,project_id' }
+          )
+
+        if (error) throw error
+      }
 
       setIsPinned(newPinnedState)
       setIsProjectMenuOpen(false)
@@ -1132,7 +1147,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   required
-                  className="w-full bg-black border border-gray-700 rounded px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green"
+                  className="w-full bg-black border border-gray-700 rounded px-4 py-2 text-white focus:outline-none focus:border-neon-green"
                 />
               </div>
 
@@ -1143,7 +1158,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={4}
-                  className="w-full bg-black border border-gray-700 rounded px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green resize-none"
+                  className="w-full bg-black border border-gray-700 rounded px-4 py-2 text-white focus:outline-none focus:border-neon-green resize-none"
                 />
               </div>
 
@@ -1366,7 +1381,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   onChange={(e) => setProjectNoteContent(e.target.value)}
                   placeholder="Add private notes about this project (not visible to listeners)..."
                   rows={6}
-                  className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-yellow-600 resize-none"
+                  className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-yellow-600 resize-none"
                 />
                 <div className="flex gap-2">
                   <button
@@ -1468,7 +1483,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             updatedTracks[index].title = e.target.value
                             setNewTracks(updatedTracks)
                           }}
-                          className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
+                          className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
                           placeholder="Enter track title"
                         />
                           </div>
@@ -1654,7 +1669,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             onChange={(e) => setEditingTrackNotes({ ...editingTrackNotes, [track.id]: e.target.value })}
                             placeholder="Add private notes..."
                             rows={2}
-                            className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neon-green resize-none"
+                            className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green resize-none"
                           />
                           <div className="flex gap-2">
                             <button
@@ -1712,7 +1727,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <textarea
                       value={projectNoteContent}
                       onChange={(e) => setProjectNoteContent(e.target.value)}
-                      className="w-full bg-black border border-gray-700 rounded p-3 text-sm text-neon-green focus:outline-none focus:border-neon-green h-48 mb-4"
+                      className="w-full bg-black border border-gray-700 rounded p-3 text-sm text-white focus:outline-none focus:border-neon-green h-48 mb-4"
                       placeholder="Add your private notes about this project..."
                     />
                     <div className="flex justify-end gap-2">
@@ -1911,6 +1926,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               {user && (
                 <button
                   onClick={() => {
+                    // If creator has no notes yet, start in edit mode
+                    if (isCreator && !projectNote?.content) {
+                      setEditingProjectNote(true)
+                    }
                     setShowNotesModal(true)
                     setIsProjectMenuOpen(false)
                   }}

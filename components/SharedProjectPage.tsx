@@ -11,6 +11,7 @@ import { showToast } from './Toast'
 import Image from 'next/image'
 import { ProjectDetailSkeleton } from './SkeletonLoader'
 import { addToQueue } from './BottomTabBar'
+import ShareModal from './ShareModal'
 
 interface SharedProjectPageProps {
   token: string
@@ -30,6 +31,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [trackSharePrivacy, setTrackSharePrivacy] = useState<'private' | 'direct' | 'public'>('direct')
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false)
   const [isPinned, setIsPinned] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
   const projectMenuRef = useRef<HTMLDivElement>(null)
@@ -57,6 +59,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     // Reset state when not authenticated
     if (!authenticated || !user) {
       setAddedToProject(false)
+      setIsPinned(false)
       checkedAddedRef.current = null
       return
     }
@@ -109,7 +112,10 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }, [authenticated, user, project])
 
   const checkPinnedStatus = async () => {
-    if (!user || !project) return
+    if (!user || !project) {
+      setIsPinned(false)
+      return
+    }
     try {
       const privyId = user.id
       const { data: dbUser } = await supabase
@@ -119,16 +125,25 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         .single()
 
       if (dbUser) {
-        const { data } = await supabase
+        // Use maybeSingle() to avoid throwing on no match
+        const { data, error } = await supabase
           .from('user_projects')
           .select('pinned')
           .eq('user_id', dbUser.id)
           .eq('project_id', project.id)
-          .single()
+          .maybeSingle()
 
-        setIsPinned(data?.pinned || false)
+        // Only set to true if we actually found a record with pinned = true
+        if (!error && data && data.pinned === true) {
+          setIsPinned(true)
+        } else {
+          setIsPinned(false)
+        }
+      } else {
+        setIsPinned(false)
       }
     } catch (error) {
+      console.error('Error checking pinned status:', error)
       setIsPinned(false)
     }
   }
@@ -362,6 +377,20 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       console.error('Error removing from library:', error)
       showToast('Failed to remove project', 'error')
     }
+  }
+
+  const handleOpenShareModal = () => {
+    if (!project) return
+    
+    // Check if sharing is enabled
+    if (!project.sharing_enabled) {
+      showToast('Sharing is disabled for this project by the creator.', 'error')
+      setIsProjectMenuOpen(false)
+      return
+    }
+    
+    setShareModalOpen(true)
+    setIsProjectMenuOpen(false)
   }
 
   const handleCopyLink = async () => {
@@ -783,21 +812,22 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             {/* Menu Options */}
             <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
-                onClick={() => handleCopyLink()}
+                onClick={() => handleOpenShareModal()}
                 style={{
                   width: '100%',
                   padding: '16px 20px',
                   backgroundColor: '#1f2937',
-                  color: '#fff',
+                  color: !project.sharing_enabled ? '#6b7280' : '#fff',
                   border: '1px solid #374151',
                   borderRadius: '12px',
                   fontSize: '16px',
                   fontWeight: 500,
-                  cursor: 'pointer',
+                  cursor: !project.sharing_enabled ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '14px',
                   textAlign: 'left',
+                  opacity: !project.sharing_enabled ? 0.5 : 1,
                 }}
                 className="hover:bg-gray-700 transition"
               >
@@ -811,12 +841,12 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <Share2 style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  <Share2 style={{ width: '22px', height: '22px', color: !project.sharing_enabled ? '#6b7280' : '#39FF14' }} />
                 </div>
                 <div>
                   <div style={{ fontWeight: 600 }}>Share</div>
                   <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    Copy link to share this project
+                    {!project.sharing_enabled ? 'Sharing disabled by creator' : 'Share this project with others'}
                   </div>
                 </div>
               </button>
@@ -1050,6 +1080,16 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             </div>
           </div>
         </>
+      )}
+
+      {/* Share Modal */}
+      {project && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${token}`}
+          title={project.title}
+        />
       )}
     </div>
   )
