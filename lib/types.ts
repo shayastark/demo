@@ -7,6 +7,7 @@ export interface Project {
   allow_downloads: boolean
   sharing_enabled: boolean
   share_token: string
+  pinned?: boolean
   created_at: string
   updated_at: string
 }
