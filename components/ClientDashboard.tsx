@@ -529,7 +529,7 @@ export default function ClientDashboard() {
                       position: 'absolute',
                       top: '8px',
                       right: '8px',
-                      zIndex: 20,
+                      zIndex: 10,
                     }}
                   >
                     <button
@@ -555,207 +555,6 @@ export default function ClientDashboard() {
                     >
                       <MoreVertical style={{ width: '16px', height: '16px' }} />
                     </button>
-                  
-                    {openMenuId === project.id && (
-                      <>
-                        {/* Backdrop */}
-                        <div 
-                          onClick={() => setOpenMenuId(null)}
-                          style={{ 
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            zIndex: 55,
-                          }}
-                        />
-                        {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
-                        <div 
-                          style={{
-                            position: isMobile ? 'fixed' : 'absolute',
-                            bottom: isMobile ? (isMiniPlayerShowing ? '130px' : '70px') : 'auto', // Above tab bar + mini-player
-                            top: isMobile ? 'auto' : '40px',
-                            left: isMobile ? 0 : 'auto',
-                            right: isMobile ? 0 : 0,
-                            width: isMobile ? '100%' : '220px',
-                            maxWidth: isMobile ? '100%' : '220px',
-                            borderRadius: isMobile ? '16px 16px 0 0' : '12px',
-                            backgroundColor: '#111827',
-                            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)',
-                            zIndex: 60,
-                            overflow: 'hidden',
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Handle bar for mobile */}
-                          {isMobile && (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
-                              <div style={{ width: '40px', height: '4px', backgroundColor: '#4B5563', borderRadius: '2px' }} />
-                            </div>
-                          )}
-                          
-                          {/* Menu header */}
-                          <div style={{ 
-                            padding: isMobile ? '8px 20px 16px' : '12px 16px', 
-                            borderBottom: '1px solid #374151',
-                            textAlign: 'center',
-                          }}>
-                            <h3 style={{ 
-                              color: '#fff', 
-                              fontSize: '14px', 
-                              fontWeight: 600,
-                              margin: 0,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}>
-                              {project.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Menu options */}
-                          <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {/* Pin/Unpin */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleTogglePinOwn(project)
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '14px 16px',
-                                backgroundColor: '#1f2937',
-                                color: '#fff',
-                                border: '1px solid #374151',
-                                borderRadius: '12px',
-                                fontSize: '15px',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                textAlign: 'left',
-                              }}
-                            >
-                              <div style={{
-                                width: '36px',
-                                height: '36px',
-                                backgroundColor: '#374151',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                              }}>
-                                <Pin style={{ width: '18px', height: '18px', color: project.pinned ? '#39FF14' : '#fff' }} />
-                              </div>
-                              <span>{project.pinned ? 'Unpin' : 'Pin to Top'}</span>
-                            </button>
-                            
-                            {/* Share */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleOpenShareModal(project)
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '14px 16px',
-                                backgroundColor: '#1f2937',
-                                color: '#fff',
-                                border: '1px solid #374151',
-                                borderRadius: '12px',
-                                fontSize: '15px',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                textAlign: 'left',
-                              }}
-                            >
-                              <div style={{
-                                width: '36px',
-                                height: '36px',
-                                backgroundColor: '#374151',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                              }}>
-                                <Share2 style={{ width: '18px', height: '18px', color: '#39FF14' }} />
-                              </div>
-                              <span>Share</span>
-                            </button>
-                            
-                            {/* Delete */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteProject(project)
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '14px 16px',
-                                backgroundColor: '#1f2937',
-                                color: '#ef4444',
-                                border: '1px solid #374151',
-                                borderRadius: '12px',
-                                fontSize: '15px',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                textAlign: 'left',
-                              }}
-                            >
-                              <div style={{
-                                width: '36px',
-                                height: '36px',
-                                backgroundColor: '#374151',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                              }}>
-                                <Trash2 style={{ width: '18px', height: '18px', color: '#ef4444' }} />
-                              </div>
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                          
-                          {/* Cancel button for mobile */}
-                          {isMobile && (
-                            <div style={{ padding: '8px 8px 16px' }}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setOpenMenuId(null)
-                                }}
-                                style={{
-                                  width: '100%',
-                                  padding: '14px',
-                                  backgroundColor: '#374151',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '8px',
-                                  fontSize: '16px',
-                                  fontWeight: 500,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
                   </div>
                 </div>
                 
@@ -843,7 +642,7 @@ export default function ClientDashboard() {
                         position: 'absolute',
                         top: '8px',
                         right: '8px',
-                        zIndex: 20,
+                        zIndex: 10,
                       }}
                     >
                       <button
@@ -869,217 +668,6 @@ export default function ClientDashboard() {
                       >
                         <MoreVertical style={{ width: '16px', height: '16px' }} />
                       </button>
-                    
-                      {openMenuId === `saved-${project.id}` && (
-                        <>
-                          {/* Backdrop */}
-                          <div 
-                            onClick={() => setOpenMenuId(null)}
-                            style={{ 
-                              position: 'fixed',
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                              zIndex: 55,
-                            }}
-                          />
-                          {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
-                          <div 
-                            style={{
-                              position: isMobile ? 'fixed' : 'absolute',
-                              bottom: isMobile ? (isMiniPlayerShowing ? '130px' : '70px') : 'auto', // Above tab bar + mini-player
-                              top: isMobile ? 'auto' : '40px',
-                              left: isMobile ? 0 : 'auto',
-                              right: isMobile ? 0 : 0,
-                              width: isMobile ? '100%' : '220px',
-                              maxWidth: isMobile ? '100%' : '220px',
-                              borderRadius: isMobile ? '16px 16px 0 0' : '12px',
-                              backgroundColor: '#111827',
-                              boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)',
-                              zIndex: 60,
-                              overflow: 'hidden',
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {/* Handle bar for mobile */}
-                            {isMobile && (
-                              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
-                                <div style={{ width: '40px', height: '4px', backgroundColor: '#4B5563', borderRadius: '2px' }} />
-                              </div>
-                            )}
-                            
-                            {/* Menu header */}
-                            <div style={{ 
-                              padding: isMobile ? '8px 20px 16px' : '12px 16px', 
-                              borderBottom: '1px solid #374151',
-                              textAlign: 'center',
-                            }}>
-                              <h3 style={{ 
-                                color: '#fff', 
-                                fontSize: '14px', 
-                                fontWeight: 600,
-                                margin: 0,
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              }}>
-                                {project.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Menu options */}
-                            <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              {/* Pin/Unpin */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleTogglePinSaved(project)
-                                }}
-                                style={{
-                                  width: '100%',
-                                  padding: '14px 16px',
-                                  backgroundColor: '#1f2937',
-                                  color: '#fff',
-                                  border: '1px solid #374151',
-                                  borderRadius: '12px',
-                                  fontSize: '15px',
-                                  fontWeight: 500,
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '12px',
-                                  textAlign: 'left',
-                                }}
-                              >
-                                <div style={{
-                                  width: '36px',
-                                  height: '36px',
-                                  backgroundColor: '#374151',
-                                  borderRadius: '8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                }}>
-                                  <Pin style={{ width: '18px', height: '18px', color: project.pinned ? '#39FF14' : '#fff' }} />
-                                </div>
-                                <span>{project.pinned ? 'Unpin' : 'Pin to Top'}</span>
-                              </button>
-                              
-                              {/* Share - greyed out if sharing not enabled */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (project.sharing_enabled !== false) {
-                                    handleOpenShareModal(project)
-                                  }
-                                }}
-                                style={{
-                                  width: '100%',
-                                  padding: '14px 16px',
-                                  backgroundColor: '#1f2937',
-                                  color: project.sharing_enabled === false ? '#6b7280' : '#fff',
-                                  border: '1px solid #374151',
-                                  borderRadius: '12px',
-                                  fontSize: '15px',
-                                  fontWeight: 500,
-                                  cursor: project.sharing_enabled === false ? 'not-allowed' : 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '12px',
-                                  textAlign: 'left',
-                                  opacity: project.sharing_enabled === false ? 0.5 : 1,
-                                }}
-                              >
-                                <div style={{
-                                  width: '36px',
-                                  height: '36px',
-                                  backgroundColor: '#374151',
-                                  borderRadius: '8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                }}>
-                                  <Share2 style={{ width: '18px', height: '18px', color: project.sharing_enabled === false ? '#6b7280' : '#39FF14' }} />
-                                </div>
-                                <div>
-                                  <span>Share</span>
-                                  {project.sharing_enabled === false && (
-                                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
-                                      Sharing disabled by creator
-                                    </div>
-                                  )}
-                                </div>
-                              </button>
-                              
-                              {/* Remove */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleRemoveSavedProject(project)
-                                }}
-                                style={{
-                                  width: '100%',
-                                  padding: '14px 16px',
-                                  backgroundColor: '#1f2937',
-                                  color: '#ef4444',
-                                  border: '1px solid #374151',
-                                  borderRadius: '12px',
-                                  fontSize: '15px',
-                                  fontWeight: 500,
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '12px',
-                                  textAlign: 'left',
-                                }}
-                              >
-                                <div style={{
-                                  width: '36px',
-                                  height: '36px',
-                                  backgroundColor: '#374151',
-                                  borderRadius: '8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                }}>
-                                  <X style={{ width: '18px', height: '18px', color: '#ef4444' }} />
-                                </div>
-                                <span>Remove from Saved</span>
-                              </button>
-                            </div>
-                            
-                            {/* Cancel button for mobile */}
-                            {isMobile && (
-                              <div style={{ padding: '8px 8px 16px' }}>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setOpenMenuId(null)
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    padding: '14px',
-                                    backgroundColor: '#374151',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    fontSize: '16px',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
                     </div>
                   </div>
                   
@@ -1111,6 +699,305 @@ export default function ClientDashboard() {
           title={shareModalProject.title}
         />
       )}
+
+      {/* Project Menu Modal - Rendered at root level for proper z-index */}
+      {openMenuId && (() => {
+        // Determine if it's an own project or saved project
+        const isSavedProject = openMenuId.startsWith('saved-')
+        const projectId = isSavedProject ? openMenuId.replace('saved-', '') : openMenuId
+        const project = isSavedProject 
+          ? savedProjects.find(p => p.id === projectId)
+          : projects.find(p => p.id === projectId)
+        
+        if (!project) return null
+
+        return (
+          <>
+            {/* Backdrop */}
+            <div 
+              onClick={() => setOpenMenuId(null)}
+              style={{ 
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                zIndex: 100,
+              }}
+            />
+            {/* Menu - Bottom sheet on mobile, centered modal on desktop */}
+            <div 
+              style={{
+                position: 'fixed',
+                bottom: isMobile ? (isMiniPlayerShowing ? '130px' : '70px') : '50%',
+                left: isMobile ? 0 : '50%',
+                right: isMobile ? 0 : 'auto',
+                transform: isMobile ? 'none' : 'translate(-50%, 50%)',
+                width: isMobile ? '100%' : '380px',
+                maxWidth: '100%',
+                borderRadius: isMobile ? '16px 16px 0 0' : '16px',
+                backgroundColor: '#111827',
+                boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)',
+                zIndex: 101,
+                overflow: 'hidden',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Handle bar for mobile */}
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
+                <div style={{ width: '40px', height: '4px', backgroundColor: '#4B5563', borderRadius: '2px' }} />
+              </div>
+              
+              {/* Menu header */}
+              <div style={{ 
+                padding: '8px 20px 16px', 
+                borderBottom: '1px solid #374151',
+                textAlign: 'center',
+              }}>
+                <h3 style={{ 
+                  color: '#fff', 
+                  fontSize: '16px', 
+                  fontWeight: 600,
+                  margin: 0,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {project.title}
+                </h3>
+              </div>
+              
+              {/* Menu options */}
+              <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Pin/Unpin */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isSavedProject) {
+                      handleTogglePinSaved(project as SavedProject)
+                    } else {
+                      handleTogglePinOwn(project)
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    backgroundColor: '#374151',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Pin style={{ width: '18px', height: '18px', color: project.pinned ? '#39FF14' : '#fff' }} />
+                  </div>
+                  <span>{project.pinned ? 'Unpin' : 'Pin to Top'}</span>
+                </button>
+                
+                {/* Share */}
+                {isSavedProject ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (project.sharing_enabled !== false) {
+                        handleOpenShareModal(project)
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      backgroundColor: '#1f2937',
+                      color: project.sharing_enabled === false ? '#6b7280' : '#fff',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      fontSize: '15px',
+                      fontWeight: 500,
+                      cursor: project.sharing_enabled === false ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      textAlign: 'left',
+                      opacity: project.sharing_enabled === false ? 0.5 : 1,
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      backgroundColor: '#374151',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Share2 style={{ width: '18px', height: '18px', color: project.sharing_enabled === false ? '#6b7280' : '#39FF14' }} />
+                    </div>
+                    <div>
+                      <span>Share</span>
+                      {project.sharing_enabled === false && (
+                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                          Sharing disabled by creator
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleOpenShareModal(project)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      backgroundColor: '#1f2937',
+                      color: '#fff',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      fontSize: '15px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      backgroundColor: '#374151',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Share2 style={{ width: '18px', height: '18px', color: '#39FF14' }} />
+                    </div>
+                    <span>Share</span>
+                  </button>
+                )}
+                
+                {/* Delete (own projects) or Remove from Saved (saved projects) */}
+                {isSavedProject ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRemoveSavedProject(project as SavedProject)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      backgroundColor: '#1f2937',
+                      color: '#ef4444',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      fontSize: '15px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      backgroundColor: '#374151',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <X style={{ width: '18px', height: '18px', color: '#ef4444' }} />
+                    </div>
+                    <span>Remove from Saved</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteProject(project)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      backgroundColor: '#1f2937',
+                      color: '#ef4444',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      fontSize: '15px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      backgroundColor: '#374151',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Trash2 style={{ width: '18px', height: '18px', color: '#ef4444' }} />
+                    </div>
+                    <span>Delete</span>
+                  </button>
+                )}
+              </div>
+              
+              {/* Cancel button */}
+              <div style={{ padding: '8px 16px 16px' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setOpenMenuId(null)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    backgroundColor: '#374151',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </>
+        )
+      })()}
     </div>
   )
 }
