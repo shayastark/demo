@@ -201,7 +201,7 @@ export default function NewProjectPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-neon-green"
             />
           </div>
 
@@ -212,7 +212,7 @@ export default function NewProjectPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-neon-green focus:outline-none focus:border-neon-green resize-none"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-neon-green resize-none"
             />
           </div>
 
@@ -276,7 +276,7 @@ export default function NewProjectPage() {
                           setTracks(newTracks)
                         }}
                         required
-                        className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-neon-green focus:outline-none focus:border-neon-green"
+                        className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
                       />
                     </div>
                   </div>
@@ -296,17 +296,21 @@ export default function NewProjectPage() {
           </div>
 
           {/* Submit */}
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-4 pt-10 mt-6">
             <Link
               href="/dashboard"
-              className="flex-1 bg-gray-800 text-white px-6 py-3 rounded-full font-semibold text-center hover:bg-gray-700 transition"
+              className="flex-1 bg-gray-800 text-white px-8 py-4 rounded-full font-semibold text-center text-lg hover:bg-gray-700 transition"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={loading || tracks.length === 0}
-              className="flex-1 bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-8 py-4 rounded-full font-semibold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: '#39FF14',
+                color: '#000',
+              }}
             >
               {loading ? 'Creating...' : 'Create Project'}
             </button>

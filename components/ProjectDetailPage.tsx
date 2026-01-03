@@ -1640,7 +1640,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         {!isEditingNote && (
                           <button
                             onClick={() => startEditingTrackNote(track.id)}
-                            className="text-xs text-neon-green hover:opacity-80 flex items-center gap-1"
+                            className="text-xs text-black hover:opacity-80 flex items-center gap-1"
                           >
                             <Edit className="w-3 h-3" />
                             {trackNote ? 'Edit' : 'Add'}
