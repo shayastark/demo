@@ -481,63 +481,107 @@ export default function ClientDashboard() {
                         <div 
                           style={{
                             position: isMobile ? 'fixed' : 'absolute',
-                            bottom: isMobile ? 0 : 'auto',
+                            bottom: isMobile ? '70px' : 'auto', // Above tab bar
                             top: isMobile ? 'auto' : '40px',
                             left: isMobile ? 0 : 'auto',
                             right: isMobile ? 0 : 0,
-                            width: isMobile ? '100%' : '200px',
-                            maxWidth: isMobile ? '100%' : '200px',
-                            borderRadius: isMobile ? '16px 16px 0 0' : '8px',
-                            maxHeight: '80vh',
+                            width: isMobile ? '100%' : '220px',
+                            maxWidth: isMobile ? '100%' : '220px',
+                            borderRadius: isMobile ? '16px 16px 0 0' : '12px',
                             backgroundColor: '#111827',
-                            borderTop: '2px solid #374151',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)',
                             zIndex: 60,
+                            overflow: 'hidden',
                           }}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div style={{ overflowY: 'auto', maxHeight: 'calc(80vh - 16px)' }}>
-                            <div style={{ padding: '16px 20px', borderBottom: '1px solid #1f2937' }}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleOpenShareModal(project)
-                                }}
-                                className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                                style={{ 
-                                  fontSize: '16px',
-                                  lineHeight: '24px',
-                                  paddingTop: '12px',
-                                  paddingBottom: '12px',
-                                  gap: '14px',
-                                  minWidth: 0,
-                                }}
-                              >
-                                <Share2 style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Share</span>
-                              </button>
+                          {/* Handle bar for mobile */}
+                          {isMobile && (
+                            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
+                              <div style={{ width: '40px', height: '4px', backgroundColor: '#4B5563', borderRadius: '2px' }} />
                             </div>
-                            <div style={{ padding: '16px 20px', borderTop: '1px solid #374151' }}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteProject(project)
-                                }}
-                                className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
-                                style={{ 
-                                  fontSize: '16px',
-                                  lineHeight: '24px',
-                                  paddingTop: '12px',
-                                  paddingBottom: '12px',
-                                  gap: '14px',
-                                  minWidth: 0,
-                                }}
-                              >
-                                <Trash2 style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-                                <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>Delete</span>
-                              </button>
-                            </div>
+                          )}
+                          
+                          {/* Menu header */}
+                          <div style={{ 
+                            padding: isMobile ? '8px 20px 16px' : '12px 16px', 
+                            borderBottom: '1px solid #374151',
+                            textAlign: 'center',
+                          }}>
+                            <h3 style={{ 
+                              color: '#fff', 
+                              fontSize: '14px', 
+                              fontWeight: 600,
+                              margin: 0,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {project.title}
+                            </h3>
                           </div>
+                          
+                          {/* Menu options */}
+                          <div style={{ padding: '8px' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleOpenShareModal(project)
+                              }}
+                              className="w-full text-left text-white hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                              style={{ 
+                                fontSize: '16px',
+                                padding: '14px 12px',
+                                borderRadius: '8px',
+                                gap: '12px',
+                              }}
+                            >
+                              <Share2 style={{ width: '20px', height: '20px', flexShrink: 0, color: '#39FF14' }} />
+                              <span>Share</span>
+                            </button>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteProject(project)
+                              }}
+                              className="w-full text-left text-red-400 hover:bg-gray-800 active:bg-gray-700 flex items-center transition"
+                              style={{ 
+                                fontSize: '16px',
+                                padding: '14px 12px',
+                                borderRadius: '8px',
+                                gap: '12px',
+                              }}
+                            >
+                              <Trash2 style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                          
+                          {/* Cancel button for mobile */}
+                          {isMobile && (
+                            <div style={{ padding: '8px 8px 16px' }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setOpenMenuId(null)
+                                }}
+                                style={{
+                                  width: '100%',
+                                  padding: '14px',
+                                  backgroundColor: '#374151',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  fontSize: '16px',
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
