@@ -43,6 +43,13 @@ export default function BottomTabBar() {
   const [cassetteCurrentTime, setCassetteCurrentTime] = useState(0)
   const [cassetteDuration, setCassetteDuration] = useState(0)
   
+  // Audio visualization refs
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null)
+  const frequencyAnimationRef = useRef<number | null>(null)
+  const audioContextInitializedRef = useRef(false)
+  
   // Legacy compatibility
   const externalTrack = cassetteTrack
   const externalIsPlaying = cassetteIsPlaying
@@ -468,6 +475,91 @@ export default function BottomTabBar() {
       }
     }
   }, [isNowPlayingOpen])
+
+  // Initialize AudioContext and connect analyser for frequency visualization
+  const initializeAudioAnalyser = () => {
+    const audio = audioRef.current
+    if (!audio || audioContextInitializedRef.current) return
+
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioContextClass) {
+        console.warn('Web Audio API not supported')
+        return
+      }
+
+      const audioContext = new AudioContextClass()
+      audioContextRef.current = audioContext
+
+      const analyser = audioContext.createAnalyser()
+      analyser.fftSize = 64 // Gives us 32 frequency bins
+      analyser.smoothingTimeConstant = 0.8
+      analyserRef.current = analyser
+
+      const source = audioContext.createMediaElementSource(audio)
+      source.connect(analyser)
+      analyser.connect(audioContext.destination)
+      sourceNodeRef.current = source
+
+      audioContextInitializedRef.current = true
+      console.log('Audio analyser initialized successfully')
+    } catch (error) {
+      console.warn('Could not initialize audio analyser:', error)
+    }
+  }
+
+  // Broadcast frequency data when audio is playing
+  useEffect(() => {
+    const isAudioPlaying = isPlaying || cassetteIsPlaying
+    
+    if (isAudioPlaying) {
+      // Initialize audio context on first play (requires user interaction)
+      if (!audioContextInitializedRef.current) {
+        initializeAudioAnalyser()
+      }
+      
+      // Resume audio context if suspended
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume()
+      }
+
+      // Start broadcasting frequency data
+      const broadcastFrequency = () => {
+        if (analyserRef.current) {
+          const bufferLength = analyserRef.current.frequencyBinCount
+          const dataArray = new Uint8Array(bufferLength)
+          analyserRef.current.getByteFrequencyData(dataArray)
+          
+          // Broadcast the frequency data
+          window.dispatchEvent(new CustomEvent('hubba-audio-frequency', {
+            detail: { frequencyData: Array.from(dataArray) }
+          }))
+        }
+        
+        frequencyAnimationRef.current = requestAnimationFrame(broadcastFrequency)
+      }
+      
+      broadcastFrequency()
+      
+      return () => {
+        if (frequencyAnimationRef.current) {
+          cancelAnimationFrame(frequencyAnimationRef.current)
+          frequencyAnimationRef.current = null
+        }
+      }
+    } else {
+      // Stop broadcasting when not playing
+      if (frequencyAnimationRef.current) {
+        cancelAnimationFrame(frequencyAnimationRef.current)
+        frequencyAnimationRef.current = null
+      }
+      
+      // Broadcast empty data to indicate stopped
+      window.dispatchEvent(new CustomEvent('hubba-audio-frequency', {
+        detail: { frequencyData: null }
+      }))
+    }
+  }, [isPlaying, cassetteIsPlaying])
 
   // Determine if we should show the full UI (but always keep audio element mounted)
   const showFullUI = ready && authenticated && pathname !== '/' && !pathname?.startsWith('/share/')
