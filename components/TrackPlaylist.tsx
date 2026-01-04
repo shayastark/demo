@@ -317,8 +317,12 @@ export default function TrackPlaylist({
   }
 
   const handleEditClick = (track: Track) => {
+    console.log('handleEditClick called with track:', track)
     if (onEditTrack) {
+      console.log('Calling onEditTrack')
       onEditTrack(track)
+    } else {
+      console.log('onEditTrack is not defined')
     }
     setOpenMenuIndex(null)
   }
@@ -636,9 +640,14 @@ export default function TrackPlaylist({
 
             {/* Menu Options */}
             <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {isCreator && onEditTrack && (
+              {isCreator && onEditTrack && openMenuIndex !== null && tracks[openMenuIndex] && (
                 <button
-                  onClick={() => handleEditClick(tracks[openMenuIndex])}
+                  onClick={() => {
+                    const track = tracks[openMenuIndex]
+                    if (track) {
+                      handleEditClick(track)
+                    }
+                  }}
                   style={{
                     width: '100%',
                     padding: '16px 20px',

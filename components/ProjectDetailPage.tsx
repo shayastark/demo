@@ -568,6 +568,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   }
 
   const startEditingTrack = (track: Track) => {
+    console.log('startEditingTrack called with:', track)
+    console.log('Setting editingTrackId to:', track.id)
+    console.log('Setting editingTrackTitle to:', track.title)
     setEditingTrackId(track.id)
     setEditingTrackTitle(track.title)
   }
@@ -778,10 +781,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         setTrackNotes({ ...trackNotes, [trackId]: data })
       }
 
-      setEditingTrackNotes({ ...editingTrackNotes, [trackId]: content })
+      // Exit edit mode by removing from editingTrackNotes
+      const newEditing = { ...editingTrackNotes }
+      delete newEditing[trackId]
+      setEditingTrackNotes(newEditing)
+      
+      showToast('Note saved!', 'success')
     } catch (error) {
       console.error('Error saving track note:', error)
-        showToast('Failed to save note', 'error')
+      showToast('Failed to save note', 'error')
     } finally {
       setSavingNote(null)
     }
