@@ -291,15 +291,17 @@ export default function BottomTabBar() {
     }
   }, [cassetteTrack])
 
-  // Broadcast time updates for cassette playback
+  // Broadcast time updates for all playback (cassette and queue)
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
 
     const handleTimeUpdate = () => {
+      // Always update the current time state for the mini-player/now-playing slider
+      setCassetteCurrentTime(audio.currentTime)
+      
+      // Also broadcast for cassette UI if cassette track is playing
       if (cassetteTrack) {
-        setCassetteCurrentTime(audio.currentTime)
-        // Broadcast time update to cassette UI with track ID for proper scoping
         window.dispatchEvent(new CustomEvent('hubba-playback-time', {
           detail: { 
             currentTime: audio.currentTime, 
@@ -311,9 +313,8 @@ export default function BottomTabBar() {
     }
 
     const handleDurationChange = () => {
-      if (cassetteTrack) {
-        setCassetteDuration(audio.duration || 0)
-      }
+      // Always update duration for the mini-player/now-playing slider
+      setCassetteDuration(audio.duration || 0)
     }
 
     const handleEnded = () => {
