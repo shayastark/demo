@@ -49,6 +49,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [savingProject, setSavingProject] = useState(false)
   const [editingTracks, setEditingTracks] = useState<Record<string, { title: string; image?: File; imagePreview?: string }>>({})
   const [savingTracks, setSavingTracks] = useState<Record<string, boolean>>({})
+  const [editingTrackId, setEditingTrackId] = useState<string | null>(null) // Track currently being edited in modal
+  const [editingTrackTitle, setEditingTrackTitle] = useState('') // Title being edited
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
 
@@ -566,13 +568,40 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   }
 
   const startEditingTrack = (track: Track) => {
-    setEditingTracks({
-      ...editingTracks,
-      [track.id]: {
-        title: track.title,
-        imagePreview: track.image_url || undefined,
-      },
-    })
+    setEditingTrackId(track.id)
+    setEditingTrackTitle(track.title)
+  }
+
+  const cancelEditingTrackModal = () => {
+    setEditingTrackId(null)
+    setEditingTrackTitle('')
+  }
+
+  const saveEditingTrack = async () => {
+    if (!editingTrackId || !editingTrackTitle.trim()) return
+    
+    const track = tracks.find(t => t.id === editingTrackId)
+    if (!track) return
+
+    setSavingTracks({ ...savingTracks, [editingTrackId]: true })
+
+    try {
+      const { error: updateError } = await supabase
+        .from('tracks')
+        .update({ title: editingTrackTitle.trim() })
+        .eq('id', editingTrackId)
+
+      if (updateError) throw updateError
+
+      showToast('Track updated successfully!', 'success')
+      cancelEditingTrackModal()
+      await loadProject()
+    } catch (error: any) {
+      console.error('Error updating track:', error)
+      showToast(error?.message || 'Failed to update track. Please try again.', 'error')
+    } finally {
+      setSavingTracks({ ...savingTracks, [editingTrackId]: false })
+    }
   }
 
   const cancelEditingTrack = (trackId: string) => {
@@ -1487,37 +1516,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           placeholder="Enter track title"
                         />
                           </div>
-
-                      <div>
-                        <label className="block text-xs text-neon-green opacity-70 mb-1">Track Image (Optional)</label>
-                        {track.imagePreview ? (
-                          <div className="relative w-24 h-24 rounded overflow-hidden mb-2">
-                            <img src={track.imagePreview} alt="Track preview" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updatedTracks = [...newTracks]
-                                updatedTracks[index].image = undefined
-                                updatedTracks[index].imagePreview = undefined
-                                setNewTracks(updatedTracks)
-                              }}
-                              className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                        </div>
-                        ) : (
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) handleNewTrackImageChange(index, file)
-                            }}
-                            className="w-full text-sm text-white"
-                          />
-                        )}
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -1526,7 +1524,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               <div className="flex gap-3">
                 <button
                   onClick={handleAddNewTrack}
-                  className="flex items-center gap-2 text-sm text-neon-green hover:opacity-80"
+                  className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition"
                 >
                   <Plus className="w-4 h-4" />
                   Add Another Track
@@ -1706,6 +1704,51 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
         </div>
       </main>
+
+      {/* Track Edit Modal */}
+      {editingTrackId && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">Edit Track</h2>
+              <button
+                onClick={cancelEditingTrackModal}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm text-gray-400 mb-2">Track Title</label>
+              <input
+                type="text"
+                value={editingTrackTitle}
+                onChange={(e) => setEditingTrackTitle(e.target.value)}
+                className="w-full bg-black border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-green"
+                placeholder="Enter track title"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelEditingTrackModal}
+                className="px-6 py-2 text-gray-400 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEditingTrack}
+                disabled={!editingTrackTitle.trim() || savingTracks[editingTrackId]}
+                className="px-6 py-2 bg-neon-green text-black rounded-full font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingTracks[editingTrackId] ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Notes Modal */}
       {showNotesModal && (
