@@ -1285,9 +1285,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {/* Settings - Only show for creators */}
           {isCreator && (
-          <div className="bg-gray-900 rounded-lg p-5 mb-6 border border-gray-800">
-            <h3 className="font-semibold mb-5 text-neon-green text-lg">Project Settings</h3>
-            <div className="space-y-5">
+          <div className="bg-gray-900 rounded-xl p-6 md:p-8 mb-6 border border-gray-800">
+            <h3 className="font-semibold mb-6 text-neon-green text-lg">Project Settings</h3>
+            <div className="space-y-6">
               {/* Sharing Toggle */}
               <div className="flex items-center justify-between py-2">
                 <div className="flex-1 mr-4">
