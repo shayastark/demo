@@ -1225,19 +1225,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           ) : (
             <>
               <div className="flex items-center justify-between mb-4">
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-2">
                   <h1 className="text-3xl sm:text-4xl font-bold">{project.title}</h1>
-                  <div className="flex items-center gap-3 text-sm text-gray-400">
+                  <div className="flex items-center text-sm text-gray-400">
                     {creatorUsername && (
                       <span>{creatorUsername}</span>
                     )}
                     {tracks.length > 0 && (
                       <>
-                        <span>•</span>
+                        <span className="mx-2">•</span>
                         <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                       </>
                     )}
-          </div>
+                  </div>
                 </div>
             {/* Project Menu Button */}
             <button
