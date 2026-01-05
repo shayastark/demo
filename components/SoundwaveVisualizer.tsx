@@ -13,8 +13,12 @@ export default function SoundwaveVisualizer({ isPlaying }: SoundwaveVisualizerPr
   const animationRef = useRef<number | null>(null)
   const [frequencyData, setFrequencyData] = useState<number[] | null>(null)
   
-  // Random heights for animated fallback effect
-  const randomHeightsRef = useRef<number[]>(Array(32).fill(0).map(() => Math.random()))
+  // History of amplitude values for scrolling effect
+  const waveHistoryRef = useRef<number[]>([])
+  const maxHistoryLength = 200 // Number of points in the waveform
+  
+  // Time offset for animated fallback
+  const timeOffsetRef = useRef(0)
 
   // Listen for frequency data from global audio player
   useEffect(() => {
@@ -26,6 +30,13 @@ export default function SoundwaveVisualizer({ isPlaying }: SoundwaveVisualizerPr
     return () => window.removeEventListener('hubba-audio-frequency', handleFrequency as EventListener)
   }, [])
 
+  // Initialize wave history
+  useEffect(() => {
+    if (waveHistoryRef.current.length === 0) {
+      waveHistoryRef.current = Array(maxHistoryLength).fill(0)
+    }
+  }, [])
+
   // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current
@@ -34,63 +45,157 @@ export default function SoundwaveVisualizer({ isPlaying }: SoundwaveVisualizerPr
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const barCount = 32
-    const barWidth = (canvas.width / barCount) - 2
-    const maxBarHeight = canvas.height * 0.85
+    const width = canvas.width
+    const height = canvas.height
+    const centerY = height / 2
+    const maxAmplitude = height * 0.4 // Max wave height from center
 
     const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height)
 
-      if (isPlaying && frequencyData && frequencyData.length > 0) {
-        // Real audio visualization from global player
-        const step = Math.max(1, Math.floor(frequencyData.length / barCount))
-        
-        for (let i = 0; i < barCount; i++) {
-          const dataIndex = Math.min(i * step, frequencyData.length - 1)
-          const value = frequencyData[dataIndex] || 0
-          const barHeight = Math.max(4, (value / 255) * maxBarHeight)
-          const x = i * (barWidth + 2)
-          const y = (canvas.height - barHeight) / 2
+      if (isPlaying) {
+        let newAmplitude: number
 
-          // Gradient from neon green to teal
-          const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight)
-          gradient.addColorStop(0, '#39FF14')
-          gradient.addColorStop(0.5, '#00D9FF')
-          gradient.addColorStop(1, '#39FF14')
-
-          ctx.fillStyle = gradient
-          ctx.fillRect(x, y, barWidth, barHeight)
-        }
-      } else if (isPlaying) {
-        // Animated fallback bars when playing but no frequency data available
-        for (let i = 0; i < barCount; i++) {
-          // Animate random heights smoothly
-          const targetHeight = 0.2 + Math.random() * 0.6
-          randomHeightsRef.current[i] += (targetHeight - randomHeightsRef.current[i]) * 0.15
+        if (frequencyData && frequencyData.length > 0) {
+          // Calculate average amplitude from frequency data
+          const sum = frequencyData.reduce((acc, val) => acc + val, 0)
+          const avg = sum / frequencyData.length
+          newAmplitude = (avg / 255) * maxAmplitude
           
-          const barHeight = Math.max(4, randomHeightsRef.current[i] * maxBarHeight)
-          const x = i * (barWidth + 2)
-          const y = (canvas.height - barHeight) / 2
-
-          const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight)
-          gradient.addColorStop(0, '#39FF14')
-          gradient.addColorStop(0.5, '#00D9FF')
-          gradient.addColorStop(1, '#39FF14')
-
-          ctx.fillStyle = gradient
-          ctx.fillRect(x, y, barWidth, barHeight)
+          // Add some variation based on bass frequencies for more dynamic feel
+          const bassSum = frequencyData.slice(0, 10).reduce((acc, val) => acc + val, 0)
+          const bassAvg = bassSum / 10
+          newAmplitude = Math.max(newAmplitude, (bassAvg / 255) * maxAmplitude * 1.2)
+        } else {
+          // Animated fallback - smooth wave pattern
+          timeOffsetRef.current += 0.08
+          const baseWave = Math.sin(timeOffsetRef.current) * 0.3
+          const secondWave = Math.sin(timeOffsetRef.current * 1.5) * 0.2
+          const thirdWave = Math.sin(timeOffsetRef.current * 2.3) * 0.15
+          newAmplitude = (0.3 + baseWave + secondWave + thirdWave) * maxAmplitude
         }
-      } else {
-        // Static idle bars when paused
-        for (let i = 0; i < barCount; i++) {
-          const barHeight = 4
-          const x = i * (barWidth + 2)
-          const y = (canvas.height - barHeight) / 2
 
-          ctx.fillStyle = '#444'
-          ctx.fillRect(x, y, barWidth, barHeight)
+        // Add new amplitude to history (at the end/right side)
+        waveHistoryRef.current.push(newAmplitude)
+        
+        // Remove oldest amplitude (from the beginning/left side) if over limit
+        if (waveHistoryRef.current.length > maxHistoryLength) {
+          waveHistoryRef.current.shift()
         }
       }
+
+      // Draw the scrolling waveform
+      const history = waveHistoryRef.current
+      const pointSpacing = width / (maxHistoryLength - 1)
+
+      // Create gradient for the fill
+      const gradient = ctx.createLinearGradient(0, 0, width, 0)
+      gradient.addColorStop(0, 'rgba(57, 255, 20, 0.1)') // Faded on left (older)
+      gradient.addColorStop(0.5, 'rgba(57, 255, 20, 0.4)')
+      gradient.addColorStop(1, 'rgba(57, 255, 20, 0.8)') // Bright on right (newer)
+
+      // Draw top half (mirrored waveform going up)
+      ctx.beginPath()
+      ctx.moveTo(0, centerY)
+      
+      for (let i = 0; i < history.length; i++) {
+        const x = i * pointSpacing
+        const amplitude = history[i] || 0
+        const y = centerY - amplitude
+        
+        if (i === 0) {
+          ctx.lineTo(x, y)
+        } else {
+          // Smooth curve using quadratic bezier
+          const prevX = (i - 1) * pointSpacing
+          const cpX = (prevX + x) / 2
+          ctx.quadraticCurveTo(prevX, centerY - (history[i - 1] || 0), cpX, (centerY - (history[i - 1] || 0) + y) / 2)
+        }
+      }
+      
+      // Complete the top path back to center for fill
+      ctx.lineTo(width, centerY)
+      ctx.closePath()
+      ctx.fillStyle = gradient
+      ctx.fill()
+
+      // Draw bottom half (mirrored waveform going down)
+      ctx.beginPath()
+      ctx.moveTo(0, centerY)
+      
+      for (let i = 0; i < history.length; i++) {
+        const x = i * pointSpacing
+        const amplitude = history[i] || 0
+        const y = centerY + amplitude
+        
+        if (i === 0) {
+          ctx.lineTo(x, y)
+        } else {
+          const prevX = (i - 1) * pointSpacing
+          const cpX = (prevX + x) / 2
+          ctx.quadraticCurveTo(prevX, centerY + (history[i - 1] || 0), cpX, (centerY + (history[i - 1] || 0) + y) / 2)
+        }
+      }
+      
+      ctx.lineTo(width, centerY)
+      ctx.closePath()
+      ctx.fillStyle = gradient
+      ctx.fill()
+
+      // Draw the waveform outline for more definition
+      const lineGradient = ctx.createLinearGradient(0, 0, width, 0)
+      lineGradient.addColorStop(0, 'rgba(57, 255, 20, 0.2)')
+      lineGradient.addColorStop(0.5, 'rgba(57, 255, 20, 0.6)')
+      lineGradient.addColorStop(1, 'rgba(57, 255, 20, 1)')
+
+      // Top line
+      ctx.beginPath()
+      ctx.moveTo(0, centerY)
+      for (let i = 0; i < history.length; i++) {
+        const x = i * pointSpacing
+        const amplitude = history[i] || 0
+        const y = centerY - amplitude
+        
+        if (i === 0) {
+          ctx.lineTo(x, y)
+        } else {
+          const prevX = (i - 1) * pointSpacing
+          const cpX = (prevX + x) / 2
+          ctx.quadraticCurveTo(prevX, centerY - (history[i - 1] || 0), cpX, (centerY - (history[i - 1] || 0) + y) / 2)
+        }
+      }
+      ctx.strokeStyle = lineGradient
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      // Bottom line
+      ctx.beginPath()
+      ctx.moveTo(0, centerY)
+      for (let i = 0; i < history.length; i++) {
+        const x = i * pointSpacing
+        const amplitude = history[i] || 0
+        const y = centerY + amplitude
+        
+        if (i === 0) {
+          ctx.lineTo(x, y)
+        } else {
+          const prevX = (i - 1) * pointSpacing
+          const cpX = (prevX + x) / 2
+          ctx.quadraticCurveTo(prevX, centerY + (history[i - 1] || 0), cpX, (centerY + (history[i - 1] || 0) + y) / 2)
+        }
+      }
+      ctx.strokeStyle = lineGradient
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      // Draw center line
+      ctx.beginPath()
+      ctx.moveTo(0, centerY)
+      ctx.lineTo(width, centerY)
+      ctx.strokeStyle = 'rgba(57, 255, 20, 0.3)'
+      ctx.lineWidth = 1
+      ctx.stroke()
 
       animationRef.current = requestAnimationFrame(draw)
     }
@@ -108,14 +213,14 @@ export default function SoundwaveVisualizer({ isPlaying }: SoundwaveVisualizerPr
     <div className="w-full flex items-center justify-center px-4 py-2">
       <canvas
         ref={canvasRef}
-        width={320}
-        height={60}
+        width={400}
+        height={80}
         className="rounded-lg"
         style={{
           width: '100%',
-          maxWidth: '320px',
-          height: '60px',
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%)',
+          maxWidth: '400px',
+          height: '80px',
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 100%)',
           border: '1px solid rgba(57, 255, 20, 0.2)',
         }}
       />
