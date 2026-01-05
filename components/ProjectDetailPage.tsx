@@ -1285,14 +1285,22 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {/* Settings - Only show for creators */}
           {isCreator && (
-          <div className="bg-gray-900 rounded-xl p-6 md:p-8 mb-6 border border-gray-800">
-            <h3 className="font-semibold mb-6 text-neon-green text-lg">Project Settings</h3>
-            <div className="space-y-6">
+          <div 
+            className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
+            style={{ padding: '32px' }}
+          >
+            <h3 
+              className="font-semibold text-neon-green text-lg"
+              style={{ marginBottom: '24px' }}
+            >
+              Project Settings
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* Sharing Toggle */}
-              <div className="flex items-center justify-between py-2">
-                <div className="flex-1 mr-4">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
+                <div style={{ flex: 1, marginRight: '24px' }}>
                   <div className="font-medium text-white text-base">Project Sharing</div>
-                  <div className="text-sm text-gray-400 mt-1">
+                  <div className="text-sm text-gray-400" style={{ marginTop: '6px' }}>
                     Allow others to view this project via share link
                   </div>
                 </div>
@@ -1339,13 +1347,20 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               </div>
 
               {/* Downloads Toggle */}
-              <div className="flex items-center justify-between py-2 border-t border-gray-800 pt-5">
-                <div className="flex-1 mr-4">
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                padding: '8px 0',
+                borderTop: '1px solid #374151',
+                paddingTop: '24px'
+              }}>
+                <div style={{ flex: 1, marginRight: '24px' }}>
                   <div className="font-medium text-white text-base">Allow Downloads</div>
-                  <div className="text-sm text-gray-400 mt-1">
-                  Users can download tracks from this project
+                  <div className="text-sm text-gray-400" style={{ marginTop: '6px' }}>
+                    Users can download tracks from this project
+                  </div>
                 </div>
-              </div>
                 <button
                   onClick={async () => {
                     const newValue = !project.allow_downloads
