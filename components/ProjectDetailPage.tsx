@@ -1237,7 +1237,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                       </>
                     )}
-                  </div>
+          </div>
                 </div>
             {/* Project Menu Button */}
             <button
@@ -1287,11 +1287,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {isCreator && (
           <div 
             className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
-            style={{ padding: '32px' }}
+            style={{ padding: '20px 24px 24px 24px' }}
           >
             <h3 
               className="font-semibold text-neon-green text-lg"
-              style={{ marginBottom: '24px' }}
+              style={{ marginBottom: '20px' }}
             >
               Project Settings
             </h3>
@@ -1358,9 +1358,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <div style={{ flex: 1, marginRight: '24px' }}>
                   <div className="font-medium text-white text-base">Allow Downloads</div>
                   <div className="text-sm text-gray-400" style={{ marginTop: '6px' }}>
-                    Users can download tracks from this project
-                  </div>
+                  Users can download tracks from this project
                 </div>
+              </div>
                 <button
                   onClick={async () => {
                     const newValue = !project.allow_downloads
@@ -1408,12 +1408,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {/* Project Notes (Private to Creator) - Only show if user is creator */}
           {isCreator && (
-          <div className="bg-gray-900 rounded-lg p-4 mb-6 border border-yellow-900/50">
-            <div className="flex items-center justify-between mb-3">
+          <div 
+            className="bg-gray-900 rounded-xl mb-6 border border-yellow-900/50"
+            style={{ padding: '20px 24px 24px 24px' }}
+          >
+            <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
               <div className="flex items-center">
                 <FileText className="w-5 h-5 text-yellow-400 mr-2" />
                 <h3 className="font-semibold text-neon-green">Project Notes</h3>
-                <span className="text-xs text-white opacity-60 ml-3">(Private)</span>
+                <span className="text-xs text-white opacity-60" style={{ marginLeft: '12px' }}>(Private)</span>
               </div>
               {!editingProjectNote && (
                 <button
@@ -1539,8 +1542,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           placeholder="Enter track title"
                         />
                           </div>
-                    </div>
-                  </div>
+                        </div>
+                      </div>
                 ))}
                     </div>
 
@@ -1657,11 +1660,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {/* Track Notes Section - Only for creators */}
           {isCreator && tracks.length > 0 && (
-            <div className="mt-6 bg-gray-900 rounded-xl p-4">
-              <div className="flex items-center mb-4">
+            <div 
+              className="mt-6 bg-gray-900 rounded-xl"
+              style={{ padding: '20px 24px 24px 24px' }}
+            >
+              <div className="flex items-center" style={{ marginBottom: '16px' }}>
                 <FileText className="w-5 h-5 text-yellow-400 mr-2" />
                 <h3 className="font-semibold text-neon-green">Track Notes</h3>
-                <span className="text-xs text-white opacity-60 ml-3">(Private)</span>
+                <span className="text-xs text-white opacity-60" style={{ marginLeft: '12px' }}>(Private)</span>
               </div>
               <div className="space-y-3">
                 {tracks.map((track) => {
