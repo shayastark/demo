@@ -101,7 +101,6 @@ export default function AccountPage() {
           existingUser = newUser
         }
 
-        console.log('Profile loaded from DB:', existingUser)
         setProfile({
           id: existingUser.id,
           username: existingUser.username || '',
@@ -112,7 +111,6 @@ export default function AccountPage() {
           website: existingUser.website || null,
           instagram: existingUser.instagram || null,
         })
-        console.log('Profile state set with id:', existingUser.id)
         
         // Initialize edit form
         setEditProfile({
@@ -232,28 +230,18 @@ export default function AccountPage() {
   }
 
   const handleSaveUsername = async () => {
-    console.log('handleSaveUsername called', { profile, editingUsername })
     if (!profile) {
-      console.log('No profile found')
-      alert('Profile not loaded - please refresh the page')
+      showToast('Profile not loaded - please refresh the page', 'error')
       return
     }
     setSaving(true)
     try {
-      console.log('Updating username for profile.id:', profile.id)
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('users')
         .update({ username: editingUsername.trim() || null })
         .eq('id', profile.id)
-        .select()
 
-      console.log('Username save result:', { data, error })
-      
-      if (error) {
-        console.error('Supabase error:', error)
-        alert(`Database error: ${error.message}`)
-        throw error
-      }
+      if (error) throw error
       
       setProfile({ ...profile, username: editingUsername.trim() })
       setIsEditingUsername(false)
@@ -327,16 +315,13 @@ export default function AccountPage() {
   }
 
   const handleSaveProfile = async () => {
-    console.log('handleSaveProfile called', { profile, editProfile })
     if (!profile) {
-      console.log('No profile, returning')
-      alert('Profile not loaded - please refresh the page')
+      showToast('Profile not loaded - please refresh the page', 'error')
       return
     }
     setSaving(true)
     try {
-      console.log('Saving profile to database...', profile.id)
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('users')
         .update({
           bio: editProfile.bio.trim() || null,
@@ -345,20 +330,8 @@ export default function AccountPage() {
           instagram: editProfile.instagram.trim() || null,
         })
         .eq('id', profile.id)
-        .select()
 
-      console.log('Save result:', { data, error })
-      
-      if (error) {
-        console.error('Supabase error:', error)
-        alert(`Database error: ${error.message}`)
-        throw error
-      }
-      
-      if (!data || data.length === 0) {
-        console.log('No data returned - RLS might be blocking the update')
-        alert('Update may have failed - no data returned. Check RLS policies.')
-      }
+      if (error) throw error
       
       setProfile({
         ...profile,
