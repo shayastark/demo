@@ -12,7 +12,9 @@ import { showToast } from './Toast'
 import Image from 'next/image'
 import { ProjectDetailSkeleton } from './SkeletonLoader'
 import ShareModal from './ShareModal'
+import CreatorProfileModal from './CreatorProfileModal'
 import { addToQueue } from './BottomTabBar'
+import { User } from 'lucide-react'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -33,6 +35,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [editingTrackNotes, setEditingTrackNotes] = useState<Record<string, string>>({})
   const [savingNote, setSavingNote] = useState<string | null>(null)
   const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
+  const [creatorId, setCreatorId] = useState<string | null>(null)
+  const [showCreatorModal, setShowCreatorModal] = useState(false)
   const [newTracks, setNewTracks] = useState<Array<{ file: File | null; title: string; image?: File; imagePreview?: string }>>([])
   const [addingTracks, setAddingTracks] = useState(false)
   const [showAddTrackForm, setShowAddTrackForm] = useState(false)
@@ -126,6 +130,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         if (creatorData) {
           setCreatorUsername(creatorData.username || creatorData.email || null)
         }
+        setCreatorId(projectData.creator_id)
       }
 
       const { data: tracksData, error: tracksError } = await supabase
@@ -1228,8 +1233,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <div className="flex flex-col gap-2">
                   <h1 className="text-3xl sm:text-4xl font-bold">{project.title}</h1>
                   <div className="flex items-center text-sm text-gray-400">
-                    {creatorUsername && (
-                      <span>{creatorUsername}</span>
+                    {creatorUsername && creatorId && (
+                      <button
+                        onClick={() => setShowCreatorModal(true)}
+                        className="hover:text-neon-green transition underline-offset-2 hover:underline"
+                      >
+                        {creatorUsername}
+                      </button>
                     )}
                     {tracks.length > 0 && (
                       <>
@@ -1237,7 +1247,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                       </>
                     )}
-          </div>
+                  </div>
                 </div>
             {/* Project Menu Button */}
             <button
@@ -1956,6 +1966,51 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   </div>
                 </div>
               </button>
+
+              {/* View Creator */}
+              {creatorId && (
+                <button
+                  onClick={() => {
+                    setShowCreatorModal(true)
+                    setIsProjectMenuOpen(false)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
+                >
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <User style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>View Creator</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      See creator profile and contact info
+                    </div>
+                  </div>
+                </button>
+              )}
               
               {user && (
                 <button
@@ -2195,6 +2250,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </div>
           </div>
         </>
+      )}
+
+      {/* Creator Profile Modal */}
+      {creatorId && (
+        <CreatorProfileModal
+          isOpen={showCreatorModal}
+          onClose={() => setShowCreatorModal(false)}
+          creatorId={creatorId}
+        />
       )}
     </div>
   )

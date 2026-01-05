@@ -6,12 +6,13 @@ import { usePrivy } from '@privy-io/react-auth'
 import { supabase } from '@/lib/supabase'
 import { Project, Track } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
-import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, FileText, Trash2 } from 'lucide-react'
+import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, FileText, Trash2, User } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
 import { ProjectDetailSkeleton } from './SkeletonLoader'
 import { addToQueue } from './BottomTabBar'
 import ShareModal from './ShareModal'
+import CreatorProfileModal from './CreatorProfileModal'
 
 interface SharedProjectPageProps {
   token: string
@@ -26,6 +27,8 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [addedToProject, setAddedToProject] = useState(false)
   const checkedAddedRef = useRef<string | null>(null) // Track which project/user combo we've checked
   const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
+  const [creatorId, setCreatorId] = useState<string | null>(null)
+  const [showCreatorModal, setShowCreatorModal] = useState(false)
   const [trackShareLinkCopied, setTrackShareLinkCopied] = useState<string | null>(null)
   const [trackShareModal, setTrackShareModal] = useState<{ track: Track | null; isOpen: boolean }>({ track: null, isOpen: false })
   const [trackSharePrivacy, setTrackSharePrivacy] = useState<'private' | 'direct' | 'public'>('direct')
@@ -287,6 +290,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         if (creatorData) {
           setCreatorUsername(creatorData.username || creatorData.email || null)
         }
+        setCreatorId(projectData.creator_id)
       }
 
       const { data: tracksData, error: tracksError } = await supabase
@@ -695,15 +699,20 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         {/* Project Info */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <h1 className="text-3xl sm:text-4xl font-bold text-white">{project.title}</h1>
-              <div className="flex items-center gap-3 text-sm text-gray-400">
-                {creatorUsername && (
-                  <span>{creatorUsername}</span>
+              <div className="flex items-center text-sm text-gray-400">
+                {creatorUsername && creatorId && (
+                  <button
+                    onClick={() => setShowCreatorModal(true)}
+                    className="hover:text-neon-green transition underline-offset-2 hover:underline"
+                  >
+                    {creatorUsername}
+                  </button>
                 )}
                 {tracks.length > 0 && (
                   <>
-                    <span>•</span>
+                    <span className="mx-2">•</span>
                     <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                   </>
                 )}
@@ -851,6 +860,51 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   </div>
                 </div>
               </button>
+
+              {/* View Creator */}
+              {creatorId && (
+                <button
+                  onClick={() => {
+                    setShowCreatorModal(true)
+                    setIsProjectMenuOpen(false)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
+                  className="hover:bg-gray-700 transition"
+                >
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <User style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>View Creator</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                      See creator profile and contact info
+                    </div>
+                  </div>
+                </button>
+              )}
               
               {/* Save to Library or Remove from Library button */}
               {addedToProject ? (
@@ -1090,6 +1144,15 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           onClose={() => setShareModalOpen(false)}
           shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${token}`}
           title={project.title}
+        />
+      )}
+
+      {/* Creator Profile Modal */}
+      {creatorId && (
+        <CreatorProfileModal
+          isOpen={showCreatorModal}
+          onClose={() => setShowCreatorModal(false)}
+          creatorId={creatorId}
         />
       )}
     </div>

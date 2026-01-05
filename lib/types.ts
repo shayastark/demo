@@ -60,6 +60,13 @@ export interface User {
   email?: string
   username?: string
   avatar_url?: string
+  bio?: string
+  contact_email?: string
+  website?: string
+  instagram?: string
+  stripe_account_id?: string
+  stripe_onboarding_complete?: boolean
+  wallet_address?: string
   created_at: string
 }
 
