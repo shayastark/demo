@@ -525,11 +525,25 @@ export default function BottomTabBar() {
       }
 
       // Start broadcasting frequency data
+      let frameCount = 0
       const broadcastFrequency = () => {
         if (analyserRef.current) {
           const bufferLength = analyserRef.current.frequencyBinCount
           const dataArray = new Uint8Array(bufferLength)
           analyserRef.current.getByteFrequencyData(dataArray)
+          
+          // Debug: Log every 60 frames (about once per second)
+          frameCount++
+          if (frameCount % 60 === 0) {
+            const sum = dataArray.reduce((a, b) => a + b, 0)
+            const avg = sum / dataArray.length
+            console.log('Frequency data:', { 
+              bufferLength, 
+              sampleValues: Array.from(dataArray.slice(0, 8)),
+              average: avg.toFixed(2),
+              hasData: avg > 0
+            })
+          }
           
           // Broadcast the frequency data
           window.dispatchEvent(new CustomEvent('hubba-audio-frequency', {
