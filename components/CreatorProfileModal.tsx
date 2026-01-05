@@ -156,13 +156,15 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '100%',
+          width: 'calc(100% - 32px)',
           maxWidth: '480px',
-          maxHeight: '90vh',
+          maxHeight: '85vh',
           backgroundColor: '#111827',
           borderRadius: '16px',
           zIndex: 9999,
           overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {/* Header */}
@@ -172,6 +174,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
           justifyContent: 'space-between',
           padding: '16px 20px',
           borderBottom: '1px solid #374151',
+          flexShrink: 0,
         }}>
           <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#fff' }}>
             Creator Profile
@@ -195,7 +198,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px', overflowY: 'auto', maxHeight: 'calc(90vh - 60px)' }}>
+        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#39FF14' }}>
               Loading...
