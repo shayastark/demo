@@ -71,6 +71,7 @@ export default function AccountPage() {
           existingUser = newUser
         }
 
+        console.log('Profile loaded from DB:', existingUser)
         setProfile({
           id: existingUser.id,
           username: existingUser.username || '',
@@ -80,6 +81,7 @@ export default function AccountPage() {
           website: existingUser.website || null,
           instagram: existingUser.instagram || null,
         })
+        console.log('Profile state set with id:', existingUser.id)
         
         // Initialize edit form
         setEditProfile({
@@ -99,15 +101,29 @@ export default function AccountPage() {
   }, [ready, user?.id, authenticated])
 
   const handleSaveUsername = async () => {
-    if (!profile) return
+    console.log('handleSaveUsername called', { profile, editingUsername })
+    if (!profile) {
+      console.log('No profile found')
+      alert('Profile not loaded - please refresh the page')
+      return
+    }
     setSaving(true)
     try {
-      const { error } = await supabase
+      console.log('Updating username for profile.id:', profile.id)
+      const { data, error } = await supabase
         .from('users')
         .update({ username: editingUsername.trim() || null })
         .eq('id', profile.id)
+        .select()
 
-      if (error) throw error
+      console.log('Username save result:', { data, error })
+      
+      if (error) {
+        console.error('Supabase error:', error)
+        alert(`Database error: ${error.message}`)
+        throw error
+      }
+      
       setProfile({ ...profile, username: editingUsername.trim() })
       setIsEditingUsername(false)
       showToast('Username updated!', 'success')
@@ -123,7 +139,7 @@ export default function AccountPage() {
     console.log('handleSaveProfile called', { profile, editProfile })
     if (!profile) {
       console.log('No profile, returning')
-      showToast('Profile not loaded', 'error')
+      alert('Profile not loaded - please refresh the page')
       return
     }
     setSaving(true)
@@ -142,7 +158,16 @@ export default function AccountPage() {
 
       console.log('Save result:', { data, error })
       
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        alert(`Database error: ${error.message}`)
+        throw error
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('No data returned - RLS might be blocking the update')
+        alert('Update may have failed - no data returned. Check RLS policies.')
+      }
       
       setProfile({
         ...profile,
@@ -155,6 +180,7 @@ export default function AccountPage() {
       showToast('Profile updated!', 'success')
     } catch (error) {
       console.error('Error saving profile:', error)
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
       showToast('Failed to save profile', 'error')
     } finally {
       setSaving(false)
