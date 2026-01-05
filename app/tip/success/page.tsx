@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { CheckCircle, Heart, X } from 'lucide-react'
+import { CheckCircle, Heart } from 'lucide-react'
 
 export default function TipSuccessPage() {
   const router = useRouter()
@@ -17,15 +17,7 @@ export default function TipSuccessPage() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4">
-      <div className="relative text-center max-w-md bg-gray-900 rounded-2xl p-8 border border-gray-800">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
+      <div className="text-center max-w-md">
         <div 
           className="mx-auto mb-6 w-20 h-20 rounded-full flex items-center justify-center"
           style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
@@ -48,9 +40,9 @@ export default function TipSuccessPage() {
 
         <button
           onClick={handleClose}
-          className="w-full bg-neon-green text-black px-6 py-3 rounded-lg font-semibold hover:opacity-80 transition"
+          className="text-sm text-gray-400 hover:text-white transition"
         >
-          Continue Listening
+          Close
         </button>
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { XCircle, X } from 'lucide-react'
+import { XCircle } from 'lucide-react'
 
 export default function TipCancelledPage() {
   const router = useRouter()
@@ -16,15 +16,7 @@ export default function TipCancelledPage() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4">
-      <div className="relative text-center max-w-md bg-gray-900 rounded-2xl p-8 border border-gray-800">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
+      <div className="text-center max-w-md">
         <div 
           className="mx-auto mb-6 w-20 h-20 rounded-full flex items-center justify-center"
           style={{ backgroundColor: 'rgba(107, 114, 128, 0.2)' }}
@@ -42,9 +34,9 @@ export default function TipCancelledPage() {
 
         <button
           onClick={handleClose}
-          className="w-full bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition"
+          className="text-sm text-gray-400 hover:text-white transition"
         >
-          Go Back
+          Close
         </button>
       </div>
     </div>
