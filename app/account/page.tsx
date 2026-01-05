@@ -4,7 +4,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle } from 'lucide-react'
+import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import Image from 'next/image'
 
@@ -17,6 +17,16 @@ interface UserProfile {
   contact_email: string | null
   website: string | null
   instagram: string | null
+}
+
+interface Tip {
+  id: string
+  amount: number
+  currency: string
+  tipper_email: string | null
+  message: string | null
+  is_read: boolean
+  created_at: string
 }
 
 export default function AccountPage() {
@@ -47,6 +57,12 @@ export default function AccountPage() {
     loading: boolean
   }>({ hasAccount: false, onboardingComplete: false, loading: true })
   const [settingUpStripe, setSettingUpStripe] = useState(false)
+  
+  // Tips state
+  const [tips, setTips] = useState<Tip[]>([])
+  const [tipsLoading, setTipsLoading] = useState(true)
+  const [unreadTipCount, setUnreadTipCount] = useState(0)
+  const [totalEarnings, setTotalEarnings] = useState(0)
 
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -139,6 +155,51 @@ export default function AccountPage() {
 
     checkStripeStatus()
   }, [profile?.id])
+
+  // Load tips
+  useEffect(() => {
+    if (!profile?.id || !stripeStatus.onboardingComplete) {
+      setTipsLoading(false)
+      return
+    }
+
+    const loadTips = async () => {
+      try {
+        const response = await fetch(`/api/tips?creatorId=${profile.id}`)
+        const data = await response.json()
+        
+        if (response.ok) {
+          setTips(data.tips || [])
+          setUnreadTipCount(data.unreadCount || 0)
+          setTotalEarnings(data.totalEarnings || 0)
+        }
+      } catch (error) {
+        console.error('Error loading tips:', error)
+      } finally {
+        setTipsLoading(false)
+      }
+    }
+
+    loadTips()
+  }, [profile?.id, stripeStatus.onboardingComplete])
+
+  // Mark tips as read
+  const markTipsAsRead = async () => {
+    if (!profile?.id || unreadTipCount === 0) return
+    
+    try {
+      await fetch('/api/tips', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creatorId: profile.id }),
+      })
+      
+      setUnreadTipCount(0)
+      setTips(tips.map(tip => ({ ...tip, is_read: true })))
+    } catch (error) {
+      console.error('Error marking tips as read:', error)
+    }
+  }
 
   // Handle Stripe Connect onboarding
   const handleSetupStripe = async () => {
@@ -711,6 +772,113 @@ export default function AccountPage() {
             </div>
           )}
         </div>
+
+        {/* Tips Received Section - Only show if payments are set up */}
+        {stripeStatus.onboardingComplete && (
+          <div 
+            className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
+            style={{ padding: '20px 24px 24px 24px' }}
+          >
+            <div className="flex items-center justify-between" style={{ marginBottom: '20px' }}>
+              <div className="flex items-center gap-3">
+                <h2 className="font-semibold text-neon-green text-lg">
+                  Tips Received
+                </h2>
+                {unreadTipCount > 0 && (
+                  <span className="bg-neon-green text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                    {unreadTipCount} new
+                  </span>
+                )}
+              </div>
+              {unreadTipCount > 0 && (
+                <button
+                  onClick={markTipsAsRead}
+                  className="text-sm text-gray-400 hover:text-white transition"
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+
+            {/* Total Earnings */}
+            <div 
+              className="bg-black rounded-lg p-4 mb-6 flex items-center gap-4"
+              style={{ border: '1px solid #374151' }}
+            >
+              <div 
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
+              >
+                <DollarSign className="w-6 h-6 text-neon-green" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Total Earnings</p>
+                <p className="text-2xl font-bold text-white">
+                  ${(totalEarnings / 100).toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            {/* Tips List */}
+            {tipsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 text-neon-green animate-spin" />
+              </div>
+            ) : tips.length === 0 ? (
+              <div className="text-center py-8">
+                <Heart className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+                <p className="text-gray-500">No tips yet</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  When listeners send you tips, they&apos;ll appear here
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tips.map((tip) => (
+                  <div
+                    key={tip.id}
+                    className={`p-4 rounded-lg ${!tip.is_read ? 'bg-gray-800 border border-neon-green/30' : 'bg-black border border-gray-800'}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
+                        >
+                          <Heart className="w-5 h-5 text-neon-green" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">
+                            ${(tip.amount / 100).toFixed(2)} tip
+                          </p>
+                          <div className="flex items-center gap-2 text-sm text-gray-400">
+                            {tip.tipper_email ? (
+                              <>
+                                <Mail className="w-3 h-3" />
+                                <span>{tip.tipper_email}</span>
+                              </>
+                            ) : (
+                              <span>Anonymous</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(tip.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {tip.message && (
+                      <div className="mt-3 flex items-start gap-2 text-sm text-gray-300 bg-gray-900 rounded-lg p-3">
+                        <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                        <p>&quot;{tip.message}&quot;</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   )

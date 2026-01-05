@@ -1,17 +1,31 @@
 'use client'
 
-import { useEffect } from 'react'
-import Link from 'next/link'
-import { CheckCircle, Heart } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { CheckCircle, Heart, X } from 'lucide-react'
 
 export default function TipSuccessPage() {
-  useEffect(() => {
-    // Confetti effect or celebration animation could go here
-  }, [])
+  const router = useRouter()
+
+  const handleClose = () => {
+    // Go back 2 pages (skip the Stripe checkout page)
+    if (window.history.length > 2) {
+      window.history.go(-2)
+    } else {
+      router.push('/dashboard')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
+      <div className="relative text-center max-w-md bg-gray-900 rounded-2xl p-8 border border-gray-800">
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         <div 
           className="mx-auto mb-6 w-20 h-20 rounded-full flex items-center justify-center"
           style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
@@ -23,7 +37,7 @@ export default function TipSuccessPage() {
           Thank You!
         </h1>
         
-        <p className="text-gray-400 mb-8">
+        <p className="text-gray-400 mb-6">
           Your tip has been sent successfully. The creator will receive your support shortly.
         </p>
 
@@ -32,12 +46,12 @@ export default function TipSuccessPage() {
           <span className="text-sm">You&apos;re awesome for supporting creators!</span>
         </div>
 
-        <Link
-          href="/dashboard"
-          className="inline-block bg-neon-green text-black px-6 py-3 rounded-lg font-semibold hover:opacity-80 transition"
+        <button
+          onClick={handleClose}
+          className="w-full bg-neon-green text-black px-6 py-3 rounded-lg font-semibold hover:opacity-80 transition"
         >
-          Back to Dashboard
-        </Link>
+          Continue Listening
+        </button>
       </div>
     </div>
   )
