@@ -4,7 +4,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2 } from 'lucide-react'
+import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import Image from 'next/image'
 
@@ -39,6 +39,14 @@ export default function AccountPage() {
   // Avatar upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  
+  // Stripe Connect state
+  const [stripeStatus, setStripeStatus] = useState<{
+    hasAccount: boolean
+    onboardingComplete: boolean
+    loading: boolean
+  }>({ hasAccount: false, onboardingComplete: false, loading: true })
+  const [settingUpStripe, setSettingUpStripe] = useState(false)
 
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -106,6 +114,61 @@ export default function AccountPage() {
 
     loadProfile()
   }, [ready, user?.id, authenticated])
+
+  // Check Stripe Connect status
+  useEffect(() => {
+    if (!profile?.id) return
+
+    const checkStripeStatus = async () => {
+      try {
+        const response = await fetch(`/api/stripe/connect?userId=${profile.id}`)
+        const data = await response.json()
+        
+        if (response.ok) {
+          setStripeStatus({
+            hasAccount: data.hasAccount,
+            onboardingComplete: data.onboardingComplete,
+            loading: false,
+          })
+        }
+      } catch (error) {
+        console.error('Error checking Stripe status:', error)
+        setStripeStatus(prev => ({ ...prev, loading: false }))
+      }
+    }
+
+    checkStripeStatus()
+  }, [profile?.id])
+
+  // Handle Stripe Connect onboarding
+  const handleSetupStripe = async () => {
+    if (!profile) return
+    
+    setSettingUpStripe(true)
+    try {
+      const response = await fetch('/api/stripe/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: profile.id,
+          email: profile.email,
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (response.ok && data.url) {
+        window.location.href = data.url
+      } else {
+        showToast(data.error || 'Failed to set up payments', 'error')
+      }
+    } catch (error) {
+      console.error('Error setting up Stripe:', error)
+      showToast('Failed to set up payments', 'error')
+    } finally {
+      setSettingUpStripe(false)
+    }
+  }
 
   const handleSaveUsername = async () => {
     console.log('handleSaveUsername called', { profile, editingUsername })
@@ -575,6 +638,78 @@ export default function AccountPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Payments Section */}
+        <div 
+          className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
+          style={{ padding: '20px 24px 24px 24px' }}
+        >
+          <h2 className="font-semibold text-neon-green text-lg" style={{ marginBottom: '20px' }}>
+            Receive Tips
+          </h2>
+          
+          <p className="text-sm text-gray-500 mb-6">
+            Set up payments to receive tips from listeners who enjoy your music.
+          </p>
+
+          {stripeStatus.loading ? (
+            <div className="flex items-center gap-2 text-gray-400">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Checking payment status...</span>
+            </div>
+          ) : stripeStatus.onboardingComplete ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-neon-green">
+                <CheckCircle className="w-5 h-5" />
+                <span className="text-sm font-medium">Payments enabled</span>
+              </div>
+              <button
+                onClick={handleSetupStripe}
+                disabled={settingUpStripe}
+                className="text-sm text-gray-400 hover:text-white transition flex items-center gap-1"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Manage
+              </button>
+            </div>
+          ) : stripeStatus.hasAccount ? (
+            <div>
+              <p className="text-sm text-yellow-500 mb-3">
+                Your payment setup is incomplete. Click below to finish.
+              </p>
+              <button
+                onClick={handleSetupStripe}
+                disabled={settingUpStripe}
+                className="flex items-center gap-2 bg-neon-green text-black px-4 py-2 rounded-lg font-medium hover:opacity-80 transition disabled:opacity-50"
+              >
+                {settingUpStripe ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CreditCard className="w-4 h-4" />
+                )}
+                {settingUpStripe ? 'Loading...' : 'Complete Setup'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm text-gray-400 mb-4">
+                Connect with Stripe to start receiving tips. Stripe handles all payments securely.
+              </p>
+              <button
+                onClick={handleSetupStripe}
+                disabled={settingUpStripe}
+                className="flex items-center gap-2 bg-neon-green text-black px-4 py-2 rounded-lg font-medium hover:opacity-80 transition disabled:opacity-50"
+              >
+                {settingUpStripe ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CreditCard className="w-4 h-4" />
+                )}
+                {settingUpStripe ? 'Loading...' : 'Set Up Payments'}
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>

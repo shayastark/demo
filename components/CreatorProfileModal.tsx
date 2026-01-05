@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Mail, Globe, Instagram, ExternalLink } from 'lucide-react'
+import { X, Mail, Globe, Instagram, ExternalLink, Heart, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
+import { showToast } from '@/components/Toast'
 
 interface CreatorProfile {
   id: string
@@ -14,6 +15,7 @@ interface CreatorProfile {
   contact_email: string | null
   website: string | null
   instagram: string | null
+  stripe_onboarding_complete: boolean | null
 }
 
 interface CreatorProfileModalProps {
@@ -26,6 +28,20 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
   const [creator, setCreator] = useState<CreatorProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [projectCount, setProjectCount] = useState(0)
+  
+  // Tip state
+  const [showTipOptions, setShowTipOptions] = useState(false)
+  const [selectedTip, setSelectedTip] = useState<number | null>(null)
+  const [customTip, setCustomTip] = useState('')
+  const [tipMessage, setTipMessage] = useState('')
+  const [processingTip, setProcessingTip] = useState(false)
+
+  const TIP_AMOUNTS = [
+    { value: 300, label: '$3' },
+    { value: 500, label: '$5' },
+    { value: 1000, label: '$10' },
+    { value: 2000, label: '$20' },
+  ]
 
   useEffect(() => {
     if (!isOpen || !creatorId) return
@@ -36,7 +52,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
         // Fetch creator profile
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('id, username, email, avatar_url, bio, contact_email, website, instagram')
+          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, stripe_onboarding_complete')
           .eq('id', creatorId)
           .single()
 
@@ -62,6 +78,56 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
 
     loadCreator()
   }, [isOpen, creatorId])
+
+  // Reset tip state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowTipOptions(false)
+      setSelectedTip(null)
+      setCustomTip('')
+      setTipMessage('')
+    }
+  }, [isOpen])
+
+  const handleSendTip = async () => {
+    const amount = selectedTip || (customTip ? Math.round(parseFloat(customTip) * 100) : 0)
+    
+    if (!amount || amount < 100) {
+      showToast('Please enter a valid tip amount (minimum $1)', 'error')
+      return
+    }
+
+    if (amount > 50000) {
+      showToast('Maximum tip amount is $500', 'error')
+      return
+    }
+
+    setProcessingTip(true)
+    try {
+      const response = await fetch('/api/stripe/tip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creatorId: creator?.id,
+          amount,
+          message: tipMessage,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.url) {
+        window.location.href = data.url
+      } else {
+        showToast(data.error || 'Failed to process tip', 'error')
+      }
+    } catch (error) {
+      console.error('Error sending tip:', error)
+      showToast('Failed to process tip', 'error')
+    } finally {
+      setProcessingTip(false)
+    }
+  }
 
   if (!isOpen) return null
 
@@ -286,6 +352,173 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
               {!creator.contact_email && !creator.website && !creator.instagram && !creator.bio && (
                 <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
                   <p style={{ margin: 0 }}>This creator hasn&apos;t added their contact info yet.</p>
+                </div>
+              )}
+
+              {/* Tip Section */}
+              {creator.stripe_onboarding_complete && (
+                <div style={{ 
+                  borderTop: '1px solid #374151', 
+                  paddingTop: '24px',
+                  marginTop: '8px',
+                }}>
+                  {!showTipOptions ? (
+                    <button
+                      onClick={() => setShowTipOptions(true)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        padding: '14px',
+                        backgroundColor: '#39FF14',
+                        color: '#000',
+                        borderRadius: '12px',
+                        border: 'none',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Heart style={{ width: '18px', height: '18px' }} />
+                      Send a Tip
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#fff', margin: 0 }}>
+                        Support {displayName}
+                      </h4>
+                      
+                      {/* Preset amounts */}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {TIP_AMOUNTS.map((tip) => (
+                          <button
+                            key={tip.value}
+                            onClick={() => {
+                              setSelectedTip(tip.value)
+                              setCustomTip('')
+                            }}
+                            style={{
+                              padding: '10px 20px',
+                              borderRadius: '8px',
+                              border: selectedTip === tip.value ? '2px solid #39FF14' : '2px solid #374151',
+                              backgroundColor: selectedTip === tip.value ? 'rgba(57, 255, 20, 0.1)' : 'transparent',
+                              color: selectedTip === tip.value ? '#39FF14' : '#fff',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {tip.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Custom amount */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#9ca3af', fontSize: '14px' }}>or</span>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <span style={{
+                            position: 'absolute',
+                            left: '12px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#9ca3af',
+                          }}>$</span>
+                          <input
+                            type="number"
+                            value={customTip}
+                            onChange={(e) => {
+                              setCustomTip(e.target.value)
+                              setSelectedTip(null)
+                            }}
+                            placeholder="Custom"
+                            min="1"
+                            max="500"
+                            style={{
+                              width: '100%',
+                              padding: '10px 12px 10px 28px',
+                              borderRadius: '8px',
+                              border: '2px solid #374151',
+                              backgroundColor: 'transparent',
+                              color: '#fff',
+                              fontSize: '14px',
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Optional message */}
+                      <input
+                        type="text"
+                        value={tipMessage}
+                        onChange={(e) => setTipMessage(e.target.value)}
+                        placeholder="Add a message (optional)"
+                        maxLength={200}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '2px solid #374151',
+                          backgroundColor: 'transparent',
+                          color: '#fff',
+                          fontSize: '14px',
+                        }}
+                      />
+
+                      {/* Action buttons */}
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <button
+                          onClick={() => setShowTipOptions(false)}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #374151',
+                            backgroundColor: 'transparent',
+                            color: '#9ca3af',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSendTip}
+                          disabled={processingTip || (!selectedTip && !customTip)}
+                          style={{
+                            flex: 2,
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: '#39FF14',
+                            color: '#000',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: processingTip || (!selectedTip && !customTip) ? 'not-allowed' : 'pointer',
+                            opacity: processingTip || (!selectedTip && !customTip) ? 0.5 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                          }}
+                        >
+                          {processingTip ? (
+                            <>
+                              <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Heart style={{ width: '16px', height: '16px' }} />
+                              Send Tip
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
