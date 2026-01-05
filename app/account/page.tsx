@@ -4,13 +4,15 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Edit, Check, X, Instagram, Globe, Save } from 'lucide-react'
+import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2 } from 'lucide-react'
 import { showToast } from '@/components/Toast'
+import Image from 'next/image'
 
 interface UserProfile {
   id: string
   username: string
   email: string | null
+  avatar_url: string | null
   bio: string | null
   contact_email: string | null
   website: string | null
@@ -33,6 +35,10 @@ export default function AccountPage() {
     website: '',
     instagram: '',
   })
+  
+  // Avatar upload state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -53,7 +59,7 @@ export default function AccountPage() {
       try {
         let { data: existingUser } = await supabase
           .from('users')
-          .select('id, username, email, bio, contact_email, website, instagram')
+          .select('id, username, email, avatar_url, bio, contact_email, website, instagram')
           .eq('privy_id', privyId)
           .single()
 
@@ -64,7 +70,7 @@ export default function AccountPage() {
               privy_id: privyId,
               email: user.email?.address || null,
             })
-            .select('id, username, email, bio, contact_email, website, instagram')
+            .select('id, username, email, avatar_url, bio, contact_email, website, instagram')
             .single()
 
           if (error) throw error
@@ -76,6 +82,7 @@ export default function AccountPage() {
           id: existingUser.id,
           username: existingUser.username || '',
           email: existingUser.email || user.email?.address || null,
+          avatar_url: existingUser.avatar_url || null,
           bio: existingUser.bio || null,
           contact_email: existingUser.contact_email || null,
           website: existingUser.website || null,
@@ -132,6 +139,66 @@ export default function AccountPage() {
       showToast('Failed to save username', 'error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !profile) return
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image file', 'error')
+      return
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image must be less than 5MB', 'error')
+      return
+    }
+    
+    setUploadingAvatar(true)
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${profile.id}-${Date.now()}.${fileExt}`
+      const filePath = `avatars/${fileName}`
+      
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true })
+      
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw uploadError
+      }
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+      
+      // Update user profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id)
+      
+      if (updateError) throw updateError
+      
+      setProfile({ ...profile, avatar_url: publicUrl })
+      showToast('Profile picture updated!', 'success')
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      showToast('Failed to upload profile picture', 'error')
+    } finally {
+      setUploadingAvatar(false)
+      // Reset input
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = ''
+      }
     }
   }
 
@@ -248,6 +315,67 @@ export default function AccountPage() {
           </h2>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Profile Picture */}
+            <div className="flex items-center gap-4">
+              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-400">Profile Picture</label>
+              <div className="flex items-center gap-4">
+                {/* Avatar display */}
+                <div 
+                  className="relative"
+                  style={{ width: '80px', height: '80px' }}
+                >
+                  {profile?.avatar_url ? (
+                    <Image
+                      src={profile.avatar_url}
+                      alt="Profile"
+                      width={80}
+                      height={80}
+                      className="rounded-full object-cover"
+                      style={{ width: '80px', height: '80px' }}
+                    />
+                  ) : (
+                    <div 
+                      className="bg-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-neon-green"
+                      style={{ width: '80px', height: '80px' }}
+                    >
+                      {(profile?.username || profile?.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  
+                  {/* Upload overlay */}
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-white" />
+                    )}
+                  </button>
+                </div>
+                
+                {/* Hidden file input */}
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+                
+                {/* Upload button */}
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="text-sm text-gray-400 hover:text-white transition disabled:opacity-50"
+                >
+                  {uploadingAvatar ? 'Uploading...' : 'Change photo'}
+                </button>
+              </div>
+            </div>
+
             {/* Email */}
             <div className="flex items-center">
               <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-400">Email</label>
