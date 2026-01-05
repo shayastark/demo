@@ -739,6 +739,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
               tracks={tracks}
               projectCoverUrl={project.cover_image_url}
               projectTitle={project.title}
+              allowDownloads={project.allow_downloads}
               onTrackPlay={handleTrackPlay}
               onMenuOpen={() => {
                 setIsProjectMenuOpen(false) // Close project menu when track menu opens

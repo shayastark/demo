@@ -1576,6 +1576,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               projectCoverUrl={project.cover_image_url}
               projectTitle={project.title}
               isCreator={isCreator}
+              allowDownloads={project.allow_downloads}
               onEditTrack={startEditingTrack}
               onDeleteTrack={handleDeleteTrack}
               onMenuOpen={() => {
@@ -1916,23 +1917,25 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             {/* Menu Options */}
             <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
-                onClick={() => handleOpenShareModal()}
+                onClick={() => (project.sharing_enabled !== false) && handleOpenShareModal()}
+                disabled={project.sharing_enabled === false}
                 style={{
                   width: '100%',
                   padding: '16px 20px',
                   backgroundColor: '#1f2937',
-                  color: '#fff',
+                  color: project.sharing_enabled !== false ? '#fff' : '#6b7280',
                   border: '1px solid #374151',
                   borderRadius: '12px',
                   fontSize: '16px',
                   fontWeight: 500,
-                  cursor: 'pointer',
+                  cursor: project.sharing_enabled !== false ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '14px',
                   textAlign: 'left',
+                  opacity: project.sharing_enabled !== false ? 1 : 0.5,
                 }}
-                className="hover:bg-gray-700 transition"
+                className={project.sharing_enabled !== false ? "hover:bg-gray-700 transition" : ""}
               >
                 <div style={{
                   width: '44px',
@@ -1944,12 +1947,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <Share2 style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                  <Share2 style={{ width: '22px', height: '22px', color: project.sharing_enabled !== false ? '#39FF14' : '#6b7280' }} />
                 </div>
                 <div>
                   <div style={{ fontWeight: 600 }}>Share</div>
                   <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    Share this project with others
+                    {project.sharing_enabled !== false ? 'Share this project with others' : 'Sharing is disabled'}
                   </div>
                 </div>
               </button>

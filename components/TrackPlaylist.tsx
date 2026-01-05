@@ -17,6 +17,7 @@ interface TrackPlaylistProps {
   projectTitle: string
   onTrackPlay?: (trackId: string) => void
   isCreator?: boolean
+  allowDownloads?: boolean
   onEditTrack?: (track: Track) => void
   onDeleteTrack?: (trackId: string) => void
   onMenuOpen?: () => void // Called when a track menu opens, so parent can close its menu
@@ -29,6 +30,7 @@ export default function TrackPlaylist({
   projectTitle,
   onTrackPlay,
   isCreator = false,
+  allowDownloads = true,
   onEditTrack,
   onDeleteTrack,
   onMenuOpen,
@@ -727,23 +729,25 @@ export default function TrackPlaylist({
                 </button>
               ) : (
                 <button
-                  onClick={() => handleDownload(tracks[openMenuIndex])}
+                  onClick={() => allowDownloads && handleDownload(tracks[openMenuIndex])}
+                  disabled={!allowDownloads}
                   style={{
                     width: '100%',
                     padding: '16px 20px',
                     backgroundColor: '#1f2937',
-                    color: '#fff',
+                    color: allowDownloads ? '#fff' : '#6b7280',
                     border: '1px solid #374151',
                     borderRadius: '12px',
                     fontSize: '16px',
                     fontWeight: 500,
-                    cursor: 'pointer',
+                    cursor: allowDownloads ? 'pointer' : 'not-allowed',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '14px',
                     textAlign: 'left',
+                    opacity: allowDownloads ? 1 : 0.5,
                   }}
-                  className="hover:bg-gray-700 transition"
+                  className={allowDownloads ? "hover:bg-gray-700 transition" : ""}
                 >
                   <div style={{
                     width: '44px',
@@ -755,12 +759,12 @@ export default function TrackPlaylist({
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}>
-                    <Download style={{ width: '22px', height: '22px', color: '#39FF14' }} />
+                    <Download style={{ width: '22px', height: '22px', color: allowDownloads ? '#39FF14' : '#6b7280' }} />
                   </div>
                   <div>
                     <div style={{ fontWeight: 600 }}>Download</div>
                     <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                      Save for offline listening
+                      {allowDownloads ? 'Save for offline listening' : 'Downloads disabled by creator'}
                     </div>
                   </div>
                 </button>
