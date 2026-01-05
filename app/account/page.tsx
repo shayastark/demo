@@ -4,7 +4,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Edit, Check, X, Instagram, Globe, Music, Save } from 'lucide-react'
+import { Edit, Check, X, Instagram, Globe, Save } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 
 interface UserProfile {
@@ -120,10 +120,16 @@ export default function AccountPage() {
   }
 
   const handleSaveProfile = async () => {
-    if (!profile) return
+    console.log('handleSaveProfile called', { profile, editProfile })
+    if (!profile) {
+      console.log('No profile, returning')
+      showToast('Profile not loaded', 'error')
+      return
+    }
     setSaving(true)
     try {
-      const { error } = await supabase
+      console.log('Saving profile to database...', profile.id)
+      const { data, error } = await supabase
         .from('users')
         .update({
           bio: editProfile.bio.trim() || null,
@@ -132,7 +138,10 @@ export default function AccountPage() {
           instagram: editProfile.instagram.trim() || null,
         })
         .eq('id', profile.id)
+        .select()
 
+      console.log('Save result:', { data, error })
+      
       if (error) throw error
       
       setProfile({
@@ -306,6 +315,7 @@ export default function AccountPage() {
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleSaveProfile}
                   disabled={saving}
                   className="text-sm bg-neon-green text-black px-4 py-1.5 rounded-lg font-medium hover:opacity-80 transition disabled:opacity-50 flex items-center gap-1"
