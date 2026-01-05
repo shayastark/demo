@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
-    const { creatorId, amount, tipperEmail, message } = await request.json()
+    const { creatorId, amount, tipperEmail, tipperUsername, message } = await request.json()
 
     if (!creatorId || !amount) {
       return NextResponse.json(
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         },
         metadata: {
           creator_id: creatorId,
-          tipper_email: tipperEmail || 'anonymous',
+          tipper_username: tipperUsername || '',
           message: message || '',
         },
       },
@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${origin}/tip/cancelled`,
       metadata: {
         creator_id: creatorId,
+        tipper_username: tipperUsername || '',
         type: 'tip',
       },
     })

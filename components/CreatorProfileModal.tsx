@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Mail, Globe, Instagram, ExternalLink, Heart, Loader2 } from 'lucide-react'
+import { X, Mail, Globe, Instagram, ExternalLink, Heart, Loader2, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import { showToast } from '@/components/Toast'
+import { usePrivy } from '@privy-io/react-auth'
 
 interface CreatorProfile {
   id: string
@@ -25,9 +26,11 @@ interface CreatorProfileModalProps {
 }
 
 export default function CreatorProfileModal({ isOpen, onClose, creatorId }: CreatorProfileModalProps) {
+  const { user, authenticated } = usePrivy()
   const [creator, setCreator] = useState<CreatorProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [projectCount, setProjectCount] = useState(0)
+  const [tipperUsername, setTipperUsername] = useState<string | null>(null)
   
   // Tip state
   const [showTipOptions, setShowTipOptions] = useState(false)
@@ -35,12 +38,13 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
   const [customTip, setCustomTip] = useState('')
   const [tipMessage, setTipMessage] = useState('')
   const [processingTip, setProcessingTip] = useState(false)
+  const [sendAnonymously, setSendAnonymously] = useState(false)
 
   const TIP_AMOUNTS = [
-    { value: 300, label: '$3' },
+    { value: 100, label: '$1' },
     { value: 500, label: '$5' },
-    { value: 1000, label: '$10' },
     { value: 2000, label: '$20' },
+    { value: 10000, label: '$100' },
   ]
 
   useEffect(() => {
@@ -69,6 +73,19 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
         if (!countError) {
           setProjectCount(count || 0)
         }
+
+        // Fetch current user's username for tipping
+        if (authenticated && user?.id) {
+          const { data: tipperData } = await supabase
+            .from('users')
+            .select('username')
+            .eq('privy_id', user.id)
+            .single()
+          
+          if (tipperData?.username) {
+            setTipperUsername(tipperData.username)
+          }
+        }
       } catch (error) {
         console.error('Error loading creator profile:', error)
       } finally {
@@ -77,7 +94,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
     }
 
     loadCreator()
-  }, [isOpen, creatorId])
+  }, [isOpen, creatorId, authenticated, user?.id])
 
   // Reset tip state when modal closes
   useEffect(() => {
@@ -86,6 +103,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
       setSelectedTip(null)
       setCustomTip('')
       setTipMessage('')
+      setSendAnonymously(false)
     }
   }, [isOpen])
 
@@ -111,6 +129,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
           creatorId: creator?.id,
           amount,
           message: tipMessage,
+          tipperUsername: sendAnonymously ? null : tipperUsername,
         }),
       })
 
@@ -469,6 +488,41 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                           fontSize: '14px',
                         }}
                       />
+
+                      {/* Anonymous toggle */}
+                      <button
+                        type="button"
+                        onClick={() => setSendAnonymously(!sendAnonymously)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '0',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '4px',
+                            border: sendAnonymously ? '2px solid #39FF14' : '2px solid #374151',
+                            backgroundColor: sendAnonymously ? 'rgba(57, 255, 20, 0.2)' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {sendAnonymously && (
+                            <EyeOff style={{ width: '12px', height: '12px', color: '#39FF14' }} />
+                          )}
+                        </div>
+                        <span style={{ fontSize: '13px', color: sendAnonymously ? '#39FF14' : '#9ca3af' }}>
+                          Send anonymously
+                        </span>
+                      </button>
 
                       {/* Action buttons */}
                       <div style={{ display: 'flex', gap: '12px' }}>

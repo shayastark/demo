@@ -23,7 +23,8 @@ interface Tip {
   id: string
   amount: number
   currency: string
-  tipper_email: string | null
+  tipper_email: string | null  // Captured for records, not displayed
+  tipper_username: string | null  // Displayed in UI
   message: string | null
   is_read: boolean
   created_at: string
@@ -825,11 +826,8 @@ export default function AccountPage() {
                             ${(tip.amount / 100).toFixed(2)} tip
                           </p>
                           <div className="flex items-center gap-2 text-sm text-gray-400">
-                            {tip.tipper_email ? (
-                              <>
-                                <Mail className="w-3 h-3" />
-                                <span>{tip.tipper_email}</span>
-                              </>
+                            {tip.tipper_username ? (
+                              <span>from @{tip.tipper_username}</span>
                             ) : (
                               <span>Anonymous</span>
                             )}

@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS tips (
   creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL, -- Amount in cents
   currency TEXT DEFAULT 'usd',
-  tipper_email TEXT,
+  tipper_email TEXT, -- Email captured from Stripe (for creator's records)
+  tipper_username TEXT, -- Username displayed in UI (null if anonymous)
   message TEXT,
   stripe_payment_intent_id TEXT,
   stripe_session_id TEXT,

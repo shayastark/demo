@@ -32,12 +32,14 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session
         
         if (session.metadata?.type === 'tip') {
-          console.log('Tip payment completed:', {
-            creatorId: session.metadata.creator_id,
-            amount: session.amount_total,
-          })
+          // Get message from payment intent metadata
+          let message = null
+          if (session.payment_intent) {
+            const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string)
+            message = paymentIntent.metadata?.message || null
+          }
           
-          // Store tip in database
+          // Store tip in database (email captured for records, username for display)
           const { error: tipError } = await supabase
             .from('tips')
             .insert({
@@ -45,9 +47,8 @@ export async function POST(request: NextRequest) {
               amount: session.amount_total,
               currency: session.currency || 'usd',
               tipper_email: session.customer_email || null,
-              message: session.payment_intent ? 
-                (await stripe.paymentIntents.retrieve(session.payment_intent as string)).metadata?.message || null 
-                : null,
+              tipper_username: session.metadata.tipper_username || null,
+              message: message,
               stripe_session_id: session.id,
               stripe_payment_intent_id: session.payment_intent as string || null,
               status: 'completed',
@@ -55,8 +56,6 @@ export async function POST(request: NextRequest) {
 
           if (tipError) {
             console.error('Error saving tip to database:', tipError)
-          } else {
-            console.log('Tip saved to database for creator:', session.metadata.creator_id)
           }
         }
         break

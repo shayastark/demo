@@ -14,9 +14,9 @@ export const PLATFORM_FEE_PERCENT = 5
 
 // Predefined tip amounts
 export const TIP_AMOUNTS = [
-  { value: 300, label: '$3' },
+  { value: 100, label: '$1' },
   { value: 500, label: '$5' },
-  { value: 1000, label: '$10' },
   { value: 2000, label: '$20' },
+  { value: 10000, label: '$100' },
 ]
 
