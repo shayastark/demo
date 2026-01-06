@@ -468,6 +468,7 @@ export default function AccountPage() {
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploadingAvatar}
                   className="text-sm text-gray-400 hover:text-white transition disabled:opacity-50"
+                  style={{ marginLeft: '16px' }}
                 >
                   {uploadingAvatar ? 'Uploading...' : 'Change photo'}
                 </button>
@@ -522,7 +523,8 @@ export default function AccountPage() {
                       setEditingUsername(profile?.username || '')
                       setIsEditingUsername(true)
                     }}
-                    className="ml-3 p-1 text-gray-500 hover:text-white transition"
+                    className="p-1 text-gray-500 hover:text-white transition"
+                    style={{ marginLeft: '16px' }}
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -694,15 +696,16 @@ export default function AccountPage() {
               <span className="text-sm">Checking payment status...</span>
             </div>
           ) : stripeStatus.onboardingComplete ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-neon-green">
-                <CheckCircle className="w-5 h-5" />
-                <span className="text-sm font-medium">Payments enabled</span>
+            <div className="flex items-center" style={{ gap: '24px' }}>
+              <div className="flex items-center" style={{ gap: '8px' }}>
+                <CheckCircle className="w-5 h-5 text-neon-green" />
+                <span className="text-sm font-medium text-neon-green">Payments enabled</span>
               </div>
               <button
                 onClick={handleSetupStripe}
                 disabled={settingUpStripe}
-                className="text-sm text-gray-400 hover:text-white transition flex items-center gap-1"
+                className="text-sm text-gray-400 hover:text-white transition flex items-center"
+                style={{ gap: '4px' }}
               >
                 <ExternalLink className="w-4 h-4" />
                 Manage
