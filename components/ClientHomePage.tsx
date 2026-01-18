@@ -16,36 +16,8 @@ export default function ClientHomePage() {
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
 
-  // Simplified: Remove mounted state and timeout logic to match dashboard pattern
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <div className="text-neon-green">Loading...</div>
-      </div>
-    )
-  }
-
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-        <div className="text-center max-w-md">
-          <h1 className="text-4xl font-bold mb-4 text-white">Demo</h1>
-          <p className="text-lg mb-8 text-neon-green opacity-90">
-            Share your demos and unreleased tracks with the world
-          </p>
-          <button
-            onClick={login}
-            className="bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
-          >
-            Get Started
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   // Load or create user profile and fetch username
-  // Simplified to match dashboard pattern - removed mounted, timeout, and error refs
+  // IMPORTANT: This hook must be called before any early returns
   useEffect(() => {
     // Privy pattern: Always check ready first before checking authenticated
     if (!ready) {
@@ -119,8 +91,36 @@ export default function ClientHomePage() {
 
     // Run async function
     loadProfile()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, userId, authenticated]) // Simplified dependencies - match dashboard pattern
+  }, [ready, userId, authenticated, user])
+
+  // All hooks are now above - conditional returns are safe below this line
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <div className="text-neon-green">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-4xl font-bold mb-4 text-white">Demo</h1>
+          <p className="text-lg mb-8 text-neon-green opacity-90">
+            Share your demos and unreleased tracks with the world
+          </p>
+          <button
+            onClick={login}
+            className="bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
+          >
+            Get Started
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!user) {
     return (
@@ -174,4 +174,3 @@ export default function ClientHomePage() {
     </div>
   )
 }
-
