@@ -383,7 +383,7 @@ export default function AccountPage() {
           <Link href="/" className="text-2xl font-bold text-white">
             Demo
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center" style={{ gap: '24px' }}>
             <Link
               href="/dashboard"
               className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"

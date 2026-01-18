@@ -420,7 +420,7 @@ export default function ClientDashboard() {
           <Link href="/" className="text-2xl font-bold text-white">
             Demo
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center" style={{ gap: '24px' }}>
             <Link
               href="/account"
               className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
@@ -436,7 +436,7 @@ export default function ClientDashboard() {
             </Link>
             <button
               onClick={logout}
-              className="text-sm text-black hover:opacity-80"
+              className="text-sm text-gray-400 hover:text-white transition"
             >
               Sign out
             </button>
