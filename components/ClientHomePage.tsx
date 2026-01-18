@@ -140,14 +140,13 @@ export default function ClientHomePage() {
           >
             Demo
           </Link>
-          <div className="flex items-center">
+          <div className="flex items-center" style={{ gap: '24px' }}>
             <Link
               href="/account"
               className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
-            <span className="mx-4 text-gray-600">|</span>
             <button
               onClick={logout}
               className="text-sm text-gray-400 hover:text-white transition"
@@ -160,8 +159,8 @@ export default function ClientHomePage() {
       <main className="px-4 py-8 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4 text-white">Welcome to Demo</h2>
-          <p className="text-neon-green mb-8 opacity-90">
-            Create and share your music projects
+          <p className="text-white mb-8 opacity-90">
+            Share and track your music projects
           </p>
           <Link
             href="/dashboard"
