@@ -1125,7 +1125,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             Sign out
           </button>
           <Link href="/" className="text-2xl font-bold">
-            Hubba
+            Demo
           </Link>
         </div>
       </nav>

@@ -29,7 +29,7 @@ export default function ClientHomePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
         <div className="text-center max-w-md">
-          <h1 className="text-4xl font-bold mb-4 text-white">Hubba</h1>
+          <h1 className="text-4xl font-bold mb-4 text-white">Demo</h1>
           <p className="text-lg mb-8 text-neon-green opacity-90">
             Share your demos and unreleased tracks with the world
           </p>
@@ -138,7 +138,7 @@ export default function ClientHomePage() {
             href="/"
             className="text-xl font-semibold tracking-tight text-white"
           >
-            Hubba
+            Demo
           </Link>
           <div className="flex items-center">
             <Link
@@ -159,7 +159,7 @@ export default function ClientHomePage() {
       </nav>
       <main className="px-4 py-8 max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4 text-white">Welcome to Hubba</h2>
+          <h2 className="text-3xl font-bold mb-4 text-white">Welcome to Demo</h2>
           <p className="text-neon-green mb-8 opacity-90">
             Create and share your music projects
           </p>

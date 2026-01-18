@@ -13,7 +13,7 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: 'Hubba - Share Your Music',
+  title: 'Demo - Share Your Music',
   description: 'Platform for creators to share demos and unreleased tracks',
   viewport: {
     width: 'device-width',

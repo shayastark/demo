@@ -418,7 +418,7 @@ export default function ClientDashboard() {
       <nav className="border-b border-gray-800 px-4 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-white">
-            Hubba
+            Demo
           </Link>
           <div className="flex items-center gap-3">
             <Link

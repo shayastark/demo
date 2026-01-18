@@ -151,7 +151,7 @@ export default function NewProjectPage() {
       <nav className="border-b border-gray-800 px-4 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/dashboard" className="text-2xl font-bold">
-            Hubba
+            Demo
           </Link>
         </div>
       </nav>

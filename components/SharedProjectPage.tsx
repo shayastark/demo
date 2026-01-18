@@ -647,7 +647,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             href="/" 
             className="inline-block mt-6 px-6 py-2 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition"
           >
-            Go to Hubba
+            Go to Demo
           </Link>
         </div>
       </div>
@@ -656,11 +656,11 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Simple app header so users can discover Hubba from shared links */}
+      {/* Simple app header so users can discover Demo from shared links */}
       <header className="border-b border-gray-800 bg-black px-4 py-3 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Link href="/" className="text-lg font-semibold tracking-tight text-white">
-            Hubba
+            Demo
           </Link>
           <div className="flex items-center gap-2">
             {!authenticated ? (

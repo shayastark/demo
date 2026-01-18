@@ -16,9 +16,9 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
       .eq('share_token', token)
       .single()
 
-    const baseTitle = project?.title || 'Hubba - Share Your Music'
+    const baseTitle = project?.title || 'Demo - Share Your Music'
     const description =
-      project?.description || 'Listen to this unreleased project on Hubba.'
+      project?.description || 'Listen to this unreleased project on Demo.'
 
     const imageUrl = project?.cover_image_url
 
@@ -43,8 +43,8 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
     }
   } catch {
     return {
-      title: 'Hubba - Share Your Music',
-      description: 'Listen to this unreleased project on Hubba.',
+      title: 'Demo - Share Your Music',
+      description: 'Listen to this unreleased project on Demo.',
     }
   }
 }
