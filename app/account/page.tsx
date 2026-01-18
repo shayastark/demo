@@ -757,7 +757,7 @@ export default function AccountPage() {
             style={{ padding: '20px 24px 24px 24px' }}
           >
             <div className="flex items-center justify-between" style={{ marginBottom: '20px' }}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center" style={{ gap: '12px' }}>
                 <h2 className="font-semibold text-neon-green text-lg">
                   Tips Received
                 </h2>
@@ -779,8 +779,8 @@ export default function AccountPage() {
 
             {/* Total Earnings */}
             <div 
-              className="bg-black rounded-lg p-4 mb-6 flex items-center gap-4"
-              style={{ border: '1px solid #374151' }}
+              className="bg-black rounded-lg p-4 mb-6 flex items-center"
+              style={{ border: '1px solid #374151', gap: '16px' }}
             >
               <div 
                 className="w-12 h-12 rounded-full flex items-center justify-center"
@@ -817,7 +817,7 @@ export default function AccountPage() {
                     className={`p-4 rounded-lg ${!tip.is_read ? 'bg-gray-800 border border-neon-green/30' : 'bg-black border border-gray-800'}`}
                   >
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center" style={{ gap: '16px' }}>
                         <div 
                           className="w-10 h-10 rounded-full flex items-center justify-center"
                           style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
@@ -828,7 +828,7 @@ export default function AccountPage() {
                           <p className="text-white font-medium">
                             ${(tip.amount / 100).toFixed(2)} tip
                           </p>
-                          <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <div className="flex items-center text-sm text-gray-400" style={{ gap: '8px' }}>
                             {tip.tipper_username ? (
                               <span>from @{tip.tipper_username}</span>
                             ) : (
@@ -842,7 +842,7 @@ export default function AccountPage() {
                       </span>
                     </div>
                     {tip.message && (
-                      <div className="mt-3 flex items-start gap-2 text-sm text-gray-300 bg-gray-900 rounded-lg p-3">
+                      <div className="mt-3 flex items-start text-sm text-gray-300 bg-gray-900 rounded-lg p-3" style={{ gap: '12px' }}>
                         <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
                         <p>&quot;{tip.message}&quot;</p>
                       </div>
