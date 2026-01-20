@@ -675,9 +675,11 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                         )}
                         
                         {/* Crypto payment button - only show when crypto selected and valid */}
+                        {/* Key forces remount when amount changes (Daimo props are frozen after first render) */}
                         {paymentMethod === 'crypto' && hasCrypto && isTipValid() && (
                           <div style={{ flex: 2 }}>
                             <CryptoTipButton
+                              key={`crypto-tip-${getTipAmountDollars()}`}
                               creatorName={displayName}
                               walletAddress={creator.wallet_address!}
                               amount={getTipAmountDollars()}
