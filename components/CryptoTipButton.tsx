@@ -14,6 +14,7 @@ interface CryptoTipButtonProps {
   walletAddress: string
   amount: string // Amount in dollars as string, e.g. "5.00"
   tipperUsername?: string | null
+  message?: string | null
   onSuccess?: () => void
 }
 
@@ -27,6 +28,7 @@ function CryptoTipButtonInner({
   walletAddress, 
   amount, 
   tipperUsername,
+  message,
   onSuccess 
 }: CryptoTipButtonProps) {
   
@@ -39,6 +41,7 @@ function CryptoTipButtonInner({
           creatorId,
           amount,
           tipperUsername,
+          message,
           paymentId,
           txHash,
           chainId,

@@ -563,62 +563,58 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                         </div>
                       </div>
 
-                      {/* Optional message - only for Stripe */}
-                      {(paymentMethod === 'card' || (!hasStripe && !hasCrypto)) && (
-                        <input
-                          type="text"
-                          value={tipMessage}
-                          onChange={(e) => setTipMessage(e.target.value)}
-                          placeholder="Add a message (optional)"
-                          maxLength={200}
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            border: '2px solid #374151',
-                            backgroundColor: 'transparent',
-                            color: '#fff',
-                            fontSize: '14px',
-                          }}
-                        />
-                      )}
+                      {/* Optional message */}
+                      <input
+                        type="text"
+                        value={tipMessage}
+                        onChange={(e) => setTipMessage(e.target.value)}
+                        placeholder="Add a message (optional)"
+                        maxLength={200}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '2px solid #374151',
+                          backgroundColor: 'transparent',
+                          color: '#fff',
+                          fontSize: '14px',
+                        }}
+                      />
 
-                      {/* Anonymous toggle - only for Stripe */}
-                      {paymentMethod === 'card' && hasStripe && (
-                        <button
-                          type="button"
-                          onClick={() => setSendAnonymously(!sendAnonymously)}
+                      {/* Anonymous toggle */}
+                      <button
+                        type="button"
+                        onClick={() => setSendAnonymously(!sendAnonymously)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '0',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div
                           style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '4px',
+                            border: sendAnonymously ? '2px solid #39FF14' : '2px solid #374151',
+                            backgroundColor: sendAnonymously ? 'rgba(57, 255, 20, 0.2)' : 'transparent',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
-                            padding: '0',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
+                            justifyContent: 'center',
                           }}
                         >
-                          <div
-                            style={{
-                              width: '18px',
-                              height: '18px',
-                              borderRadius: '4px',
-                              border: sendAnonymously ? '2px solid #39FF14' : '2px solid #374151',
-                              backgroundColor: sendAnonymously ? 'rgba(57, 255, 20, 0.2)' : 'transparent',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            {sendAnonymously && (
-                              <EyeOff style={{ width: '12px', height: '12px', color: '#39FF14' }} />
-                            )}
-                          </div>
-                          <span style={{ fontSize: '13px', color: sendAnonymously ? '#39FF14' : '#9ca3af' }}>
-                            Send anonymously
-                          </span>
-                        </button>
-                      )}
+                          {sendAnonymously && (
+                            <EyeOff style={{ width: '12px', height: '12px', color: '#39FF14' }} />
+                          )}
+                        </div>
+                        <span style={{ fontSize: '13px', color: sendAnonymously ? '#39FF14' : '#9ca3af' }}>
+                          Send anonymously
+                        </span>
+                      </button>
 
                       {/* Action buttons */}
                       <div style={{ display: 'flex', gap: '12px' }}>
@@ -685,10 +681,12 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                               walletAddress={creator.wallet_address!}
                               amount={getTipAmountDollars()}
                               tipperUsername={sendAnonymously ? null : tipperUsername}
+                              message={tipMessage || null}
                               onSuccess={() => {
                                 setShowTipOptions(false)
                                 setSelectedTip(null)
                                 setCustomTip('')
+                                setTipMessage('')
                               }}
                             />
                           </div>

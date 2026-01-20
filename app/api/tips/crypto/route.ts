@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
       creatorId, 
       amount, 
       tipperUsername,
+      message,
       paymentId,
       txHash,
       chainId,
@@ -23,14 +24,14 @@ export async function POST(request: NextRequest) {
     const amountInCents = Math.round(parseFloat(amount) * 100)
 
     // Insert the tip record
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('tips')
       .insert({
         creator_id: creatorId,
         amount: amountInCents,
         currency: 'usdc',
         tipper_username: tipperUsername || null,
-        message: null,
+        message: message || null,
         stripe_payment_intent_id: null,
         stripe_session_id: null,
         status: 'completed',
