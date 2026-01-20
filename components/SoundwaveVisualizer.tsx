@@ -26,8 +26,8 @@ export default function SoundwaveVisualizer({ isPlaying }: SoundwaveVisualizerPr
       setFrequencyData(e.detail.frequencyData)
     }
 
-    window.addEventListener('hubba-audio-frequency', handleFrequency as EventListener)
-    return () => window.removeEventListener('hubba-audio-frequency', handleFrequency as EventListener)
+    window.addEventListener('demo-audio-frequency', handleFrequency as EventListener)
+    return () => window.removeEventListener('demo-audio-frequency', handleFrequency as EventListener)
   }, [])
 
   // Initialize wave history

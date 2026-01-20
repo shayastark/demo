@@ -129,14 +129,14 @@ export default function TrackPlaylist({
       }
     }
 
-    window.addEventListener('hubba-playback-state', handlePlaybackState as EventListener)
-    window.addEventListener('hubba-playback-time', handlePlaybackTime as EventListener)
-    window.addEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
+    window.addEventListener('demo-playback-state', handlePlaybackState as EventListener)
+    window.addEventListener('demo-playback-time', handlePlaybackTime as EventListener)
+    window.addEventListener('demo-global-playback', handleGlobalPlayback as EventListener)
     
     return () => {
-      window.removeEventListener('hubba-playback-state', handlePlaybackState as EventListener)
-      window.removeEventListener('hubba-playback-time', handlePlaybackTime as EventListener)
-      window.removeEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
+      window.removeEventListener('demo-playback-state', handlePlaybackState as EventListener)
+      window.removeEventListener('demo-playback-time', handlePlaybackTime as EventListener)
+      window.removeEventListener('demo-global-playback', handleGlobalPlayback as EventListener)
     }
   }, [tracks, isRepeat, activeTrackId])
 
@@ -167,7 +167,7 @@ export default function TrackPlaylist({
     setCurrentTrackIndex(index)
     
     // Dispatch play request to global player
-    window.dispatchEvent(new CustomEvent('hubba-cassette-play', {
+    window.dispatchEvent(new CustomEvent('demo-cassette-play', {
       detail: {
         track: {
           id: track.id,
@@ -189,11 +189,11 @@ export default function TrackPlaylist({
   const handleTrackClick = (index: number) => {
     if (currentTrackIndex === index && isPlaying) {
       // Pause if same track is playing
-      window.dispatchEvent(new Event('hubba-cassette-pause'))
+      window.dispatchEvent(new Event('demo-cassette-pause'))
       setIsPlaying(false)
     } else if (currentTrackIndex === index && !isPlaying) {
       // Resume if same track is paused
-      window.dispatchEvent(new Event('hubba-cassette-resume'))
+      window.dispatchEvent(new Event('demo-cassette-resume'))
       setIsPlaying(true)
     } else {
       // Play new track
@@ -209,10 +209,10 @@ export default function TrackPlaylist({
     }
 
     if (isPlaying) {
-      window.dispatchEvent(new Event('hubba-cassette-pause'))
+      window.dispatchEvent(new Event('demo-cassette-pause'))
       setIsPlaying(false)
     } else {
-      window.dispatchEvent(new Event('hubba-cassette-resume'))
+      window.dispatchEvent(new Event('demo-cassette-resume'))
       setIsPlaying(true)
     }
   }
@@ -225,7 +225,7 @@ export default function TrackPlaylist({
     
     if (currentTime > 3) {
       // If more than 3 seconds in, restart current track
-      window.dispatchEvent(new CustomEvent('hubba-cassette-seek', {
+      window.dispatchEvent(new CustomEvent('demo-cassette-seek', {
         detail: { time: 0 }
       }))
       setCurrentTime(0)
@@ -249,7 +249,7 @@ export default function TrackPlaylist({
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value)
     setCurrentTime(newTime)
-    window.dispatchEvent(new CustomEvent('hubba-cassette-seek', {
+    window.dispatchEvent(new CustomEvent('demo-cassette-seek', {
       detail: { time: newTime }
     }))
   }
@@ -257,7 +257,7 @@ export default function TrackPlaylist({
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value)
     setVolume(newVolume)
-    window.dispatchEvent(new CustomEvent('hubba-volume-change', {
+    window.dispatchEvent(new CustomEvent('demo-volume-change', {
       detail: { volume: newVolume }
     }))
   }
@@ -435,7 +435,7 @@ export default function TrackPlaylist({
                 // Toggle mute on click
                 const newVolume = volume > 0 ? 0 : 1
                 setVolume(newVolume)
-                window.dispatchEvent(new CustomEvent('hubba-volume-change', {
+                window.dispatchEvent(new CustomEvent('demo-volume-change', {
                   detail: { volume: newVolume }
                 }))
               }}

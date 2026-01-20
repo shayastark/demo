@@ -61,7 +61,7 @@ export default function ClientDashboard() {
     
     const handleQueueUpdated = () => {
       // Check if queue has items - if so, mini-player might show
-      const stored = localStorage.getItem('hubba-queue')
+      const stored = localStorage.getItem('demo-queue')
       if (stored) {
         try {
           const queue = JSON.parse(stored)
@@ -72,15 +72,15 @@ export default function ClientDashboard() {
       }
     }
     
-    window.addEventListener('hubba-playback-state', handlePlaybackState as EventListener)
-    window.addEventListener('hubba-queue-updated', handleQueueUpdated)
+    window.addEventListener('demo-playback-state', handlePlaybackState as EventListener)
+    window.addEventListener('demo-queue-updated', handleQueueUpdated)
     
     // Initial check - check if there's an active playback from local storage
     handleQueueUpdated()
     
     return () => {
-      window.removeEventListener('hubba-playback-state', handlePlaybackState as EventListener)
-      window.removeEventListener('hubba-queue-updated', handleQueueUpdated)
+      window.removeEventListener('demo-playback-state', handlePlaybackState as EventListener)
+      window.removeEventListener('demo-queue-updated', handleQueueUpdated)
     }
   }, [])
 

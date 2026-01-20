@@ -66,7 +66,7 @@ export default function BottomTabBar() {
 
   // Load queue from localStorage
   useEffect(() => {
-    const savedQueue = localStorage.getItem('hubba-queue')
+    const savedQueue = localStorage.getItem('demo-queue')
     if (savedQueue) {
       try {
         setQueue(JSON.parse(savedQueue))
@@ -77,7 +77,7 @@ export default function BottomTabBar() {
 
     // Listen for queue updates from other components
     const handleQueueUpdate = () => {
-      const updated = localStorage.getItem('hubba-queue')
+      const updated = localStorage.getItem('demo-queue')
       if (updated) {
         try {
           setQueue(JSON.parse(updated))
@@ -87,15 +87,15 @@ export default function BottomTabBar() {
       }
     }
 
-    window.addEventListener('hubba-queue-updated', handleQueueUpdate)
-    return () => window.removeEventListener('hubba-queue-updated', handleQueueUpdate)
+    window.addEventListener('demo-queue-updated', handleQueueUpdate)
+    return () => window.removeEventListener('demo-queue-updated', handleQueueUpdate)
   }, [])
 
   // Save queue to localStorage
   const saveQueue = (newQueue: QueueItem[]) => {
     setQueue(newQueue)
-    localStorage.setItem('hubba-queue', JSON.stringify(newQueue))
-    window.dispatchEvent(new Event('hubba-queue-updated'))
+    localStorage.setItem('demo-queue', JSON.stringify(newQueue))
+    window.dispatchEvent(new Event('demo-queue-updated'))
   }
 
   const removeFromQueue = (id: string) => {
@@ -152,7 +152,7 @@ export default function BottomTabBar() {
       audioRef.current.play().then(() => {
         setCassetteIsPlaying(true)
         // Notify cassette UI that playback started
-        window.dispatchEvent(new CustomEvent('hubba-playback-state', {
+        window.dispatchEvent(new CustomEvent('demo-playback-state', {
           detail: { isPlaying: true, trackId: track.id }
         }))
       }).catch(err => {
@@ -166,7 +166,7 @@ export default function BottomTabBar() {
     if (audioRef.current && cassetteTrack) {
       audioRef.current.pause()
       setCassetteIsPlaying(false)
-      window.dispatchEvent(new CustomEvent('hubba-playback-state', {
+      window.dispatchEvent(new CustomEvent('demo-playback-state', {
         detail: { isPlaying: false, trackId: cassetteTrack.id }
       }))
     }
@@ -176,7 +176,7 @@ export default function BottomTabBar() {
     if (audioRef.current && cassetteTrack) {
       audioRef.current.play().then(() => {
         setCassetteIsPlaying(true)
-        window.dispatchEvent(new CustomEvent('hubba-playback-state', {
+        window.dispatchEvent(new CustomEvent('demo-playback-state', {
           detail: { isPlaying: true, trackId: cassetteTrack.id }
         }))
       })
@@ -270,24 +270,24 @@ export default function BottomTabBar() {
       }
     }
 
-    window.addEventListener('hubba-cassette-play', handlePlayRequest as EventListener)
-    window.addEventListener('hubba-cassette-pause', handlePauseRequest)
-    window.addEventListener('hubba-cassette-resume', handleResumeRequest)
-    window.addEventListener('hubba-cassette-seek', handleSeekRequest as EventListener)
-    window.addEventListener('hubba-cassette-next', handleNextRequest)
-    window.addEventListener('hubba-cassette-previous', handlePreviousRequest)
-    window.addEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
-    window.addEventListener('hubba-volume-change', handleVolumeChange as EventListener)
+    window.addEventListener('demo-cassette-play', handlePlayRequest as EventListener)
+    window.addEventListener('demo-cassette-pause', handlePauseRequest)
+    window.addEventListener('demo-cassette-resume', handleResumeRequest)
+    window.addEventListener('demo-cassette-seek', handleSeekRequest as EventListener)
+    window.addEventListener('demo-cassette-next', handleNextRequest)
+    window.addEventListener('demo-cassette-previous', handlePreviousRequest)
+    window.addEventListener('demo-global-playback', handleGlobalPlayback as EventListener)
+    window.addEventListener('demo-volume-change', handleVolumeChange as EventListener)
     
     return () => {
-      window.removeEventListener('hubba-cassette-play', handlePlayRequest as EventListener)
-      window.removeEventListener('hubba-cassette-pause', handlePauseRequest)
-      window.removeEventListener('hubba-cassette-resume', handleResumeRequest)
-      window.removeEventListener('hubba-cassette-seek', handleSeekRequest as EventListener)
-      window.removeEventListener('hubba-cassette-next', handleNextRequest)
-      window.removeEventListener('hubba-cassette-previous', handlePreviousRequest)
-      window.removeEventListener('hubba-global-playback', handleGlobalPlayback as EventListener)
-      window.removeEventListener('hubba-volume-change', handleVolumeChange as EventListener)
+      window.removeEventListener('demo-cassette-play', handlePlayRequest as EventListener)
+      window.removeEventListener('demo-cassette-pause', handlePauseRequest)
+      window.removeEventListener('demo-cassette-resume', handleResumeRequest)
+      window.removeEventListener('demo-cassette-seek', handleSeekRequest as EventListener)
+      window.removeEventListener('demo-cassette-next', handleNextRequest)
+      window.removeEventListener('demo-cassette-previous', handlePreviousRequest)
+      window.removeEventListener('demo-global-playback', handleGlobalPlayback as EventListener)
+      window.removeEventListener('demo-volume-change', handleVolumeChange as EventListener)
     }
   }, [cassetteTrack])
 
@@ -302,7 +302,7 @@ export default function BottomTabBar() {
       
       // Also broadcast for cassette UI if cassette track is playing
       if (cassetteTrack) {
-        window.dispatchEvent(new CustomEvent('hubba-playback-time', {
+        window.dispatchEvent(new CustomEvent('demo-playback-time', {
           detail: { 
             currentTime: audio.currentTime, 
             duration: audio.duration || 0,
@@ -329,7 +329,7 @@ export default function BottomTabBar() {
         }
         // End of playlist
         setCassetteIsPlaying(false)
-        window.dispatchEvent(new CustomEvent('hubba-playback-state', {
+        window.dispatchEvent(new CustomEvent('demo-playback-state', {
           detail: { isPlaying: false, trackId: cassetteTrack.id, ended: true }
         }))
       } else if (currentQueueIndex !== null) {
@@ -360,7 +360,7 @@ export default function BottomTabBar() {
     setExternalIsPlaying(false)
     
     // Dispatch event to stop cassette players
-    window.dispatchEvent(new CustomEvent('hubba-global-playback', {
+    window.dispatchEvent(new CustomEvent('demo-global-playback', {
       detail: { source: 'queue' }
     }))
     
@@ -531,7 +531,7 @@ export default function BottomTabBar() {
           analyserRef.current.getByteFrequencyData(dataArray)
           
           // Broadcast the frequency data
-          window.dispatchEvent(new CustomEvent('hubba-audio-frequency', {
+          window.dispatchEvent(new CustomEvent('demo-audio-frequency', {
             detail: { frequencyData: Array.from(dataArray) }
           }))
         }
@@ -555,7 +555,7 @@ export default function BottomTabBar() {
       }
       
       // Broadcast empty data to indicate stopped
-      window.dispatchEvent(new CustomEvent('hubba-audio-frequency', {
+      window.dispatchEvent(new CustomEvent('demo-audio-frequency', {
         detail: { frequencyData: null }
       }))
     }
@@ -1039,7 +1039,7 @@ export default function BottomTabBar() {
                 onChange={(e) => {
                   const newTime = parseFloat(e.target.value)
                   if (cassetteTrack) {
-                    window.dispatchEvent(new CustomEvent('hubba-cassette-seek', {
+                    window.dispatchEvent(new CustomEvent('demo-cassette-seek', {
                       detail: { time: newTime }
                     }))
                   } else if (audioRef.current) {
@@ -1079,7 +1079,7 @@ export default function BottomTabBar() {
                   if (isQueuePlayback) {
                     playPrevious()
                   } else {
-                    window.dispatchEvent(new Event('hubba-cassette-previous'))
+                    window.dispatchEvent(new Event('demo-cassette-previous'))
                   }
                 }}
                 style={{
@@ -1103,9 +1103,9 @@ export default function BottomTabBar() {
                   if (isQueuePlayback) {
                     togglePlayPause()
                   } else if (displayIsPlaying) {
-                    window.dispatchEvent(new Event('hubba-cassette-pause'))
+                    window.dispatchEvent(new Event('demo-cassette-pause'))
                   } else {
-                    window.dispatchEvent(new Event('hubba-cassette-resume'))
+                    window.dispatchEvent(new Event('demo-cassette-resume'))
                   }
                 }}
                 style={{
@@ -1134,7 +1134,7 @@ export default function BottomTabBar() {
                   if (isQueuePlayback) {
                     playNext()
                   } else {
-                    window.dispatchEvent(new Event('hubba-cassette-next'))
+                    window.dispatchEvent(new Event('demo-cassette-next'))
                   }
                 }}
                 style={{
@@ -1396,7 +1396,7 @@ export default function BottomTabBar() {
 
 // Helper function to add items to queue (can be imported by other components)
 export function addToQueue(item: { id: string; title: string; projectTitle: string; audioUrl: string; projectCoverUrl?: string | null }) {
-  const savedQueue = localStorage.getItem('hubba-queue')
+  const savedQueue = localStorage.getItem('demo-queue')
   let queue: QueueItem[] = []
   
   if (savedQueue) {
@@ -1418,8 +1418,8 @@ export function addToQueue(item: { id: string; title: string; projectTitle: stri
     addedAt: Date.now(),
   })
 
-  localStorage.setItem('hubba-queue', JSON.stringify(queue))
-  window.dispatchEvent(new Event('hubba-queue-updated'))
+  localStorage.setItem('demo-queue', JSON.stringify(queue))
+  window.dispatchEvent(new Event('demo-queue-updated'))
   return true
 }
 
