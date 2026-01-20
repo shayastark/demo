@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Outfit } from 'next/font/google'
 import './globals.css'
 import PrivyProviderWrapper from '@/components/PrivyProviderWrapper'
-import { DaimoPayProviderWrapper } from '@/components/DaimoPayProviderWrapper'
 import ToastContainer from '@/components/Toast'
 import BottomTabBar from '@/components/BottomTabBar'
 
@@ -32,11 +31,9 @@ export default function RootLayout({
     <html lang="en" className={outfit.variable}>
       <body className={outfit.className}>
         <PrivyProviderWrapper>
-          <DaimoPayProviderWrapper>
-            {children}
-            <ToastContainer />
-            <BottomTabBar />
-          </DaimoPayProviderWrapper>
+          {children}
+          <ToastContainer />
+          <BottomTabBar />
         </PrivyProviderWrapper>
       </body>
     </html>

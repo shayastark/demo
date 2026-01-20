@@ -6,9 +6,30 @@ import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import { showToast } from '@/components/Toast'
 import { usePrivy } from '@privy-io/react-auth'
-import { DaimoPayButton } from '@daimo/pay'
-import { baseUSDC } from '@daimo/pay-common'
-import { getAddress } from 'viem'
+import dynamic from 'next/dynamic'
+
+// Dynamically import CryptoTipButton to avoid SSR issues
+const CryptoTipButton = dynamic(() => import('@/components/CryptoTipButton'), {
+  ssr: false,
+  loading: () => (
+    <button
+      disabled
+      style={{
+        width: '100%',
+        padding: '12px',
+        borderRadius: '8px',
+        border: 'none',
+        backgroundColor: '#39FF14',
+        color: '#000',
+        fontSize: '14px',
+        fontWeight: 600,
+        opacity: 0.5,
+      }}
+    >
+      Loading...
+    </button>
+  ),
+})
 
 interface CreatorProfile {
   id: string
@@ -656,20 +677,11 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                         {/* Crypto payment button - only show when crypto selected and valid */}
                         {paymentMethod === 'crypto' && hasCrypto && isTipValid() && (
                           <div style={{ flex: 2 }}>
-                            <DaimoPayButton
-                              appId="pay-demo"
-                              intent={`Tip ${displayName}`}
-                              toAddress={creator.wallet_address as `0x${string}`}
-                              toChain={baseUSDC.chainId}
-                              toToken={getAddress(baseUSDC.token)}
-                              toUnits={getTipAmountDollars()}
-                              refundAddress={creator.wallet_address as `0x${string}`}
-                              onPaymentStarted={(e) => {
-                                console.log('Crypto tip started:', e)
-                              }}
-                              onPaymentCompleted={(e) => {
-                                console.log('Crypto tip completed:', e)
-                                showToast(`Tip of $${getTipAmountDollars()} sent successfully!`, 'success')
+                            <CryptoTipButton
+                              creatorName={displayName}
+                              walletAddress={creator.wallet_address!}
+                              amount={getTipAmountDollars()}
+                              onSuccess={() => {
                                 setShowTipOptions(false)
                                 setSelectedTip(null)
                                 setCustomTip('')
