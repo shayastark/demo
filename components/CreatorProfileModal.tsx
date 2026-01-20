@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Mail, Globe, Instagram, ExternalLink, Heart, Loader2, EyeOff } from 'lucide-react'
+import { X, Mail, Globe, Instagram, ExternalLink, Heart, Loader2, EyeOff, CreditCard, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import { showToast } from '@/components/Toast'
 import { usePrivy } from '@privy-io/react-auth'
+import { DaimoPayButton } from '@daimo/pay'
+import { baseUSDC } from '@daimo/pay-common'
+import { getAddress } from 'viem'
 
 interface CreatorProfile {
   id: string
@@ -17,6 +20,7 @@ interface CreatorProfile {
   website: string | null
   instagram: string | null
   stripe_onboarding_complete: boolean | null
+  wallet_address: string | null
 }
 
 interface CreatorProfileModalProps {
@@ -39,6 +43,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
   const [tipMessage, setTipMessage] = useState('')
   const [processingTip, setProcessingTip] = useState(false)
   const [sendAnonymously, setSendAnonymously] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card')
 
   const TIP_AMOUNTS = [
     { value: 100, label: '$1' },
@@ -53,10 +58,10 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
     const loadCreator = async () => {
       setLoading(true)
       try {
-        // Fetch creator profile
+        // Fetch creator profile including wallet_address
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, stripe_onboarding_complete')
+          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, stripe_onboarding_complete, wallet_address')
           .eq('id', creatorId)
           .single()
 
@@ -104,6 +109,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
       setCustomTip('')
       setTipMessage('')
       setSendAnonymously(false)
+      setPaymentMethod('card')
     }
   }, [isOpen])
 
@@ -148,9 +154,26 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
     }
   }
 
+  // Get the tip amount in dollars for Daimo
+  const getTipAmountDollars = () => {
+    const amount = selectedTip || (customTip ? Math.round(parseFloat(customTip) * 100) : 0)
+    return (amount / 100).toFixed(2)
+  }
+
+  // Check if tip amount is valid
+  const isTipValid = () => {
+    const amount = selectedTip || (customTip ? Math.round(parseFloat(customTip) * 100) : 0)
+    return amount >= 100 && amount <= 50000
+  }
+
   if (!isOpen) return null
 
   const displayName = creator?.username || creator?.email?.split('@')[0] || 'Creator'
+  
+  // Check which payment methods are available
+  const hasStripe = creator?.stripe_onboarding_complete
+  const hasCrypto = creator?.wallet_address
+  const canTip = hasStripe || hasCrypto
 
   return (
     <>
@@ -378,7 +401,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
               )}
 
               {/* Tip Section */}
-              {creator.stripe_onboarding_complete && (
+              {canTip && (
                 <div style={{ 
                   borderTop: '1px solid #374151', 
                   paddingTop: '24px',
@@ -411,6 +434,54 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                       <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#fff', margin: 0 }}>
                         Support {displayName}
                       </h4>
+
+                      {/* Payment method toggle - only show if both are available */}
+                      {hasStripe && hasCrypto && (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => setPaymentMethod('card')}
+                            style={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              border: paymentMethod === 'card' ? '2px solid #39FF14' : '2px solid #374151',
+                              backgroundColor: paymentMethod === 'card' ? 'rgba(57, 255, 20, 0.1)' : 'transparent',
+                              color: paymentMethod === 'card' ? '#39FF14' : '#9ca3af',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <CreditCard style={{ width: '16px', height: '16px' }} />
+                            Card
+                          </button>
+                          <button
+                            onClick={() => setPaymentMethod('crypto')}
+                            style={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              border: paymentMethod === 'crypto' ? '2px solid #39FF14' : '2px solid #374151',
+                              backgroundColor: paymentMethod === 'crypto' ? 'rgba(57, 255, 20, 0.1)' : 'transparent',
+                              color: paymentMethod === 'crypto' ? '#39FF14' : '#9ca3af',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Wallet style={{ width: '16px', height: '16px' }} />
+                            Crypto
+                          </button>
+                        </div>
+                      )}
                       
                       {/* Preset amounts */}
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -471,58 +542,62 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                         </div>
                       </div>
 
-                      {/* Optional message */}
-                      <input
-                        type="text"
-                        value={tipMessage}
-                        onChange={(e) => setTipMessage(e.target.value)}
-                        placeholder="Add a message (optional)"
-                        maxLength={200}
-                        style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          border: '2px solid #374151',
-                          backgroundColor: 'transparent',
-                          color: '#fff',
-                          fontSize: '14px',
-                        }}
-                      />
-
-                      {/* Anonymous toggle */}
-                      <button
-                        type="button"
-                        onClick={() => setSendAnonymously(!sendAnonymously)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '0',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div
+                      {/* Optional message - only for Stripe */}
+                      {(paymentMethod === 'card' || (!hasStripe && !hasCrypto)) && (
+                        <input
+                          type="text"
+                          value={tipMessage}
+                          onChange={(e) => setTipMessage(e.target.value)}
+                          placeholder="Add a message (optional)"
+                          maxLength={200}
                           style={{
-                            width: '18px',
-                            height: '18px',
-                            borderRadius: '4px',
-                            border: sendAnonymously ? '2px solid #39FF14' : '2px solid #374151',
-                            backgroundColor: sendAnonymously ? 'rgba(57, 255, 20, 0.2)' : 'transparent',
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            border: '2px solid #374151',
+                            backgroundColor: 'transparent',
+                            color: '#fff',
+                            fontSize: '14px',
+                          }}
+                        />
+                      )}
+
+                      {/* Anonymous toggle - only for Stripe */}
+                      {paymentMethod === 'card' && hasStripe && (
+                        <button
+                          type="button"
+                          onClick={() => setSendAnonymously(!sendAnonymously)}
+                          style={{
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '0',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
                           }}
                         >
-                          {sendAnonymously && (
-                            <EyeOff style={{ width: '12px', height: '12px', color: '#39FF14' }} />
-                          )}
-                        </div>
-                        <span style={{ fontSize: '13px', color: sendAnonymously ? '#39FF14' : '#9ca3af' }}>
-                          Send anonymously
-                        </span>
-                      </button>
+                          <div
+                            style={{
+                              width: '18px',
+                              height: '18px',
+                              borderRadius: '4px',
+                              border: sendAnonymously ? '2px solid #39FF14' : '2px solid #374151',
+                              backgroundColor: sendAnonymously ? 'rgba(57, 255, 20, 0.2)' : 'transparent',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {sendAnonymously && (
+                              <EyeOff style={{ width: '12px', height: '12px', color: '#39FF14' }} />
+                            )}
+                          </div>
+                          <span style={{ fontSize: '13px', color: sendAnonymously ? '#39FF14' : '#9ca3af' }}>
+                            Send anonymously
+                          </span>
+                        </button>
+                      )}
 
                       {/* Action buttons */}
                       <div style={{ display: 'flex', gap: '12px' }}>
@@ -541,38 +616,113 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                         >
                           Cancel
                         </button>
-                        <button
-                          onClick={handleSendTip}
-                          disabled={processingTip || (!selectedTip && !customTip)}
-                          style={{
-                            flex: 2,
-                            padding: '12px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            backgroundColor: '#39FF14',
-                            color: '#000',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            cursor: processingTip || (!selectedTip && !customTip) ? 'not-allowed' : 'pointer',
-                            opacity: processingTip || (!selectedTip && !customTip) ? 0.5 : 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                          }}
-                        >
-                          {processingTip ? (
-                            <>
-                              <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <Heart style={{ width: '16px', height: '16px' }} />
-                              Send Tip
-                            </>
-                          )}
-                        </button>
+                        
+                        {/* Stripe payment button */}
+                        {paymentMethod === 'card' && hasStripe && (
+                          <button
+                            onClick={handleSendTip}
+                            disabled={processingTip || (!selectedTip && !customTip)}
+                            style={{
+                              flex: 2,
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              backgroundColor: '#39FF14',
+                              color: '#000',
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              cursor: processingTip || (!selectedTip && !customTip) ? 'not-allowed' : 'pointer',
+                              opacity: processingTip || (!selectedTip && !customTip) ? 0.5 : 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                            }}
+                          >
+                            {processingTip ? (
+                              <>
+                                <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard style={{ width: '16px', height: '16px' }} />
+                                Pay with Card
+                              </>
+                            )}
+                          </button>
+                        )}
+                        
+                        {/* Crypto payment button - only show when crypto selected and valid */}
+                        {paymentMethod === 'crypto' && hasCrypto && isTipValid() && (
+                          <div style={{ flex: 2 }}>
+                            <DaimoPayButton
+                              appId="pay-demo"
+                              intent={`Tip ${displayName}`}
+                              toAddress={creator.wallet_address as `0x${string}`}
+                              toChain={baseUSDC.chainId}
+                              toToken={getAddress(baseUSDC.token)}
+                              toUnits={getTipAmountDollars()}
+                              refundAddress={creator.wallet_address as `0x${string}`}
+                              onPaymentStarted={(e) => {
+                                console.log('Crypto tip started:', e)
+                              }}
+                              onPaymentCompleted={(e) => {
+                                console.log('Crypto tip completed:', e)
+                                showToast(`Tip of $${getTipAmountDollars()} sent successfully!`, 'success')
+                                setShowTipOptions(false)
+                                setSelectedTip(null)
+                                setCustomTip('')
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Show disabled crypto button when amount invalid */}
+                        {paymentMethod === 'crypto' && hasCrypto && !isTipValid() && (
+                          <button
+                            disabled
+                            style={{
+                              flex: 2,
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              backgroundColor: '#39FF14',
+                              color: '#000',
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              cursor: 'not-allowed',
+                              opacity: 0.5,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                            }}
+                          >
+                            <Wallet style={{ width: '16px', height: '16px' }} />
+                            Pay with Crypto
+                          </button>
+                        )}
+
+                        {/* Fallback for only stripe */}
+                        {!hasStripe && hasCrypto && paymentMethod === 'card' && (
+                          <button
+                            disabled
+                            style={{
+                              flex: 2,
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              backgroundColor: '#374151',
+                              color: '#9ca3af',
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              cursor: 'not-allowed',
+                            }}
+                          >
+                            Card not available
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -589,4 +739,3 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
     </>
   )
 }
-

@@ -4,7 +4,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare } from 'lucide-react'
+import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import Image from 'next/image'
 
@@ -17,6 +17,7 @@ interface UserProfile {
   contact_email: string | null
   website: string | null
   instagram: string | null
+  wallet_address: string | null
 }
 
 interface Tip {
@@ -64,6 +65,11 @@ export default function AccountPage() {
   const [tipsLoading, setTipsLoading] = useState(true)
   const [unreadTipCount, setUnreadTipCount] = useState(0)
   const [totalEarnings, setTotalEarnings] = useState(0)
+  
+  // Wallet address state
+  const [isEditingWallet, setIsEditingWallet] = useState(false)
+  const [editingWalletAddress, setEditingWalletAddress] = useState('')
+  const [savingWallet, setSavingWallet] = useState(false)
 
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -84,7 +90,7 @@ export default function AccountPage() {
       try {
         let { data: existingUser } = await supabase
           .from('users')
-          .select('id, username, email, avatar_url, bio, contact_email, website, instagram')
+          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, wallet_address')
           .eq('privy_id', privyId)
           .single()
 
@@ -95,7 +101,7 @@ export default function AccountPage() {
               privy_id: privyId,
               email: user.email?.address || null,
             })
-            .select('id, username, email, avatar_url, bio, contact_email, website, instagram')
+            .select('id, username, email, avatar_url, bio, contact_email, website, instagram, wallet_address')
             .single()
 
           if (error) throw error
@@ -111,6 +117,7 @@ export default function AccountPage() {
           contact_email: existingUser.contact_email || null,
           website: existingUser.website || null,
           instagram: existingUser.instagram || null,
+          wallet_address: existingUser.wallet_address || null,
         })
         
         // Initialize edit form
@@ -227,6 +234,38 @@ export default function AccountPage() {
       showToast('Failed to set up payments', 'error')
     } finally {
       setSettingUpStripe(false)
+    }
+  }
+
+  // Handle saving wallet address
+  const handleSaveWalletAddress = async () => {
+    if (!profile) return
+    
+    const address = editingWalletAddress.trim()
+    
+    // Basic validation for Ethereum address
+    if (address && !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      showToast('Please enter a valid Ethereum address (0x...)', 'error')
+      return
+    }
+    
+    setSavingWallet(true)
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ wallet_address: address || null })
+        .eq('id', profile.id)
+
+      if (error) throw error
+      
+      setProfile({ ...profile, wallet_address: address || null })
+      setIsEditingWallet(false)
+      showToast(address ? 'Wallet address saved!' : 'Wallet address removed', 'success')
+    } catch (error) {
+      console.error('Error saving wallet address:', error)
+      showToast('Failed to save wallet address', 'error')
+    } finally {
+      setSavingWallet(false)
     }
   }
 
@@ -748,10 +787,84 @@ export default function AccountPage() {
               </button>
             </div>
           )}
+
+          {/* Crypto Wallet Section */}
+          <div style={{ borderTop: '1px solid #374151', marginTop: '24px', paddingTop: '24px' }}>
+            <div className="flex items-center" style={{ gap: '12px', marginBottom: '12px' }}>
+              <Wallet className="w-5 h-5 text-neon-green" />
+              <h3 className="font-medium text-white">Crypto Tips</h3>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Add your wallet address to receive tips in crypto (USDC on Base).
+            </p>
+            
+            {isEditingWallet ? (
+              <div className="flex items-center" style={{ gap: '12px' }}>
+                <input
+                  type="text"
+                  value={editingWalletAddress}
+                  onChange={(e) => setEditingWalletAddress(e.target.value)}
+                  placeholder="0x..."
+                  className="flex-1 bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green font-mono"
+                  style={{ maxWidth: '400px' }}
+                />
+                <button
+                  onClick={handleSaveWalletAddress}
+                  disabled={savingWallet}
+                  className="p-2 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50"
+                >
+                  {savingWallet ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingWallet(false)
+                    setEditingWalletAddress(profile?.wallet_address || '')
+                  }}
+                  className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : profile?.wallet_address ? (
+              <div className="flex items-center" style={{ gap: '16px' }}>
+                <div className="flex items-center" style={{ gap: '8px' }}>
+                  <CheckCircle className="w-5 h-5 text-neon-green" />
+                  <span className="text-sm font-medium text-neon-green">Wallet connected</span>
+                </div>
+                <span className="text-sm text-gray-400 font-mono">
+                  {profile.wallet_address.slice(0, 6)}...{profile.wallet_address.slice(-4)}
+                </span>
+                <button
+                  onClick={() => {
+                    setEditingWalletAddress(profile.wallet_address || '')
+                    setIsEditingWallet(true)
+                  }}
+                  className="text-sm text-gray-400 hover:text-white transition"
+                >
+                  Edit
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setEditingWalletAddress('')
+                  setIsEditingWallet(true)
+                }}
+                className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 transition"
+              >
+                <Wallet className="w-4 h-4" />
+                Add Wallet Address
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Tips Received Section - Only show if payments are set up */}
-        {stripeStatus.onboardingComplete && (
+        {/* Tips Received Section - Only show if any payment method is set up */}
+        {(stripeStatus.onboardingComplete || profile?.wallet_address) && (
           <div 
             className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
             style={{ padding: '20px 24px 24px 24px' }}
