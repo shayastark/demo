@@ -82,11 +82,13 @@ function CryptoTipButtonInner({
                 e.chainId
               )
               
-              // Small delay to let modal close first
+              // Show success toast immediately
+              showToast(`Tip of $${amount} sent successfully! 🎉`, 'success')
+              
+              // Call onSuccess after a small delay to let UI update
               setTimeout(() => {
-                showToast(`Tip of $${amount} sent! 🎉`, 'success')
                 onSuccess?.()
-              }, 500)
+              }, 300)
             }}
           />
         </DaimoPayProvider>

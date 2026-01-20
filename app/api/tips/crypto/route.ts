@@ -32,14 +32,10 @@ export async function POST(request: NextRequest) {
         currency: 'usdc',
         tipper_username: tipperUsername || null,
         message: message || null,
-        stripe_payment_intent_id: null,
-        stripe_session_id: null,
+        stripe_payment_intent_id: txHash || null, // Store tx hash for reference
+        stripe_session_id: paymentId || null, // Store payment ID for reference
         status: 'completed',
         is_read: false,
-        is_anonymous: !tipperUsername,
-        // Store crypto-specific data in a way that's compatible with existing schema
-        // Using stripe_session_id field to store payment reference
-        // In future, could add dedicated crypto columns
       })
       .select()
       .single()
