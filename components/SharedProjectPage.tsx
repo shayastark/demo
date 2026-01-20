@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePrivy } from '@privy-io/react-auth'
 import { supabase } from '@/lib/supabase'
@@ -19,7 +19,29 @@ interface SharedProjectPageProps {
 }
 
 export default function SharedProjectPage({ token }: SharedProjectPageProps) {
-  const { ready, authenticated, user, login } = usePrivy()
+  const { ready, authenticated, user, login, getAccessToken } = usePrivy()
+  
+  // Helper function for authenticated API requests
+  const apiRequest = useCallback(async (
+    endpoint: string,
+    options: { method?: string; body?: unknown } = {}
+  ) => {
+    const authToken = await getAccessToken()
+    if (!authToken) throw new Error('Not authenticated')
+    
+    const response = await fetch(endpoint, {
+      method: options.method || 'GET',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    })
+    
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Request failed')
+    return data
+  }, [getAccessToken])
   const [project, setProject] = useState<Project | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
@@ -159,32 +181,21 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     if (!user || !project) return
     
     try {
-      const privyId = user.id
-      const { data: dbUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
-
-      if (!dbUser) return
-
       // First, ensure the project is saved
       if (!addedToProject) {
-        // Save the project first
-        await supabase
-          .from('user_projects')
-          .insert({ user_id: dbUser.id, project_id: project.id })
+        // Save the project first via secure API
+        await apiRequest('/api/library', {
+          method: 'POST',
+          body: { project_id: project.id },
+        })
         setAddedToProject(true)
       }
 
       const newPinnedState = !isPinned
-      const { error } = await supabase
-        .from('user_projects')
-        .update({ pinned: newPinnedState })
-        .eq('user_id', dbUser.id)
-        .eq('project_id', project.id)
-
-      if (error) throw error
+      await apiRequest('/api/library', {
+        method: 'PATCH',
+        body: { project_id: project.id, pinned: newPinnedState },
+      })
 
       setIsPinned(newPinnedState)
       setIsProjectMenuOpen(false)
@@ -203,60 +214,16 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     if (!user || !project) return
 
     try {
-      const privyId = user.id
-      let { data: dbUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
+      // Add to library via secure API (handles user creation, metrics, and duplicate check)
+      const result = await apiRequest('/api/library', {
+        method: 'POST',
+        body: { project_id: project.id },
+      })
 
-      if (!dbUser) {
-        const { data: newUser, error: userError } = await supabase
-          .from('users')
-          .insert({ privy_id: privyId, email: user.email?.address || null })
-          .select('id')
-          .single()
-        
-        if (userError || !newUser) throw userError || new Error('Failed to create user')
-        dbUser = newUser
-      }
-
-      if (!dbUser) throw new Error('User not found')
-      
-      // Check if already saved
-      const { data: existing } = await supabase
-        .from('user_projects')
-        .select('id')
-        .eq('user_id', dbUser.id)
-        .eq('project_id', project.id)
-        .single()
-
-      if (existing) {
+      if (result.message === 'Already in library') {
         showToast('Project already saved!', 'info')
         setIsProjectMenuOpen(false)
         return
-      }
-
-      await supabase
-        .from('user_projects')
-        .insert({ user_id: dbUser.id, project_id: project.id })
-
-      // Track add metric
-      const { data: metrics } = await supabase
-        .from('project_metrics')
-        .select('adds')
-        .eq('project_id', project.id)
-        .single()
-
-      if (metrics) {
-        await supabase
-          .from('project_metrics')
-          .update({ adds: (metrics.adds ?? 0) + 1 })
-          .eq('project_id', project.id)
-      } else {
-        await supabase
-          .from('project_metrics')
-          .insert({ project_id: project.id, adds: 1, plays: 0, shares: 0 })
       }
       
       setAddedToProject(true)
@@ -356,22 +323,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     if (!user || !project) return
 
     try {
-      const privyId = user.id
-      const { data: dbUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
-
-      if (!dbUser) return
-
-      const { error } = await supabase
-        .from('user_projects')
-        .delete()
-        .eq('user_id', dbUser.id)
-        .eq('project_id', project.id)
-
-      if (error) throw error
+      await apiRequest(`/api/library?project_id=${project.id}`, { method: 'DELETE' })
 
       setAddedToProject(false)
       setIsPinned(false)

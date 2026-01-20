@@ -168,7 +168,12 @@ export default function AccountPage() {
 
     const checkStripeStatus = async () => {
       try {
-        const response = await fetch(`/api/stripe/connect?userId=${profile.id}`)
+        const token = await getAccessToken()
+        const response = await fetch('/api/stripe/connect', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
         const data = await response.json()
         
         if (response.ok) {
@@ -185,7 +190,7 @@ export default function AccountPage() {
     }
 
     checkStripeStatus()
-  }, [profile?.id])
+  }, [profile?.id, getAccessToken])
 
   // Load tips
   useEffect(() => {
@@ -196,7 +201,12 @@ export default function AccountPage() {
 
     const loadTips = async () => {
       try {
-        const response = await fetch(`/api/tips?creatorId=${profile.id}`)
+        const token = await getAccessToken()
+        const response = await fetch('/api/tips', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
         const data = await response.json()
         
         if (response.ok) {
@@ -212,17 +222,21 @@ export default function AccountPage() {
     }
 
     loadTips()
-  }, [profile?.id, stripeStatus.onboardingComplete])
+  }, [profile?.id, stripeStatus.onboardingComplete, getAccessToken])
 
   // Mark tips as read
   const markTipsAsRead = async () => {
     if (!profile?.id || unreadTipCount === 0) return
     
     try {
+      const token = await getAccessToken()
       await fetch('/api/tips', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creatorId: profile.id }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
       })
       
       setUnreadTipCount(0)
@@ -238,11 +252,14 @@ export default function AccountPage() {
     
     setSettingUpStripe(true)
     try {
+      const token = await getAccessToken()
       const response = await fetch('/api/stripe/connect', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          userId: profile.id,
           email: profile.email,
         }),
       })

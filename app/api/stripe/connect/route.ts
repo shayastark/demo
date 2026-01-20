@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 
 // Create a Stripe Connect account for a creator
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email } = await request.json()
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+    // Verify the user's identity
+    const authResult = await verifyPrivyToken(request.headers.get('authorization'))
+    
+    if (!authResult.success || !authResult.privyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user already has a Stripe account
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('stripe_account_id, stripe_onboarding_complete')
-      .eq('id', userId)
-      .single()
-
-    if (userError) {
-      console.error('Error fetching user:', userError)
+    // Get the user from the token (not from request body!)
+    const user = await getUserByPrivyId(authResult.privyId)
+    
+    if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    const { email } = await request.json()
 
     let accountId = user.stripe_account_id
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: 'express',
-        email: email || undefined,
+        email: email || user.email || undefined,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
@@ -39,11 +39,11 @@ export async function POST(request: NextRequest) {
 
       accountId = account.id
 
-      // Save account ID to database
-      const { error: updateError } = await supabase
+      // Save account ID to database using admin client
+      const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({ stripe_account_id: accountId })
-        .eq('id', userId)
+        .eq('id', user.id)
 
       if (updateError) {
         console.error('Error saving Stripe account ID:', updateError)
@@ -74,20 +74,17 @@ export async function POST(request: NextRequest) {
 // Check Connect account status
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+    // Verify the user's identity
+    const authResult = await verifyPrivyToken(request.headers.get('authorization'))
+    
+    if (!authResult.success || !authResult.privyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('stripe_account_id, stripe_onboarding_complete')
-      .eq('id', userId)
-      .single()
-
-    if (userError || !user) {
+    // Get the user from the token
+    const user = await getUserByPrivyId(authResult.privyId)
+    
+    if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
@@ -102,12 +99,12 @@ export async function GET(request: NextRequest) {
     const account = await stripe.accounts.retrieve(user.stripe_account_id)
     const onboardingComplete = account.details_submitted && account.charges_enabled
 
-    // Update database if status changed
+    // Update database if status changed using admin client
     if (onboardingComplete !== user.stripe_onboarding_complete) {
-      await supabase
+      await supabaseAdmin
         .from('users')
         .update({ stripe_onboarding_complete: onboardingComplete })
-        .eq('id', userId)
+        .eq('id', user.id)
     }
 
     return NextResponse.json({
@@ -124,4 +121,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

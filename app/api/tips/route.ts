@@ -1,22 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 
-// Get tips for a creator
+// Get tips for the authenticated creator
 export async function GET(request: NextRequest) {
   try {
+    // Verify the user's identity
+    const authResult = await verifyPrivyToken(request.headers.get('authorization'))
+    
+    if (!authResult.success || !authResult.privyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get the user from the token (not from query params!)
+    const user = await getUserByPrivyId(authResult.privyId)
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     const { searchParams } = new URL(request.url)
-    const creatorId = searchParams.get('creatorId')
     const limit = parseInt(searchParams.get('limit') || '20')
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
 
-    if (!creatorId) {
-      return NextResponse.json({ error: 'Creator ID is required' }, { status: 400 })
-    }
-
-    let query = supabase
+    let query = supabaseAdmin
       .from('tips')
       .select('*')
-      .eq('creator_id', creatorId)
+      .eq('creator_id', user.id) // Use authenticated user's ID
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -32,17 +42,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Get unread count
-    const { count: unreadCount } = await supabase
+    const { count: unreadCount } = await supabaseAdmin
       .from('tips')
       .select('id', { count: 'exact', head: true })
-      .eq('creator_id', creatorId)
+      .eq('creator_id', user.id)
       .eq('is_read', false)
 
     // Get total earnings
-    const { data: totalData } = await supabase
+    const { data: totalData } = await supabaseAdmin
       .from('tips')
       .select('amount')
-      .eq('creator_id', creatorId)
+      .eq('creator_id', user.id)
       .eq('status', 'completed')
 
     const totalEarnings = totalData?.reduce((sum, tip) => sum + tip.amount, 0) || 0
@@ -58,30 +68,40 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Mark tips as read
+// Mark tips as read for the authenticated creator
 export async function PATCH(request: NextRequest) {
   try {
-    const { tipIds, creatorId } = await request.json()
-
-    if (!creatorId) {
-      return NextResponse.json({ error: 'Creator ID is required' }, { status: 400 })
+    // Verify the user's identity
+    const authResult = await verifyPrivyToken(request.headers.get('authorization'))
+    
+    if (!authResult.success || !authResult.privyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get the user from the token
+    const user = await getUserByPrivyId(authResult.privyId)
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const { tipIds } = await request.json()
+
     if (tipIds && tipIds.length > 0) {
-      // Mark specific tips as read
-      const { error } = await supabase
+      // Mark specific tips as read (only the user's own tips)
+      const { error } = await supabaseAdmin
         .from('tips')
         .update({ is_read: true })
         .in('id', tipIds)
-        .eq('creator_id', creatorId)
+        .eq('creator_id', user.id)
 
       if (error) throw error
     } else {
       // Mark all tips as read
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('tips')
         .update({ is_read: true })
-        .eq('creator_id', creatorId)
+        .eq('creator_id', user.id)
         .eq('is_read', false)
 
       if (error) throw error
@@ -93,4 +113,3 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to update tips' }, { status: 500 })
   }
 }
-

@@ -1,7 +1,7 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -19,7 +19,7 @@ interface SavedProject extends Project {
 }
 
 export default function ClientDashboard() {
-  const { ready, authenticated, user, login, logout } = usePrivy()
+  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy()
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>([])
@@ -35,6 +35,28 @@ export default function ClientDashboard() {
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
   const menuRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  
+  // Helper function for authenticated API requests
+  const apiRequest = useCallback(async (
+    endpoint: string,
+    options: { method?: string; body?: unknown } = {}
+  ) => {
+    const token = await getAccessToken()
+    if (!token) throw new Error('Not authenticated')
+    
+    const response = await fetch(endpoint, {
+      method: options.method || 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    })
+    
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Request failed')
+    return data
+  }, [getAccessToken])
   
   // Stabilize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => user?.id || null, [user?.id])
@@ -152,19 +174,27 @@ export default function ClientDashboard() {
           .eq('privy_id', privyId)
           .single()
 
-        // Create user if doesn't exist
+        // Create user if doesn't exist (via secure API)
         if (!existingUser) {
-          const { data: newUser, error } = await supabase
-            .from('users')
-            .insert({
-              privy_id: privyId,
-              email: userEmail,
-            })
-            .select('id')
-            .single()
-
-          if (error) throw error
-          existingUser = newUser
+          const token = await getAccessToken()
+          if (!token) throw new Error('Not authenticated')
+          
+          const response = await fetch('/api/user', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: userEmail }),
+          })
+          
+          const result = await response.json()
+          if (!response.ok) throw new Error(result.error || 'Failed to create user')
+          existingUser = result.user
+        }
+        
+        if (!existingUser) {
+          throw new Error('Failed to get or create user')
         }
 
         // Load user's username
@@ -281,18 +311,13 @@ export default function ClientDashboard() {
     }
 
     try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', project.id)
-
-      if (error) throw error
+      await apiRequest(`/api/projects?id=${project.id}`, { method: 'DELETE' })
 
       showToast('Project deleted successfully!', 'success')
       setProjects(projects.filter(p => p.id !== project.id))
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting project:', error)
-      showToast(error?.message || 'Failed to delete project. Please try again.', 'error')
+      showToast(error instanceof Error ? error.message : 'Failed to delete project. Please try again.', 'error')
     }
   }
 
@@ -301,12 +326,10 @@ export default function ClientDashboard() {
 
     try {
       const newPinnedState = !project.pinned
-      const { error } = await supabase
-        .from('projects')
-        .update({ pinned: newPinnedState })
-        .eq('id', project.id)
-
-      if (error) throw error
+      await apiRequest('/api/projects', {
+        method: 'PATCH',
+        body: { id: project.id, pinned: newPinnedState },
+      })
 
       // Update local state and re-sort: pinned first
       setProjects(prev => {
@@ -322,7 +345,7 @@ export default function ClientDashboard() {
       })
 
       showToast(newPinnedState ? 'Project pinned!' : 'Project unpinned', 'success')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling pin:', error)
       showToast('Failed to update pin status', 'error')
     }
@@ -334,13 +357,10 @@ export default function ClientDashboard() {
 
     try {
       const newPinnedState = !project.pinned
-      const { error } = await supabase
-        .from('user_projects')
-        .update({ pinned: newPinnedState })
-        .eq('user_id', dbUserId)
-        .eq('project_id', project.id)
-
-      if (error) throw error
+      await apiRequest('/api/library', {
+        method: 'PATCH',
+        body: { project_id: project.id, pinned: newPinnedState },
+      })
 
       // Update local state
       setSavedProjects(prev => {
@@ -357,7 +377,7 @@ export default function ClientDashboard() {
       })
 
       showToast(newPinnedState ? 'Project pinned!' : 'Project unpinned', 'success')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling pin:', error)
       showToast('Failed to update pin status', 'error')
     }
@@ -373,17 +393,11 @@ export default function ClientDashboard() {
     }
 
     try {
-      const { error } = await supabase
-        .from('user_projects')
-        .delete()
-        .eq('user_id', dbUserId)
-        .eq('project_id', project.id)
-
-      if (error) throw error
+      await apiRequest(`/api/library?project_id=${project.id}`, { method: 'DELETE' })
 
       showToast('Project removed from saved', 'success')
       setSavedProjects(prev => prev.filter(p => p.id !== project.id))
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error removing saved project:', error)
       showToast('Failed to remove project', 'error')
     }
