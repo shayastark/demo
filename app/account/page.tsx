@@ -17,6 +17,8 @@ interface UserProfile {
   contact_email: string | null
   website: string | null
   instagram: string | null
+  twitter: string | null
+  farcaster: string | null
   wallet_address: string | null
 }
 
@@ -46,6 +48,8 @@ export default function AccountPage() {
     contact_email: '',
     website: '',
     instagram: '',
+    twitter: '',
+    farcaster: '',
   })
   
   // Avatar upload state
@@ -116,7 +120,7 @@ export default function AccountPage() {
         // First try to get existing user via public read
         let { data: existingUser } = await supabase
           .from('users')
-          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, wallet_address')
+          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, wallet_address')
           .eq('privy_id', privyId)
           .single()
 
@@ -142,6 +146,8 @@ export default function AccountPage() {
           contact_email: existingUser.contact_email || null,
           website: existingUser.website || null,
           instagram: existingUser.instagram || null,
+          twitter: existingUser.twitter || null,
+          farcaster: existingUser.farcaster || null,
           wallet_address: existingUser.wallet_address || null,
         })
         
@@ -149,6 +155,8 @@ export default function AccountPage() {
         setEditProfile({
           bio: existingUser.bio || '',
           contact_email: existingUser.contact_email || '',
+          twitter: existingUser.twitter || '',
+          farcaster: existingUser.farcaster || '',
           website: existingUser.website || '',
           instagram: existingUser.instagram || '',
         })
@@ -407,6 +415,8 @@ export default function AccountPage() {
           contact_email: editProfile.contact_email.trim() || null,
           website: editProfile.website.trim() || null,
           instagram: editProfile.instagram.trim() || null,
+          twitter: editProfile.twitter.trim() || null,
+          farcaster: editProfile.farcaster.trim() || null,
         },
       })
       
@@ -416,6 +426,8 @@ export default function AccountPage() {
         contact_email: result.user.contact_email,
         website: result.user.website,
         instagram: result.user.instagram,
+        twitter: result.user.twitter,
+        farcaster: result.user.farcaster,
       })
       setIsEditingProfile(false)
       showToast('Profile updated!', 'success')
@@ -637,6 +649,8 @@ export default function AccountPage() {
                       contact_email: profile?.contact_email || '',
                       website: profile?.website || '',
                       instagram: profile?.instagram || '',
+                      twitter: profile?.twitter || '',
+                      farcaster: profile?.farcaster || '',
                     })
                   }}
                   className="text-sm text-gray-400 hover:text-white transition"
@@ -744,6 +758,50 @@ export default function AccountPage() {
                   ) : (
                     <span className="text-sm text-white">
                       {profile?.instagram ? `@${profile.instagram}` : <span className="text-gray-600 italic">Not set</span>}
+                    </span>
+                  )}
+                </div>
+                
+                {/* X (Twitter) */}
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center border border-gray-700">
+                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                  </div>
+                  {isEditingProfile ? (
+                    <input
+                      type="text"
+                      value={editProfile.twitter}
+                      onChange={(e) => setEditProfile({ ...editProfile, twitter: e.target.value })}
+                      placeholder="X (Twitter) username"
+                      className="flex-1 max-w-xs bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    />
+                  ) : (
+                    <span className="text-sm text-white">
+                      {profile?.twitter ? `@${profile.twitter}` : <span className="text-gray-600 italic">Not set</span>}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Farcaster */}
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 4h18v16h-1.5V6.5h-15V20H3V4zm4.5 5h9v1.5h-9V9zm0 3h9v1.5h-9V12zm0 3h6v1.5h-6V15z"/>
+                    </svg>
+                  </div>
+                  {isEditingProfile ? (
+                    <input
+                      type="text"
+                      value={editProfile.farcaster}
+                      onChange={(e) => setEditProfile({ ...editProfile, farcaster: e.target.value })}
+                      placeholder="Farcaster username"
+                      className="flex-1 max-w-xs bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    />
+                  ) : (
+                    <span className="text-sm text-white">
+                      {profile?.farcaster ? `@${profile.farcaster}` : <span className="text-gray-600 italic">Not set</span>}
                     </span>
                   )}
                 </div>

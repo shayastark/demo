@@ -40,6 +40,8 @@ interface CreatorProfile {
   contact_email: string | null
   website: string | null
   instagram: string | null
+  twitter: string | null
+  farcaster: string | null
   stripe_onboarding_complete: boolean | null
   wallet_address: string | null
 }
@@ -82,7 +84,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
         // Fetch creator profile including wallet_address
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, stripe_onboarding_complete, wallet_address')
+          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, stripe_onboarding_complete, wallet_address')
           .eq('id', creatorId)
           .single()
 
@@ -391,31 +393,81 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                 )}
 
                 {/* Social Links */}
-                {creator.instagram && (
+                {(creator.instagram || creator.twitter || creator.farcaster) && (
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
-                    <a
-                      href={`https://instagram.com/${creator.instagram}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        width: '48px',
-                        height: '48px',
-                        background: 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%)',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      title={`@${creator.instagram}`}
-                    >
-                      <Instagram style={{ width: '24px', height: '24px', color: '#fff' }} />
-                    </a>
+                    {/* Instagram */}
+                    {creator.instagram && (
+                      <a
+                        href={`https://instagram.com/${creator.instagram}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          background: 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%)',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title={`@${creator.instagram}`}
+                      >
+                        <Instagram style={{ width: '24px', height: '24px', color: '#fff' }} />
+                      </a>
+                    )}
+                    
+                    {/* X (Twitter) */}
+                    {creator.twitter && (
+                      <a
+                        href={`https://x.com/${creator.twitter}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          backgroundColor: '#000',
+                          border: '1px solid #374151',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title={`@${creator.twitter}`}
+                      >
+                        <svg style={{ width: '22px', height: '22px', color: '#fff' }} viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                      </a>
+                    )}
+                    
+                    {/* Farcaster */}
+                    {creator.farcaster && (
+                      <a
+                        href={`https://farcaster.xyz/${creator.farcaster}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          backgroundColor: '#8B5CF6',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title={`@${creator.farcaster}`}
+                      >
+                        <svg style={{ width: '22px', height: '22px', color: '#fff' }} viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M3 4h18v16h-1.5V6.5h-15V20H3V4zm4.5 5h9v1.5h-9V9zm0 3h9v1.5h-9V12zm0 3h6v1.5h-6V15z"/>
+                        </svg>
+                      </a>
+                    )}
                   </div>
                 )}
               </div>
 
               {/* No contact info message */}
-              {!creator.contact_email && !creator.website && !creator.instagram && !creator.bio && (
+              {!creator.contact_email && !creator.website && !creator.instagram && !creator.twitter && !creator.farcaster && !creator.bio && (
                 <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
                   <p style={{ margin: 0 }}>This creator hasn&apos;t added their contact info yet.</p>
                 </div>

@@ -93,6 +93,8 @@ export async function PATCH(request: NextRequest) {
       'contact_email',
       'website',
       'instagram',
+      'twitter',
+      'farcaster',
       'avatar_url',
       'wallet_address',
     ]
