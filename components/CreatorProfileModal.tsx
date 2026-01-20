@@ -680,9 +680,11 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                           <div style={{ flex: 2 }}>
                             <CryptoTipButton
                               key={`crypto-tip-${getTipAmountDollars()}`}
+                              creatorId={creator.id}
                               creatorName={displayName}
                               walletAddress={creator.wallet_address!}
                               amount={getTipAmountDollars()}
+                              tipperUsername={sendAnonymously ? null : tipperUsername}
                               onSuccess={() => {
                                 setShowTipOptions(false)
                                 setSelectedTip(null)

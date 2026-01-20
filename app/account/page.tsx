@@ -892,11 +892,11 @@ export default function AccountPage() {
 
             {/* Total Earnings */}
             <div 
-              className="bg-black rounded-lg p-4 mb-6 flex items-center"
-              style={{ border: '1px solid #374151', gap: '16px' }}
+              className="bg-black rounded-lg mb-6 flex items-center"
+              style={{ border: '1px solid #374151', gap: '16px', padding: '16px 20px' }}
             >
               <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center"
+                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
               >
                 <DollarSign className="w-6 h-6 text-neon-green" />
@@ -927,12 +927,13 @@ export default function AccountPage() {
                 {tips.map((tip) => (
                   <div
                     key={tip.id}
-                    className={`p-4 rounded-lg ${!tip.is_read ? 'bg-gray-800 border border-neon-green/30' : 'bg-black border border-gray-800'}`}
+                    className={`rounded-lg ${!tip.is_read ? 'bg-gray-800 border border-neon-green/30' : 'bg-black border border-gray-800'}`}
+                    style={{ padding: '16px 20px' }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center" style={{ gap: '16px' }}>
                         <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center"
+                          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
                         >
                           <Heart className="w-5 h-5 text-neon-green" />
