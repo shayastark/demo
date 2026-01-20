@@ -10,16 +10,24 @@ const nextConfig = {
     ],
   },
   // Use webpack (Turbopack doesn't support all webpack features yet)
-  webpack: (config) => {
-    // Ignore optional Solana dependencies that Privy tries to import
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@solana-program/system': false,
-      '@solana/web3.js': false,
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Polyfills for Solana web3.js (needed by Daimo Pay)
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: require.resolve('crypto-browserify'),
+        stream: require.resolve('stream-browserify'),
+        http: require.resolve('stream-http'),
+        https: require.resolve('https-browserify'),
+        zlib: require.resolve('browserify-zlib'),
+        url: require.resolve('url'),
+      }
     }
     return config
   },
 }
 
 module.exports = nextConfig
-
