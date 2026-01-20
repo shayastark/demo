@@ -1,7 +1,7 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet } from 'lucide-react'
@@ -74,6 +74,31 @@ export default function AccountPage() {
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
   
+  // Get access token for authenticated API requests
+  const { getAccessToken } = usePrivy()
+  
+  // Helper function for authenticated API requests
+  const apiRequest = useCallback(async (
+    endpoint: string,
+    options: { method?: string; body?: unknown } = {}
+  ) => {
+    const token = await getAccessToken()
+    if (!token) throw new Error('Not authenticated')
+    
+    const response = await fetch(endpoint, {
+      method: options.method || 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    })
+    
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Request failed')
+    return data
+  }, [getAccessToken])
+  
   useEffect(() => {
     if (!ready) return
     if (!authenticated || !user || !user.id) return
@@ -88,24 +113,24 @@ export default function AccountPage() {
       loadedUserIdRef.current = privyId
       
       try {
+        // First try to get existing user via public read
         let { data: existingUser } = await supabase
           .from('users')
           .select('id, username, email, avatar_url, bio, contact_email, website, instagram, wallet_address')
           .eq('privy_id', privyId)
           .single()
 
+        // If user doesn't exist, create via secure API
         if (!existingUser) {
-          const { data: newUser, error } = await supabase
-            .from('users')
-            .insert({
-              privy_id: privyId,
-              email: user.email?.address || null,
-            })
-            .select('id, username, email, avatar_url, bio, contact_email, website, instagram, wallet_address')
-            .single()
-
-          if (error) throw error
-          existingUser = newUser
+          const result = await apiRequest('/api/user', {
+            method: 'POST',
+            body: { email: user.email?.address || null },
+          })
+          existingUser = result.user
+        }
+        
+        if (!existingUser) {
+          throw new Error('Failed to load or create user profile')
         }
 
         setProfile({
@@ -135,7 +160,7 @@ export default function AccountPage() {
     }
 
     loadProfile()
-  }, [ready, user?.id, authenticated])
+  }, [ready, user?.id, authenticated, user?.email?.address, apiRequest])
 
   // Check Stripe Connect status
   useEffect(() => {
@@ -237,7 +262,7 @@ export default function AccountPage() {
     }
   }
 
-  // Handle saving wallet address
+  // Handle saving wallet address (via secure API)
   const handleSaveWalletAddress = async () => {
     if (!profile) return
     
@@ -251,14 +276,12 @@ export default function AccountPage() {
     
     setSavingWallet(true)
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ wallet_address: address || null })
-        .eq('id', profile.id)
-
-      if (error) throw error
+      const result = await apiRequest('/api/user', {
+        method: 'PATCH',
+        body: { wallet_address: address || null },
+      })
       
-      setProfile({ ...profile, wallet_address: address || null })
+      setProfile({ ...profile, wallet_address: result.user.wallet_address })
       setIsEditingWallet(false)
       showToast(address ? 'Wallet address saved!' : 'Wallet address removed', 'success')
     } catch (error) {
@@ -269,6 +292,7 @@ export default function AccountPage() {
     }
   }
 
+  // Handle saving username (via secure API)
   const handleSaveUsername = async () => {
     if (!profile) {
       showToast('Profile not loaded - please refresh the page', 'error')
@@ -276,14 +300,12 @@ export default function AccountPage() {
     }
     setSaving(true)
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ username: editingUsername.trim() || null })
-        .eq('id', profile.id)
-
-      if (error) throw error
+      const result = await apiRequest('/api/user', {
+        method: 'PATCH',
+        body: { username: editingUsername.trim() || null },
+      })
       
-      setProfile({ ...profile, username: editingUsername.trim() })
+      setProfile({ ...profile, username: result.user.username || '' })
       setIsEditingUsername(false)
       showToast('Username updated!', 'success')
     } catch (error) {
@@ -294,6 +316,7 @@ export default function AccountPage() {
     }
   }
 
+  // Handle avatar upload (storage upload + secure API for user update)
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !profile) return
@@ -332,15 +355,13 @@ export default function AccountPage() {
         .from('avatars')
         .getPublicUrl(filePath)
       
-      // Update user profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ avatar_url: publicUrl })
-        .eq('id', profile.id)
+      // Update user profile via secure API
+      const result = await apiRequest('/api/user', {
+        method: 'PATCH',
+        body: { avatar_url: publicUrl },
+      })
       
-      if (updateError) throw updateError
-      
-      setProfile({ ...profile, avatar_url: publicUrl })
+      setProfile({ ...profile, avatar_url: result.user.avatar_url })
       showToast('Profile picture updated!', 'success')
     } catch (error) {
       console.error('Error uploading avatar:', error)
@@ -354,6 +375,7 @@ export default function AccountPage() {
     }
   }
 
+  // Handle saving profile (via secure API)
   const handleSaveProfile = async () => {
     if (!profile) {
       showToast('Profile not loaded - please refresh the page', 'error')
@@ -361,30 +383,27 @@ export default function AccountPage() {
     }
     setSaving(true)
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({
+      const result = await apiRequest('/api/user', {
+        method: 'PATCH',
+        body: {
           bio: editProfile.bio.trim() || null,
           contact_email: editProfile.contact_email.trim() || null,
           website: editProfile.website.trim() || null,
           instagram: editProfile.instagram.trim() || null,
-        })
-        .eq('id', profile.id)
-
-      if (error) throw error
+        },
+      })
       
       setProfile({
         ...profile,
-        bio: editProfile.bio.trim() || null,
-        contact_email: editProfile.contact_email.trim() || null,
-        website: editProfile.website.trim() || null,
-        instagram: editProfile.instagram.trim() || null,
+        bio: result.user.bio,
+        contact_email: result.user.contact_email,
+        website: result.user.website,
+        instagram: result.user.instagram,
       })
       setIsEditingProfile(false)
       showToast('Profile updated!', 'success')
     } catch (error) {
       console.error('Error saving profile:', error)
-      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
       showToast('Failed to save profile', 'error')
     } finally {
       setSaving(false)

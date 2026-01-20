@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@daimo/pay": "^1.19.10",
+    "@privy-io/node": "^0.8.0",
     "@privy-io/react-auth": "^3.9.0",
     "@solana-program/system": "^0.10.0",
     "@solana/web3.js": "^1.98.4",
