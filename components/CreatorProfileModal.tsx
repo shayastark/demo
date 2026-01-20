@@ -457,8 +457,8 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                         }}
                         title={`@${creator.farcaster}`}
                       >
-                        <svg style={{ width: '22px', height: '22px', color: '#fff' }} viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M3 4h18v16h-1.5V6.5h-15V20H3V4zm4.5 5h9v1.5h-9V9zm0 3h9v1.5h-9V12zm0 3h6v1.5h-6V15z"/>
+                        <svg style={{ width: '24px', height: '24px' }} viewBox="0 0 24 24" fill="none">
+                          <path d="M5 4H19V6H20V8H19V20H17V12C17 10.3431 15.6569 9 14 9H10C8.34315 9 7 10.3431 7 12V20H5V8H4V6H5V4Z" fill="white"/>
                         </svg>
                       </a>
                     )}

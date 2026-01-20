@@ -764,9 +764,9 @@ export default function AccountPage() {
                 
                 {/* X (Twitter) */}
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center border border-gray-700">
-                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center border border-gray-600">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231z" fill="white" stroke="none"/>
                     </svg>
                   </div>
                   {isEditingProfile ? (
@@ -787,8 +787,8 @@ export default function AccountPage() {
                 {/* Farcaster */}
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M3 4h18v16h-1.5V6.5h-15V20H3V4zm4.5 5h9v1.5h-9V9zm0 3h9v1.5h-9V12zm0 3h6v1.5h-6V15z"/>
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 4H19V6H20V8H19V20H17V12C17 10.3431 15.6569 9 14 9H10C8.34315 9 7 10.3431 7 12V20H5V8H4V6H5V4Z" fill="white"/>
                     </svg>
                   </div>
                   {isEditingProfile ? (
