@@ -11,6 +11,7 @@ import { ProjectCardSkeleton } from './SkeletonLoader'
 import Image from 'next/image'
 import { showToast } from './Toast'
 import ShareModal from './ShareModal'
+import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
 
 // Extended type for saved projects with additional info
 interface SavedProject extends Project {
@@ -204,12 +205,53 @@ export default function ClientDashboard() {
           .eq('id', existingUser.id)
           .single()
         
+        // Check if user needs to complete profile (no username = new user)
+        if (!userData?.username) {
+          // Redirect to account page for onboarding
+          router.push('/account?onboarding=true')
+          return
+        }
+        
         if (userData) {
           setUsername(userData.username || userData.email || null)
         }
 
         // Store db user id for later use
         setDbUserId(existingUser.id)
+        
+        // Check for pending project to save (user came from shared project page)
+        const pendingProject = getPendingProject()
+        if (pendingProject) {
+          try {
+            const token = await getAccessToken()
+            if (token) {
+              // Check if already saved
+              const { data: existingSave } = await supabase
+                .from('user_projects')
+                .select('id')
+                .eq('user_id', existingUser.id)
+                .eq('project_id', pendingProject.projectId)
+                .single()
+              
+              if (!existingSave) {
+                // Save the project to user's library
+                await fetch('/api/library', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ projectId: pendingProject.projectId }),
+                })
+                showToast(`"${pendingProject.title}" saved to your library!`, 'success')
+              }
+            }
+          } catch (error) {
+            console.error('Error saving pending project:', error)
+          } finally {
+            clearPendingProject()
+          }
+        }
 
         // Load projects created by user
         const { data: projectsData, error } = await supabase

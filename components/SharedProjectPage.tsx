@@ -6,7 +6,8 @@ import { usePrivy } from '@privy-io/react-auth'
 import { supabase } from '@/lib/supabase'
 import { Project, Track } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
-import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, FileText, Trash2, User } from 'lucide-react'
+import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, FileText, Trash2, User, LayoutDashboard } from 'lucide-react'
+import { setPendingProject } from '@/lib/pendingProject'
 import { showToast } from './Toast'
 import Image from 'next/image'
 import { ProjectDetailSkeleton } from './SkeletonLoader'
@@ -617,17 +618,30 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           <div className="flex items-center gap-2">
             {!authenticated ? (
               <button
-                onClick={login}
-                className="px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-gray-200 transition"
+                onClick={() => {
+                  // Store the current project so we can save it after login
+                  if (project) {
+                    setPendingProject({
+                      projectId: project.id,
+                      title: project.title,
+                      token: token,
+                    })
+                  }
+                  login()
+                }}
+                className="px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-gray-200 transition flex items-center gap-1.5"
+                title="Sign in to access your dashboard"
               >
-                Sign in / Sign up
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                Dashboard
               </button>
             ) : (
               <Link
                 href="/dashboard"
-                className="px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-gray-200 transition"
+                className="px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-gray-200 transition flex items-center gap-1.5"
               >
-                Open app
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                Dashboard
               </Link>
             )}
           </div>

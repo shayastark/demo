@@ -1,12 +1,14 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import Image from 'next/image'
+import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
 
 interface UserProfile {
   id: string
@@ -33,8 +35,25 @@ interface Tip {
   created_at: string
 }
 
+// Wrapper component to provide Suspense boundary for useSearchParams
 export default function AccountPage() {
-  const { ready, authenticated, user, login, logout } = usePrivy()
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <div className="text-neon-green">Loading...</div>
+      </div>
+    }>
+      <AccountPageContent />
+    </Suspense>
+  )
+}
+
+function AccountPageContent() {
+  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const isOnboarding = searchParams.get('onboarding') === 'true'
+  
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isEditingUsername, setIsEditingUsername] = useState(false)
   const [editingUsername, setEditingUsername] = useState('')
@@ -77,9 +96,6 @@ export default function AccountPage() {
 
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
-  
-  // Get access token for authenticated API requests
-  const { getAccessToken } = usePrivy()
   
   // Helper function for authenticated API requests
   const apiRequest = useCallback(async (
@@ -169,6 +185,13 @@ export default function AccountPage() {
 
     loadProfile()
   }, [ready, user?.id, authenticated, user?.email?.address, apiRequest])
+
+  // Auto-start username editing in onboarding mode
+  useEffect(() => {
+    if (isOnboarding && loaded && profile && !profile.username) {
+      setIsEditingUsername(true)
+    }
+  }, [isOnboarding, loaded, profile])
 
   // Check Stripe Connect status
   useEffect(() => {
@@ -333,6 +356,44 @@ export default function AccountPage() {
       setProfile({ ...profile, username: result.user.username || '' })
       setIsEditingUsername(false)
       showToast('Username updated!', 'success')
+      
+      // If in onboarding mode, save pending project and redirect to dashboard
+      if (isOnboarding) {
+        const pendingProject = getPendingProject()
+        if (pendingProject) {
+          try {
+            const token = await getAccessToken()
+            if (token) {
+              // Check if already saved
+              const { data: existingSave } = await supabase
+                .from('user_projects')
+                .select('id')
+                .eq('user_id', profile.id)
+                .eq('project_id', pendingProject.projectId)
+                .single()
+              
+              if (!existingSave) {
+                // Save the project to user's library
+                await fetch('/api/library', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ projectId: pendingProject.projectId }),
+                })
+                showToast(`"${pendingProject.title}" saved to your library!`, 'success')
+              }
+            }
+          } catch (error) {
+            console.error('Error saving pending project:', error)
+          } finally {
+            clearPendingProject()
+          }
+        }
+        // Redirect to dashboard
+        router.push('/dashboard')
+      }
     } catch (error) {
       console.error('Error saving username:', error)
       showToast('Failed to save username', 'error')
@@ -488,7 +549,17 @@ export default function AccountPage() {
       </nav>
 
       <main className="px-4 py-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">Account</h1>
+        {/* Onboarding Banner */}
+        {isOnboarding && (
+          <div className="bg-gradient-to-r from-neon-green/20 to-green-900/20 border border-neon-green/30 rounded-xl p-6 mb-6">
+            <h2 className="text-xl font-bold text-neon-green mb-2">Welcome to Hubba! 🎉</h2>
+            <p className="text-gray-300">
+              Let&apos;s set up your profile. Choose a username below to get started, then you&apos;ll be taken to your dashboard.
+            </p>
+          </div>
+        )}
+        
+        <h1 className="text-3xl font-bold mb-6 text-white">{isOnboarding ? 'Set Up Your Profile' : 'Account'}</h1>
 
         {/* Basic Info Section */}
         <div 
