@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { createTipNotification } from '@/lib/notifications'
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,6 +48,15 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Create a notification for the creator
+    await createTipNotification({
+      creatorId,
+      amount: amountInCents,
+      tipperUsername,
+      message,
+      currency: 'usdc',
+    })
 
     console.log('Crypto tip recorded:', {
       tipId: data.id,

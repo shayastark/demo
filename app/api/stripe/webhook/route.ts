@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { createTipNotification } from '@/lib/notifications'
 import Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
@@ -39,15 +40,19 @@ export async function POST(request: NextRequest) {
             message = paymentIntent.metadata?.message || null
           }
           
-          // Store tip in database (email captured for records, username for display)
-          const { error: tipError } = await supabase
+          const creatorId = session.metadata.creator_id
+          const amount = session.amount_total || 0
+          const tipperUsername = session.metadata.tipper_username || null
+          
+          // Store tip in database (using admin client for server-side write)
+          const { error: tipError } = await supabaseAdmin
             .from('tips')
             .insert({
-              creator_id: session.metadata.creator_id,
-              amount: session.amount_total,
+              creator_id: creatorId,
+              amount: amount,
               currency: session.currency || 'usd',
               tipper_email: session.customer_email || null,
-              tipper_username: session.metadata.tipper_username || null,
+              tipper_username: tipperUsername,
               message: message,
               stripe_session_id: session.id,
               stripe_payment_intent_id: session.payment_intent as string || null,
@@ -56,6 +61,15 @@ export async function POST(request: NextRequest) {
 
           if (tipError) {
             console.error('Error saving tip to database:', tipError)
+          } else {
+            // Create a notification for the creator
+            await createTipNotification({
+              creatorId,
+              amount,
+              tipperUsername,
+              message,
+              currency: session.currency || 'usd',
+            })
           }
         }
         break
@@ -72,7 +86,7 @@ export async function POST(request: NextRequest) {
         
         // Update onboarding status when account is updated
         if (account.details_submitted && account.charges_enabled) {
-          const { error } = await supabase
+          const { error } = await supabaseAdmin
             .from('users')
             .update({ stripe_onboarding_complete: true })
             .eq('stripe_account_id', account.id)

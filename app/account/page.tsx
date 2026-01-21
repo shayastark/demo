@@ -9,6 +9,7 @@ import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, Ex
 import { showToast } from '@/components/Toast'
 import Image from 'next/image'
 import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
+import { TipsSkeleton } from '@/components/SkeletonLoader'
 
 interface UserProfile {
   id: string
@@ -1077,9 +1078,7 @@ function AccountPageContent() {
 
             {/* Tips List */}
             {tipsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 text-neon-green animate-spin" />
-              </div>
+              <TipsSkeleton />
             ) : tips.length === 0 ? (
               <div className="text-center py-8">
                 <Heart className="w-12 h-12 text-gray-700 mx-auto mb-3" />

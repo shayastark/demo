@@ -1,11 +1,27 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, ListMusic, User, X, Play, Pause, Trash2, SkipForward, SkipBack } from 'lucide-react'
+import { Home, ListMusic, User, X, Play, Pause, Trash2, SkipForward, SkipBack, Bell, Check, DollarSign, Trash } from 'lucide-react'
 import { usePrivy } from '@privy-io/react-auth'
 import { showToast } from './Toast'
+import { createClient } from '@supabase/supabase-js'
+
+// Create a Supabase client for realtime subscriptions
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseRealtime = createClient(supabaseUrl, supabaseAnonKey)
+
+interface Notification {
+  id: string
+  type: string
+  title: string
+  message: string | null
+  data: Record<string, any>
+  is_read: boolean
+  created_at: string
+}
 
 interface QueueItem {
   id: string
@@ -18,11 +34,18 @@ interface QueueItem {
 
 export default function BottomTabBar() {
   const pathname = usePathname()
-  const { authenticated, ready } = usePrivy()
+  const { authenticated, ready, getAccessToken } = usePrivy()
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [isQueueOpen, setIsQueueOpen] = useState(false)
   const [isNowPlayingOpen, setIsNowPlayingOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  
+  // Notification state
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   
   // Queue playback state
   const [isPlaying, setIsPlaying] = useState(false)
@@ -477,6 +500,27 @@ export default function BottomTabBar() {
     }
   }, [isNowPlayingOpen])
 
+  // Lock body scroll when Notifications modal is open
+  useEffect(() => {
+    if (isNotificationsOpen) {
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.overflow = 'hidden'
+      
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        document.body.style.overflow = ''
+        window.scrollTo(0, scrollY)
+      }
+    }
+  }, [isNotificationsOpen])
+
   // Initialize AudioContext and connect analyser for frequency visualization
   const initializeAudioAnalyser = () => {
     const audio = audioRef.current
@@ -561,6 +605,161 @@ export default function BottomTabBar() {
     }
   }, [isPlaying, cassetteIsPlaying])
 
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    if (!authenticated) return
+    
+    setNotificationsLoading(true)
+    try {
+      const token = await getAccessToken()
+      const response = await fetch('/api/notifications?limit=20', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setNotifications(data.notifications || [])
+        setUnreadNotificationCount(data.unreadCount || 0)
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+    } finally {
+      setNotificationsLoading(false)
+    }
+  }, [authenticated, getAccessToken])
+
+  // Fetch user ID for realtime subscription
+  useEffect(() => {
+    const fetchUserId = async () => {
+      if (!authenticated) return
+      
+      try {
+        const token = await getAccessToken()
+        const response = await fetch('/api/user', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user?.id) {
+            setUserId(data.user.id)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user ID:', error)
+      }
+    }
+    
+    fetchUserId()
+  }, [authenticated, getAccessToken])
+
+  // Initial notification fetch
+  useEffect(() => {
+    if (authenticated) {
+      fetchNotifications()
+    }
+  }, [authenticated, fetchNotifications])
+
+  // Subscribe to realtime notifications
+  useEffect(() => {
+    if (!userId) return
+
+    const channel = supabaseRealtime
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('New notification received:', payload)
+          const newNotification = payload.new as Notification
+          
+          setNotifications((prev) => [newNotification, ...prev])
+          setUnreadNotificationCount((prev) => prev + 1)
+          
+          showToast(newNotification.title, 'success')
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabaseRealtime.removeChannel(channel)
+    }
+  }, [userId])
+
+  // Mark notifications as read
+  const markNotificationsAsRead = async (notificationIds?: string[]) => {
+    if (!authenticated) return
+    
+    try {
+      const token = await getAccessToken()
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notificationIds }),
+      })
+      
+      if (notificationIds) {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            notificationIds.includes(n.id) ? { ...n, is_read: true } : n
+          )
+        )
+        setUnreadNotificationCount((prev) => Math.max(0, prev - notificationIds.length))
+      } else {
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+        setUnreadNotificationCount(0)
+      }
+    } catch (error) {
+      console.error('Error marking notifications as read:', error)
+    }
+  }
+
+  // Delete notification
+  const deleteNotification = async (notificationId: string) => {
+    if (!authenticated) return
+    
+    try {
+      const token = await getAccessToken()
+      await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notificationIds: [notificationId] }),
+      })
+      
+      const notification = notifications.find((n) => n.id === notificationId)
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+      if (notification && !notification.is_read) {
+        setUnreadNotificationCount((prev) => Math.max(0, prev - 1))
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error)
+    }
+  }
+
+  // Format time ago helper
+  const formatNotificationTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+    
+    if (seconds < 60) return 'Just now'
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`
+    return date.toLocaleDateString()
+  }
+
   // Determine if we should show the full UI (but always keep audio element mounted)
   const showFullUI = ready && authenticated && pathname !== '/' && !pathname?.startsWith('/share/')
   
@@ -581,11 +780,20 @@ export default function BottomTabBar() {
   const tabs = [
     { href: '/dashboard', icon: Home, label: 'Home' },
     { href: '#queue', icon: ListMusic, label: 'Queue', onClick: () => setIsQueueOpen(true), badge: queue.length },
+    { href: '#notifications', icon: Bell, label: 'Alerts', onClick: () => {
+      setIsNotificationsOpen(true)
+      // Mark first 5 unread as read when opening
+      const unreadIds = notifications.filter((n) => !n.is_read).slice(0, 5).map((n) => n.id)
+      if (unreadIds.length > 0) {
+        markNotificationsAsRead(unreadIds)
+      }
+    }, badge: unreadNotificationCount },
     { href: '/account', icon: User, label: 'Account' },
   ]
 
   const isActive = (href: string) => {
     if (href === '#queue') return isQueueOpen
+    if (href === '#notifications') return isNotificationsOpen
     if (href === '/dashboard') return pathname === '/dashboard' || pathname?.startsWith('/dashboard/')
     return pathname === href
   }
@@ -1378,6 +1586,219 @@ export default function BottomTabBar() {
                 </button>
               </div>
             )}
+          </div>
+        </>
+      )}
+
+      {/* Notifications Modal */}
+      {isNotificationsOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setIsNotificationsOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              zIndex: 100,
+            }}
+          />
+
+          {/* Notifications Panel */}
+          <div
+            style={{
+              position: 'fixed',
+              bottom: isMobile ? '70px' : '50%',
+              left: isMobile ? 0 : '50%',
+              right: isMobile ? 0 : 'auto',
+              transform: isMobile ? 'none' : 'translate(-50%, 50%)',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: '100%',
+              maxHeight: isMobile ? 'calc(100vh - 140px)' : '600px',
+              backgroundColor: '#111827',
+              borderRadius: isMobile ? '16px 16px 0 0' : '16px',
+              zIndex: 101,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: '1px solid #374151',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Bell style={{ width: '24px', height: '24px', color: '#39FF14' }} />
+                <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#fff', margin: 0 }}>
+                  Notifications
+                </h2>
+                {unreadNotificationCount > 0 && (
+                  <span style={{ fontSize: '14px', color: '#9ca3af' }}>
+                    ({unreadNotificationCount} unread)
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {unreadNotificationCount > 0 && (
+                  <button
+                    onClick={() => markNotificationsAsRead()}
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: 'transparent',
+                      color: '#39FF14',
+                      border: '1px solid #39FF14',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsNotificationsOpen(false)}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    backgroundColor: '#374151',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X style={{ width: '20px', height: '20px', color: '#fff' }} />
+                </button>
+              </div>
+            </div>
+
+            {/* Notifications Content */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {notificationsLoading && notifications.length === 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 20px' }}>
+                  <div style={{ 
+                    width: '24px', 
+                    height: '24px', 
+                    border: '2px solid #39FF14',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                  }} />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+                  <Bell style={{ width: '48px', height: '48px', color: '#4b5563', margin: '0 auto 16px' }} />
+                  <p style={{ color: '#9ca3af', fontSize: '16px', marginBottom: '8px' }}>
+                    No notifications yet
+                  </p>
+                  <p style={{ color: '#6b7280', fontSize: '14px' }}>
+                    You&apos;ll be notified when you receive tips
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      style={{
+                        padding: '16px 20px',
+                        borderBottom: '1px solid #1f2937',
+                        backgroundColor: !notification.is_read ? 'rgba(57, 255, 20, 0.05)' : 'transparent',
+                        transition: 'background-color 0.2s',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                        {/* Icon */}
+                        <div style={{
+                          padding: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: '#1f2937',
+                          flexShrink: 0,
+                        }}>
+                          {notification.type === 'tip_received' ? (
+                            <DollarSign style={{ width: '16px', height: '16px', color: '#39FF14' }} />
+                          ) : (
+                            <Bell style={{ width: '16px', height: '16px', color: '#9ca3af' }} />
+                          )}
+                        </div>
+                        
+                        {/* Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ 
+                            color: !notification.is_read ? '#fff' : '#d1d5db',
+                            fontSize: '14px',
+                            fontWeight: !notification.is_read ? 500 : 400,
+                            margin: 0,
+                          }}>
+                            {notification.title}
+                          </p>
+                          {notification.message && (
+                            <p style={{ 
+                              color: '#6b7280',
+                              fontSize: '13px',
+                              margin: '4px 0 0 0',
+                              fontStyle: 'italic',
+                            }}>
+                              &quot;{notification.message}&quot;
+                            </p>
+                          )}
+                          <p style={{ 
+                            color: '#6b7280',
+                            fontSize: '12px',
+                            margin: '6px 0 0 0',
+                          }}>
+                            {formatNotificationTime(notification.created_at)}
+                          </p>
+                        </div>
+                        
+                        {/* Actions */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {!notification.is_read && (
+                            <button
+                              onClick={() => markNotificationsAsRead([notification.id])}
+                              style={{
+                                padding: '6px',
+                                borderRadius: '50%',
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                              }}
+                              title="Mark as read"
+                            >
+                              <Check style={{ width: '14px', height: '14px', color: '#9ca3af' }} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => deleteNotification(notification.id)}
+                            style={{
+                              padding: '6px',
+                              borderRadius: '50%',
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                            }}
+                            title="Delete"
+                          >
+                            <Trash style={{ width: '14px', height: '14px', color: '#9ca3af' }} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
