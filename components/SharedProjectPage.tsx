@@ -6,7 +6,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { supabase } from '@/lib/supabase'
 import { Project, Track } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
-import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, FileText, Trash2, User, LayoutDashboard } from 'lucide-react'
+import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, Trash2, User, LayoutDashboard } from 'lucide-react'
 import { setPendingProject } from '@/lib/pendingProject'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -989,48 +989,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   <div style={{ fontWeight: 600 }}>Add to Queue</div>
                   <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
                     Add all tracks to play queue
-                  </div>
-                </div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  showToast('Notes feature coming soon!', 'info')
-                  setIsProjectMenuOpen(false)
-                }}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  backgroundColor: '#1f2937',
-                  color: '#fff',
-                  border: '1px solid #374151',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  textAlign: 'left',
-                }}
-                className="hover:bg-gray-700 transition"
-              >
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  backgroundColor: '#374151',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <FileText style={{ width: '22px', height: '22px', color: '#39FF14' }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>Notes</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    View or add project notes
                   </div>
                 </div>
               </button>

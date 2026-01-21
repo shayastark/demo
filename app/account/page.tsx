@@ -88,6 +88,8 @@ function AccountPageContent() {
   const [tipsLoading, setTipsLoading] = useState(true)
   const [unreadTipCount, setUnreadTipCount] = useState(0)
   const [totalEarnings, setTotalEarnings] = useState(0)
+  const [visibleTipsCount, setVisibleTipsCount] = useState(5)
+  const [expandedTips, setExpandedTips] = useState<Set<string>>(new Set())
   
   // Wallet address state
   const [isEditingWallet, setIsEditingWallet] = useState(false)
@@ -1055,22 +1057,21 @@ function AccountPageContent() {
               )}
             </div>
 
-            {/* Total Earnings */}
-            <div 
-              className="bg-black rounded-lg mb-6 flex items-center"
-              style={{ border: '1px solid #374151', gap: '16px', padding: '16px 20px' }}
-            >
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
-              >
-                <DollarSign className="w-6 h-6 text-neon-green" />
+            {/* Stats Cards */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="bg-black rounded-lg p-4 border border-gray-800 text-center">
+                <p className="text-2xl font-bold text-white">${(totalEarnings / 100).toFixed(2)}</p>
+                <p className="text-xs text-gray-500 mt-1">All Time</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Total Earnings</p>
+              <div className="bg-black rounded-lg p-4 border border-gray-800 text-center">
+                <p className="text-2xl font-bold text-white">{tips.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Tips</p>
+              </div>
+              <div className="bg-black rounded-lg p-4 border border-gray-800 text-center">
                 <p className="text-2xl font-bold text-white">
-                  ${(totalEarnings / 100).toFixed(2)}
+                  ${tips.length > 0 ? ((totalEarnings / 100) / tips.length).toFixed(2) : '0.00'}
                 </p>
+                <p className="text-xs text-gray-500 mt-1">Average</p>
               </div>
             </div>
 
@@ -1088,46 +1089,82 @@ function AccountPageContent() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {tips.map((tip) => (
-                  <div
-                    key={tip.id}
-                    className={`rounded-lg ${!tip.is_read ? 'bg-gray-800 border border-neon-green/30' : 'bg-black border border-gray-800'}`}
-                    style={{ padding: '16px 20px' }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center" style={{ gap: '16px' }}>
+              <div>
+                <p className="text-sm text-gray-500 mb-3">Recent</p>
+                <div className="divide-y divide-gray-800">
+                  {tips.slice(0, visibleTipsCount).map((tip) => {
+                    const isExpanded = expandedTips.has(tip.id)
+                    const hasMessage = !!tip.message
+                    
+                    return (
+                      <div
+                        key={tip.id}
+                        className={`py-3 ${!tip.is_read ? 'bg-gray-800/30' : ''}`}
+                      >
                         <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: 'rgba(57, 255, 20, 0.1)' }}
+                          className="flex items-center justify-between cursor-pointer"
+                          onClick={() => {
+                            if (hasMessage) {
+                              setExpandedTips(prev => {
+                                const next = new Set(prev)
+                                if (next.has(tip.id)) {
+                                  next.delete(tip.id)
+                                } else {
+                                  next.add(tip.id)
+                                }
+                                return next
+                              })
+                            }
+                          }}
                         >
-                          <Heart className="w-5 h-5 text-neon-green" />
-                        </div>
-                        <div>
-                          <p className="text-white font-medium">
-                            ${(tip.amount / 100).toFixed(2)} tip
-                          </p>
-                          <div className="flex items-center text-sm text-gray-400" style={{ gap: '8px' }}>
-                            {tip.tipper_username ? (
-                              <span>from @{tip.tipper_username}</span>
-                            ) : (
-                              <span>Anonymous</span>
+                          <div className="flex items-center" style={{ gap: '12px' }}>
+                            <span className="text-white font-semibold" style={{ minWidth: '60px' }}>
+                              ${(tip.amount / 100).toFixed(2)}
+                            </span>
+                            <span className="text-gray-400 text-sm">
+                              {tip.tipper_username ? `@${tip.tipper_username}` : 'Anonymous'}
+                            </span>
+                            {hasMessage && (
+                              <MessageSquare className={`w-3.5 h-3.5 transition-colors ${isExpanded ? 'text-neon-green' : 'text-gray-600'}`} />
+                            )}
+                            {!tip.is_read && (
+                              <span className="w-2 h-2 rounded-full bg-neon-green" />
                             )}
                           </div>
+                          <span className="text-xs text-gray-600">
+                            {(() => {
+                              const now = new Date()
+                              const tipDate = new Date(tip.created_at)
+                              const diffMs = now.getTime() - tipDate.getTime()
+                              const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+                              const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+                              
+                              if (diffHours < 1) return 'Just now'
+                              if (diffHours < 24) return `${diffHours}h ago`
+                              if (diffDays < 7) return `${diffDays}d ago`
+                              return tipDate.toLocaleDateString()
+                            })()}
+                          </span>
                         </div>
+                        {hasMessage && isExpanded && (
+                          <div className="mt-2 ml-[72px] text-sm text-gray-300 bg-gray-800/50 rounded-lg p-3">
+                            &quot;{tip.message}&quot;
+                          </div>
+                        )}
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {new Date(tip.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    {tip.message && (
-                      <div className="mt-3 flex items-start text-sm text-gray-300 bg-gray-900 rounded-lg p-3" style={{ gap: '12px' }}>
-                        <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                        <p>&quot;{tip.message}&quot;</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                    )
+                  })}
+                </div>
+                
+                {/* Show More Button */}
+                {tips.length > visibleTipsCount && (
+                  <button
+                    onClick={() => setVisibleTipsCount(prev => prev + 10)}
+                    className="w-full mt-4 py-2 text-sm text-gray-400 hover:text-white transition border border-gray-800 rounded-lg hover:border-gray-700"
+                  >
+                    Show more ({tips.length - visibleTipsCount} older tips)
+                  </button>
+                )}
               </div>
             )}
           </div>

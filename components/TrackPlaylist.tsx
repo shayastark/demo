@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Play, Pause, SkipBack, SkipForward, Repeat, Volume2, MoreVertical, Edit, Download, ListPlus, Trash2 } from 'lucide-react'
 import CassettePlayer from './CassettePlayer'
-import SoundwaveVisualizer from './SoundwaveVisualizer'
+import AudioVisualizer from './AudioVisualizer'
 import { Track } from '@/lib/types'
 import { showToast } from './Toast'
 import { addToQueue } from './BottomTabBar'
@@ -347,11 +347,8 @@ export default function TrackPlaylist({
         title={currentTrack?.title || projectTitle}
       />
 
-      {/* Soundwave Visualizer - uses fallback animation since audio is global */}
-      <SoundwaveVisualizer
-        audioElement={null}
-        isPlaying={isPlaying}
-      />
+      {/* Audio Visualizer - frequency bars */}
+      <AudioVisualizer isPlaying={isPlaying} />
 
       {/* Transport Controls */}
       <div className="bg-gray-900 rounded-xl p-4" style={{ maxWidth: '320px', margin: '0 auto' }}>

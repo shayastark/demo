@@ -313,6 +313,66 @@ a:active {
     box-shadow: var(--shadow-sm);
   }
   
+  /* Secondary button - outlined */
+  .btn-secondary {
+    background: transparent;
+    color: var(--neon-green);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    border: 1.5px solid var(--neon-green);
+    transition: all 0.2s ease;
+  }
+  
+  .btn-secondary:hover {
+    background: rgba(57, 255, 20, 0.1);
+    box-shadow: 0 0 20px rgba(57, 255, 20, 0.2);
+  }
+  
+  .btn-secondary:active {
+    background: rgba(57, 255, 20, 0.15);
+  }
+  
+  /* Ghost button */
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Icon button */
+  .btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #9ca3af;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+  
+  .btn-icon:active {
+    transform: scale(0.95);
+  }
+  
   /* Cassette reel animations */
   @keyframes spin-reel {
     from {
@@ -352,3 +412,135 @@ a:active {
   }
 }
 
+/* ===== FORM ELEMENTS ===== */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+textarea {
+  background: #000;
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 0.625rem 0.875rem;
+  color: #fff;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="url"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--neon-green);
+  box-shadow: 0 0 0 3px rgba(57, 255, 20, 0.1);
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="url"]::placeholder,
+textarea::placeholder {
+  color: #6b7280;
+}
+
+/* ===== POLISHED RANGE INPUT ===== */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #374151;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+  transition: all 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.7);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+}
+
+/* ===== CHECKBOX STYLING ===== */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #374151;
+  border-radius: 4px;
+  background: #000;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+input[type="checkbox"]:checked {
+  background: var(--neon-green);
+  border-color: var(--neon-green);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid #000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:hover {
+  border-color: #4b5563;
+}
+
+input[type="checkbox"]:checked:hover {
+  background: #2dd10f;
+  border-color: #2dd10f;
+}
+
+/* ===== SMOOTH PAGE TRANSITIONS ===== */
+.page-transition {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== ENHANCED FOCUS STATES ===== */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--neon-green);
+  outline-offset: 2px;
+}
