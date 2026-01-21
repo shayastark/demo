@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState, useRef } from 'react'
+
 interface CassettePlayerProps {
   coverImageUrl?: string | null
   isPlaying: boolean
@@ -7,17 +9,66 @@ interface CassettePlayerProps {
 }
 
 export default function CassettePlayer({ coverImageUrl, isPlaying, title }: CassettePlayerProps) {
+  const [glowIntensity, setGlowIntensity] = useState(0.15)
+  const animationRef = useRef<number | null>(null)
+  const timeRef = useRef(0)
+
+  // Listen for frequency data and create pulsing glow
+  useEffect(() => {
+    let frequencyData: number[] | null = null
+
+    const handleFrequency = (e: CustomEvent<{ frequencyData: number[] | null }>) => {
+      frequencyData = e.detail.frequencyData
+    }
+
+    window.addEventListener('demo-audio-frequency', handleFrequency as EventListener)
+
+    const animate = () => {
+      if (isPlaying) {
+        let targetIntensity: number
+
+        if (frequencyData && frequencyData.length > 0) {
+          // Use bass frequencies for the pulse
+          const bassSum = frequencyData.slice(0, 20).reduce((acc, val) => acc + val, 0)
+          const bassAvg = bassSum / 20
+          targetIntensity = 0.1 + (bassAvg / 255) * 0.4
+        } else {
+          // Smooth breathing animation fallback
+          timeRef.current += 0.03
+          targetIntensity = 0.15 + Math.sin(timeRef.current) * 0.1
+        }
+
+        // Smooth transition
+        setGlowIntensity(prev => prev + (targetIntensity - prev) * 0.15)
+      } else {
+        // Fade out when paused
+        setGlowIntensity(prev => prev * 0.95)
+      }
+
+      animationRef.current = requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    return () => {
+      window.removeEventListener('demo-audio-frequency', handleFrequency as EventListener)
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [isPlaying])
+
   return (
     <div className="relative w-full max-w-md mx-auto mb-6">
-      {/* Outer glow effect when playing */}
+      {/* Dynamic pulsing glow effect */}
       <div 
-        className={`absolute inset-0 rounded-2xl transition-all duration-500 ${
-          isPlaying ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="absolute inset-0 rounded-2xl pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at center, rgba(57, 255, 20, 0.15) 0%, transparent 70%)',
-          filter: 'blur(20px)',
-          transform: 'scale(1.1)',
+          background: `radial-gradient(ellipse at center, rgba(57, 255, 20, ${glowIntensity}) 0%, rgba(0, 217, 255, ${glowIntensity * 0.3}) 40%, transparent 70%)`,
+          filter: 'blur(30px)',
+          transform: 'scale(1.2)',
+          opacity: isPlaying ? 1 : 0,
+          transition: 'opacity 0.5s ease',
         }}
       />
       
