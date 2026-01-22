@@ -162,7 +162,7 @@ export default function NewProjectPage() {
         </div>
       </header>
 
-      <main className="px-4 py-6 max-w-xl mx-auto pb-48">
+      <main className="px-4 py-6 max-w-xl mx-auto pb-36">
         <form id="new-project-form" onSubmit={handleSubmit} className="space-y-6">
           
           {/* Cover Image - Album Art Style */}
@@ -372,11 +372,14 @@ export default function NewProjectPage() {
       </main>
 
       {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-700 p-4 pb-6 shadow-2xl shadow-black">
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-gray-700 px-4 pt-4"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
         <div className="max-w-xl mx-auto">
           {/* Helper text */}
           {(!title.trim() || tracks.every(t => !t.file)) && (
-            <p className="text-center text-sm text-gray-500 mb-3">
+            <p className="text-center text-xs text-gray-500 mb-2">
               {!title.trim() ? 'Add a title to continue' : 'Upload at least one track to continue'}
             </p>
           )}
@@ -384,7 +387,7 @@ export default function NewProjectPage() {
           <div className="flex gap-3">
             <Link
               href="/dashboard"
-              className="flex-shrink-0 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-6 py-4 rounded-full font-medium text-center transition"
+              className="flex-shrink-0 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-5 py-3 rounded-full font-medium text-center transition text-sm"
             >
               Cancel
             </Link>
@@ -392,7 +395,7 @@ export default function NewProjectPage() {
               type="submit"
               form="new-project-form"
               disabled={loading || !title.trim() || tracks.every(t => !t.file)}
-              className="flex-1 px-8 py-4 rounded-full font-bold text-lg transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/30"
+              className="flex-1 px-6 py-3 rounded-full font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/30"
               style={{
                 backgroundColor: '#39FF14',
                 color: '#000',
@@ -400,7 +403,7 @@ export default function NewProjectPage() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                   Creating...
                 </span>
               ) : (
