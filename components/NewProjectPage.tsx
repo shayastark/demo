@@ -194,23 +194,37 @@ export default function NewProjectPage() {
           <div className="flex flex-col items-center">
             {coverImagePreview ? (
               <div className="relative w-48 h-48 rounded-xl overflow-hidden shadow-2xl group">
-                <img 
-                  src={coverImagePreview} 
-                  alt="Cover preview" 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCoverImage(null)
-                      setCoverImagePreview(null)
-                    }}
-                    className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+                <label className="cursor-pointer block w-full h-full">
+                  <img 
+                    src={coverImagePreview} 
+                    alt="Cover preview" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                    <ImagePlus className="w-6 h-6 text-white" />
+                    <span className="text-white text-sm font-medium">Change image</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverImageChange}
+                    className="hidden"
+                  />
+                </label>
+                {/* Remove button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setCoverImage(null)
+                    setCoverImagePreview(null)
+                  }}
+                  className="absolute top-2 right-2 bg-black/70 hover:bg-red-500 text-white rounded-full p-1.5 transition opacity-0 group-hover:opacity-100"
+                  title="Remove image"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             ) : (
               <label 
