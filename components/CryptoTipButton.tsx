@@ -83,7 +83,7 @@ function CryptoTipButtonInner({
               )
               
               // Show success toast immediately
-              showToast(`Tip of $${amount} sent successfully! 🎉`, 'success')
+              showToast(`Tip of $${amount} sent successfully!`, 'success')
               
               // Call onSuccess after a small delay to let UI update
               setTimeout(() => {

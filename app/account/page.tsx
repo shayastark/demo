@@ -358,9 +358,9 @@ function AccountPageContent() {
       
       setProfile({ ...profile, username: result.user.username || '' })
       setIsEditingUsername(false)
-      showToast('Username updated!', 'success')
+      showToast('Username saved!', 'success')
       
-      // If in onboarding mode, save pending project and redirect to dashboard
+      // If in onboarding mode with a pending project, save it to library
       if (isOnboarding) {
         const pendingProject = getPendingProject()
         if (pendingProject) {
@@ -394,8 +394,7 @@ function AccountPageContent() {
             clearPendingProject()
           }
         }
-        // Redirect to dashboard
-        router.push('/dashboard')
+        // Don't auto-redirect - let user continue setting up their profile
       }
     } catch (error) {
       console.error('Error saving username:', error)
@@ -555,9 +554,16 @@ function AccountPageContent() {
         {/* Onboarding Banner */}
         {isOnboarding && (
           <div className="bg-gradient-to-r from-neon-green/20 to-green-900/20 border border-neon-green/30 rounded-xl p-6 mb-6">
-            <h2 className="text-xl font-bold text-neon-green mb-2">Welcome to Hubba! 🎉</h2>
-            <p className="text-gray-300">
-              Let&apos;s set up your profile. Choose a username below to get started, then you&apos;ll be taken to your dashboard.
+            <h2 className="text-xl font-bold text-neon-green mb-2">Welcome to Demo</h2>
+            <p className="text-gray-300 mb-4">
+              Set up your profile below. Add as much or as little info as you like.
+            </p>
+            <p className="text-sm text-gray-400">
+              When you&apos;re ready, head to your{' '}
+              <Link href="/dashboard" className="text-neon-green hover:underline font-medium">
+                Dashboard
+              </Link>
+              {' '}to create and manage your projects.
             </p>
           </div>
         )}

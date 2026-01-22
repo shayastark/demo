@@ -115,7 +115,19 @@ export default function ClientHomePage() {
           }}
         />
         
-        <div className="flex-1 flex flex-col items-center justify-center pt-8 pb-24 relative z-10">
+        {/* Header with sign in */}
+        <header className="relative z-10 px-4 py-4">
+          <div className="max-w-7xl mx-auto flex justify-end">
+            <button
+              onClick={login}
+              className="text-sm text-gray-400 hover:text-white transition"
+            >
+              Sign in
+            </button>
+          </div>
+        </header>
+        
+        <div className="flex-1 flex flex-col items-center justify-center pb-24 relative z-10">
           <h1 className="text-5xl sm:text-6xl font-bold mb-3 text-white tracking-tight text-center">Demo</h1>
           <p className="text-lg sm:text-xl mb-12 text-gray-400 text-center max-w-md">
             Share your unreleased tracks on your terms
