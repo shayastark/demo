@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Upload, X, Music, ArrowLeft, Plus, Disc3 } from 'lucide-react'
+import { Upload, X, Music, ArrowLeft, Plus, ImagePlus } from 'lucide-react'
 
 export default function NewProjectPage() {
   const { user } = usePrivy()
@@ -189,10 +189,10 @@ export default function NewProjectPage() {
               </div>
             ) : (
               <label 
-                className={`w-48 h-48 border-2 border-dashed rounded-xl cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                className={`w-48 h-48 border-2 border-dashed rounded-xl cursor-pointer transition flex flex-col items-center justify-center gap-3 ${
                   dragOver 
                     ? 'border-neon-green bg-neon-green/10' 
-                    : 'border-gray-700 hover:border-gray-500'
+                    : 'border-gray-600 hover:border-neon-green/50 hover:bg-gray-900/50'
                 }`}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
                 onDragLeave={() => setDragOver(false)}
@@ -208,10 +208,11 @@ export default function NewProjectPage() {
                   }
                 }}
               >
-                <Disc3 className="w-10 h-10 text-gray-600" />
-                <span className="text-sm text-gray-500 text-center px-4">
-                  Drop cover art<br />or click to upload
-                </span>
+                <ImagePlus className="w-10 h-10 text-gray-500" />
+                <div className="text-center px-4">
+                  <span className="text-sm text-neon-green font-medium block">Upload Cover Art</span>
+                  <span className="text-xs text-gray-500">Click or drag image here</span>
+                </div>
                 <input
                   type="file"
                   accept="image/*"
@@ -255,22 +256,22 @@ export default function NewProjectPage() {
             </div>
 
             {/* Allow Downloads */}
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={allowDownloads}
-                onChange={(e) => setAllowDownloads(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-10 h-6 bg-gray-700 rounded-full peer-checked:bg-neon-green transition relative">
-                <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-4 shadow" 
-                  style={{ transform: allowDownloads ? 'translateX(16px)' : 'translateX(0)' }}
-                />
-              </div>
-              <span className="text-sm text-gray-300 group-hover:text-white transition">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">
                 Allow downloads
               </span>
-            </label>
+              <button
+                type="button"
+                onClick={() => setAllowDownloads(!allowDownloads)}
+                className="relative w-12 h-7 rounded-full transition-colors"
+                style={{ backgroundColor: allowDownloads ? '#39FF14' : '#374151' }}
+              >
+                <div 
+                  className="absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all"
+                  style={{ left: allowDownloads ? '26px' : '4px' }}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Tracks Section */}
@@ -279,7 +280,14 @@ export default function NewProjectPage() {
               <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide">
                 Tracks <span className="text-red-400">*</span>
               </h2>
-              <span className="text-xs text-gray-500">{tracks.length} track{tracks.length !== 1 ? 's' : ''}</span>
+              <button
+                type="button"
+                onClick={handleAddTrack}
+                className="text-sm text-neon-green hover:text-white transition flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                Add Track
+              </button>
             </div>
 
             <div className="space-y-3">
@@ -290,11 +298,35 @@ export default function NewProjectPage() {
                 >
                   <div className="flex items-start gap-3">
                     {/* Track Number */}
-                    <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-sm font-medium text-gray-400 shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-neon-green/20 flex items-center justify-center text-sm font-bold text-neon-green shrink-0">
                       {index + 1}
                     </div>
                     
                     <div className="flex-1 space-y-3">
+                      {/* File Upload - Now first and more prominent */}
+                      <label className="block">
+                        <input
+                          type="file"
+                          accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleTrackFileChange(index, file)
+                          }}
+                          required
+                          className="hidden"
+                        />
+                        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed cursor-pointer transition ${
+                          track.file 
+                            ? 'border-neon-green/50 bg-neon-green/5' 
+                            : 'border-gray-700 hover:border-neon-green/30 hover:bg-gray-800/50'
+                        }`}>
+                          <Music className={`w-5 h-5 ${track.file ? 'text-neon-green' : 'text-gray-500'}`} />
+                          <span className={`text-sm truncate ${track.file ? 'text-neon-green' : 'text-gray-400'}`}>
+                            {track.file ? track.file.name : 'Select audio file (MP3, WAV, M4A, FLAC)'}
+                          </span>
+                        </div>
+                      </label>
+                      
                       {/* Track Title */}
                       <input
                         type="text"
@@ -306,78 +338,40 @@ export default function NewProjectPage() {
                         }}
                         placeholder="Track title"
                         required
-                        className="w-full bg-transparent border-0 border-b border-gray-700 px-0 py-1 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green text-sm"
+                        className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green text-sm"
                       />
-                      
-                      {/* File Upload */}
-                      <div className="flex items-center gap-2">
-                        <label className="flex-1">
-                          <input
-                            type="file"
-                            accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) handleTrackFileChange(index, file)
-                            }}
-                            required
-                            className="hidden"
-                          />
-                          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed cursor-pointer transition text-xs ${
-                            track.file 
-                              ? 'border-neon-green/50 bg-neon-green/5 text-neon-green' 
-                              : 'border-gray-700 hover:border-gray-500 text-gray-500'
-                          }`}>
-                            <Music className="w-4 h-4" />
-                            <span className="truncate">
-                              {track.file ? track.file.name : 'Choose audio file'}
-                            </span>
-                          </div>
-                        </label>
-                        
-                        {tracks.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeTrack(index)}
-                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
                     </div>
+                    
+                    {tracks.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeTrack(index)}
+                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
-              
-              {/* Add Track Button */}
-              <button
-                type="button"
-                onClick={handleAddTrack}
-                className="w-full py-3 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:border-neon-green/50 hover:text-neon-green hover:bg-neon-green/5 transition flex items-center justify-center gap-2 text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Add Track
-              </button>
             </div>
+            
+            <p className="text-xs text-gray-500 text-center">
+              {tracks.length} track{tracks.length !== 1 ? 's' : ''} added
+            </p>
           </div>
         </form>
       </main>
 
       {/* Fixed Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm border-t border-gray-800 p-4 pb-safe">
-        <div className="max-w-xl mx-auto flex gap-3">
-          <Link
-            href="/dashboard"
-            className="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3.5 rounded-full font-semibold text-center transition"
-          >
-            Cancel
-          </Link>
+        <div className="max-w-xl mx-auto flex flex-col gap-3">
           <button
             type="submit"
             form="new-project-form"
             onClick={handleSubmit}
             disabled={loading || !title.trim() || tracks.every(t => !t.file)}
-            className="flex-1 px-6 py-3.5 rounded-full font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/20"
+            className="w-full px-8 py-4 rounded-full font-bold text-lg transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/30"
             style={{
               backgroundColor: '#39FF14',
               color: '#000',
@@ -385,13 +379,19 @@ export default function NewProjectPage() {
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                Creating...
+                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                Creating Project...
               </span>
             ) : (
               'Create Project'
             )}
           </button>
+          <Link
+            href="/dashboard"
+            className="w-full bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white px-6 py-3 rounded-full font-medium text-center transition text-sm"
+          >
+            Cancel
+          </Link>
         </div>
       </div>
     </div>

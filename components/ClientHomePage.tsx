@@ -106,7 +106,7 @@ export default function ClientHomePage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white px-4 relative overflow-hidden">
+      <div className="min-h-screen flex flex-col bg-black text-white px-4 relative overflow-hidden">
         {/* Background gradient */}
         <div 
           className="absolute inset-0 pointer-events-none"
@@ -115,14 +115,14 @@ export default function ClientHomePage() {
           }}
         />
         
-        <div className="text-center max-w-md relative z-10">
-          <h1 className="text-5xl sm:text-6xl font-bold mb-3 text-white tracking-tight">Demo</h1>
-          <p className="text-lg sm:text-xl mb-10 text-gray-400">
-            Share your demos and unreleased tracks
+        <div className="flex-1 flex flex-col items-center justify-center pt-8 pb-24 relative z-10">
+          <h1 className="text-5xl sm:text-6xl font-bold mb-3 text-white tracking-tight text-center">Demo</h1>
+          <p className="text-lg sm:text-xl mb-12 text-gray-400 text-center max-w-md">
+            Share your unreleased tracks on your terms
           </p>
           
-          {/* Decorative Cassette */}
-          <div className="mb-10 flex justify-center">
+          {/* Decorative Cassette - positioned lower */}
+          <div className="mb-12 flex justify-center">
             <DecorativeCassette size="md" />
           </div>
           
@@ -132,10 +132,6 @@ export default function ClientHomePage() {
           >
             Get Started
           </button>
-          
-          <p className="mt-6 text-sm text-gray-500">
-            Free to use • No credit card required
-          </p>
         </div>
       </div>
     )
@@ -162,10 +158,10 @@ export default function ClientHomePage() {
       <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
-            href="/"
-            className="text-xl font-semibold tracking-tight text-white"
+            href="/dashboard"
+            className="text-xl font-semibold tracking-tight text-white hover:text-neon-green transition"
           >
-            Demo
+            Dashboard
           </Link>
           <div className="flex items-center" style={{ gap: '24px' }}>
             <Link
@@ -186,12 +182,12 @@ export default function ClientHomePage() {
       <main className="px-4 py-16 max-w-7xl mx-auto relative z-10">
         <div className="text-center">
           <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-white tracking-tight">Welcome to Demo</h2>
-          <p className="text-lg text-gray-400 mb-10 max-w-md mx-auto">
-            Share and track your music projects with your audience
+          <p className="text-lg text-gray-400 mb-12 max-w-md mx-auto">
+            Share your unreleased tracks on your terms
           </p>
           
           {/* Decorative Cassette */}
-          <div className="mb-10 flex justify-center">
+          <div className="mb-12 flex justify-center">
             <DecorativeCassette size="md" />
           </div>
           

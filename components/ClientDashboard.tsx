@@ -512,69 +512,89 @@ export default function ClientDashboard() {
         <h1 className="text-3xl font-bold mb-8 text-white">Your Projects</h1>
 
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
               <ProjectCardSkeleton key={i} />
             ))}
           </div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-16 bg-gray-900/30 rounded-2xl border border-gray-800/50">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gray-800/50 flex items-center justify-center">
-              <Music className="w-10 h-10 text-gray-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">No projects yet</h3>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">Create your first project to start sharing your music with the world</p>
+          <div className="text-center py-12">
+            <Music className="w-16 h-16 mx-auto mb-4 text-neon-green opacity-50" />
+            <p className="text-neon-green mb-4">No projects yet</p>
             <Link
               href="/dashboard/projects/new"
-              className="inline-flex items-center gap-2 bg-neon-green text-black px-6 py-3 rounded-full font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all"
+              className="inline-block bg-white text-black px-6 py-2 rounded-full font-semibold"
             >
-              <Plus className="w-5 h-5" />
               Create Your First Project
             </Link>
           </div>
         ) : (
-          // Grid View with proper spacing
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
+          // Grid View with proper spacing - using inline styles for guaranteed spacing
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="group relative bg-gray-900/50 hover:bg-gray-800/70 rounded-xl p-3 transition-all duration-200 border border-transparent hover:border-gray-700/50"
+                style={{
+                  backgroundColor: '#111827',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  position: 'relative',
+                }}
+                className="hover:bg-gray-800 transition group"
               >
                 {/* Pinned badge */}
                 {project.pinned && (
-                  <div className="absolute top-1.5 left-1.5 z-10 bg-neon-green rounded-md px-2 py-1 flex items-center gap-1">
-                    <Pin className="w-2.5 h-2.5 text-black" />
-                    <span className="text-[10px] font-bold text-black">Pinned</span>
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '4px',
+                      left: '4px',
+                      zIndex: 10,
+                      backgroundColor: '#39FF14',
+                      borderRadius: '4px',
+                      padding: '2px 6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Pin style={{ width: '10px', height: '10px', color: '#000' }} />
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#000' }}>Pinned</span>
                   </div>
                 )}
                 
                 {/* Image with menu overlay */}
-                <div className="relative w-full aspect-square mb-3">
+                <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: '12px' }}>
                   <Link
                     href={`/dashboard/projects/${project.id}`}
-                    className="block w-full h-full"
+                    style={{ display: 'block', width: '100%', height: '100%' }}
                   >
                     {project.cover_image_url ? (
-                      <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg shadow-black/30">
+                      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
                         <Image
                           src={project.cover_image_url}
                           alt={project.title}
                           fill
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="object-cover"
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                         />
                       </div>
                     ) : (
-                      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                        <Music className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" />
+                      <div style={{ width: '100%', height: '100%', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
                       </div>
                     )}
                   </Link>
                   
-                  {/* Three-dot menu button */}
+                  {/* Three-dot menu button - TOP RIGHT of the IMAGE */}
                   <div 
                     ref={(el) => { menuRefs.current[project.id] = el }}
-                    className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      zIndex: 10,
+                    }}
                   >
                     <button
                       onClick={(e) => {
@@ -582,24 +602,35 @@ export default function ClientDashboard() {
                         e.stopPropagation()
                         setOpenMenuId(openMenuId === project.id ? null : project.id)
                       }}
-                      className="w-8 h-8 bg-black/70 hover:bg-black rounded-full flex items-center justify-center text-white transition shadow-lg backdrop-blur-sm"
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                      className="hover:bg-black text-white transition shadow-lg"
                       title="More options"
                       type="button"
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <MoreVertical style={{ width: '16px', height: '16px' }} />
                     </button>
                   </div>
                 </div>
                 
-                {/* Title and date */}
+                {/* Title and date - BELOW the image */}
                 <Link
                   href={`/dashboard/projects/${project.id}`}
-                  className="block"
+                  style={{ display: 'block' }}
                 >
-                  <h3 className="text-sm sm:text-base font-semibold text-white line-clamp-2 mb-1 group-hover:text-neon-green transition-colors">
+                  <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2" style={{ marginBottom: '4px' }}>
                     {project.title}
                   </h3>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-neon-green opacity-70">
                     {new Date(project.created_at).toLocaleDateString()}
                   </p>
                 </Link>
@@ -610,41 +641,60 @@ export default function ClientDashboard() {
 
         {/* Saved Projects Section */}
         {!loading && savedProjects.length > 0 && (
-          <div className="mt-12">
+          <div style={{ marginTop: '48px' }}>
             <h2 className="text-2xl font-bold mb-6 text-white">Saved Projects</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
               {savedProjects.map((project) => (
                 <div
                   key={`saved-${project.id}`}
-                  className="group relative bg-gray-900/50 hover:bg-gray-800/70 rounded-xl p-3 transition-all duration-200 border border-transparent hover:border-gray-700/50"
+                  style={{
+                    backgroundColor: '#111827',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    position: 'relative',
+                  }}
+                  className="hover:bg-gray-800 transition group"
                 >
                   {/* Pinned badge */}
                   {project.pinned && (
-                    <div className="absolute top-1.5 left-1.5 z-10 bg-neon-green rounded-md px-2 py-1 flex items-center gap-1">
-                      <Pin className="w-2.5 h-2.5 text-black" />
-                      <span className="text-[10px] font-bold text-black">Pinned</span>
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        left: '4px',
+                        zIndex: 10,
+                        backgroundColor: '#39FF14',
+                        borderRadius: '4px',
+                        padding: '2px 6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <Pin style={{ width: '10px', height: '10px', color: '#000' }} />
+                      <span style={{ fontSize: '10px', fontWeight: 600, color: '#000' }}>Pinned</span>
                     </div>
                   )}
 
                   {/* Image with menu overlay */}
-                  <div className="relative w-full aspect-square mb-3">
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: '12px' }}>
                     <Link
                       href={`/share/${project.share_token}`}
-                      className="block w-full h-full"
+                      style={{ display: 'block', width: '100%', height: '100%' }}
                     >
                       {project.cover_image_url ? (
-                        <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg shadow-black/30">
+                        <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
                           <Image
                             src={project.cover_image_url}
                             alt={project.title}
                             fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="object-cover"
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                           />
                         </div>
                       ) : (
-                        <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                          <Music className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" />
+                        <div style={{ width: '100%', height: '100%', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
                         </div>
                       )}
                     </Link>
@@ -652,7 +702,12 @@ export default function ClientDashboard() {
                     {/* Three-dot menu button */}
                     <div 
                       ref={(el) => { menuRefs.current[`saved-${project.id}`] = el }}
-                      className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        zIndex: 10,
+                      }}
                     >
                       <button
                         onClick={(e) => {
@@ -660,11 +715,22 @@ export default function ClientDashboard() {
                           e.stopPropagation()
                           setOpenMenuId(openMenuId === `saved-${project.id}` ? null : `saved-${project.id}`)
                         }}
-                        className="w-8 h-8 bg-black/70 hover:bg-black rounded-full flex items-center justify-center text-white transition shadow-lg backdrop-blur-sm"
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                        className="hover:bg-black text-white transition shadow-lg"
                         title="More options"
                         type="button"
                       >
-                        <MoreVertical className="w-4 h-4" />
+                        <MoreVertical style={{ width: '16px', height: '16px' }} />
                       </button>
                     </div>
                   </div>
@@ -672,12 +738,12 @@ export default function ClientDashboard() {
                   {/* Title and creator */}
                   <Link
                     href={`/share/${project.share_token}`}
-                    className="block"
+                    style={{ display: 'block' }}
                   >
-                    <h3 className="text-sm sm:text-base font-semibold text-white line-clamp-2 mb-1 group-hover:text-neon-green transition-colors">
+                    <h3 className="text-sm sm:text-base font-semibold text-white line-clamp-2" style={{ marginBottom: '4px' }}>
                       {project.title}
                     </h3>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-400">
                       by {project.creator_username}
                     </p>
                   </Link>

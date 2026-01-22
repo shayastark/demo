@@ -169,10 +169,6 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
             background: 'linear-gradient(180deg, rgba(20, 20, 20, 0.95) 0%, rgba(10, 10, 10, 0.98) 100%)',
             borderRadius: '6px',
             border: '1px solid #333',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 24px',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -189,10 +185,14 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
             pointerEvents: 'none',
           }} />
 
-          {/* Left Reel */}
+          {/* Left Reel - positioned absolutely for precise alignment */}
           <div 
             ref={leftReelRef}
             style={{
+              position: 'absolute',
+              left: '38px',
+              top: '50%',
+              marginTop: '-18px',
               width: '36px',
               height: '36px',
               borderRadius: '50%',
@@ -202,7 +202,6 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-              position: 'relative',
             }}
           >
             {/* Spokes */}
@@ -231,12 +230,14 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
 
           {/* Tape line */}
           <div style={{
-            flex: 1,
+            position: 'absolute',
+            left: '80px',
+            right: '80px',
+            top: '50%',
+            marginTop: '-2px',
             height: '4px',
-            margin: '0 16px',
             background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a, #1a1a1a)',
             borderRadius: '2px',
-            position: 'relative',
           }}>
             {/* Tape shine */}
             <div style={{
@@ -249,10 +250,14 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
             }} />
           </div>
 
-          {/* Right Reel */}
+          {/* Right Reel - positioned absolutely for precise alignment */}
           <div 
             ref={rightReelRef}
             style={{
+              position: 'absolute',
+              right: '38px',
+              top: '50%',
+              marginTop: '-18px',
               width: '36px',
               height: '36px',
               borderRadius: '50%',
@@ -262,7 +267,6 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-              position: 'relative',
             }}
           >
             {/* Spokes */}
