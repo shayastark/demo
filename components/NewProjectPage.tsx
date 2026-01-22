@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Upload, X, Music } from 'lucide-react'
+import { Upload, X, Music, ArrowLeft, Plus, Disc3 } from 'lucide-react'
 
 export default function NewProjectPage() {
   const { user } = usePrivy()
@@ -17,6 +17,7 @@ export default function NewProjectPage() {
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
   const [tracks, setTracks] = useState<Array<{ file: File; title: string }>>([{ file: null as any, title: '' }])
   const [loading, setLoading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
 
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -148,41 +149,69 @@ export default function NewProjectPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="border-b border-gray-800 px-4 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold">
-            Demo
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-gray-800">
+        <div className="max-w-xl mx-auto px-4 py-4 flex items-center gap-4">
+          <Link 
+            href="/dashboard" 
+            className="p-2 -ml-2 rounded-full hover:bg-gray-800 transition"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-400" />
           </Link>
+          <h1 className="text-lg font-semibold">New Project</h1>
         </div>
-      </nav>
+      </header>
 
-      <main className="px-4 py-8 max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Create New Project</h1>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Cover Image */}
-          <div>
-            <label className="block text-sm font-medium mb-2 text-neon-green">Cover Image (Optional)</label>
+      <main className="px-4 py-6 max-w-xl mx-auto pb-32">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          
+          {/* Cover Image - Album Art Style */}
+          <div className="flex flex-col items-center">
             {coverImagePreview ? (
-              <div className="relative w-full h-64 rounded-lg overflow-hidden mb-2">
-                <img src={coverImagePreview} alt="Cover preview" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCoverImage(null)
-                    setCoverImagePreview(null)
-                  }}
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-2"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+              <div className="relative w-48 h-48 rounded-xl overflow-hidden shadow-2xl group">
+                <img 
+                  src={coverImagePreview} 
+                  alt="Cover preview" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoverImage(null)
+                      setCoverImagePreview(null)
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             ) : (
-              <label className="block w-full h-64 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-gray-600 transition flex items-center justify-center">
-                <div className="text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-                  <span className="text-neon-green opacity-70">Click to upload cover image</span>
-                </div>
+              <label 
+                className={`w-48 h-48 border-2 border-dashed rounded-xl cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                  dragOver 
+                    ? 'border-neon-green bg-neon-green/10' 
+                    : 'border-gray-700 hover:border-gray-500'
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setDragOver(false)
+                  const file = e.dataTransfer.files?.[0]
+                  if (file && file.type.startsWith('image/')) {
+                    setCoverImage(file)
+                    const reader = new FileReader()
+                    reader.onloadend = () => setCoverImagePreview(reader.result as string)
+                    reader.readAsDataURL(file)
+                  }
+                }}
+              >
+                <Disc3 className="w-10 h-10 text-gray-600" />
+                <span className="text-sm text-gray-500 text-center px-4">
+                  Drop cover art<br />or click to upload
+                </span>
                 <input
                   type="file"
                   accept="image/*"
@@ -191,82 +220,82 @@ export default function NewProjectPage() {
                 />
               </label>
             )}
+            <p className="text-xs text-gray-500 mt-3">Optional • Square recommended</p>
           </div>
 
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium mb-2 text-neon-green">Project Title *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-neon-green"
-            />
-          </div>
+          {/* Project Details Card */}
+          <div className="bg-gray-900/50 rounded-2xl p-5 border border-gray-800 space-y-5">
+            <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Project Details</h2>
+            
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-white">
+                Title <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="My New Project"
+                required
+                className="w-full bg-black border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green/20 transition"
+              />
+            </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium mb-2 text-neon-green">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-neon-green resize-none"
-            />
-          </div>
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-white">Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder="What's this project about?"
+                className="w-full bg-black border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green/20 transition resize-none"
+              />
+            </div>
 
-          {/* Allow Downloads */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="allowDownloads"
-              checked={allowDownloads}
-              onChange={(e) => setAllowDownloads(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <label htmlFor="allowDownloads" className="text-sm text-neon-green">
-              Allow downloads for tracks in this project
+            {/* Allow Downloads */}
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={allowDownloads}
+                onChange={(e) => setAllowDownloads(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-6 bg-gray-700 rounded-full peer-checked:bg-neon-green transition relative">
+                <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-4 shadow" 
+                  style={{ transform: allowDownloads ? 'translateX(16px)' : 'translateX(0)' }}
+                />
+              </div>
+              <span className="text-sm text-gray-300 group-hover:text-white transition">
+                Allow downloads
+              </span>
             </label>
           </div>
 
-          {/* Tracks */}
-          <div>
-            <label className="block text-sm font-medium text-neon-green mb-4">Tracks *</label>
+          {/* Tracks Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide">
+                Tracks <span className="text-red-400">*</span>
+              </h2>
+              <span className="text-xs text-gray-500">{tracks.length} track{tracks.length !== 1 ? 's' : ''}</span>
+            </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {tracks.map((track, index) => (
-                <div key={index} className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-medium text-neon-green">Track {index + 1}</h3>
-                    {tracks.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeTrack(index)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File (MP3, WAV, M4A, FLAC, OGG) *</label>
-                      <input
-                        type="file"
-                        accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) handleTrackFileChange(index, file)
-                        }}
-                        required
-                        className="w-full text-sm"
-                      />
+                <div 
+                  key={index} 
+                  className="bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Track Number */}
+                    <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-sm font-medium text-gray-400 shrink-0">
+                      {index + 1}
                     </div>
-
-                    <div>
-                      <label className="block text-xs text-neon-green opacity-70 mb-1">Track Title *</label>
+                    
+                    <div className="flex-1 space-y-3">
+                      {/* Track Title */}
                       <input
                         type="text"
                         value={track.title}
@@ -275,48 +304,96 @@ export default function NewProjectPage() {
                           newTracks[index].title = e.target.value
                           setTracks(newTracks)
                         }}
+                        placeholder="Track title"
                         required
-                        className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                        className="w-full bg-transparent border-0 border-b border-gray-700 px-0 py-1 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green text-sm"
                       />
+                      
+                      {/* File Upload */}
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1">
+                          <input
+                            type="file"
+                            accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleTrackFileChange(index, file)
+                            }}
+                            required
+                            className="hidden"
+                          />
+                          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed cursor-pointer transition text-xs ${
+                            track.file 
+                              ? 'border-neon-green/50 bg-neon-green/5 text-neon-green' 
+                              : 'border-gray-700 hover:border-gray-500 text-gray-500'
+                          }`}>
+                            <Music className="w-4 h-4" />
+                            <span className="truncate">
+                              {track.file ? track.file.name : 'Choose audio file'}
+                            </span>
+                          </div>
+                        </label>
+                        
+                        {tracks.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeTrack(index)}
+                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
               
-              {/* Add Another Track button */}
+              {/* Add Track Button */}
               <button
                 type="button"
                 onClick={handleAddTrack}
-                className="w-full py-3 border-2 border-dashed border-gray-700 rounded-lg text-gray-400 hover:border-gray-500 hover:text-gray-300 transition flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:border-neon-green/50 hover:text-neon-green hover:bg-neon-green/5 transition flex items-center justify-center gap-2 text-sm"
               >
-                <Music className="w-4 h-4" />
-                Add Another Track
+                <Plus className="w-4 h-4" />
+                Add Track
               </button>
             </div>
           </div>
-
-          {/* Submit */}
-          <div className="flex gap-4 pt-10 mt-6">
-            <Link
-              href="/dashboard"
-              className="flex-1 bg-gray-800 text-white px-8 py-4 rounded-full font-semibold text-center text-lg hover:bg-gray-700 transition"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={loading || tracks.length === 0}
-              className="flex-1 px-8 py-4 rounded-full font-semibold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: '#39FF14',
-                color: '#000',
-              }}
-            >
-              {loading ? 'Creating...' : 'Create Project'}
-            </button>
-          </div>
         </form>
       </main>
+
+      {/* Fixed Bottom Actions */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm border-t border-gray-800 p-4 pb-safe">
+        <div className="max-w-xl mx-auto flex gap-3">
+          <Link
+            href="/dashboard"
+            className="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3.5 rounded-full font-semibold text-center transition"
+          >
+            Cancel
+          </Link>
+          <button
+            type="submit"
+            form="new-project-form"
+            onClick={handleSubmit}
+            disabled={loading || !title.trim() || tracks.every(t => !t.file)}
+            className="flex-1 px-6 py-3.5 rounded-full font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/20"
+            style={{
+              backgroundColor: '#39FF14',
+              color: '#000',
+            }}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                Creating...
+              </span>
+            ) : (
+              'Create Project'
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
