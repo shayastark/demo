@@ -21,7 +21,7 @@ interface ProjectDetailPageProps {
 }
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
-  const { user, logout } = usePrivy()
+  const { user, logout, getAccessToken } = usePrivy()
   const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
@@ -982,6 +982,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     setAddingTracks(true)
     try {
       const privyId = user.id
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
       
       // Get or create user
       let { data: dbUser } = await supabase
@@ -1025,7 +1027,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         nextOrder = existingTracks[0].order + 1
       }
 
-      // Upload and save each new track
+      // Upload and save each new track via API (this triggers notifications)
       for (let i = 0; i < newTracks.length; i++) {
         const track = newTracks[i]
         if (!track.file) {
@@ -1043,19 +1045,25 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           trackImageUrl = await uploadFile(track.image, `projects/${dbUser.id}/track-images`)
         }
 
-        const { error: trackError } = await supabase
-          .from('tracks')
-          .insert({
+        // Use API route to create track (sends notifications to users who saved this project)
+        const response = await fetch('/api/tracks', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             project_id: project.id,
             title: track.title.trim(),
             audio_url: audioUrl,
             image_url: trackImageUrl || null,
             order: nextOrder + i,
-          })
+          }),
+        })
 
-        if (trackError) {
-          console.error('Error inserting track:', trackError)
-          throw new Error(`Failed to save track "${track.title}": ${trackError.message}`)
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(`Failed to save track "${track.title}": ${errorData.error}`)
         }
       }
 
@@ -1082,6 +1090,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       // Reset form
       setNewTracks([])
       setShowAddTrackForm(false)
+      showToast(`${newTracks.length} track${newTracks.length > 1 ? 's' : ''} added successfully!`, 'success')
     } catch (error: any) {
       console.error('Error adding tracks:', error)
       const errorMessage = error?.message || 'Failed to add tracks. Please try again.'

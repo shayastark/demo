@@ -1,16 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
+import { notifyNewTrackAdded } from '@/lib/notifications'
 
-// Helper to verify project ownership
-async function verifyProjectOwnership(projectId: string, userId: string): Promise<boolean> {
+// Helper to verify project ownership and get project details
+async function getProjectIfOwner(projectId: string, userId: string): Promise<{ id: string; title: string; creator_id: string } | null> {
   const { data: project } = await supabaseAdmin
     .from('projects')
-    .select('creator_id')
+    .select('id, title, creator_id')
     .eq('id', projectId)
     .single()
 
-  return project?.creator_id === userId
+  if (!project || project.creator_id !== userId) {
+    return null
+  }
+
+  return project
+}
+
+// Legacy helper for backwards compatibility
+async function verifyProjectOwnership(projectId: string, userId: string): Promise<boolean> {
+  const project = await getProjectIfOwner(projectId, userId)
+  return project !== null
 }
 
 // POST /api/tracks - Create a new track
@@ -34,8 +45,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID, title, and audio URL are required' }, { status: 400 })
     }
 
-    // Verify ownership
-    if (!(await verifyProjectOwnership(project_id, user.id))) {
+    // Verify ownership and get project details
+    const project = await getProjectIfOwner(project_id, user.id)
+    if (!project) {
       return NextResponse.json({ error: 'Project not found or unauthorized' }, { status: 404 })
     }
 
@@ -52,6 +64,17 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // Notify users who have saved this project about the new track
+    // This runs async and doesn't block the response
+    notifyNewTrackAdded({
+      projectId: project_id,
+      creatorId: user.id,
+      projectTitle: project.title,
+      trackTitle: title,
+    }).catch((err) => {
+      console.error('Failed to send new track notifications:', err)
+    })
 
     return NextResponse.json({ track }, { status: 201 })
   } catch (error) {

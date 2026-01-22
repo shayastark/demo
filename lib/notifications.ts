@@ -5,6 +5,7 @@ export type NotificationType =
   | 'project_saved'
   | 'new_follower'
   | 'project_shared'
+  | 'new_track'
 
 interface CreateNotificationParams {
   userId: string
@@ -86,4 +87,66 @@ export async function createTipNotification({
       tipperUsername: tipperUsername || null,
     },
   })
+}
+
+/**
+ * Notify all users who have saved a project that a new track was added
+ * Excludes the creator themselves
+ */
+export async function notifyNewTrackAdded({
+  projectId,
+  creatorId,
+  projectTitle,
+  trackTitle,
+}: {
+  projectId: string
+  creatorId: string
+  projectTitle: string
+  trackTitle: string
+}): Promise<{ success: boolean; notifiedCount: number; error?: string }> {
+  try {
+    // Find all users who have saved this project (excluding the creator)
+    const { data: savedByUsers, error: fetchError } = await supabaseAdmin
+      .from('user_projects')
+      .select('user_id')
+      .eq('project_id', projectId)
+      .neq('user_id', creatorId)
+
+    if (fetchError) {
+      console.error('Error fetching users who saved project:', fetchError)
+      return { success: false, notifiedCount: 0, error: fetchError.message }
+    }
+
+    if (!savedByUsers || savedByUsers.length === 0) {
+      return { success: true, notifiedCount: 0 }
+    }
+
+    // Create notifications for each user
+    const notifications = savedByUsers.map((row) => ({
+      user_id: row.user_id,
+      type: 'new_track' as const,
+      title: `New track added to "${projectTitle}"`,
+      message: `"${trackTitle}" was just added`,
+      data: {
+        projectId,
+        projectTitle,
+        trackTitle,
+      },
+      is_read: false,
+    }))
+
+    const { error: insertError } = await supabaseAdmin
+      .from('notifications')
+      .insert(notifications)
+
+    if (insertError) {
+      console.error('Error creating new track notifications:', insertError)
+      return { success: false, notifiedCount: 0, error: insertError.message }
+    }
+
+    return { success: true, notifiedCount: savedByUsers.length }
+  } catch (error) {
+    console.error('Error in notifyNewTrackAdded:', error)
+    return { success: false, notifiedCount: 0, error: 'Failed to create notifications' }
+  }
 }
