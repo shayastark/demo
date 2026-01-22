@@ -61,7 +61,7 @@ function CryptoTipButtonInner({
       <QueryClientProvider client={queryClient}>
         <DaimoPayProvider>
           <DaimoPayButton
-            appId="pay-demo"
+            appId={process.env.NEXT_PUBLIC_DAIMO_APP_ID || 'pay-demo'}
             intent={`Tip ${creatorName}`}
             toAddress={walletAddress as `0x${string}`}
             toChain={baseUSDC.chainId}
