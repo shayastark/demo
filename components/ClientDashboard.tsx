@@ -470,29 +470,37 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="border-b border-gray-800 px-4 py-4">
+    <div className="min-h-screen bg-black text-white relative">
+      {/* Subtle background gradient */}
+      <div 
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at top center, rgba(57, 255, 20, 0.03) 0%, transparent 40%)',
+        }}
+      />
+      
+      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-4 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-white">
             Demo
           </Link>
-          <div className="flex items-center" style={{ gap: '24px' }}>
+          <div className="flex items-center" style={{ gap: '20px' }}>
             <Link
               href="/account"
-              className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
+              className="text-sm text-gray-400 hover:text-white transition"
             >
               Account
             </Link>
             <Link
               href="/dashboard/projects/new"
-              className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
+              className="flex items-center gap-2 bg-neon-green text-black px-5 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all"
             >
               <Plus className="w-4 h-4" />
               New Project
             </Link>
             <button
               onClick={logout}
-              className="text-sm text-gray-400 hover:text-white transition"
+              className="text-sm text-gray-500 hover:text-gray-300 transition"
             >
               Sign out
             </button>
@@ -500,93 +508,73 @@ export default function ClientDashboard() {
         </div>
       </nav>
 
-      <main className="px-4 py-8 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">Your Projects</h1>
+      <main className="px-4 py-8 max-w-7xl mx-auto relative z-10">
+        <h1 className="text-3xl font-bold mb-8 text-white">Your Projects</h1>
 
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
               <ProjectCardSkeleton key={i} />
             ))}
           </div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-12">
-            <Music className="w-16 h-16 mx-auto mb-4 text-neon-green opacity-50" />
-            <p className="text-neon-green mb-4">No projects yet</p>
+          <div className="text-center py-16 bg-gray-900/30 rounded-2xl border border-gray-800/50">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gray-800/50 flex items-center justify-center">
+              <Music className="w-10 h-10 text-gray-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">No projects yet</h3>
+            <p className="text-gray-500 mb-6 max-w-sm mx-auto">Create your first project to start sharing your music with the world</p>
             <Link
               href="/dashboard/projects/new"
-              className="inline-block bg-white text-black px-6 py-2 rounded-full font-semibold"
+              className="inline-flex items-center gap-2 bg-neon-green text-black px-6 py-3 rounded-full font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all"
             >
+              <Plus className="w-5 h-5" />
               Create Your First Project
             </Link>
           </div>
         ) : (
-          // Grid View with proper spacing - using inline styles for guaranteed spacing
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
+          // Grid View with proper spacing
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
             {projects.map((project) => (
               <div
                 key={project.id}
-                style={{
-                  backgroundColor: '#111827',
-                  borderRadius: '12px',
-                  padding: '12px',
-                  position: 'relative',
-                }}
-                className="hover:bg-gray-800 transition group"
+                className="group relative bg-gray-900/50 hover:bg-gray-800/70 rounded-xl p-3 transition-all duration-200 border border-transparent hover:border-gray-700/50"
               >
                 {/* Pinned badge */}
                 {project.pinned && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '4px',
-                      left: '4px',
-                      zIndex: 10,
-                      backgroundColor: '#39FF14',
-                      borderRadius: '4px',
-                      padding: '2px 6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <Pin style={{ width: '10px', height: '10px', color: '#000' }} />
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#000' }}>Pinned</span>
+                  <div className="absolute top-1.5 left-1.5 z-10 bg-neon-green rounded-md px-2 py-1 flex items-center gap-1">
+                    <Pin className="w-2.5 h-2.5 text-black" />
+                    <span className="text-[10px] font-bold text-black">Pinned</span>
                   </div>
                 )}
                 
                 {/* Image with menu overlay */}
-                <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: '12px' }}>
+                <div className="relative w-full aspect-square mb-3">
                   <Link
                     href={`/dashboard/projects/${project.id}`}
-                    style={{ display: 'block', width: '100%', height: '100%' }}
+                    className="block w-full h-full"
                   >
                     {project.cover_image_url ? (
-                      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+                      <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg shadow-black/30">
                         <Image
                           src={project.cover_image_url}
                           alt={project.title}
                           fill
-                          className="object-cover"
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                         />
                       </div>
                     ) : (
-                      <div style={{ width: '100%', height: '100%', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
+                      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                        <Music className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" />
                       </div>
                     )}
                   </Link>
                   
-                  {/* Three-dot menu button - TOP RIGHT of the IMAGE */}
+                  {/* Three-dot menu button */}
                   <div 
                     ref={(el) => { menuRefs.current[project.id] = el }}
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      zIndex: 10,
-                    }}
+                    className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <button
                       onClick={(e) => {
@@ -594,35 +582,24 @@ export default function ClientDashboard() {
                         e.stopPropagation()
                         setOpenMenuId(openMenuId === project.id ? null : project.id)
                       }}
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                      className="hover:bg-black text-white transition shadow-lg"
+                      className="w-8 h-8 bg-black/70 hover:bg-black rounded-full flex items-center justify-center text-white transition shadow-lg backdrop-blur-sm"
                       title="More options"
                       type="button"
                     >
-                      <MoreVertical style={{ width: '16px', height: '16px' }} />
+                      <MoreVertical className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
                 
-                {/* Title and date - BELOW the image */}
+                {/* Title and date */}
                 <Link
                   href={`/dashboard/projects/${project.id}`}
-                  style={{ display: 'block' }}
+                  className="block"
                 >
-                  <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2" style={{ marginBottom: '4px' }}>
+                  <h3 className="text-sm sm:text-base font-semibold text-white line-clamp-2 mb-1 group-hover:text-neon-green transition-colors">
                     {project.title}
                   </h3>
-                  <p className="text-xs text-neon-green opacity-70">
+                  <p className="text-xs text-gray-500">
                     {new Date(project.created_at).toLocaleDateString()}
                   </p>
                 </Link>
@@ -633,60 +610,41 @@ export default function ClientDashboard() {
 
         {/* Saved Projects Section */}
         {!loading && savedProjects.length > 0 && (
-          <div style={{ marginTop: '48px' }}>
+          <div className="mt-12">
             <h2 className="text-2xl font-bold mb-6 text-white">Saved Projects</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
               {savedProjects.map((project) => (
                 <div
                   key={`saved-${project.id}`}
-                  style={{
-                    backgroundColor: '#111827',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    position: 'relative',
-                  }}
-                  className="hover:bg-gray-800 transition group"
+                  className="group relative bg-gray-900/50 hover:bg-gray-800/70 rounded-xl p-3 transition-all duration-200 border border-transparent hover:border-gray-700/50"
                 >
                   {/* Pinned badge */}
                   {project.pinned && (
-                    <div 
-                      style={{
-                        position: 'absolute',
-                        top: '4px',
-                        left: '4px',
-                        zIndex: 10,
-                        backgroundColor: '#39FF14',
-                        borderRadius: '4px',
-                        padding: '2px 6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}
-                    >
-                      <Pin style={{ width: '10px', height: '10px', color: '#000' }} />
-                      <span style={{ fontSize: '10px', fontWeight: 600, color: '#000' }}>Pinned</span>
+                    <div className="absolute top-1.5 left-1.5 z-10 bg-neon-green rounded-md px-2 py-1 flex items-center gap-1">
+                      <Pin className="w-2.5 h-2.5 text-black" />
+                      <span className="text-[10px] font-bold text-black">Pinned</span>
                     </div>
                   )}
 
                   {/* Image with menu overlay */}
-                  <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: '12px' }}>
+                  <div className="relative w-full aspect-square mb-3">
                     <Link
                       href={`/share/${project.share_token}`}
-                      style={{ display: 'block', width: '100%', height: '100%' }}
+                      className="block w-full h-full"
                     >
                       {project.cover_image_url ? (
-                        <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+                        <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg shadow-black/30">
                           <Image
                             src={project.cover_image_url}
                             alt={project.title}
                             fill
-                            className="object-cover"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                           />
                         </div>
                       ) : (
-                        <div style={{ width: '100%', height: '100%', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
+                        <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                          <Music className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" />
                         </div>
                       )}
                     </Link>
@@ -694,12 +652,7 @@ export default function ClientDashboard() {
                     {/* Three-dot menu button */}
                     <div 
                       ref={(el) => { menuRefs.current[`saved-${project.id}`] = el }}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        zIndex: 10,
-                      }}
+                      className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <button
                         onClick={(e) => {
@@ -707,22 +660,11 @@ export default function ClientDashboard() {
                           e.stopPropagation()
                           setOpenMenuId(openMenuId === `saved-${project.id}` ? null : `saved-${project.id}`)
                         }}
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          border: 'none',
-                          cursor: 'pointer',
-                        }}
-                        className="hover:bg-black text-white transition shadow-lg"
+                        className="w-8 h-8 bg-black/70 hover:bg-black rounded-full flex items-center justify-center text-white transition shadow-lg backdrop-blur-sm"
                         title="More options"
                         type="button"
                       >
-                        <MoreVertical style={{ width: '16px', height: '16px' }} />
+                        <MoreVertical className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -730,12 +672,12 @@ export default function ClientDashboard() {
                   {/* Title and creator */}
                   <Link
                     href={`/share/${project.share_token}`}
-                    style={{ display: 'block' }}
+                    className="block"
                   >
-                    <h3 className="text-sm sm:text-base font-semibold text-white line-clamp-2" style={{ marginBottom: '4px' }}>
+                    <h3 className="text-sm sm:text-base font-semibold text-white line-clamp-2 mb-1 group-hover:text-neon-green transition-colors">
                       {project.title}
                     </h3>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       by {project.creator_username}
                     </p>
                   </Link>

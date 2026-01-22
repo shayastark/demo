@@ -1111,36 +1111,46 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${project.share_token}`
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="border-b border-gray-800 px-4 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center gap-2 text-neon-green hover:opacity-80 opacity-70">
+    <div className="min-h-screen bg-black text-white relative">
+      {/* Subtle background gradient */}
+      <div 
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at top center, rgba(57, 255, 20, 0.03) 0%, transparent 40%)',
+        }}
+      />
+      
+      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-4 sticky top-0 z-20">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <Link href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-white transition">
             <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
+            Dashboard
+          </Link>
+          <Link href="/" className="text-xl font-bold text-white">
+            Demo
           </Link>
           <button
             onClick={logout}
-            className="text-sm text-white bg-gray-800 px-4 py-2 rounded-lg hover:bg-gray-700 transition"
+            className="text-sm text-gray-500 hover:text-gray-300 transition"
           >
             Sign out
           </button>
-          <Link href="/" className="text-2xl font-bold">
-            Demo
-          </Link>
         </div>
       </nav>
 
-      <main className="px-4 py-8 max-w-4xl mx-auto">
+      <main className="px-4 py-8 max-w-3xl mx-auto relative z-10">
         {/* Cover Image */}
         {!editingProject && project.cover_image_url && (
-          <div className="w-full h-40 md:h-56 rounded-lg overflow-hidden mb-6 relative">
+          <div className="w-full aspect-[21/9] sm:aspect-[3/1] rounded-xl overflow-hidden mb-6 relative shadow-2xl shadow-black/50">
             <Image
               src={project.cover_image_url}
               alt={project.title}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 768px"
+              priority
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           </div>
         )}
 
@@ -1229,46 +1239,46 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex flex-col gap-2">
-                  <h1 className="text-3xl sm:text-4xl font-bold">{project.title}</h1>
-                  <div className="flex items-center text-sm text-gray-400">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex flex-col gap-2 min-w-0 flex-1">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">{project.title}</h1>
+                  <div className="flex items-center text-sm text-gray-400 flex-wrap gap-y-1">
                     {creatorUsername && creatorId && (
                       <button
                         onClick={() => setShowCreatorModal(true)}
-                        className="hover:text-neon-green transition underline-offset-2 hover:underline"
+                        className="hover:text-neon-green transition underline-offset-2 hover:underline font-medium"
                       >
                         {creatorUsername}
                       </button>
                     )}
                     {tracks.length > 0 && (
                       <>
-                        <span className="mx-2">•</span>
+                        <span className="mx-2 text-gray-600">•</span>
                         <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                       </>
                     )}
                   </div>
                 </div>
-            {/* Project Menu Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                if (!isProjectMenuOpen) {
-                  setTrackMenuOpen(false) // This will trigger forceCloseMenu in TrackPlaylist
-                }
-                setIsProjectMenuOpen(!isProjectMenuOpen)
-              }}
-              className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
-              title="More options"
-              type="button"
-            >
-              <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
-            </button>
-          </div>
-          {project.description && (
-            <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
-          )}
+                {/* Project Menu Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    if (!isProjectMenuOpen) {
+                      setTrackMenuOpen(false) // This will trigger forceCloseMenu in TrackPlaylist
+                    }
+                    setIsProjectMenuOpen(!isProjectMenuOpen)
+                  }}
+                  className="w-11 h-11 sm:w-10 sm:h-10 bg-gray-800/80 hover:bg-gray-700 text-white rounded-xl flex items-center justify-center transition-colors touch-manipulation flex-shrink-0"
+                  title="More options"
+                  type="button"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </div>
+              {project.description && (
+                <p className="text-gray-400 text-base mb-6 leading-relaxed">{project.description}</p>
+              )}
             </>
           )}
 

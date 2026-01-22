@@ -4,6 +4,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
+import DecorativeCassette from './DecorativeCassette'
 
 export default function ClientHomePage() {
   const { ready, authenticated, user, login, logout } = usePrivy()
@@ -105,18 +106,36 @@ export default function ClientHomePage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-        <div className="text-center max-w-md">
-          <h1 className="text-4xl font-bold mb-4 text-white">Demo</h1>
-          <p className="text-lg mb-8 text-neon-green opacity-90">
-            Share your demos and unreleased tracks with the world
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white px-4 relative overflow-hidden">
+        {/* Background gradient */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at center top, rgba(57, 255, 20, 0.08) 0%, transparent 50%), radial-gradient(ellipse at center bottom, rgba(0, 217, 255, 0.05) 0%, transparent 50%)',
+          }}
+        />
+        
+        <div className="text-center max-w-md relative z-10">
+          <h1 className="text-5xl sm:text-6xl font-bold mb-3 text-white tracking-tight">Demo</h1>
+          <p className="text-lg sm:text-xl mb-10 text-gray-400">
+            Share your demos and unreleased tracks
           </p>
+          
+          {/* Decorative Cassette */}
+          <div className="mb-10 flex justify-center">
+            <DecorativeCassette size="md" />
+          </div>
+          
           <button
             onClick={login}
-            className="bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
+            className="bg-neon-green text-black px-10 py-4 rounded-full font-semibold text-lg hover:shadow-lg hover:shadow-neon-green/30 transition-all hover:scale-105 active:scale-100"
           >
             Get Started
           </button>
+          
+          <p className="mt-6 text-sm text-gray-500">
+            Free to use • No credit card required
+          </p>
         </div>
       </div>
     )
@@ -131,8 +150,16 @@ export default function ClientHomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="border-b border-gray-800 bg-black px-4 py-3 sticky top-0 z-20">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Background gradient */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center top, rgba(57, 255, 20, 0.05) 0%, transparent 50%)',
+        }}
+      />
+      
+      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
             href="/"
@@ -143,28 +170,34 @@ export default function ClientHomePage() {
           <div className="flex items-center" style={{ gap: '24px' }}>
             <Link
               href="/account"
-              className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
+              className="text-sm text-gray-400 hover:text-white transition"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
             <button
               onClick={logout}
-              className="text-sm text-gray-400 hover:text-white transition"
+              className="text-sm text-gray-500 hover:text-gray-300 transition"
             >
               Sign out
             </button>
           </div>
         </div>
       </nav>
-      <main className="px-4 py-8 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4 text-white">Welcome to Demo</h2>
-          <p className="text-white mb-8 opacity-90">
-            Share and track your music projects
+      <main className="px-4 py-16 max-w-7xl mx-auto relative z-10">
+        <div className="text-center">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-white tracking-tight">Welcome to Demo</h2>
+          <p className="text-lg text-gray-400 mb-10 max-w-md mx-auto">
+            Share and track your music projects with your audience
           </p>
+          
+          {/* Decorative Cassette */}
+          <div className="mb-10 flex justify-center">
+            <DecorativeCassette size="md" />
+          </div>
+          
           <Link
             href="/dashboard"
-            className="inline-block bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
+            className="inline-block bg-neon-green text-black px-10 py-4 rounded-full font-semibold text-lg hover:shadow-lg hover:shadow-neon-green/30 transition-all hover:scale-105 active:scale-100"
           >
             Go to Your Dashboard
           </Link>

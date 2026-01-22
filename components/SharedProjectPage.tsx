@@ -608,10 +608,18 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white relative">
+      {/* Subtle background gradient */}
+      <div 
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at top center, rgba(57, 255, 20, 0.03) 0%, transparent 50%)',
+        }}
+      />
+      
       {/* Simple app header so users can discover Demo from shared links */}
-      <header className="border-b border-gray-800 bg-black px-4 py-3 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <header className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
           <Link href="/" className="text-lg font-semibold tracking-tight text-white">
             Demo
           </Link>
@@ -629,18 +637,18 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   }
                   login()
                 }}
-                className="px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-gray-200 transition flex items-center gap-1.5"
+                className="px-4 py-2 rounded-full bg-neon-green text-black text-sm font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all flex items-center gap-2"
                 title="Sign in to access your dashboard"
               >
-                <LayoutDashboard className="w-3.5 h-3.5" />
+                <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </button>
             ) : (
               <Link
                 href="/dashboard"
-                className="px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-gray-200 transition flex items-center gap-1.5"
+                className="px-4 py-2 rounded-full bg-neon-green text-black text-sm font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all flex items-center gap-2"
               >
-                <LayoutDashboard className="w-3.5 h-3.5" />
+                <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </Link>
             )}
@@ -648,37 +656,40 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Cover Image */}
+      <div className="max-w-3xl mx-auto px-4 py-8 relative z-[1]">
+        {/* Cover Image with gradient overlay */}
         {project.cover_image_url && (
-          <div className="w-full h-40 md:h-56 rounded-lg overflow-hidden mb-6 relative">
+          <div className="w-full aspect-[21/9] sm:aspect-[3/1] rounded-xl overflow-hidden mb-6 relative shadow-2xl shadow-black/50">
             <Image
               src={project.cover_image_url}
               alt={project.title}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 768px"
+              priority
             />
+            {/* Bottom gradient for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           </div>
         )}
 
         {/* Project Info */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex flex-col gap-2">
-              <h1 className="text-3xl sm:text-4xl font-bold text-white">{project.title}</h1>
-              <div className="flex items-center text-sm text-gray-400">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex flex-col gap-2 min-w-0 flex-1">
+              <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight truncate">{project.title}</h1>
+              <div className="flex items-center text-sm text-gray-400 flex-wrap gap-y-1">
                 {creatorUsername && creatorId && (
                   <button
                     onClick={() => setShowCreatorModal(true)}
-                    className="hover:text-neon-green transition underline-offset-2 hover:underline"
+                    className="hover:text-neon-green transition underline-offset-2 hover:underline font-medium"
                   >
                     {creatorUsername}
                   </button>
                 )}
                 {tracks.length > 0 && (
                   <>
-                    <span className="mx-2">•</span>
+                    <span className="mx-2 text-gray-600">•</span>
                     <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                   </>
                 )}
@@ -693,22 +704,24 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   }
                   setIsProjectMenuOpen(!isProjectMenuOpen)
                 }}
-                className="w-12 h-12 sm:w-10 sm:h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-700 active:bg-gray-600 transition touch-manipulation"
+                className="w-11 h-11 sm:w-10 sm:h-10 bg-gray-800/80 hover:bg-gray-700 text-white rounded-xl flex items-center justify-center transition-colors touch-manipulation flex-shrink-0"
                 title="More options"
               >
-                <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5" />
+                <MoreVertical className="w-5 h-5" />
               </button>
             )}
           </div>
           {project.description && (
-            <p className="text-neon-green text-lg mb-6 opacity-90">{project.description}</p>
+            <p className="text-gray-400 text-base mb-6 leading-relaxed">{project.description}</p>
           )}
         </div>
 
         {/* Tracks */}
         <div className="space-y-4">
           {tracks.length === 0 ? (
-            <p className="text-neon-green">No tracks in this project yet.</p>
+            <div className="text-center py-12 bg-gray-900/50 rounded-xl border border-gray-800/50">
+              <p className="text-gray-500">No tracks in this project yet.</p>
+            </div>
           ) : (
             <TrackPlaylist
               tracks={tracks}
