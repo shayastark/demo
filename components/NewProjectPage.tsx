@@ -5,10 +5,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Upload, X, Music, ArrowLeft, Plus, ImagePlus } from 'lucide-react'
+import { Upload, X, ArrowLeft, Plus, ImagePlus } from 'lucide-react'
+import { showToast } from './Toast'
 
 export default function NewProjectPage() {
-  const { user } = usePrivy()
+  const { user, getAccessToken } = usePrivy()
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -72,7 +73,10 @@ export default function NewProjectPage() {
 
     setLoading(true)
     try {
-      // Get or create user
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+
+      // Get or create user via API
       const privyId = user.id
       let { data: dbUser } = await supabase
         .from('users')
@@ -81,67 +85,88 @@ export default function NewProjectPage() {
         .single()
 
       if (!dbUser) {
-        const { data: newUser, error: userError } = await supabase
-          .from('users')
-          .insert({ privy_id: privyId, email: user.email?.address || null })
-          .select('id')
-          .single()
+        // Create user via secure API
+        const userResponse = await fetch('/api/user', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: user.email?.address || null }),
+        })
         
-        if (userError || !newUser) throw userError || new Error('Failed to create user')
-        dbUser = newUser
+        if (!userResponse.ok) {
+          const err = await userResponse.json()
+          throw new Error(err.error || 'Failed to create user')
+        }
+        
+        const userData = await userResponse.json()
+        dbUser = userData.user
       }
+
+      if (!dbUser) throw new Error('User not found')
 
       // Upload cover image if provided
       let coverImageUrl: string | undefined
-      if (coverImage && dbUser) {
+      if (coverImage) {
         coverImageUrl = await uploadFile(coverImage, `projects/${dbUser.id}/covers`)
       }
 
-      // Create project
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .insert({
-          creator_id: dbUser.id,
+      // Create project via secure API
+      const projectResponse = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           title,
           description: description || null,
           cover_image_url: coverImageUrl,
           allow_downloads: allowDownloads,
-        })
-        .select('id')
-        .single()
+        }),
+      })
 
-      if (projectError) throw projectError
+      if (!projectResponse.ok) {
+        const err = await projectResponse.json()
+        throw new Error(err.error || 'Failed to create project')
+      }
 
-      // Upload tracks
-      if (!dbUser) throw new Error('User not found')
-      
+      const projectData = await projectResponse.json()
+      const project = projectData.project
+
+      // Upload and create tracks via secure API
       for (let i = 0; i < tracks.length; i++) {
         const track = tracks[i]
         if (!track.file) continue
 
         const audioUrl = await uploadFile(track.file, `projects/${dbUser.id}/tracks`)
 
-        const { error: trackError } = await supabase
-          .from('tracks')
-          .insert({
+        const trackResponse = await fetch('/api/tracks', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             project_id: project.id,
             title: track.title || `Track ${i + 1}`,
             audio_url: audioUrl,
             order: i,
-          })
+          }),
+        })
 
-        if (trackError) throw trackError
+        if (!trackResponse.ok) {
+          const err = await trackResponse.json()
+          throw new Error(err.error || `Failed to create track ${i + 1}`)
+        }
       }
 
-      // Initialize metrics with explicit 0 values
-      await supabase
-        .from('project_metrics')
-        .insert({ project_id: project.id, plays: 0, shares: 0, adds: 0 })
-
+      showToast('Project created successfully!', 'success')
       router.push(`/dashboard/projects/${project.id}`)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating project:', error)
-      alert('Failed to create project. Please try again.')
+      showToast(error.message || 'Failed to create project. Please try again.', 'error')
     } finally {
       setLoading(false)
     }
@@ -162,7 +187,7 @@ export default function NewProjectPage() {
         </div>
       </header>
 
-      <main className="px-4 py-6 max-w-xl mx-auto pb-36">
+      <main className="px-4 py-6 max-w-xl mx-auto pb-8">
         <form id="new-project-form" onSubmit={handleSubmit} className="space-y-6">
           
           {/* Cover Image - Album Art Style */}
@@ -368,34 +393,20 @@ export default function NewProjectPage() {
               Add another track
             </button>
           </div>
-        </form>
-      </main>
 
-      {/* Fixed Bottom Actions */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-gray-700 px-4 pt-4"
-        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-      >
-        <div className="max-w-xl mx-auto">
-          {/* Helper text */}
-          {(!title.trim() || tracks.every(t => !t.file)) && (
-            <p className="text-center text-xs text-gray-500 mb-2">
-              {!title.trim() ? 'Add a title to continue' : 'Upload at least one track to continue'}
-            </p>
-          )}
-          
-          <div className="flex gap-3">
-            <Link
-              href="/dashboard"
-              className="flex-shrink-0 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-5 py-3 rounded-full font-medium text-center transition text-sm"
-            >
-              Cancel
-            </Link>
+          {/* Action Buttons - Inside form, always visible */}
+          <div className="bg-gray-900/50 rounded-2xl p-5 border border-gray-800 space-y-4 mt-6">
+            {/* Helper text */}
+            {(!title.trim() || tracks.every(t => !t.file)) && (
+              <p className="text-center text-sm text-gray-500">
+                {!title.trim() ? 'Add a title above to continue' : 'Upload at least one track to continue'}
+              </p>
+            )}
+            
             <button
               type="submit"
-              form="new-project-form"
               disabled={loading || !title.trim() || tracks.every(t => !t.file)}
-              className="flex-1 px-6 py-3 rounded-full font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/30"
+              className="w-full px-8 py-4 rounded-full font-bold text-lg transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/30"
               style={{
                 backgroundColor: '#39FF14',
                 color: '#000',
@@ -403,16 +414,23 @@ export default function NewProjectPage() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  Creating...
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  Creating Project...
                 </span>
               ) : (
                 'Create Project'
               )}
             </button>
+            
+            <Link
+              href="/dashboard"
+              className="block w-full text-center py-3 text-gray-400 hover:text-white transition"
+            >
+              Cancel
+            </Link>
           </div>
-        </div>
-      </div>
+        </form>
+      </main>
     </div>
   )
 }
