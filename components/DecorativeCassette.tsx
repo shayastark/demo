@@ -44,15 +44,21 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
         height: '180px',
         transform: `scale(${scale})`,
         transformOrigin: 'center center',
+        overflow: 'visible',
       }}
     >
-      {/* Ambient glow */}
+      {/* Ambient glow - centered precisely */}
       <div 
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none"
         style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '420px',
+          height: '270px',
           background: 'radial-gradient(ellipse at center, rgba(57, 255, 20, 0.15) 0%, transparent 70%)',
           filter: 'blur(40px)',
-          transform: 'scale(1.5)',
         }}
       />
       

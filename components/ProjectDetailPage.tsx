@@ -1249,8 +1249,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </div>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex-1 min-w-0">
+              {/* Title row with Options button on the right - using flex with explicit alignment */}
+              <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-2">{project.title}</h1>
                   <div className="flex items-center text-sm text-gray-400 flex-wrap gap-y-1">
                     {creatorUsername && creatorId && (
@@ -1269,7 +1270,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     )}
                   </div>
                 </div>
-                {/* Project Menu Button - Right aligned with title, same size as track menus */}
+                {/* Project Menu Button - must be on same row as title */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -1279,7 +1280,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     }
                     setIsProjectMenuOpen(!isProjectMenuOpen)
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors touch-manipulation flex-shrink-0"
+                  style={{ flexShrink: 0 }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors touch-manipulation"
                   title="Options"
                   type="button"
                 >
