@@ -582,7 +582,7 @@ function AccountPageContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Profile Picture */}
             <div className="flex items-center gap-4">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-200 font-semibold">Profile Picture</label>
+              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-white font-bold">Profile Picture</label>
               <div className="flex items-center gap-4">
                 {/* Avatar display */}
                 <div 
@@ -644,7 +644,7 @@ function AccountPageContent() {
 
             {/* Email */}
             <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-200 font-semibold">Email</label>
+              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-white font-bold">Email</label>
               <span className="text-sm text-white">
                 {profile?.email || user?.email?.address || 'Not set'}
               </span>
@@ -652,7 +652,7 @@ function AccountPageContent() {
 
             {/* Username */}
             <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-200 font-semibold">Username</label>
+              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-white font-bold">Username</label>
               {isEditingUsername ? (
                 <div className="flex items-center gap-2 flex-1">
                   <input
@@ -757,7 +757,7 @@ function AccountPageContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Bio */}
             <div>
-              <label className="block text-sm text-gray-200 mb-2 font-semibold">Bio</label>
+              <label className="block text-sm text-white mb-2 font-bold">Bio</label>
               {isEditingProfile ? (
                 <textarea
                   value={editProfile.bio}
@@ -775,7 +775,7 @@ function AccountPageContent() {
 
             {/* Contact Email */}
             <div>
-              <label className="block text-sm text-gray-200 mb-2 font-semibold">Contact Email</label>
+              <label className="block text-sm text-white mb-2 font-bold">Contact Email</label>
               {isEditingProfile ? (
                 <input
                   type="email"
@@ -793,7 +793,7 @@ function AccountPageContent() {
 
             {/* Website */}
             <div>
-              <label className="block text-sm text-gray-200 mb-2 font-semibold">Website</label>
+              <label className="block text-sm text-white mb-2 font-bold">Website</label>
               {isEditingProfile ? (
                 <div className="flex items-center gap-2 max-w-md">
                   <Globe className="w-4 h-4 text-gray-500" />
@@ -820,7 +820,7 @@ function AccountPageContent() {
 
             {/* Social Links */}
             <div>
-              <label className="block text-sm text-gray-200 mb-3 font-semibold">Social Links</label>
+              <label className="block text-sm text-white mb-3 font-bold">Social Links</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Instagram */}
                 <div className="flex items-center gap-3">

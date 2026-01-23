@@ -1165,7 +1165,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         )}
 
         {/* Project Info */}
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           {editingProject ? (
             <div className="bg-gray-900 rounded-lg p-6 mb-6">
               <h2 className="text-2xl font-bold mb-4 text-neon-green">Edit Project</h2>

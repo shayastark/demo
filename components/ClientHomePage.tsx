@@ -134,8 +134,8 @@ export default function ClientHomePage() {
           </p>
           
           {/* Decorative Cassette - centered and positioned lower */}
-          <div className="mt-8 mb-16 w-full flex items-center justify-center">
-            <div className="flex-shrink-0">
+          <div style={{ position: 'relative', width: '100%', height: '240px', marginTop: '48px', marginBottom: '48px' }}>
+            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
               <DecorativeCassette size="md" />
             </div>
           </div>
@@ -201,8 +201,8 @@ export default function ClientHomePage() {
           </p>
           
           {/* Decorative Cassette - centered and positioned lower */}
-          <div className="mt-8 mb-16 w-full flex items-center justify-center">
-            <div className="flex-shrink-0">
+          <div style={{ position: 'relative', width: '100%', height: '240px', marginTop: '48px', marginBottom: '48px' }}>
+            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
               <DecorativeCassette size="md" />
             </div>
           </div>

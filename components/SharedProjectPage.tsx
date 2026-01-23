@@ -674,7 +674,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         )}
 
         {/* Project Info */}
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
               <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-2">{project.title}</h1>
