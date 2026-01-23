@@ -38,7 +38,7 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
 
   return (
     <div 
-      className="relative mx-auto"
+      className="relative"
       style={{
         width: '280px',
         height: '180px',

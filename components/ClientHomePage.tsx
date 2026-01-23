@@ -133,9 +133,11 @@ export default function ClientHomePage() {
             Share your unreleased tracks on your terms
           </p>
           
-          {/* Decorative Cassette - positioned lower */}
-          <div className="mb-12 flex justify-center">
-            <DecorativeCassette size="md" />
+          {/* Decorative Cassette - centered and positioned lower */}
+          <div className="mt-8 mb-16 w-full flex items-center justify-center">
+            <div className="flex-shrink-0">
+              <DecorativeCassette size="md" />
+            </div>
           </div>
           
           <button
@@ -198,9 +200,11 @@ export default function ClientHomePage() {
             Share your unreleased tracks on your terms
           </p>
           
-          {/* Decorative Cassette */}
-          <div className="mb-12 flex justify-center">
-            <DecorativeCassette size="md" />
+          {/* Decorative Cassette - centered and positioned lower */}
+          <div className="mt-8 mb-16 w-full flex items-center justify-center">
+            <div className="flex-shrink-0">
+              <DecorativeCassette size="md" />
+            </div>
           </div>
           
           <Link

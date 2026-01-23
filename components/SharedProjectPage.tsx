@@ -675,43 +675,44 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
         {/* Project Info */}
         <div className="mb-8">
-          <div className="mb-4">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-2">{project.title}</h1>
-            <div className="flex items-center text-sm text-gray-400 flex-wrap gap-y-1">
-              {creatorUsername && creatorId && (
-                <button
-                  onClick={() => setShowCreatorModal(true)}
-                  className="hover:text-neon-green transition underline-offset-2 hover:underline font-medium"
-                >
-                  {creatorUsername}
-                </button>
-              )}
-              {tracks.length > 0 && (
-                <>
-                  <span className="mx-2 text-gray-600">•</span>
-                  <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
-                </>
-              )}
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-2">{project.title}</h1>
+              <div className="flex items-center text-sm text-gray-400 flex-wrap gap-y-1">
+                {creatorUsername && creatorId && (
+                  <button
+                    onClick={() => setShowCreatorModal(true)}
+                    className="hover:text-neon-green transition underline-offset-2 hover:underline font-medium"
+                  >
+                    {creatorUsername}
+                  </button>
+                )}
+                {tracks.length > 0 && (
+                  <>
+                    <span className="mx-2 text-gray-600">•</span>
+                    <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
+                  </>
+                )}
+              </div>
             </div>
+            {/* Project Menu Button - Right aligned with title */}
+            {authenticated && user && (
+              <button
+                onClick={() => {
+                  if (!isProjectMenuOpen) {
+                    setTrackMenuOpen(false)
+                  }
+                  setIsProjectMenuOpen(!isProjectMenuOpen)
+                }}
+                className="w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full flex items-center justify-center transition-colors touch-manipulation flex-shrink-0 mt-1"
+                title="More options"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            )}
           </div>
           {project.description && (
-            <p className="text-gray-400 text-base mb-4 leading-relaxed">{project.description}</p>
-          )}
-          {/* Project Menu Button - Only show if authenticated */}
-          {authenticated && user && (
-            <button
-              onClick={() => {
-                if (!isProjectMenuOpen) {
-                  setTrackMenuOpen(false) // This will trigger forceCloseMenu in TrackPlaylist
-                }
-                setIsProjectMenuOpen(!isProjectMenuOpen)
-              }}
-              className="mb-6 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg flex items-center gap-2 transition-colors touch-manipulation text-sm"
-              title="More options"
-            >
-              <MoreVertical className="w-4 h-4" />
-              Options
-            </button>
+            <p className="text-gray-400 text-base mb-6 leading-relaxed">{project.description}</p>
           )}
         </div>
 
