@@ -695,7 +695,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                 )}
               </div>
             </div>
-            {/* Project Menu Button - Right aligned with title */}
+            {/* Project Menu Button - Right aligned with title, same size as track menus */}
             {authenticated && user && (
               <button
                 onClick={() => {
@@ -704,10 +704,11 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   }
                   setIsProjectMenuOpen(!isProjectMenuOpen)
                 }}
-                className="w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full flex items-center justify-center transition-colors touch-manipulation flex-shrink-0 mt-1"
-                title="More options"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors touch-manipulation flex-shrink-0"
+                title="Options"
               >
                 <MoreVertical className="w-5 h-5" />
+                <span className="text-sm font-medium">Options</span>
               </button>
             )}
           </div>

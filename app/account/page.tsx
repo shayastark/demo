@@ -121,7 +121,7 @@ function AccountPageContent() {
     if (!response.ok) throw new Error(data.error || 'Request failed')
     return data
   }, [getAccessToken])
-  
+
   useEffect(() => {
     if (!ready) return
     if (!authenticated || !user || !user.id) return
@@ -186,7 +186,7 @@ function AccountPageContent() {
       }
     }
 
-    loadProfile()
+      loadProfile()
   }, [ready, user?.id, authenticated, user?.email?.address, apiRequest])
 
   // Auto-start username editing in onboarding mode
@@ -370,11 +370,11 @@ function AccountPageContent() {
               // Check if already saved
               const { data: existingSave } = await supabase
                 .from('user_projects')
-                .select('id')
+        .select('id')
                 .eq('user_id', profile.id)
                 .eq('project_id', pendingProject.projectId)
-                .single()
-              
+        .single()
+
               if (!existingSave) {
                 // Save the project to user's library
                 await fetch('/api/library', {
@@ -534,12 +534,12 @@ function AccountPageContent() {
             Demo
           </Link>
           <div className="flex items-center" style={{ gap: '24px' }}>
-            <Link
-              href="/dashboard"
+          <Link
+            href="/dashboard"
               className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
-            >
+          >
               Dashboard
-            </Link>
+          </Link>
             <button
               onClick={logout}
               className="text-sm text-gray-400 hover:text-white transition"
@@ -582,7 +582,7 @@ function AccountPageContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Profile Picture */}
             <div className="flex items-center gap-4">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-400 font-semibold">Profile Picture</label>
+              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-200 font-semibold">Profile Picture</label>
               <div className="flex items-center gap-4">
                 {/* Avatar display */}
                 <div 
@@ -644,7 +644,7 @@ function AccountPageContent() {
 
             {/* Email */}
             <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-400 font-semibold">Email</label>
+              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-200 font-semibold">Email</label>
               <span className="text-sm text-white">
                 {profile?.email || user?.email?.address || 'Not set'}
               </span>
@@ -652,7 +652,7 @@ function AccountPageContent() {
 
             {/* Username */}
             <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-400 font-semibold">Username</label>
+              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-gray-200 font-semibold">Username</label>
               {isEditingUsername ? (
                 <div className="flex items-center gap-2 flex-1">
                   <input
@@ -757,7 +757,7 @@ function AccountPageContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Bio */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2 font-semibold">Bio</label>
+              <label className="block text-sm text-gray-200 mb-2 font-semibold">Bio</label>
               {isEditingProfile ? (
                 <textarea
                   value={editProfile.bio}
@@ -775,7 +775,7 @@ function AccountPageContent() {
 
             {/* Contact Email */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2 font-semibold">Contact Email</label>
+              <label className="block text-sm text-gray-200 mb-2 font-semibold">Contact Email</label>
               {isEditingProfile ? (
                 <input
                   type="email"
@@ -793,7 +793,7 @@ function AccountPageContent() {
 
             {/* Website */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2 font-semibold">Website</label>
+              <label className="block text-sm text-gray-200 mb-2 font-semibold">Website</label>
               {isEditingProfile ? (
                 <div className="flex items-center gap-2 max-w-md">
                   <Globe className="w-4 h-4 text-gray-500" />
@@ -820,7 +820,7 @@ function AccountPageContent() {
 
             {/* Social Links */}
             <div>
-              <label className="block text-sm text-gray-400 mb-3 font-semibold">Social Links</label>
+              <label className="block text-sm text-gray-200 mb-3 font-semibold">Social Links</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Instagram */}
                 <div className="flex items-center gap-3">
@@ -872,8 +872,8 @@ function AccountPageContent() {
                     </svg>
                   </div>
                   {isEditingProfile ? (
-                    <input
-                      type="text"
+              <input
+                type="text"
                       value={editProfile.farcaster}
                       onChange={(e) => setEditProfile({ ...editProfile, farcaster: e.target.value })}
                       placeholder="Farcaster username"
@@ -1023,7 +1023,7 @@ function AccountPageContent() {
                 </button>
               </div>
             ) : (
-              <button
+            <button
                 onClick={() => {
                   setEditingWalletAddress('')
                   setIsEditingWallet(true)
@@ -1032,7 +1032,7 @@ function AccountPageContent() {
               >
                 <Wallet className="w-4 h-4" />
                 Add Wallet Address
-              </button>
+            </button>
             )}
           </div>
         </div>
