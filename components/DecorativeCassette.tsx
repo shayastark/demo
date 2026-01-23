@@ -38,10 +38,10 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
 
   return (
     <div 
-      className="relative"
+      className="relative mx-auto"
       style={{
-        width: `${280 * scale}px`,
-        height: `${180 * scale}px`,
+        width: '280px',
+        height: '180px',
         transform: `scale(${scale})`,
         transformOrigin: 'center center',
       }}
