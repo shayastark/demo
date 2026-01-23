@@ -133,11 +133,9 @@ export default function ClientHomePage() {
             Share your unreleased tracks on your terms
           </p>
           
-          {/* Decorative Cassette - centered using text-align */}
-          <div style={{ width: '100%', textAlign: 'center', marginTop: '48px', marginBottom: '48px' }}>
-            <div style={{ display: 'inline-block' }}>
-              <DecorativeCassette size="md" />
-            </div>
+          {/* Decorative Cassette */}
+          <div style={{ marginTop: '48px', marginBottom: '48px' }}>
+            <DecorativeCassette size="md" />
           </div>
           
           <button
@@ -200,11 +198,9 @@ export default function ClientHomePage() {
             Share your unreleased tracks on your terms
           </p>
           
-          {/* Decorative Cassette - centered using text-align */}
-          <div style={{ width: '100%', textAlign: 'center', marginTop: '48px', marginBottom: '48px' }}>
-            <div style={{ display: 'inline-block' }}>
-              <DecorativeCassette size="md" />
-            </div>
+          {/* Decorative Cassette */}
+          <div style={{ marginTop: '48px', marginBottom: '48px' }}>
+            <DecorativeCassette size="md" />
           </div>
           
           <Link
