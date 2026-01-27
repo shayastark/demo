@@ -582,7 +582,7 @@ function AccountPageContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Profile Picture */}
             <div className="flex items-center gap-4">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-white font-bold">Profile Picture</label>
+              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Profile Picture</label>
               <div className="flex items-center gap-4">
                 {/* Avatar display */}
                 <div 
@@ -644,7 +644,7 @@ function AccountPageContent() {
 
             {/* Email */}
             <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-white font-bold">Email</label>
+              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Email</label>
               <span className="text-sm text-white">
                 {profile?.email || user?.email?.address || 'Not set'}
               </span>
@@ -652,7 +652,7 @@ function AccountPageContent() {
 
             {/* Username */}
             <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px' }} className="text-sm text-white font-bold">Username</label>
+              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Username</label>
               {isEditingUsername ? (
                 <div className="flex items-center gap-2 flex-1">
                   <input

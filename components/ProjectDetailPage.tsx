@@ -1506,19 +1506,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
         {/* Tracks */}
         <div>
-          {/* Add Track button for creators */}
-          {isCreator && (
-            <div className="flex justify-end mb-4">
-              <button
-                onClick={handleAddNewTrack}
-                className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
-              >
-                <Plus className="w-4 h-4" />
-                Add Track
-              </button>
-            </div>
-          )}
-
           {/* Add Track Form (for creators) */}
           {isCreator && showAddTrackForm && (
             <div className="bg-gray-900 rounded-lg p-4 mb-4 border-2 border-neon-green border-opacity-30">
@@ -1691,6 +1678,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 }
               }}
             />
+          )}
+
+          {/* Add Track button for creators - positioned below tracks */}
+          {isCreator && tracks.length > 0 && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={handleAddNewTrack}
+                className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
+              >
+                <Plus className="w-5 h-5" />
+                Add Track
+              </button>
+            </div>
           )}
 
           {/* Track Notes Section - Only for creators */}
