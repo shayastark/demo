@@ -1165,7 +1165,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         )}
 
         {/* Project Info */}
-        <div className="mb-8 mt-4">
+        <div className="mb-8 mt-8">
           {editingProject ? (
             <div className="bg-gray-900 rounded-lg p-6 mb-6">
               <h2 className="text-2xl font-bold mb-4 text-neon-green">Edit Project</h2>
@@ -1250,7 +1250,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           ) : (
             <>
               {/* Title and Options button on the SAME ROW */}
-              <div className="flex flex-row justify-between items-start gap-4 mb-4">
+              <div className="flex flex-row justify-between items-center gap-4 mb-4">
                 {/* Left: Title and creator info */}
                 <div className="flex-1 min-w-0">
                   <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-2">{project.title}</h1>

@@ -38,44 +38,52 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
 
   return (
     <div 
-      className="relative"
       style={{
-        width: '280px',
-        height: '180px',
-        transform: `scale(${scale})`,
-        transformOrigin: 'center center',
-        overflow: 'visible',
-        flexShrink: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
       }}
     >
-      {/* Ambient glow - centered precisely */}
       <div 
-        className="pointer-events-none"
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '420px',
-          height: '270px',
-          background: 'radial-gradient(ellipse at center, rgba(57, 255, 20, 0.15) 0%, transparent 70%)',
-          filter: 'blur(40px)',
-        }}
-      />
-      
-      {/* Cassette Body */}
-      <div
+        className="relative"
         style={{
           width: '280px',
           height: '180px',
-          background: 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%)',
-          borderRadius: '10px',
-          border: '2px solid #3a3a3a',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 60px rgba(57, 255, 20, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-          position: 'relative',
-          padding: '14px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
         }}
       >
+        {/* Ambient glow - positioned behind cassette body using z-index */}
+        <div 
+          className="pointer-events-none"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '350px',
+            height: '230px',
+            background: 'radial-gradient(ellipse at center, rgba(57, 255, 20, 0.12) 0%, transparent 70%)',
+            filter: 'blur(30px)',
+            zIndex: 0,
+          }}
+        />
+      
+        {/* Cassette Body */}
+        <div
+          style={{
+            width: '280px',
+            height: '180px',
+            background: 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%)',
+            borderRadius: '10px',
+            border: '2px solid #3a3a3a',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 60px rgba(57, 255, 20, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            position: 'relative',
+            padding: '14px',
+            zIndex: 1,
+          }}
+        >
         {/* Top edge highlight */}
         <div style={{
           position: 'absolute',
@@ -298,6 +306,7 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
               background: 'linear-gradient(135deg, #39FF14 0%, #00D9FF 100%)',
               boxShadow: '0 0 10px rgba(57, 255, 20, 0.5)',
             }} />
+          </div>
           </div>
         </div>
       </div>

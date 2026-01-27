@@ -757,7 +757,7 @@ function AccountPageContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Bio */}
             <div>
-              <label className="block text-sm text-white mb-2 font-bold">Bio</label>
+              <label className="block text-sm text-white mb-2" style={{ fontWeight: 600 }}>Bio</label>
               {isEditingProfile ? (
                 <textarea
                   value={editProfile.bio}
@@ -775,7 +775,7 @@ function AccountPageContent() {
 
             {/* Contact Email */}
             <div>
-              <label className="block text-sm text-white mb-2 font-bold">Contact Email</label>
+              <label className="block text-sm text-white mb-2" style={{ fontWeight: 600 }}>Contact Email</label>
               {isEditingProfile ? (
                 <input
                   type="email"
@@ -793,7 +793,7 @@ function AccountPageContent() {
 
             {/* Website */}
             <div>
-              <label className="block text-sm text-white mb-2 font-bold">Website</label>
+              <label className="block text-sm text-white mb-2" style={{ fontWeight: 600 }}>Website</label>
               {isEditingProfile ? (
                 <div className="flex items-center gap-2 max-w-md">
                   <Globe className="w-4 h-4 text-gray-500" />
@@ -820,11 +820,11 @@ function AccountPageContent() {
 
             {/* Social Links */}
             <div>
-              <label className="block text-sm text-white mb-3 font-bold">Social Links</label>
+              <label className="block text-sm text-white mb-3" style={{ fontWeight: 600 }}>Social Links</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Instagram */}
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <div className="flex items-center" style={{ gap: '16px' }}>
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Instagram className="w-4 h-4 text-white" />
                   </div>
                   {isEditingProfile ? (
@@ -843,8 +843,8 @@ function AccountPageContent() {
                 </div>
                 
                 {/* X (Twitter) */}
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center border border-gray-600">
+                <div className="flex items-center" style={{ gap: '16px' }}>
+                  <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center border border-gray-600 flex-shrink-0">
                     <svg width="14" height="14" viewBox="0 0 300 300" fill="white">
                       <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300h26.46l102.4-116.59L209.66 300H299L178.57 127.15Zm-36.25 41.29-11.87-16.62L36.8 19.5h40.65l76.18 106.7 11.87 16.62 99.03 138.68h-40.65l-80.87-113.06Z"/>
                     </svg>
@@ -865,8 +865,8 @@ function AccountPageContent() {
                 </div>
                 
                 {/* Farcaster */}
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#8A63D2' }}>
+                <div className="flex items-center" style={{ gap: '16px' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#8A63D2' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
                       <path d="M3 5V3h18v2h1v2h-1v14h-2v-9a4 4 0 0 0-4-4h-6a4 4 0 0 0-4 4v9H3V7H2V5h1z"/>
                     </svg>
