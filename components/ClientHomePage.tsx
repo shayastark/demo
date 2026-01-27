@@ -2,9 +2,9 @@
 
 import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import DecorativeCassette from './DecorativeCassette'
 
 export default function ClientHomePage() {
   const { ready, authenticated, user, login, logout } = usePrivy()
@@ -133,9 +133,16 @@ export default function ClientHomePage() {
             Share your unreleased tracks on your terms
           </p>
           
-          {/* Decorative Cassette */}
-          <div style={{ marginTop: '48px', marginBottom: '48px' }}>
-            <DecorativeCassette size="md" />
+          {/* Mixtape Cassette Image */}
+          <div style={{ marginTop: '48px', marginBottom: '48px', display: 'flex', justifyContent: 'center' }}>
+            <Image
+              src="/mixtape-cassette.png"
+              alt="Demo - Share your music"
+              width={320}
+              height={200}
+              priority
+              style={{ maxWidth: '100%', height: 'auto' }}
+            />
           </div>
           
           <button
@@ -198,9 +205,16 @@ export default function ClientHomePage() {
             Share your unreleased tracks on your terms
           </p>
           
-          {/* Decorative Cassette */}
-          <div style={{ marginTop: '48px', marginBottom: '48px' }}>
-            <DecorativeCassette size="md" />
+          {/* Mixtape Cassette Image */}
+          <div style={{ marginTop: '48px', marginBottom: '48px', display: 'flex', justifyContent: 'center' }}>
+            <Image
+              src="/mixtape-cassette.png"
+              alt="Demo - Share your music"
+              width={320}
+              height={200}
+              priority
+              style={{ maxWidth: '100%', height: 'auto' }}
+            />
           </div>
           
           <Link
