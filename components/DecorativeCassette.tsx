@@ -45,9 +45,7 @@ export default function DecorativeCassette({ size = 'md' }: DecorativeCassettePr
         transform: `scale(${scale})`,
         transformOrigin: 'center center',
         overflow: 'visible',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        display: 'block',
+        flexShrink: 0,
       }}
     >
       {/* Ambient glow - centered precisely */}

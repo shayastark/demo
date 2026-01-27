@@ -134,7 +134,7 @@ export default function ClientHomePage() {
           </p>
           
           {/* Decorative Cassette */}
-          <div style={{ marginTop: '48px', marginBottom: '48px' }}>
+          <div style={{ marginTop: '48px', marginBottom: '48px', display: 'flex', justifyContent: 'center', width: '100%' }}>
             <DecorativeCassette size="md" />
           </div>
           
@@ -199,7 +199,7 @@ export default function ClientHomePage() {
           </p>
           
           {/* Decorative Cassette */}
-          <div style={{ marginTop: '48px', marginBottom: '48px' }}>
+          <div style={{ marginTop: '48px', marginBottom: '48px', display: 'flex', justifyContent: 'center', width: '100%' }}>
             <DecorativeCassette size="md" />
           </div>
           
