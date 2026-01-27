@@ -60,11 +60,11 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
 
   return (
     <div className="relative w-full max-w-md mx-auto mb-6">
-      {/* Dynamic pulsing glow effect */}
+      {/* Dynamic pulsing glow effect - warm green tint */}
       <div 
         className="absolute inset-0 rounded-2xl pointer-events-none"
         style={{
-          background: `radial-gradient(ellipse at center, rgba(57, 255, 20, ${glowIntensity}) 0%, rgba(0, 217, 255, ${glowIntensity * 0.3}) 40%, transparent 70%)`,
+          background: `radial-gradient(ellipse at center, rgba(57, 255, 20, ${glowIntensity}) 0%, rgba(100, 200, 100, ${glowIntensity * 0.3}) 40%, transparent 70%)`,
           filter: 'blur(30px)',
           transform: 'scale(1.2)',
           opacity: isPlaying ? 1 : 0,
@@ -72,19 +72,19 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
         }}
       />
       
-      {/* Cassette Tape Body */}
+      {/* Cassette Tape Body - Vintage charcoal look */}
       <div 
-        className={`relative transition-all duration-300 ${isPlaying ? 'animate-glow-pulse' : ''}`}
+        className={`relative transition-all duration-300`}
         style={{
           width: '320px',
           height: '210px',
           margin: '0 auto',
-          background: 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%)',
+          background: 'linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 20%, #2d2d2d 80%, #252525 100%)',
           borderRadius: '12px',
-          border: '2px solid #3a3a3a',
+          border: '2px solid #555',
           boxShadow: isPlaying 
-            ? '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 40px rgba(57, 255, 20, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-            : '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            ? '0 8px 32px rgba(0, 0, 0, 0.7), 0 0 40px rgba(57, 255, 20, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 8px rgba(0,0,0,0.3)'
+            : '0 8px 32px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 8px rgba(0,0,0,0.3)',
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
@@ -93,6 +93,15 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
           boxSizing: 'border-box',
         }}
       >
+        {/* Subtle wear texture overlay */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '10px',
+          background: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
+          pointerEvents: 'none',
+        }} />
+
         {/* Top edge highlight */}
         <div style={{
           position: 'absolute',
@@ -100,7 +109,7 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
           left: '20px',
           right: '20px',
           height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
         }} />
 
         {/* Corner screws with metallic look */}
@@ -118,8 +127,8 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               width: '10px',
               height: '10px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 50%, #1a1a1a 100%)',
-              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.2), inset 0 -1px 2px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
+              background: 'linear-gradient(135deg, #6a6a6a 0%, #4a4a4a 50%, #3a3a3a 100%)',
+              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -1px 2px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
             }}
           >
             {/* Screw slot */}
@@ -129,13 +138,14 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               left: '50%',
               transform: 'translate(-50%, -50%)',
               width: '6px',
-              height: '1px',
-              backgroundColor: '#1a1a1a',
+              height: '1.5px',
+              backgroundColor: '#2a2a2a',
+              borderRadius: '0.5px',
             }} />
           </div>
         ))}
 
-        {/* Label/Cover Art Area */}
+        {/* Label/Cover Art Area - Notebook paper style when no image */}
         <div 
           style={{
             width: '272px',
@@ -143,15 +153,16 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             marginBottom: '10px',
             background: coverImageUrl 
               ? 'transparent' 
-              : 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)',
-            borderRadius: '6px',
+              : 'linear-gradient(180deg, #f5f5f0 0%, #e8e8e0 100%)',
+            borderRadius: '4px',
             overflow: 'hidden',
-            border: '1px solid #3a3a3a',
-            boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.5)',
+            border: '1px solid #555',
+            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            position: 'relative',
           }}
         >
           {coverImageUrl ? (
@@ -165,39 +176,70 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               }}
             />
           ) : (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '16px',
-            }}>
+            <>
+              {/* Lined paper effect */}
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage: 'repeating-linear-gradient(transparent, transparent 11px, #d0d0d0 11px, #d0d0d0 12px)',
+                backgroundPosition: '0 8px',
+                opacity: 0.5,
+              }} />
+              {/* Red margin line */}
+              <div style={{
+                position: 'absolute',
+                left: '24px',
+                top: 0,
+                bottom: 0,
+                width: '1px',
+                backgroundColor: '#e8b4b4',
+                opacity: 0.6,
+              }} />
+              {/* Label content */}
               <div style={{ 
-                fontSize: '32px', 
-                marginBottom: '8px',
-                filter: 'drop-shadow(0 0 8px rgba(57, 255, 20, 0.5))',
-              }}>🎵</div>
-              <div style={{ 
-                fontSize: '14px', 
-                fontWeight: '600',
-                color: '#39FF14',
-                textShadow: '0 0 10px rgba(57, 255, 20, 0.5)',
-                letterSpacing: '0.5px',
-              }}>{title}</div>
-            </div>
+                textAlign: 'center', 
+                padding: '16px',
+                position: 'relative',
+                zIndex: 1,
+              }}>
+                <div style={{ 
+                  fontFamily: "'Courier New', Courier, monospace",
+                  fontSize: '28px', 
+                  fontWeight: '700',
+                  color: '#2a2a2a',
+                  letterSpacing: '2px',
+                  marginBottom: '4px',
+                  textShadow: '1px 1px 0 rgba(255,255,255,0.5)',
+                }}>DEMO</div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  color: '#555',
+                  fontSize: '14px',
+                }}>
+                  <span style={{ color: '#c44' }}>♥</span>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: '11px' }}>♪ ♫</span>
+                </div>
+              </div>
+            </>
           )}
         </div>
 
-        {/* Tape Window Section */}
+        {/* Tape Window Section - Darker, more authentic look */}
         <div 
           style={{
             width: '272px',
             height: '48px',
-            background: 'linear-gradient(180deg, #0a0a0a 0%, #151515 50%, #0a0a0a 100%)',
-            borderRadius: '8px',
+            background: 'linear-gradient(180deg, #1a1a1a 0%, #252525 50%, #1a1a1a 100%)',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 12px',
-            border: '1px solid #2a2a2a',
-            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.5)',
+            padding: '0 10px',
+            border: '1px solid #444',
+            boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.7)',
             flexShrink: 0,
           }}
         >
@@ -206,8 +248,8 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             width: '40px',
             height: '40px',
             borderRadius: '50%',
-            background: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
-            border: '2px solid #2a2a2a',
+            background: 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%)',
+            border: '2px solid #3a3a3a',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -243,13 +285,18 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
                   }}
                 />
               ))}
-              {/* Center hub */}
+              {/* Center hub - green when playing */}
               <div style={{
                 width: '10px',
                 height: '10px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%)',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
+                background: isPlaying 
+                  ? 'linear-gradient(135deg, #39FF14 0%, #2dd10f 100%)'
+                  : 'linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%)',
+                boxShadow: isPlaying 
+                  ? '0 0 8px rgba(57, 255, 20, 0.8), inset 0 1px 1px rgba(255,255,255,0.5)'
+                  : '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
+                transition: 'all 0.3s ease',
               }} />
             </div>
           </div>
@@ -258,8 +305,8 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
           <div style={{
             flex: 1,
             height: '18px',
-            margin: '0 12px',
-            background: 'linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%)',
+            margin: '0 10px',
+            background: 'linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 50%, #0f0f0f 100%)',
             borderRadius: '4px',
             display: 'flex',
             alignItems: 'center',
@@ -273,11 +320,11 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
               width: '100%',
               height: '4px',
               background: 'linear-gradient(90deg, transparent, #4a3020, #5c3d24, #4a3020, transparent)',
-              boxShadow: isPlaying ? '0 0 8px rgba(57, 255, 20, 0.2)' : 'none',
+              boxShadow: isPlaying ? '0 0 8px rgba(57, 255, 20, 0.15)' : 'none',
             }} />
             {/* Tape guides */}
-            <div style={{ position: 'absolute', left: '6px', width: '2px', height: '10px', backgroundColor: '#2a2a2a', borderRadius: '1px' }} />
-            <div style={{ position: 'absolute', right: '6px', width: '2px', height: '10px', backgroundColor: '#2a2a2a', borderRadius: '1px' }} />
+            <div style={{ position: 'absolute', left: '6px', width: '2px', height: '10px', backgroundColor: '#333', borderRadius: '1px' }} />
+            <div style={{ position: 'absolute', right: '6px', width: '2px', height: '10px', backgroundColor: '#333', borderRadius: '1px' }} />
           </div>
 
           {/* Right Reel */}
@@ -285,8 +332,8 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             width: '40px',
             height: '40px',
             borderRadius: '50%',
-            background: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
-            border: '2px solid #2a2a2a',
+            background: 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%)',
+            border: '2px solid #3a3a3a',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -322,13 +369,18 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
                   }}
                 />
               ))}
-              {/* Center hub */}
+              {/* Center hub - green when playing */}
               <div style={{
                 width: '10px',
                 height: '10px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%)',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
+                background: isPlaying 
+                  ? 'linear-gradient(135deg, #39FF14 0%, #2dd10f 100%)'
+                  : 'linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%)',
+                boxShadow: isPlaying 
+                  ? '0 0 8px rgba(57, 255, 20, 0.8), inset 0 1px 1px rgba(255,255,255,0.5)'
+                  : '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
+                transition: 'all 0.3s ease',
               }} />
             </div>
           </div>
@@ -345,9 +397,9 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             alignItems: 'center',
             gap: '6px',
             padding: '3px 10px',
-            background: 'rgba(0, 0, 0, 0.7)',
+            background: 'rgba(0, 0, 0, 0.8)',
             borderRadius: '10px',
-            backdropFilter: 'blur(4px)',
+            border: '1px solid #444',
           }}
         >
           {/* LED indicator */}
@@ -355,14 +407,14 @@ export default function CassettePlayer({ coverImageUrl, isPlaying, title }: Cass
             width: '5px',
             height: '5px',
             borderRadius: '50%',
-            backgroundColor: isPlaying ? '#39FF14' : '#666',
+            backgroundColor: isPlaying ? '#39FF14' : '#555',
             boxShadow: isPlaying ? '0 0 6px #39FF14, 0 0 12px rgba(57, 255, 20, 0.5)' : 'none',
             transition: 'all 0.3s ease',
           }} />
           <span style={{
             fontSize: '9px',
             fontWeight: '600',
-            color: isPlaying ? '#39FF14' : '#888',
+            color: isPlaying ? '#39FF14' : '#777',
             fontFamily: 'var(--font-outfit), monospace',
             letterSpacing: '0.5px',
             textTransform: 'uppercase',
