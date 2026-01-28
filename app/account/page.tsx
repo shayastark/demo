@@ -688,7 +688,7 @@ function AccountPageContent() {
 
             {/* Email */}
             <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Email <span className="text-gray-500 font-normal">(Private)</span></label>
+              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Email <span className="text-gray-500 font-normal" style={{ fontSize: '11px' }}>(Private)</span></label>
               <span className="text-sm text-white">
                 {profile?.email || user?.email?.address || 'Not set'}
               </span>
@@ -795,11 +795,11 @@ function AccountPageContent() {
             )}
           </div>
           
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-gray-500 italic" style={{ marginBottom: '24px' }}>
             This information will be visible to users who view your projects.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Bio */}
             <div>
               <label className="block text-sm text-white mb-2" style={{ fontWeight: 600 }}>Bio</label>
@@ -865,11 +865,11 @@ function AccountPageContent() {
 
             {/* Social Links */}
             <div>
-              <label className="block text-sm text-white mb-3" style={{ fontWeight: 600 }}>Social Links</label>
+              <label className="block text-sm text-white" style={{ fontWeight: 600, marginBottom: '16px' }}>Social Links</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Instagram */}
-                <div className="flex items-center" style={{ gap: '16px' }}>
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center" style={{ gap: '12px' }}>
+                  <div style={{ width: '32px', height: '32px', minWidth: '32px' }} className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                     <Instagram className="w-4 h-4 text-white" />
                   </div>
                   {isEditingProfile ? (
@@ -888,8 +888,8 @@ function AccountPageContent() {
                 </div>
                 
                 {/* X (Twitter) */}
-                <div className="flex items-center" style={{ gap: '16px' }}>
-                  <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center border border-gray-600 flex-shrink-0">
+                <div className="flex items-center" style={{ gap: '12px' }}>
+                  <div style={{ width: '32px', height: '32px', minWidth: '32px' }} className="bg-black rounded-lg flex items-center justify-center border border-gray-600">
                     <svg width="14" height="14" viewBox="0 0 300 300" fill="white">
                       <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300h26.46l102.4-116.59L209.66 300H299L178.57 127.15Zm-36.25 41.29-11.87-16.62L36.8 19.5h40.65l76.18 106.7 11.87 16.62 99.03 138.68h-40.65l-80.87-113.06Z"/>
                     </svg>
@@ -910,15 +910,15 @@ function AccountPageContent() {
                 </div>
                 
                 {/* Farcaster */}
-                <div className="flex items-center" style={{ gap: '16px' }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#8A63D2' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                <div className="flex items-center" style={{ gap: '12px' }}>
+                  <div style={{ width: '32px', height: '32px', minWidth: '32px', backgroundColor: '#8A63D2' }} className="rounded-lg flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
                       <path d="M3 5V3h18v2h1v2h-1v14h-2v-9a4 4 0 0 0-4-4h-6a4 4 0 0 0-4 4v9H3V7H2V5h1z"/>
                     </svg>
                   </div>
                   {isEditingProfile ? (
-              <input
-                type="text"
+                    <input
+                      type="text"
                       value={editProfile.farcaster}
                       onChange={(e) => setEditProfile({ ...editProfile, farcaster: e.target.value })}
                       placeholder="Farcaster username"
@@ -945,7 +945,7 @@ function AccountPageContent() {
           </h2>
           
           <p className="text-sm text-gray-500 mb-6">
-            Set up payments to receive tips from listeners who enjoy your music.
+            Set up payments to receive tips from listeners who want to support you.
           </p>
 
           {stripeStatus.loading ? (
@@ -1014,7 +1014,7 @@ function AccountPageContent() {
               <h3 className="font-medium text-white">Crypto Tips</h3>
             </div>
             <p className="text-sm text-gray-500 mb-4">
-              Add your wallet address to receive tips in crypto (USDC on Base).
+              Add your wallet address to receive tips in crypto.
             </p>
             
             {isEditingWallet ? (
