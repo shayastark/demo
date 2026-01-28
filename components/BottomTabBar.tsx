@@ -73,6 +73,9 @@ export default function BottomTabBar() {
   const frequencyAnimationRef = useRef<number | null>(null)
   const audioContextInitializedRef = useRef(false)
   
+  // Track the last played track ID for pause/resume when player bar is closed
+  const lastPlayedTrackIdRef = useRef<string | null>(null)
+  
   // Legacy compatibility
   const externalTrack = cassetteTrack
   const externalIsPlaying = cassetteIsPlaying
@@ -169,6 +172,9 @@ export default function BottomTabBar() {
     // Set up cassette track
     setCassetteTrack(track)
     
+    // Store track ID for pause/resume when player bar is closed
+    lastPlayedTrackIdRef.current = track.id
+    
     if (audioRef.current) {
       audioRef.current.src = track.audioUrl
       audioRef.current.load()
@@ -186,22 +192,32 @@ export default function BottomTabBar() {
   }
 
   const pauseCassettePlayback = () => {
-    if (audioRef.current && cassetteTrack) {
+    if (audioRef.current) {
       audioRef.current.pause()
       setCassetteIsPlaying(false)
-      window.dispatchEvent(new CustomEvent('demo-playback-state', {
-        detail: { isPlaying: false, trackId: cassetteTrack.id }
-      }))
+      // Dispatch event with track id if available
+      const trackId = cassetteTrack?.id || lastPlayedTrackIdRef.current
+      if (trackId) {
+        window.dispatchEvent(new CustomEvent('demo-playback-state', {
+          detail: { isPlaying: false, trackId }
+        }))
+      }
     }
   }
 
   const resumeCassettePlayback = () => {
-    if (audioRef.current && cassetteTrack) {
+    if (audioRef.current && audioRef.current.src) {
       audioRef.current.play().then(() => {
         setCassetteIsPlaying(true)
-        window.dispatchEvent(new CustomEvent('demo-playback-state', {
-          detail: { isPlaying: true, trackId: cassetteTrack.id }
-        }))
+        // Dispatch event with track id if available
+        const trackId = cassetteTrack?.id || lastPlayedTrackIdRef.current
+        if (trackId) {
+          window.dispatchEvent(new CustomEvent('demo-playback-state', {
+            detail: { isPlaying: true, trackId }
+          }))
+        }
+      }).catch(() => {
+        // Audio play failed (possibly no src loaded)
       })
     }
   }
