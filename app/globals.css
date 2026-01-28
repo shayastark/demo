@@ -126,16 +126,14 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent long-press from causing scroll lock on mobile */
-* {
+/* Prevent long-press context menu on images and non-interactive elements */
+img, div:not([onclick]):not([role="button"]) {
   -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
-/* Allow text selection where needed */
-p, span, h1, h2, h3, h4, h5, h6, label {
-  -webkit-user-select: text;
-  user-select: text;
+/* Remove tap highlight on interactive elements for cleaner look */
+a, button, [role="button"], [onclick] {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ===== TYPOGRAPHY ===== */

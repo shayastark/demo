@@ -579,7 +579,10 @@ function AccountPageContent() {
             <p className="text-sm text-gray-400">
               View{' '}
               <span 
+                role="button"
+                tabIndex={0}
                 onClick={() => setShowFAQ(true)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowFAQ(true) }}
                 className="text-neon-green hover:underline underline-offset-4 font-medium cursor-pointer"
               >
                 FAQs
