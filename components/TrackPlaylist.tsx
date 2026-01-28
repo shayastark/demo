@@ -318,14 +318,16 @@ export default function TrackPlaylist({
   }
 
   const handleEditClick = (track: Track) => {
-    console.log('handleEditClick called with track:', track)
-    if (onEditTrack) {
-      console.log('Calling onEditTrack')
-      onEditTrack(track)
-    } else {
-      console.log('onEditTrack is not defined')
-    }
+    // Close menu first, then trigger edit after a brief delay
+    // This ensures the menu backdrop doesn't interfere with the modal
     setOpenMenuIndex(null)
+    
+    // Use setTimeout to ensure menu is fully closed before opening modal
+    setTimeout(() => {
+      if (onEditTrack) {
+        onEditTrack(track)
+      }
+    }, 100)
   }
 
   const handleDeleteClick = (trackId: string) => {
