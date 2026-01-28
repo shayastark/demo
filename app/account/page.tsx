@@ -866,11 +866,11 @@ function AccountPageContent() {
             {/* Social Links */}
             <div>
               <label className="block text-sm text-white" style={{ fontWeight: 600, marginBottom: '16px' }}>Social Links</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* Instagram */}
                 <div className="flex items-center" style={{ gap: '12px' }}>
-                  <div style={{ width: '32px', height: '32px', minWidth: '32px' }} className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                    <Instagram className="w-4 h-4 text-white" />
+                  <div style={{ width: '24px', minWidth: '24px' }} className="flex items-center justify-center">
+                    <Instagram className="w-5 h-5 text-white" />
                   </div>
                   {isEditingProfile ? (
                     <input
@@ -889,8 +889,8 @@ function AccountPageContent() {
                 
                 {/* X (Twitter) */}
                 <div className="flex items-center" style={{ gap: '12px' }}>
-                  <div style={{ width: '32px', height: '32px', minWidth: '32px' }} className="bg-black rounded-lg flex items-center justify-center border border-gray-600">
-                    <svg width="14" height="14" viewBox="0 0 300 300" fill="white">
+                  <div style={{ width: '24px', minWidth: '24px' }} className="flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 300 300" fill="white">
                       <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300h26.46l102.4-116.59L209.66 300H299L178.57 127.15Zm-36.25 41.29-11.87-16.62L36.8 19.5h40.65l76.18 106.7 11.87 16.62 99.03 138.68h-40.65l-80.87-113.06Z"/>
                     </svg>
                   </div>
@@ -911,9 +911,11 @@ function AccountPageContent() {
                 
                 {/* Farcaster */}
                 <div className="flex items-center" style={{ gap: '12px' }}>
-                  <div style={{ width: '32px', height: '32px', minWidth: '32px', backgroundColor: '#8A63D2' }} className="rounded-lg flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-                      <path d="M3 5V3h18v2h1v2h-1v14h-2v-9a4 4 0 0 0-4-4h-6a4 4 0 0 0-4 4v9H3V7H2V5h1z"/>
+                  <div style={{ width: '24px', minWidth: '24px' }} className="flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 1000 1000" fill="#8A63D2">
+                      <path d="M257.778 155.556H742.222V844.444H671.111V528.889C671.111 442.593 601.109 372.778 514.444 372.778H485.556C398.891 372.778 328.889 442.593 328.889 528.889V844.444H257.778V155.556Z"/>
+                      <path d="M128.889 253.333L157.778 351.111H182.222V746.667C169.949 746.667 160 756.616 160 768.889V795.556H155.556C143.283 795.556 133.333 805.505 133.333 817.778V844.444H382.222V817.778C382.222 805.505 372.273 795.556 360 795.556H355.556V768.889C355.556 756.616 345.606 746.667 333.333 746.667H306.667V253.333H128.889Z"/>
+                      <path d="M675.556 746.667C663.283 746.667 653.333 756.616 653.333 768.889V795.556H648.889C636.616 795.556 626.667 805.505 626.667 817.778V844.444H875.556V817.778C875.556 805.505 865.606 795.556 853.333 795.556H848.889V768.889C848.889 756.616 838.94 746.667 826.667 746.667V351.111H851.111L880 253.333H702.222V746.667H675.556Z"/>
                     </svg>
                   </div>
                   {isEditingProfile ? (
