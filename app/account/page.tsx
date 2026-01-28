@@ -5,11 +5,12 @@ import { useEffect, useState, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet } from 'lucide-react'
+import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet, HelpCircle } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import Image from 'next/image'
 import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
 import { TipsSkeleton } from '@/components/SkeletonLoader'
+import FAQModal from '@/components/FAQModal'
 
 interface UserProfile {
   id: string
@@ -96,6 +97,7 @@ function AccountPageContent() {
   const [isEditingWallet, setIsEditingWallet] = useState(false)
   const [editingWalletAddress, setEditingWalletAddress] = useState('')
   const [savingWallet, setSavingWallet] = useState(false)
+  const [showFAQ, setShowFAQ] = useState(false)
 
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -553,17 +555,29 @@ function AccountPageContent() {
       <main className="px-4 py-8 max-w-4xl mx-auto">
         {/* Onboarding Banner */}
         {isOnboarding && (
-          <div className="bg-gradient-to-r from-neon-green/20 to-green-900/20 border border-neon-green/30 rounded-xl p-6 mb-6">
-            <h2 className="text-xl font-bold text-neon-green mb-2">Welcome to Demo</h2>
+          <div 
+            className="bg-gradient-to-r from-neon-green/20 to-green-900/20 border border-neon-green/30 rounded-xl mb-6"
+            style={{ padding: '20px 24px' }}
+          >
+            <h2 className="text-xl font-bold text-neon-green mb-3">Welcome to Demo</h2>
             <p className="text-gray-300 mb-4">
               Set up your profile below. Add as much or as little info as you like.
             </p>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 mb-4">
               When you&apos;re ready, head to your{' '}
               <Link href="/dashboard" className="text-neon-green hover:underline font-medium">
                 Dashboard
               </Link>
               {' '}to create and manage your projects.
+            </p>
+            <p className="text-sm text-gray-400">
+              View{' '}
+              <button 
+                onClick={() => setShowFAQ(true)}
+                className="text-neon-green hover:underline font-medium"
+              >
+                FAQs
+              </button>
             </p>
           </div>
         )}
@@ -1175,6 +1189,9 @@ function AccountPageContent() {
           </div>
         )}
       </main>
+
+      {/* FAQ Modal */}
+      <FAQModal isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
     </div>
   )
 }
