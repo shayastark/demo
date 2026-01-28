@@ -13,7 +13,6 @@ export default function NewProjectPage() {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [allowDownloads, setAllowDownloads] = useState(false)
   const [coverImage, setCoverImage] = useState<File | null>(null)
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
   const [tracks, setTracks] = useState<Array<{ file: File; title: string }>>([{ file: null as any, title: '' }])
@@ -123,7 +122,7 @@ export default function NewProjectPage() {
           title,
           description: description || null,
           cover_image_url: coverImageUrl,
-          allow_downloads: allowDownloads,
+          allow_downloads: false,
         }),
       })
 
@@ -193,7 +192,7 @@ export default function NewProjectPage() {
           {/* Cover Image - Album Art Style */}
           <div className="flex flex-col items-center">
             {coverImagePreview ? (
-              <div className="relative w-48 h-48 rounded-xl overflow-hidden shadow-2xl group">
+              <div className="relative w-32 h-32 rounded-xl overflow-hidden shadow-2xl group">
                 <label className="cursor-pointer block w-full h-full">
                   <img 
                     src={coverImagePreview} 
@@ -228,7 +227,7 @@ export default function NewProjectPage() {
               </div>
             ) : (
               <label 
-                className={`w-48 h-48 border-2 border-dashed rounded-xl cursor-pointer transition flex flex-col items-center justify-center gap-3 ${
+                className={`w-32 h-32 border-2 border-dashed rounded-xl cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
                   dragOver 
                     ? 'border-neon-green bg-neon-green/10' 
                     : 'border-gray-600 hover:border-neon-green/50 hover:bg-gray-900/50'
@@ -247,10 +246,9 @@ export default function NewProjectPage() {
                   }
                 }}
               >
-                <ImagePlus className="w-10 h-10 text-gray-500" />
-                <div className="text-center px-4">
-                  <span className="text-sm text-neon-green font-medium block">Upload Cover Art</span>
-                  <span className="text-xs text-gray-500">Click or drag image here</span>
+                <ImagePlus className="w-6 h-6 text-gray-500" />
+                <div className="text-center px-2">
+                  <span className="text-xs text-neon-green font-medium block">Add Cover</span>
                 </div>
                 <input
                   type="file"
@@ -294,24 +292,7 @@ export default function NewProjectPage() {
               />
             </div>
 
-            {/* Allow Downloads */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">
-                Allow downloads
-              </span>
-              <button
-                type="button"
-                onClick={() => setAllowDownloads(!allowDownloads)}
-                className="relative w-12 h-7 rounded-full transition-colors flex-shrink-0"
-                style={{ backgroundColor: allowDownloads ? '#39FF14' : '#374151' }}
-              >
-                <div 
-                  className="absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all"
-                  style={{ left: allowDownloads ? '26px' : '4px' }}
-                />
-              </button>
             </div>
-          </div>
 
           {/* Tracks Section */}
           <div className="bg-gray-900/50 rounded-2xl p-5 border border-gray-800 space-y-4">
@@ -327,7 +308,8 @@ export default function NewProjectPage() {
               {tracks.map((track, index) => (
                 <div 
                   key={index} 
-                  className="bg-black rounded-xl p-4 border border-gray-700"
+                  className="bg-black rounded-xl border border-gray-700 overflow-hidden"
+                  style={{ padding: '16px' }}
                 >
                   <div className="flex items-start gap-3">
                     {/* Track Number */}
@@ -335,7 +317,7 @@ export default function NewProjectPage() {
                       {index + 1}
                     </div>
                     
-                    <div className="flex-1 space-y-3 min-w-0">
+                    <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {/* File Upload - More prominent with Upload icon */}
                       <label className="block cursor-pointer">
                         <input
@@ -348,18 +330,28 @@ export default function NewProjectPage() {
                           required
                           className="hidden"
                         />
-                        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed transition ${
+                        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed transition overflow-hidden ${
                           track.file 
                             ? 'border-neon-green bg-neon-green/10' 
                             : 'border-gray-600 hover:border-neon-green hover:bg-gray-800'
                         }`}>
                           <Upload className={`w-5 h-5 flex-shrink-0 ${track.file ? 'text-neon-green' : 'text-gray-400'}`} />
-                          <div className="min-w-0 flex-1">
+                          <div className="min-w-0 flex-1 overflow-hidden">
                             {track.file ? (
-                              <span className="text-sm text-neon-green truncate block">{track.file.name}</span>
+                              <span 
+                                className="text-sm text-neon-green block"
+                                style={{ 
+                                  overflow: 'hidden', 
+                                  textOverflow: 'ellipsis', 
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: '100%'
+                                }}
+                              >
+                                {track.file.name}
+                              </span>
                             ) : (
                               <>
-                                <span className="text-sm text-white font-medium block">Click to upload audio</span>
+                                <span className="text-sm text-white font-medium block">Click To Upload Audio</span>
                                 <span className="text-xs text-gray-500">MP3, WAV, M4A, FLAC supported</span>
                               </>
                             )}
@@ -378,7 +370,7 @@ export default function NewProjectPage() {
                         }}
                         placeholder="Track title"
                         required
-                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-neon-green text-sm"
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-neon-green text-sm"
                       />
                     </div>
                     
@@ -401,10 +393,10 @@ export default function NewProjectPage() {
             <button
               type="button"
               onClick={handleAddTrack}
-              className="w-full py-3 rounded-xl border border-gray-600 text-gray-300 hover:border-neon-green hover:text-neon-green hover:bg-neon-green/5 transition flex items-center justify-center gap-2 text-sm font-medium"
+              className="w-full py-4 rounded-xl border border-gray-600 text-gray-300 hover:border-neon-green hover:text-neon-green hover:bg-neon-green/5 transition flex items-center justify-center gap-2 font-medium"
             >
-              <Plus className="w-4 h-4" />
-              Add another track
+              <Plus className="w-5 h-5" />
+              Add Another Track
             </button>
           </div>
 
