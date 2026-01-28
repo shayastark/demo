@@ -1288,14 +1288,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         tabIndex={0}
                         onClick={() => setShowCreatorModal(true)}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowCreatorModal(true) }}
-                        className="text-white text-base font-medium hover:underline underline-offset-4 transition cursor-pointer"
+                        className="text-white text-lg font-medium hover:underline underline-offset-4 transition cursor-pointer"
                       >
                         {creatorUsername}
                       </span>
                     )}
                     {tracks.length > 0 && (
                       <>
-                        <span className="mx-4 text-gray-600">•</span>
+                        <span className="text-gray-600" style={{ margin: '0 12px' }}>•</span>
                         <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                       </>
                     )}
