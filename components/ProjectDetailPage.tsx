@@ -512,6 +512,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     setSavingProject(true)
 
     try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+
       let coverImageUrl = project.cover_image_url
 
       // Upload new cover image if provided
@@ -538,24 +541,33 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         coverImageUrl = await uploadFile(editCoverImage, `projects/${dbUser.id}/cover-images`)
       }
 
-      // Update project
-      const { error: updateError } = await supabase
-        .from('projects')
-        .update({
+      // Update project via secure API
+      const response = await fetch('/api/projects', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: project.id,
           title: editTitle,
           description: editDescription || null,
           cover_image_url: coverImageUrl || null,
-        })
-        .eq('id', project.id)
+        }),
+      })
 
-      if (updateError) throw updateError
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update project')
+      }
 
       showToast('Project updated successfully!', 'success')
       setEditingProject(false)
       await loadProject()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating project:', error)
-      showToast(error?.message || 'Failed to update project. Please try again.', 'error')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update project. Please try again.'
+      showToast(errorMessage, 'error')
     } finally {
       setSavingProject(false)
     }
