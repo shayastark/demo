@@ -572,12 +572,12 @@ function AccountPageContent() {
             </p>
             <p className="text-sm text-gray-400">
               View{' '}
-              <button 
+              <span 
                 onClick={() => setShowFAQ(true)}
-                className="text-neon-green hover:underline font-medium"
+                className="text-neon-green hover:underline underline-offset-4 font-medium cursor-pointer"
               >
                 FAQs
-              </button>
+              </span>
             </p>
           </div>
         )}
@@ -651,7 +651,7 @@ function AccountPageContent() {
                   className="text-sm text-gray-400 hover:text-white transition disabled:opacity-50"
                   style={{ marginLeft: '16px' }}
                 >
-                  {uploadingAvatar ? 'Uploading...' : 'Change photo'}
+                  {uploadingAvatar ? 'Uploading...' : profile?.avatar_url ? 'Change photo' : 'Choose photo'}
                 </button>
               </div>
             </div>
@@ -668,19 +668,20 @@ function AccountPageContent() {
             <div className="flex items-center">
               <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Username</label>
               {isEditingUsername ? (
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-center gap-2" style={{ flex: '1', minWidth: 0 }}>
                   <input
                     type="text"
                     value={editingUsername}
                     onChange={(e) => setEditingUsername(e.target.value)}
                     placeholder="Choose a username"
-                    className="flex-1 max-w-xs bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    className="bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    style={{ flex: '1', minWidth: '100px', maxWidth: '200px' }}
                     autoFocus
                   />
                   <button
                     onClick={handleSaveUsername}
                     disabled={saving}
-                    className="p-1.5 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50"
+                    className="p-1.5 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50 flex-shrink-0"
                   >
                     <Check className="w-4 h-4" />
                   </button>
@@ -689,7 +690,7 @@ function AccountPageContent() {
                       setIsEditingUsername(false)
                       setEditingUsername(profile?.username || '')
                     }}
-                    className="p-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+                    className="p-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition flex-shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
