@@ -567,26 +567,47 @@ function AccountPageContent() {
           >
             <h2 className="text-xl font-bold text-neon-green mb-3">Welcome to Demo</h2>
             <p className="text-gray-300 mb-4">
-              Set up your profile below. Add as much or as little info as you like.
+              Set up your profile below. Username is required. Add as much or as little info as you like.
             </p>
             <p className="text-sm text-gray-400 mb-4">
               When you&apos;re ready, head to your{' '}
-              <Link href="/dashboard" className="text-neon-green hover:underline font-medium">
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  if (!profile?.username) {
+                    e.preventDefault()
+                    showToast('Choose a username', 'error')
+                  } else {
+                    router.push('/dashboard')
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    if (!profile?.username) {
+                      e.preventDefault()
+                      showToast('Choose a username', 'error')
+                    } else {
+                      router.push('/dashboard')
+                    }
+                  }
+                }}
+                className="text-neon-green hover:underline underline-offset-4 font-medium cursor-pointer"
+              >
                 Dashboard
-              </Link>
+              </span>
               {' '}to create and manage your projects.
             </p>
             <p className="text-sm text-gray-400">
               View{' '}
-              <span 
-                role="button"
-                tabIndex={0}
+              <button 
+                type="button"
                 onClick={() => setShowFAQ(true)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowFAQ(true) }}
-                className="text-neon-green hover:underline underline-offset-4 font-medium cursor-pointer"
+                className="text-neon-green hover:underline underline-offset-4 font-medium cursor-pointer bg-transparent border-none p-0 m-0"
+                style={{ background: 'none', border: 'none', padding: 0, margin: 0, font: 'inherit' }}
               >
                 FAQs
-              </span>
+              </button>
             </p>
           </div>
         )}
