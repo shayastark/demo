@@ -607,19 +607,34 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     setSavingTracks({ ...savingTracks, [editingTrackId]: true })
 
     try {
-      const { error: updateError } = await supabase
-        .from('tracks')
-        .update({ title: editingTrackTitle.trim() })
-        .eq('id', editingTrackId)
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
 
-      if (updateError) throw updateError
+      // Update track via secure API
+      const response = await fetch('/api/tracks', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: editingTrackId,
+          title: editingTrackTitle.trim(),
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update track')
+      }
 
       showToast('Track updated successfully!', 'success')
       cancelEditingTrackModal()
       await loadProject()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating track:', error)
-      showToast(error?.message || 'Failed to update track. Please try again.', 'error')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update track. Please try again.'
+      showToast(errorMessage, 'error')
     } finally {
       setSavingTracks({ ...savingTracks, [editingTrackId]: false })
     }
