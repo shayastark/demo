@@ -1283,12 +1283,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-2">{project.title}</h1>
                   <div className="flex items-center text-sm text-gray-400 flex-wrap gap-y-1">
                     {creatorUsername && creatorId && (
-                      <button
+                      <span
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setShowCreatorModal(true)}
-                        className="text-white text-base font-medium hover:underline underline-offset-4 transition"
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowCreatorModal(true) }}
+                        className="text-white text-base font-medium hover:underline underline-offset-4 transition cursor-pointer"
                       >
                         {creatorUsername}
-                      </button>
+                      </span>
                     )}
                     {tracks.length > 0 && (
                       <>
