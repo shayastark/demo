@@ -1285,14 +1285,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     {creatorUsername && creatorId && (
                       <button
                         onClick={() => setShowCreatorModal(true)}
-                        className="hover:text-neon-green transition underline-offset-2 hover:underline font-medium"
+                        className="text-white text-base font-medium hover:underline underline-offset-4 transition"
                       >
                         {creatorUsername}
                       </button>
                     )}
                     {tracks.length > 0 && (
                       <>
-                        <span className="mx-2 text-gray-600">•</span>
+                        <span className="mx-4 text-gray-600">•</span>
                         <span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span>
                       </>
                     )}
