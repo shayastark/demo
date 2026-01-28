@@ -417,8 +417,8 @@ function AccountPageContent() {
       return
     }
     
-    // Validate file size (max 2MB for profile pictures)
-    const maxSizeMB = 2
+    // Validate file size (max 25MB for profile pictures)
+    const maxSizeMB = 25
     if (file.size > maxSizeMB * 1024 * 1024) {
       showToast(`Image is too large. Please use an image under ${maxSizeMB}MB`, 'error')
       return
