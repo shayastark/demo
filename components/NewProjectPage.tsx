@@ -17,6 +17,7 @@ export default function NewProjectPage() {
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
   const [tracks, setTracks] = useState<Array<{ file: File; title: string }>>([{ file: null as any, title: '' }])
   const [loading, setLoading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [dragOver, setDragOver] = useState(false)
 
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,7 +69,9 @@ export default function NewProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) return
+    
+    // Prevent double submission
+    if (!user || loading || submitted) return
 
     setLoading(true)
     try {
@@ -161,12 +164,24 @@ export default function NewProjectPage() {
         }
       }
 
+      // Mark as submitted to prevent any further submissions
+      setSubmitted(true)
       showToast('Project created successfully!', 'success')
-      router.push(`/dashboard/projects/${project.id}`)
-    } catch (error: any) {
+      
+      // Use replace to prevent back button issues, and ensure navigation happens
+      const projectUrl = `/dashboard/projects/${project.id}`
+      router.replace(projectUrl)
+      
+      // Fallback: if router.replace doesn't work, use window.location
+      setTimeout(() => {
+        if (!submitted) return // Already navigated
+        window.location.href = projectUrl
+      }, 500)
+      
+    } catch (error: unknown) {
       console.error('Error creating project:', error)
-      showToast(error.message || 'Failed to create project. Please try again.', 'error')
-    } finally {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create project. Please try again.'
+      showToast(errorMessage, 'error')
       setLoading(false)
     }
   }
@@ -411,17 +426,17 @@ export default function NewProjectPage() {
             
             <button
               type="submit"
-              disabled={loading || !title.trim() || tracks.every(t => !t.file)}
+              disabled={loading || submitted || !title.trim() || tracks.every(t => !t.file)}
               className="w-full px-8 py-4 rounded-full font-bold text-lg transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/30"
               style={{
                 backgroundColor: '#39FF14',
                 color: '#000',
               }}
             >
-              {loading ? (
+              {loading || submitted ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  Creating Project...
+                  {submitted ? 'Redirecting...' : 'Creating Project...'}
                 </span>
               ) : (
                 'Create Project'
