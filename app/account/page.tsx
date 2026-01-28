@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet, HelpCircle } from 'lucide-react'
+import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet, HelpCircle, User } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import Image from 'next/image'
 import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
@@ -191,10 +191,10 @@ function AccountPageContent() {
       loadProfile()
   }, [ready, user?.id, authenticated, user?.email?.address, apiRequest])
 
-  // Auto-start username editing in onboarding mode
+  // Auto-start Creator Profile editing in onboarding mode
   useEffect(() => {
-    if (isOnboarding && loaded && profile && !profile.username) {
-      setIsEditingUsername(true)
+    if (isOnboarding && loaded && profile) {
+      setIsEditingProfile(true)
     }
   }, [isOnboarding, loaded, profile])
 
@@ -417,9 +417,10 @@ function AccountPageContent() {
       return
     }
     
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image must be less than 5MB', 'error')
+    // Validate file size (max 2MB for profile pictures)
+    const maxSizeMB = 2
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showToast(`Image is too large. Please use an image under ${maxSizeMB}MB`, 'error')
       return
     }
     
@@ -437,6 +438,10 @@ function AccountPageContent() {
       
       if (uploadError) {
         console.error('Upload error:', uploadError)
+        // Check for specific error types
+        if (uploadError.message?.includes('Payload too large') || uploadError.message?.includes('413')) {
+          throw new Error('File size too large. Please use a smaller image.')
+        }
         throw uploadError
       }
       
@@ -453,9 +458,10 @@ function AccountPageContent() {
       
       setProfile({ ...profile, avatar_url: result.user.avatar_url })
       showToast('Profile picture updated!', 'success')
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error uploading avatar:', error)
-      showToast('Failed to upload profile picture', 'error')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload profile picture'
+      showToast(errorMessage, 'error')
     } finally {
       setUploadingAvatar(false)
       // Reset input
@@ -614,10 +620,10 @@ function AccountPageContent() {
                     />
                   ) : (
                     <div 
-                      className="bg-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-neon-green"
+                      className="bg-gray-800 rounded-full flex items-center justify-center"
                       style={{ width: '80px', height: '80px' }}
                     >
-                      {(profile?.username || profile?.email || 'U').charAt(0).toUpperCase()}
+                      <User className="w-10 h-10 text-gray-500" />
                     </div>
                   )}
                   
@@ -658,7 +664,7 @@ function AccountPageContent() {
 
             {/* Email */}
             <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Email</label>
+              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Email <span className="text-gray-500 font-normal">(Private)</span></label>
               <span className="text-sm text-white">
                 {profile?.email || user?.email?.address || 'Not set'}
               </span>
