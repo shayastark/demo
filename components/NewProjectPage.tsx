@@ -37,6 +37,13 @@ export default function NewProjectPage() {
   }
 
   const handleTrackFileChange = (index: number, file: File) => {
+    // Validate file size (100MB max for audio)
+    const maxAudioSize = 100 * 1024 * 1024
+    if (file.size > maxAudioSize) {
+      showToast(`"${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 100MB.`, 'error')
+      return
+    }
+    
     const newTracks = [...tracks]
     newTracks[index].file = file
     setTracks(newTracks)
@@ -53,17 +60,33 @@ export default function NewProjectPage() {
     setTracks(tracks.filter((_, i) => i !== index))
   }
 
-  const uploadFile = async (file: File, path: string): Promise<string> => {
+  const uploadFile = async (file: File, path: string, fileType: 'audio' | 'image' = 'image'): Promise<string> => {
+    // File size limits
+    const maxAudioSize = 100 * 1024 * 1024 // 100MB for audio
+    const maxImageSize = 25 * 1024 * 1024 // 25MB for images
+    const maxSize = fileType === 'audio' ? maxAudioSize : maxImageSize
+    
+    if (file.size > maxSize) {
+      const sizeMB = Math.round(maxSize / 1024 / 1024)
+      throw new Error(`File "${file.name}" is too large. Maximum size is ${sizeMB}MB.`)
+    }
+
+    console.log(`Uploading ${fileType}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+    
     const { data, error } = await supabase.storage
       .from('hubba-files')
       .upload(`${path}/${Date.now()}-${file.name}`, file)
 
-    if (error) throw error
+    if (error) {
+      console.error(`Upload error for ${file.name}:`, error)
+      throw new Error(`Failed to upload "${file.name}": ${error.message}`)
+    }
 
     const { data: { publicUrl } } = supabase.storage
       .from('hubba-files')
       .getPublicUrl(data.path)
 
+    console.log(`Upload successful: ${file.name}`)
     return publicUrl
   }
 
@@ -111,7 +134,7 @@ export default function NewProjectPage() {
       // Upload cover image if provided
       let coverImageUrl: string | undefined
       if (coverImage) {
-        coverImageUrl = await uploadFile(coverImage, `projects/${dbUser.id}/covers`)
+        coverImageUrl = await uploadFile(coverImage, `projects/${dbUser.id}/covers`, 'image')
       }
 
       // Create project via secure API
@@ -138,29 +161,44 @@ export default function NewProjectPage() {
       const project = projectData.project
 
       // Upload and create tracks via secure API
-      for (let i = 0; i < tracks.length; i++) {
-        const track = tracks[i]
-        if (!track.file) continue
+      const tracksToUpload = tracks.filter(t => t.file)
+      
+      for (let i = 0; i < tracksToUpload.length; i++) {
+        const track = tracksToUpload[i]
+        const trackName = track.title || track.file.name
+        
+        try {
+          console.log(`Processing track ${i + 1}/${tracksToUpload.length}: ${trackName}`)
+          
+          const audioUrl = await uploadFile(track.file, `projects/${dbUser.id}/tracks`, 'audio')
 
-        const audioUrl = await uploadFile(track.file, `projects/${dbUser.id}/tracks`)
+          const trackResponse = await fetch('/api/tracks', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              project_id: project.id,
+              title: track.title || `Track ${i + 1}`,
+              audio_url: audioUrl,
+              order: i,
+            }),
+          })
 
-        const trackResponse = await fetch('/api/tracks', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            project_id: project.id,
-            title: track.title || `Track ${i + 1}`,
-            audio_url: audioUrl,
-            order: i,
-          }),
-        })
-
-        if (!trackResponse.ok) {
-          const err = await trackResponse.json()
-          throw new Error(err.error || `Failed to create track ${i + 1}`)
+          if (!trackResponse.ok) {
+            const err = await trackResponse.json()
+            throw new Error(err.error || `Failed to save track "${trackName}"`)
+          }
+          
+          console.log(`Track ${i + 1} created successfully`)
+        } catch (trackError: unknown) {
+          const errorMsg = trackError instanceof Error ? trackError.message : `Unknown error with track "${trackName}"`
+          console.error(`Error with track ${i + 1}:`, trackError)
+          // Show specific error for this track
+          showToast(`Error: ${errorMsg}`, 'error')
+          // Continue with project creation but inform user about the failed track
+          throw new Error(`Failed to add track "${trackName}". Project was created but some tracks may be missing.`)
         }
       }
 
