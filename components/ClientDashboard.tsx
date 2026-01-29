@@ -479,12 +479,12 @@ export default function ClientDashboard() {
         }}
       />
       
-      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-3 py-3 sticky top-0 z-20 overflow-x-hidden">
-        <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
+      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-20 overflow-x-hidden">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/" className="text-lg sm:text-xl font-bold text-white flex-shrink-0">
             Demo
           </Link>
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex items-center" style={{ gap: '16px' }}>
             <Link
               href="/account"
               className="text-xs sm:text-sm text-gray-400 hover:text-white transition"
