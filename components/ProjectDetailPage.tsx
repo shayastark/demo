@@ -1608,8 +1608,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           <div style={{ marginTop: '32px' }}>
           {tracks.length === 0 ? (
             <div className="text-center py-12 bg-gray-900 rounded-lg">
-              <p className="text-neon-green">No tracks in this project yet.</p>
-                        </div>
+              <p className="text-gray-400 mb-4">No tracks in this project yet.</p>
+              {isCreator && (
+                <button
+                  onClick={handleAddNewTrack}
+                  className="inline-flex items-center gap-2 bg-neon-green text-black px-6 py-3 rounded-full font-semibold hover:bg-opacity-90 transition"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Track
+                </button>
+              )}
+            </div>
           ) : (
             <TrackPlaylist
               tracks={tracks}
