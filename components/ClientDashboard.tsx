@@ -479,30 +479,31 @@ export default function ClientDashboard() {
         }}
       />
       
-      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-4 sticky top-0 z-20">
+      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-3 sm:px-4 py-3 sm:py-4 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-white">
+          <Link href="/" className="text-xl sm:text-2xl font-bold text-white flex-shrink-0">
             Demo
           </Link>
-          <div className="flex items-center" style={{ gap: '20px' }}>
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
               href="/account"
-              className="text-sm text-gray-400 hover:text-white transition"
+              className="text-xs sm:text-sm text-gray-400 hover:text-white transition"
             >
               Account
             </Link>
             <Link
               href="/dashboard/projects/new"
-              className="flex items-center gap-2 bg-neon-green text-black px-5 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all"
+              className="flex items-center gap-1 sm:gap-2 bg-neon-green text-black px-3 sm:px-5 py-2 sm:py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all text-xs sm:text-sm whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
               New Project
             </Link>
             <button
               onClick={logout}
-              className="text-sm text-gray-500 hover:text-gray-300 transition"
+              className="text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition flex-shrink-0"
             >
-              Sign out
+              <span className="hidden sm:inline">Sign out</span>
+              <span className="sm:hidden">Out</span>
             </button>
           </div>
         </div>
