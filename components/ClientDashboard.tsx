@@ -470,7 +470,7 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative">
+    <div className="min-h-screen bg-black text-white relative overflow-x-hidden">
       {/* Subtle background gradient */}
       <div 
         className="fixed inset-0 pointer-events-none"
@@ -479,12 +479,12 @@ export default function ClientDashboard() {
         }}
       />
       
-      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-3 sm:px-4 py-3 sm:py-4 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-xl sm:text-2xl font-bold text-white flex-shrink-0">
+      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-3 py-3 sticky top-0 z-20 overflow-x-hidden">
+        <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
+          <Link href="/" className="text-lg sm:text-xl font-bold text-white flex-shrink-0">
             Demo
           </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <Link
               href="/account"
               className="text-xs sm:text-sm text-gray-400 hover:text-white transition"
@@ -493,23 +493,22 @@ export default function ClientDashboard() {
             </Link>
             <Link
               href="/dashboard/projects/new"
-              className="flex items-center gap-1 sm:gap-2 bg-neon-green text-black px-3 sm:px-5 py-2 sm:py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all text-xs sm:text-sm whitespace-nowrap"
+              className="flex items-center gap-1 bg-neon-green text-black px-2 sm:px-3 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm whitespace-nowrap"
             >
               <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
               New Project
             </Link>
             <button
               onClick={logout}
-              className="text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition flex-shrink-0"
+              className="text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
             >
-              <span className="hidden sm:inline">Sign out</span>
-              <span className="sm:hidden">Out</span>
+              Sign out
             </button>
           </div>
         </div>
       </nav>
 
-      <main className="px-4 py-8 max-w-7xl mx-auto relative z-10">
+      <main className="px-4 py-8 max-w-7xl mx-auto relative z-10 overflow-x-hidden">
         <h1 className="text-3xl font-bold mb-8 text-white">Your Projects</h1>
 
         {loading ? (
