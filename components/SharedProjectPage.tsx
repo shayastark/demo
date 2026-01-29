@@ -657,21 +657,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-8 relative z-[1]">
-        {/* Cover Image with gradient overlay */}
-        {project.cover_image_url && (
-          <div className="w-full aspect-[21/9] sm:aspect-[3/1] rounded-xl overflow-hidden mb-6 relative shadow-2xl shadow-black/50">
-            <Image
-              src={project.cover_image_url}
-              alt={project.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 768px"
-              priority
-            />
-            {/* Bottom gradient for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          </div>
-        )}
+        {/* Cover Image removed - now displayed on cassette player */}
 
         {/* Project Info */}
         <div className="mb-8 mt-8">

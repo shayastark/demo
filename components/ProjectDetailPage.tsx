@@ -1176,20 +1176,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       </nav>
 
       <main className="px-4 py-8 max-w-3xl mx-auto relative z-10">
-        {/* Cover Image */}
-        {!editingProject && project.cover_image_url && (
-          <div className="w-full aspect-[21/9] sm:aspect-[3/1] rounded-xl overflow-hidden mb-6 relative shadow-2xl shadow-black/50">
-            <Image
-              src={project.cover_image_url}
-              alt={project.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 768px"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          </div>
-        )}
+        {/* Cover Image removed - now displayed on cassette player */}
 
         {/* Project Info */}
         <div className="mb-8 mt-8">
@@ -1617,6 +1604,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </div>
           )}
 
+          {/* Tracks Section - with spacing from Project Notes */}
+          <div style={{ marginTop: '32px' }}>
           {tracks.length === 0 ? (
             <div className="text-center py-12 bg-gray-900 rounded-lg">
               <p className="text-neon-green">No tracks in this project yet.</p>
@@ -1709,6 +1698,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               }}
             />
           )}
+          </div>
 
           {/* Add Track button for creators - positioned below tracks */}
           {isCreator && tracks.length > 0 && (
