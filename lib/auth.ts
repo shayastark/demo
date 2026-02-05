@@ -1,3 +1,4 @@
+import 'server-only'
 import { PrivyClient } from '@privy-io/node'
 
 // Server-side Privy client for token verification
@@ -34,7 +35,11 @@ export async function verifyPrivyToken(authHeader: string | null): Promise<AuthR
     return { success: false, error: 'No authorization header' }
   }
 
-  const token = authHeader.replace('Bearer ', '')
+  if (!authHeader.startsWith('Bearer ')) {
+    return { success: false, error: 'Invalid authorization scheme' }
+  }
+
+  const token = authHeader.slice(7) // Remove 'Bearer ' prefix
   if (!token) {
     return { success: false, error: 'No token provided' }
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
+import { isValidUUID, sanitizeText } from '@/lib/validation'
 
 // Helper to verify project ownership
 async function verifyProjectOwnership(projectId: string, userId: string): Promise<boolean> {
@@ -28,15 +29,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { type, project_id, track_id, content, note_id } = body
+    const { type, project_id, track_id, note_id } = body
+
+    // Validate and sanitize content (max 10,000 characters for notes)
+    const content = sanitizeText(body.content, 10000)
 
     if (!type || !content) {
       return NextResponse.json({ error: 'Type and content are required' }, { status: 400 })
     }
 
+    if (type !== 'project' && type !== 'track') {
+      return NextResponse.json({ error: 'Type must be "project" or "track"' }, { status: 400 })
+    }
+
     if (type === 'project') {
-      if (!project_id) {
-        return NextResponse.json({ error: 'Project ID is required for project notes' }, { status: 400 })
+      if (!project_id || !isValidUUID(project_id)) {
+        return NextResponse.json({ error: 'Valid project ID is required for project notes' }, { status: 400 })
       }
 
       // Verify ownership
@@ -68,8 +76,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ note }, { status: 201 })
       }
     } else if (type === 'track') {
-      if (!track_id) {
-        return NextResponse.json({ error: 'Track ID is required for track notes' }, { status: 400 })
+      if (!track_id || !isValidUUID(track_id)) {
+        return NextResponse.json({ error: 'Valid track ID is required for track notes' }, { status: 400 })
       }
 
       // Get track's project and verify ownership

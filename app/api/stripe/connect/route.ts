@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 
@@ -51,13 +50,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create account link for onboarding
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Use the configured app URL for redirects — never trust the Origin header
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${origin}/account?stripe=refresh`,
-      return_url: `${origin}/account?stripe=success`,
+      refresh_url: `${appUrl}/account?stripe=refresh`,
+      return_url: `${appUrl}/account?stripe=success`,
       type: 'account_onboarding',
     })
 
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating Connect account:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create account' },
+      { error: 'Failed to create account' },
       { status: 500 }
     )
   }
@@ -116,7 +115,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error checking Connect status:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to check status' },
+      { error: 'Failed to check status' },
       { status: 500 }
     )
   }

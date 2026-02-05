@@ -385,38 +385,15 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           console.error('Error inserting share:', shareError)
         }
 
-        // Update metrics
-        const { data: metrics, error: metricsError } = await supabase
-        .from('project_metrics')
-        .select('shares')
-        .eq('project_id', project.id)
-        .single()
-
-        if (metricsError && metricsError.code !== 'PGRST116') {
-          console.error('Error fetching metrics:', metricsError)
-        }
-
-      if (metrics) {
-          const currentShares = metrics.shares ?? 0
-          const { error: updateError } = await supabase
-          .from('project_metrics')
-            .update({ shares: currentShares + 1 })
-          .eq('project_id', project.id)
-
-          if (updateError) {
-            console.error('Error updating shares:', updateError)
-            console.error('Update error details:', JSON.stringify(updateError, null, 2))
-          }
-      } else {
-          // Create metrics record if it doesn't exist
-          const { error: insertError } = await supabase
-          .from('project_metrics')
-            .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
-
-          if (insertError) {
-            console.error('Error creating metrics:', insertError)
-            console.error('Insert error details:', JSON.stringify(insertError, null, 2))
-          }
+        // Atomically increment shares metric via API
+        try {
+          await fetch('/api/metrics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_id: project.id, field: 'shares' }),
+          })
+        } catch (metricsErr) {
+          console.error('Error updating shares metric:', metricsErr)
         }
       } catch (error) {
         console.error('Error tracking share:', error)
@@ -535,39 +512,15 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         console.error('Error inserting track play:', playError)
       }
 
-      // Update project metrics
-      const { data: metrics, error: metricsError } = await supabase
-        .from('project_metrics')
-        .select('plays')
-        .eq('project_id', project.id)
-        .single()
-
-      if (metricsError && metricsError.code !== 'PGRST116') {
-        // PGRST116 is "not found" - that's okay, we'll create it
-        console.error('Error fetching metrics:', metricsError)
-      }
-
-      if (metrics) {
-        const currentPlays = metrics.plays ?? 0
-        const { error: updateError } = await supabase
-          .from('project_metrics')
-          .update({ plays: currentPlays + 1 })
-          .eq('project_id', project.id)
-
-        if (updateError) {
-          console.error('Error updating plays:', updateError)
-          console.error('Update error details:', JSON.stringify(updateError, null, 2))
-        }
-      } else {
-        // Create metrics record if it doesn't exist
-        const { error: insertError } = await supabase
-          .from('project_metrics')
-          .insert({ project_id: project.id, plays: 1, shares: 0, adds: 0 })
-
-        if (insertError) {
-          console.error('Error creating metrics:', insertError)
-          console.error('Insert error details:', JSON.stringify(insertError, null, 2))
-        }
+      // Atomically increment plays metric via API
+      try {
+        await fetch('/api/metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project_id: project.id, field: 'plays' }),
+        })
+      } catch (metricsErr) {
+        console.error('Error updating plays metric:', metricsErr)
       }
     } catch (error) {
       console.error('Error tracking play:', error)

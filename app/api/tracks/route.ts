@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { notifyNewTrackAdded } from '@/lib/notifications'
+import { isValidUUID, sanitizeText } from '@/lib/validation'
 
 // Helper to verify project ownership and get project details
 async function getProjectIfOwner(projectId: string, userId: string): Promise<{ id: string; title: string; creator_id: string } | null> {
@@ -39,10 +40,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { project_id, title, audio_url, image_url, order } = body
+    const { project_id, audio_url, image_url } = body
 
-    if (!project_id || !title || !audio_url) {
-      return NextResponse.json({ error: 'Project ID, title, and audio URL are required' }, { status: 400 })
+    // Validate and sanitize
+    const title = sanitizeText(body.title, 200)
+    const order = typeof body.order === 'number' && body.order >= 0 ? Math.floor(body.order) : 0
+
+    if (!project_id || !isValidUUID(project_id)) {
+      return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
+    }
+
+    if (!title || !audio_url) {
+      return NextResponse.json({ error: 'Title and audio URL are required' }, { status: 400 })
     }
 
     // Verify ownership and get project details
@@ -98,11 +107,17 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, title, audio_url, image_url, order } = body
+    const { id, audio_url, image_url } = body
 
-    if (!id) {
-      return NextResponse.json({ error: 'Track ID is required' }, { status: 400 })
+    if (!id || !isValidUUID(id)) {
+      return NextResponse.json({ error: 'Valid track ID is required' }, { status: 400 })
     }
+
+    // Sanitize optional text fields
+    const title = body.title !== undefined ? sanitizeText(body.title, 200) : undefined
+    const order = body.order !== undefined
+      ? (typeof body.order === 'number' && body.order >= 0 ? Math.floor(body.order) : undefined)
+      : undefined
 
     // Get track and verify ownership via project
     const { data: existingTrack } = await supabaseAdmin
@@ -159,8 +174,8 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    if (!id) {
-      return NextResponse.json({ error: 'Track ID is required' }, { status: 400 })
+    if (!id || !isValidUUID(id)) {
+      return NextResponse.json({ error: 'Valid track ID is required' }, { status: 400 })
     }
 
     // Get track and verify ownership via project

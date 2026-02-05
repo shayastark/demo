@@ -44,7 +44,23 @@ export async function POST(request: NextRequest) {
           const amount = session.amount_total || 0
           const tipperUsername = session.metadata.tipper_username || null
           
+          // Idempotency check: skip if this session was already recorded
+          const { data: existingTip } = await supabaseAdmin
+            .from('tips')
+            .select('id')
+            .eq('stripe_session_id', session.id)
+            .single()
+
+          if (existingTip) {
+            console.log('Tip already recorded for session:', session.id)
+            break
+          }
+
           // Store tip in database (using admin client for server-side write)
+          const paymentIntentId = typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : null
+
           const { error: tipError } = await supabaseAdmin
             .from('tips')
             .insert({
@@ -55,7 +71,7 @@ export async function POST(request: NextRequest) {
               tipper_username: tipperUsername,
               message: message,
               stripe_session_id: session.id,
-              stripe_payment_intent_id: session.payment_intent as string || null,
+              stripe_payment_intent_id: paymentIntentId,
               status: 'completed',
             })
 
@@ -118,12 +134,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-// Disable body parsing for webhook (we need raw body for signature verification)
-export const config = {
-  api: {
-    bodyParser: false,
-  },
 }
 

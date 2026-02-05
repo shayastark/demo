@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
+import { isValidUUID, sanitizeText } from '@/lib/validation'
 
 // GET /api/projects - Get user's projects
 export async function GET(request: NextRequest) {
@@ -46,7 +47,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, description, cover_image_url, allow_downloads } = body
+    const { cover_image_url, allow_downloads } = body
+
+    // Validate and sanitize text fields
+    const title = sanitizeText(body.title, 200)
+    const description = sanitizeText(body.description, 2000)
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -93,11 +98,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, title, description, cover_image_url, allow_downloads, pinned, sharing_enabled } = body
+    const { id, cover_image_url, allow_downloads, pinned, sharing_enabled } = body
 
-    if (!id) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    if (!id || !isValidUUID(id)) {
+      return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
     }
+
+    // Sanitize text fields if provided
+    const title = body.title !== undefined ? sanitizeText(body.title, 200) : undefined
+    const description = body.description !== undefined ? sanitizeText(body.description, 2000) : undefined
 
     // Verify ownership
     const { data: existingProject } = await supabaseAdmin
@@ -152,8 +161,8 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    if (!id) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    if (!id || !isValidUUID(id)) {
+      return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
     }
 
     // Verify ownership

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
+import { isValidUUID } from '@/lib/validation'
 
 // POST /api/library - Add a project to user's library
 export async function POST(request: NextRequest) {
@@ -19,8 +20,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { project_id } = body
 
-    if (!project_id) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    if (!project_id || !isValidUUID(project_id)) {
+      return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
     }
 
     // Check if already in library
@@ -44,22 +45,12 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
 
-    // Increment adds metric
-    const { data: metrics } = await supabaseAdmin
-      .from('project_metrics')
-      .select('adds')
-      .eq('project_id', project_id)
-      .single()
+    // Atomically increment adds metric
+    const { error: rpcError } = await supabaseAdmin
+      .rpc('increment_metric', { p_project_id: project_id, p_field: 'adds' })
 
-    if (metrics) {
-      await supabaseAdmin
-        .from('project_metrics')
-        .update({ adds: (metrics.adds ?? 0) + 1 })
-        .eq('project_id', project_id)
-    } else {
-      await supabaseAdmin
-        .from('project_metrics')
-        .insert({ project_id, adds: 1, plays: 0, shares: 0 })
+    if (rpcError) {
+      console.error('Error incrementing adds metric:', rpcError)
     }
 
     return NextResponse.json({ userProject }, { status: 201 })
@@ -86,8 +77,8 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('project_id')
 
-    if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    if (!projectId || !isValidUUID(projectId)) {
+      return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
     }
 
     const { error } = await supabaseAdmin
@@ -122,8 +113,12 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { project_id, pinned } = body
 
-    if (!project_id || pinned === undefined) {
-      return NextResponse.json({ error: 'Project ID and pinned status are required' }, { status: 400 })
+    if (!project_id || !isValidUUID(project_id)) {
+      return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
+    }
+
+    if (typeof pinned !== 'boolean') {
+      return NextResponse.json({ error: 'Pinned must be a boolean value' }, { status: 400 })
     }
 
     const { data: userProject, error } = await supabaseAdmin

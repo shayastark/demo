@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
+import { parseLimit, validateUUIDArray } from '@/lib/validation'
 
 // Get notifications for the authenticated user
 export async function GET(request: NextRequest) {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseLimit(searchParams.get('limit'))
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
 
     let query = supabaseAdmin
@@ -74,11 +75,20 @@ export async function PATCH(request: NextRequest) {
     const { notificationIds } = await request.json()
 
     if (notificationIds && notificationIds.length > 0) {
+      // Validate the IDs array
+      const validIds = validateUUIDArray(notificationIds)
+      if (!validIds) {
+        return NextResponse.json(
+          { error: 'Invalid notification IDs. Must be an array of valid UUIDs (max 100).' },
+          { status: 400 }
+        )
+      }
+
       // Mark specific notifications as read
       const { error } = await supabaseAdmin
         .from('notifications')
         .update({ is_read: true, read_at: new Date().toISOString() })
-        .in('id', notificationIds)
+        .in('id', validIds)
         .eq('user_id', user.id)
 
       if (error) throw error
@@ -126,11 +136,20 @@ export async function DELETE(request: NextRequest) {
 
       if (error) throw error
     } else if (notificationIds && notificationIds.length > 0) {
+      // Validate the IDs array
+      const validIds = validateUUIDArray(notificationIds)
+      if (!validIds) {
+        return NextResponse.json(
+          { error: 'Invalid notification IDs. Must be an array of valid UUIDs (max 100).' },
+          { status: 400 }
+        )
+      }
+
       // Delete specific notifications
       const { error } = await supabaseAdmin
         .from('notifications')
         .delete()
-        .in('id', notificationIds)
+        .in('id', validIds)
         .eq('user_id', user.id)
 
       if (error) throw error

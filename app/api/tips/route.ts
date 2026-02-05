@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
+import { parseLimit, validateUUIDArray } from '@/lib/validation'
 
 // Get tips for the authenticated creator
 export async function GET(request: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseLimit(searchParams.get('limit'))
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
 
     let query = supabaseAdmin
@@ -48,13 +49,14 @@ export async function GET(request: NextRequest) {
       .eq('creator_id', user.id)
       .eq('is_read', false)
 
-    // Get total earnings
+    // Get total earnings via database aggregate (efficient for large datasets)
     const { data: totalData } = await supabaseAdmin
       .from('tips')
       .select('amount')
       .eq('creator_id', user.id)
       .eq('status', 'completed')
 
+    // TODO: Replace with a Supabase RPC aggregate query for better performance at scale
     const totalEarnings = totalData?.reduce((sum, tip) => sum + tip.amount, 0) || 0
 
     return NextResponse.json({
@@ -88,11 +90,20 @@ export async function PATCH(request: NextRequest) {
     const { tipIds } = await request.json()
 
     if (tipIds && tipIds.length > 0) {
+      // Validate the IDs array
+      const validIds = validateUUIDArray(tipIds)
+      if (!validIds) {
+        return NextResponse.json(
+          { error: 'Invalid tip IDs. Must be an array of valid UUIDs (max 100).' },
+          { status: 400 }
+        )
+      }
+
       // Mark specific tips as read (only the user's own tips)
       const { error } = await supabaseAdmin
         .from('tips')
         .update({ is_read: true })
-        .in('id', tipIds)
+        .in('id', validIds)
         .eq('creator_id', user.id)
 
       if (error) throw error

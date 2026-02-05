@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { sanitizeText } from '@/lib/validation'
 
 // GET /api/user - Get current user's profile
 export async function GET(request: NextRequest) {
@@ -86,18 +87,20 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
     
-    // Only allow updating specific fields
-    const allowedFields = [
-      'username',
-      'bio',
-      'contact_email',
-      'website',
-      'instagram',
-      'twitter',
-      'farcaster',
-      'avatar_url',
-      'wallet_address',
-    ]
+    // Field max lengths for sanitization
+    const fieldLimits: Record<string, number> = {
+      username: 50,
+      bio: 500,
+      contact_email: 254,
+      website: 500,
+      instagram: 100,
+      twitter: 100,
+      farcaster: 100,
+      avatar_url: 1000,
+      wallet_address: 42,
+    }
+
+    const allowedFields = Object.keys(fieldLimits)
     
     const updates: Record<string, unknown> = {}
     
@@ -105,7 +108,7 @@ export async function PATCH(request: NextRequest) {
       if (field in body) {
         // Validate wallet address format if provided
         if (field === 'wallet_address' && body[field]) {
-          const address = body[field].trim()
+          const address = String(body[field]).trim()
           if (address && !/^0x[a-fA-F0-9]{40}$/.test(address)) {
             return NextResponse.json(
               { error: 'Invalid Ethereum wallet address' },
@@ -113,10 +116,29 @@ export async function PATCH(request: NextRequest) {
             )
           }
           updates[field] = address || null
+        } else if (field === 'username' && body[field]) {
+          // Validate username format: alphanumeric, underscores, hyphens, 3-50 chars
+          const username = String(body[field]).trim()
+          if (username && !/^[a-zA-Z0-9_-]{3,50}$/.test(username)) {
+            return NextResponse.json(
+              { error: 'Username must be 3-50 characters and only contain letters, numbers, underscores, and hyphens' },
+              { status: 400 }
+            )
+          }
+          updates[field] = username || null
+        } else if (field === 'website' && body[field]) {
+          // Validate website URL starts with http:// or https://
+          const url = String(body[field]).trim()
+          if (url && !url.match(/^https?:\/\//)) {
+            return NextResponse.json(
+              { error: 'Website must start with http:// or https://' },
+              { status: 400 }
+            )
+          }
+          updates[field] = sanitizeText(url, fieldLimits[field])
         } else {
-          // Trim strings and convert empty strings to null
-          const value = typeof body[field] === 'string' ? body[field].trim() : body[field]
-          updates[field] = value || null
+          // Trim strings, enforce max length, and convert empty strings to null
+          updates[field] = sanitizeText(body[field], fieldLimits[field])
         }
       }
     }

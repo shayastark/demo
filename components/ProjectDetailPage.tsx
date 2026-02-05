@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { apiRequest } from '@/lib/api'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
@@ -253,61 +254,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         console.error('Error inserting share:', shareError)
       }
 
-      // Update metrics
-      const { data: metricsData, error: metricsError } = await supabase
-        .from('project_metrics')
-        .select('shares')
-        .eq('project_id', project.id)
-        .single()
-
-      if (metricsError && metricsError.code !== 'PGRST116') {
-        console.error('Error fetching metrics:', metricsError)
-      }
-
-      if (metricsData) {
-        const currentShares = metricsData.shares ?? 0
-        const { error: updateError } = await supabase
-          .from('project_metrics')
-          .update({ shares: currentShares + 1 })
-          .eq('project_id', project.id)
-        
-        if (updateError) {
-          console.error('Error updating shares:', updateError)
-          console.error('Update error details:', JSON.stringify(updateError, null, 2))
-        } else {
-          // Reload metrics
-          const { data: updatedMetrics, error: reloadError } = await supabase
-            .from('project_metrics')
-            .select('*')
-            .eq('project_id', project.id)
-            .single()
-          if (reloadError) {
-            console.error('Error reloading metrics:', reloadError)
-          } else if (updatedMetrics) {
-            setMetrics(updatedMetrics)
-          }
+      // Atomically increment shares metric via API
+      try {
+        const res = await fetch('/api/metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project_id: project.id, field: 'shares' }),
+        })
+        if (res.ok) {
+          const { metrics: updatedMetrics } = await res.json()
+          if (updatedMetrics) setMetrics(updatedMetrics)
         }
-      } else {
-        const { error: insertError } = await supabase
-          .from('project_metrics')
-          .insert({ project_id: project.id, shares: 1, plays: 0, adds: 0 })
-        
-        if (insertError) {
-          console.error('Error creating metrics:', insertError)
-          console.error('Insert error details:', JSON.stringify(insertError, null, 2))
-        } else {
-          // Reload metrics
-          const { data: newMetrics, error: reloadError } = await supabase
-            .from('project_metrics')
-            .select('*')
-            .eq('project_id', project.id)
-            .single()
-          if (reloadError) {
-            console.error('Error reloading new metrics:', reloadError)
-          } else if (newMetrics) {
-            setMetrics(newMetrics)
-          }
-        }
+      } catch (metricsErr) {
+        console.error('Error updating shares metric:', metricsErr)
       }
     } catch (error) {
       console.error('Error tracking share:', error)
@@ -348,61 +307,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           .from('user_projects')
           .upsert({ user_id: dbUser.id, project_id: project.id }, { onConflict: 'user_id,project_id' })
 
-        // Track add
-        const { data: metrics, error: metricsError } = await supabase
-          .from('project_metrics')
-          .select('adds')
-          .eq('project_id', project.id)
-          .single()
-
-        if (metricsError && metricsError.code !== 'PGRST116') {
-          console.error('Error fetching metrics:', metricsError)
-        }
-
-        if (metrics) {
-          const currentAdds = metrics.adds ?? 0
-          const { error: updateError } = await supabase
-            .from('project_metrics')
-            .update({ adds: currentAdds + 1 })
-            .eq('project_id', project.id)
-          
-          if (updateError) {
-            console.error('Error updating adds:', updateError)
-            console.error('Update error details:', JSON.stringify(updateError, null, 2))
-          } else {
-            // Reload metrics to show updated count
-            const { data: updatedMetrics, error: reloadError } = await supabase
-              .from('project_metrics')
-              .select('*')
-              .eq('project_id', project.id)
-              .single()
-            if (reloadError) {
-              console.error('Error reloading metrics:', reloadError)
-            } else if (updatedMetrics) {
-              setMetrics(updatedMetrics)
-            }
+        // Atomically increment adds metric via API
+        try {
+          const res = await fetch('/api/metrics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_id: project.id, field: 'adds' }),
+          })
+          if (res.ok) {
+            const { metrics: updatedMetrics } = await res.json()
+            if (updatedMetrics) setMetrics(updatedMetrics)
           }
-        } else {
-          const { error: insertError } = await supabase
-            .from('project_metrics')
-            .insert({ project_id: project.id, adds: 1, plays: 0, shares: 0 })
-          
-          if (insertError) {
-            console.error('Error creating metrics:', insertError)
-            console.error('Insert error details:', JSON.stringify(insertError, null, 2))
-          } else {
-            // Reload metrics
-            const { data: newMetrics, error: reloadError } = await supabase
-              .from('project_metrics')
-              .select('*')
-              .eq('project_id', project.id)
-              .single()
-            if (reloadError) {
-              console.error('Error reloading new metrics:', reloadError)
-            } else if (newMetrics) {
-              setMetrics(newMetrics)
-            }
-          }
+        } catch (metricsErr) {
+          console.error('Error updating adds metric:', metricsErr)
         }
 
         // Also add all tracks to local playback queue
@@ -461,23 +378,21 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       const newPinnedState = !isPinned
       
       if (isCreator) {
-        // For creator's own projects, update the projects table
-        const { error } = await supabase
-          .from('projects')
-          .update({ pinned: newPinnedState })
-          .eq('id', project.id)
-
-        if (error) throw error
+        // For creator's own projects, update via API (server verifies ownership)
+        const { error } = await apiRequest('/api/projects', {
+          method: 'PATCH',
+          body: { id: project.id, pinned: newPinnedState },
+          getAccessToken,
+        })
+        if (error) throw new Error(error)
       } else {
-        // For saved projects, use upsert on user_projects table
-        const { error } = await supabase
-          .from('user_projects')
-          .upsert(
-            { user_id: dbUser.id, project_id: project.id, pinned: newPinnedState },
-            { onConflict: 'user_id,project_id' }
-          )
-
-        if (error) throw error
+        // For saved projects, update via library API
+        const { error } = await apiRequest('/api/library', {
+          method: 'PATCH',
+          body: { project_id: project.id, pinned: newPinnedState },
+          getAccessToken,
+        })
+        if (error) throw new Error(error)
       }
 
       setIsPinned(newPinnedState)
@@ -724,20 +639,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
 
     try {
-      // Delete the project (cascade will handle tracks, notes, etc.)
-      const { data: deleteData, error: deleteError } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', project.id)
-        .select()
+      // Delete the project via API (server verifies ownership)
+      const { error: deleteError } = await apiRequest(`/api/projects?id=${project.id}`, {
+        method: 'DELETE',
+        getAccessToken,
+      })
 
       if (deleteError) {
-        console.error('Delete error:', deleteError)
-        throw deleteError
-      }
-
-      if (!deleteData || deleteData.length === 0) {
-        throw new Error('Project was not deleted. It may not exist or you may not have permission.')
+        throw new Error(deleteError)
       }
 
       showToast('Project deleted successfully!', 'success')
@@ -943,54 +852,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
 
     try {
-      // First, delete associated track notes (if any)
-      const { error: notesDeleteError } = await supabase
-        .from('track_notes')
-        .delete()
-        .eq('track_id', trackId)
-
-      if (notesDeleteError) {
-        console.warn('Warning: Could not delete track notes:', notesDeleteError)
-        // Continue anyway - notes might not exist or might be handled by CASCADE
-      }
-
-      // Delete track plays (if any)
-      const { error: playsDeleteError } = await supabase
-        .from('track_plays')
-        .delete()
-        .eq('track_id', trackId)
-
-      if (playsDeleteError) {
-        console.warn('Warning: Could not delete track plays:', playsDeleteError)
-        // Continue anyway
-      }
-
-      // Verify the track belongs to this project before deleting
-      const { data: trackData, error: trackCheckError } = await supabase
-        .from('tracks')
-        .select('id, project_id')
-        .eq('id', trackId)
-        .eq('project_id', project.id)
-        .single()
-
-      if (trackCheckError || !trackData) {
-        throw new Error('Track not found or does not belong to this project.')
-      }
-
-      // Delete the track
-      const { data: deleteData, error: deleteError } = await supabase
-        .from('tracks')
-        .delete()
-        .eq('id', trackId)
-        .select()
+      // Delete the track via API (server verifies ownership and handles cascading deletes)
+      const { error: deleteError } = await apiRequest(`/api/tracks?id=${trackId}`, {
+        method: 'DELETE',
+        getAccessToken,
+      })
 
       if (deleteError) {
-        console.error('Delete error:', deleteError)
-        throw deleteError
-      }
-
-      if (!deleteData || deleteData.length === 0) {
-        throw new Error('Track was not deleted. It may not exist or you may not have permission.')
+        throw new Error(deleteError)
       }
 
       // Reload the entire project to ensure everything is in sync
@@ -1357,10 +1226,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <button
                   onClick={async () => {
                     const newValue = !(project.sharing_enabled ?? true)
-                    const { error } = await supabase
-                      .from('projects')
-                      .update({ sharing_enabled: newValue })
-                      .eq('id', project.id)
+                    const { error } = await apiRequest('/api/projects', {
+                      method: 'PATCH',
+                      body: { id: project.id, sharing_enabled: newValue },
+                      getAccessToken,
+                    })
                     if (error) {
                       showToast('Failed to update sharing setting', 'error')
                     } else {
@@ -1414,10 +1284,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <button
                   onClick={async () => {
                     const newValue = !project.allow_downloads
-                    const { error } = await supabase
-                      .from('projects')
-                      .update({ allow_downloads: newValue })
-                      .eq('id', project.id)
+                    const { error } = await apiRequest('/api/projects', {
+                      method: 'PATCH',
+                      body: { id: project.id, allow_downloads: newValue },
+                      getAccessToken,
+                    })
                     if (error) {
                       showToast('Failed to update download setting', 'error')
                     } else {
@@ -1668,38 +1539,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     console.error('Error inserting track play:', playError)
                   }
 
-                  // Update project metrics
-                  const { data: currentMetrics, error: metricsError } = await supabase
-                    .from('project_metrics')
-                    .select('plays')
-                    .eq('project_id', project.id)
-                    .single()
-
-                  if (metricsError && metricsError.code !== 'PGRST116') {
-                    console.error('Error fetching metrics:', metricsError)
-                  }
-
-                  if (currentMetrics) {
-                    const currentPlays = currentMetrics.plays ?? 0
-                    const { error: updateError } = await supabase
-                      .from('project_metrics')
-                      .update({ plays: currentPlays + 1 })
-                      .eq('project_id', project.id)
-                    
-                    if (!updateError) {
-                      const { data: updatedMetrics } = await supabase
-                        .from('project_metrics')
-                        .select('*')
-                        .eq('project_id', project.id)
-                        .single()
-                      if (updatedMetrics) {
-                        setMetrics(updatedMetrics)
-                      }
-                    }
-                  } else {
-                    await supabase
-                      .from('project_metrics')
-                      .insert({ project_id: project.id, plays: 1, shares: 0, adds: 0 })
+                  // Atomically increment plays metric via API
+                  const metricsRes = await fetch('/api/metrics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_id: project.id, field: 'plays' }),
+                  })
+                  if (metricsRes.ok) {
+                    const { metrics: updatedMetrics } = await metricsRes.json()
+                    if (updatedMetrics) setMetrics(updatedMetrics)
                   }
                 } catch (error) {
                   console.error('Error tracking play:', error)
