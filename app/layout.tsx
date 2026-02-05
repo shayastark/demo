@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Outfit } from 'next/font/google'
 import './globals.css'
 import PrivyProviderWrapper from '@/components/PrivyProviderWrapper'
@@ -12,15 +12,16 @@ const outfit = Outfit({
   weight: ['300', '400', '500', '600', '700', '800'],
 })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+}
+
 export const metadata: Metadata = {
   title: 'Demo - Share Your Music',
   description: 'Share your unreleased tracks on your terms',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
   openGraph: {
     title: 'Demo - Share Your Music',
     description: 'Share your unreleased tracks on your terms',

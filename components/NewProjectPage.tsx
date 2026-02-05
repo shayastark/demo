@@ -249,10 +249,10 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white pb-40">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-xl mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link 
             href="/dashboard" 
             className="p-2 -ml-2 rounded-full hover:bg-gray-800 transition"
@@ -263,13 +263,13 @@ export default function NewProjectPage() {
         </div>
       </header>
 
-      <main className="px-4 py-6 max-w-xl mx-auto pb-8">
-        <form id="new-project-form" onSubmit={handleSubmit} className="space-y-6">
+      <main className="px-6 py-8 max-w-xl mx-auto">
+        <form id="new-project-form" onSubmit={handleSubmit} className="space-y-8">
           
-          {/* Cover Image - Album Art Style */}
+          {/* Cover Image */}
           <div className="flex flex-col items-center">
             {coverImagePreview ? (
-              <div className="relative w-32 h-32 rounded-xl overflow-hidden shadow-2xl group">
+              <div className="relative w-36 h-36 rounded-2xl overflow-hidden shadow-2xl group">
                 <label className="cursor-pointer block w-full h-full">
                   <img 
                     src={coverImagePreview} 
@@ -278,7 +278,7 @@ export default function NewProjectPage() {
                   />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
                     <ImagePlus className="w-6 h-6 text-white" />
-                    <span className="text-white text-sm font-medium">Change image</span>
+                    <span className="text-white text-sm font-medium">Change</span>
                   </div>
                   <input
                     type="file"
@@ -287,7 +287,6 @@ export default function NewProjectPage() {
                     className="hidden"
                   />
                 </label>
-                {/* Remove button */}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -304,7 +303,7 @@ export default function NewProjectPage() {
               </div>
             ) : (
               <label 
-                className={`w-32 h-32 border-2 border-dashed rounded-xl cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                className={`w-36 h-36 border-2 border-dashed rounded-2xl cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
                   dragOver 
                     ? 'border-neon-green bg-neon-green/10' 
                     : 'border-gray-600 hover:border-neon-green/50 hover:bg-gray-900/50'
@@ -324,9 +323,7 @@ export default function NewProjectPage() {
                 }}
               >
                 <ImagePlus className="w-6 h-6 text-gray-500" />
-                <div className="text-center px-2">
-                  <span className="text-xs text-neon-green font-medium block">Add Cover</span>
-                </div>
+                <span className="text-xs text-gray-400 font-medium">Add Cover</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -335,67 +332,68 @@ export default function NewProjectPage() {
                 />
               </label>
             )}
-            <p className="text-xs text-gray-500 mt-3">Optional • Square recommended</p>
+            <p className="text-xs text-gray-600 mt-3">Optional · Square recommended</p>
           </div>
 
-          {/* Project Details Card */}
-          <div className="bg-gray-900/50 rounded-2xl p-5 border border-gray-800 space-y-5 overflow-hidden">
-            <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Project Details</h2>
-            
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium mb-2 text-white">
-                Title <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Name your project"
-                required
-                className="w-full max-w-full bg-black border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green/20 transition box-border"
-              />
-            </div>
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-300">
+              Title <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Name your project"
+              required
+              className="w-full bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green/20 transition"
+            />
+          </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium mb-2 text-white">Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="Add a description or details"
-                className="w-full max-w-full bg-black border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green/20 transition resize-none box-border"
-              />
-            </div>
-
-            </div>
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-300">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="Add a description or details"
+              className="w-full bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green/20 transition resize-none"
+            />
+          </div>
 
           {/* Tracks Section */}
-          <div className="bg-gray-900/50 rounded-2xl p-5 border border-gray-800 space-y-4">
-            <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide">
-              Tracks <span className="text-red-400">*</span>
-            </h2>
-            
-            <p className="text-sm text-gray-500">
-              Click the upload area below to select your audio files.
-            </p>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <label className="text-sm font-medium text-gray-300">
+                Tracks <span className="text-red-400">*</span>
+              </label>
+              {tracks.length > 0 && tracks[0].file && (
+                <button
+                  type="button"
+                  onClick={handleAddTrack}
+                  className="text-sm text-neon-green hover:text-neon-green/80 transition flex items-center gap-1 font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Track
+                </button>
+              )}
+            </div>
 
             <div className="space-y-3">
               {tracks.map((track, index) => (
                 <div 
                   key={index} 
-                  className="bg-black rounded-xl border border-gray-700 overflow-hidden"
-                  style={{ padding: '16px' }}
+                  className="bg-gray-900/40 rounded-xl border border-gray-800 p-4"
                 >
                   <div className="flex items-start gap-3">
                     {/* Track Number */}
-                    <div className="w-8 h-8 rounded-full bg-neon-green/20 flex items-center justify-center text-sm font-bold text-neon-green shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-sm font-semibold text-gray-400 shrink-0 mt-0.5">
                       {index + 1}
                     </div>
                     
-                    <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {/* File Upload - More prominent with Upload icon */}
+                    <div className="flex-1 min-w-0 space-y-3">
+                      {/* File Upload */}
                       <label className="block cursor-pointer">
                         <input
                           type="file"
@@ -407,30 +405,21 @@ export default function NewProjectPage() {
                           required
                           className="hidden"
                         />
-                        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed transition overflow-hidden ${
+                        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed transition ${
                           track.file 
-                            ? 'border-neon-green bg-neon-green/10' 
-                            : 'border-gray-600 hover:border-neon-green hover:bg-gray-800'
+                            ? 'border-neon-green/40 bg-neon-green/5' 
+                            : 'border-gray-700 hover:border-gray-500 hover:bg-gray-800/50'
                         }`}>
-                          <Upload className={`w-5 h-5 flex-shrink-0 ${track.file ? 'text-neon-green' : 'text-gray-400'}`} />
-                          <div className="min-w-0 flex-1 overflow-hidden">
+                          <Upload className={`w-4 h-4 flex-shrink-0 ${track.file ? 'text-neon-green' : 'text-gray-500'}`} />
+                          <div className="min-w-0 flex-1">
                             {track.file ? (
-                              <span 
-                                className="text-sm text-neon-green block"
-                                style={{ 
-                                  overflow: 'hidden', 
-                                  textOverflow: 'ellipsis', 
-                                  whiteSpace: 'nowrap',
-                                  maxWidth: '100%'
-                                }}
-                              >
+                              <span className="text-sm text-neon-green truncate block">
                                 {track.file.name}
                               </span>
                             ) : (
-                              <>
-                                <span className="text-sm text-white font-medium block">Click To Upload Audio</span>
-                                <span className="text-xs text-gray-500">MP3, WAV, M4A, FLAC supported</span>
-                              </>
+                              <span className="text-sm text-gray-400">
+                                Upload audio <span className="text-gray-600">· MP3, WAV, M4A, FLAC</span>
+                              </span>
                             )}
                           </div>
                         </div>
@@ -447,7 +436,7 @@ export default function NewProjectPage() {
                         }}
                         placeholder="Track title"
                         required
-                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-neon-green text-sm"
+                        className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green text-sm transition"
                       />
                     </div>
                     
@@ -455,7 +444,7 @@ export default function NewProjectPage() {
                       <button
                         type="button"
                         onClick={() => removeTrack(index)}
-                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition shrink-0"
+                        className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition shrink-0"
                         title="Remove track"
                       >
                         <X className="w-4 h-4" />
@@ -465,55 +454,50 @@ export default function NewProjectPage() {
                 </div>
               ))}
             </div>
-            
-            {/* Add Another Track Button - More visible styling */}
-            <button
-              type="button"
-              onClick={handleAddTrack}
-              className="w-full py-4 rounded-xl border border-gray-600 text-gray-300 hover:border-neon-green hover:text-neon-green hover:bg-neon-green/5 transition flex items-center justify-center gap-2 font-medium"
-            >
-              <Plus className="w-5 h-5" />
-              Add Another Track
-            </button>
-          </div>
 
-          {/* Action Buttons - Inside form, always visible */}
-          <div className="bg-gray-900/50 rounded-2xl p-5 border border-gray-800 space-y-4 mt-6">
-            {/* Helper text */}
-            {(!title.trim() || tracks.every(t => !t.file)) && (
-              <p className="text-center text-sm text-gray-500">
-                {!title.trim() ? 'Add a title above to continue' : 'Upload at least one track to continue'}
+            {/* Add track for first-time or when no tracks yet */}
+            {(!tracks[0]?.file || tracks.length === 0) && (
+              <p className="text-xs text-gray-600 mt-3 text-center">
+                Upload at least one track to create your project
               </p>
             )}
-            
-            <button
-              type="submit"
-              disabled={loading || submitted || !title.trim() || tracks.every(t => !t.file)}
-              className="w-full px-8 py-4 rounded-full font-bold text-lg transition disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-neon-green/30"
-              style={{
-                backgroundColor: '#39FF14',
-                color: '#000',
-              }}
-            >
-              {loading || submitted ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  {submitted ? 'Redirecting...' : 'Creating Project...'}
-                </span>
-              ) : (
-                'Create Project'
-              )}
-            </button>
-            
-            <Link
-              href="/dashboard"
-              className="block w-full text-center py-3 text-gray-400 hover:text-white transition"
-            >
-              Cancel
-            </Link>
           </div>
         </form>
       </main>
+
+      {/* Sticky bottom CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-black/95 backdrop-blur-md border-t border-gray-800">
+        <div className="max-w-xl mx-auto px-6 py-4 space-y-2">
+          <button
+            type="submit"
+            form="new-project-form"
+            disabled={loading || submitted || !title.trim() || tracks.every(t => !t.file)}
+            className="w-full py-4 rounded-full font-bold text-base transition disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98]"
+            style={{
+              backgroundColor: (loading || submitted || !title.trim() || tracks.every(t => !t.file)) ? '#39FF14' : '#39FF14',
+              color: '#000',
+              boxShadow: (!loading && !submitted && title.trim() && !tracks.every(t => !t.file))
+                ? '0 0 20px rgba(57, 255, 20, 0.3)'
+                : 'none',
+            }}
+          >
+            {loading || submitted ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                {submitted ? 'Redirecting...' : 'Creating Project...'}
+              </span>
+            ) : (
+              'Create Project'
+            )}
+          </button>
+          <Link
+            href="/dashboard"
+            className="block w-full text-center py-2 text-sm text-gray-500 hover:text-gray-300 transition"
+          >
+            Cancel
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
