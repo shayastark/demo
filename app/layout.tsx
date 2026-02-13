@@ -20,10 +20,10 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Demo - Share Your Music',
+  title: 'Demo - Share Music On Your Terms',
   description: 'Share your unreleased tracks on your terms',
   openGraph: {
-    title: 'Demo - Share Your Music',
+    title: 'Demo - Share Music On Your Terms',
     description: 'Share your unreleased tracks on your terms',
     images: [
       {
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Demo - Share Your Music',
+    title: 'Demo - Share Music On Your Terms',
     description: 'Share your unreleased tracks on your terms',
     images: ['/mixtape-cassette.png'],
   },

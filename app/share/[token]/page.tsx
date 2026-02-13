@@ -16,11 +16,11 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
       .eq('share_token', token)
       .single()
 
-    const baseTitle = project?.title || 'Demo - Share Your Music'
+    const baseTitle = project?.title || 'Demo - Share Music On Your Terms'
     const description =
       project?.description || 'Listen to this unreleased project on Demo.'
 
-    const imageUrl = project?.cover_image_url
+    const imageUrl = project?.cover_image_url || '/mixtape-cassette.png'
 
     return {
       title: baseTitle,
@@ -28,23 +28,30 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
       openGraph: {
         title: baseTitle,
         description,
-        ...(imageUrl && {
-          images: [{ url: imageUrl }],
-        }),
+        images: [{ url: imageUrl }],
       },
       twitter: {
         card: 'summary_large_image',
         title: baseTitle,
         description,
-        ...(imageUrl && {
-          images: [imageUrl],
-        }),
+        images: [imageUrl],
       },
     }
   } catch {
     return {
-      title: 'Demo - Share Your Music',
+      title: 'Demo - Share Music On Your Terms',
       description: 'Listen to this unreleased project on Demo.',
+      openGraph: {
+        title: 'Demo - Share Music On Your Terms',
+        description: 'Listen to this unreleased project on Demo.',
+        images: [{ url: '/mixtape-cassette.png' }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: 'Demo - Share Music On Your Terms',
+        description: 'Listen to this unreleased project on Demo.',
+        images: ['/mixtape-cassette.png'],
+      },
     }
   }
 }

@@ -1391,7 +1391,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   onChange={(e) => setProjectNoteContent(e.target.value)}
                   placeholder="Add private notes about this project (not visible to listeners)..."
                   rows={6}
-                  className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-yellow-600 resize-none"
+                  className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-base sm:text-sm text-white focus:outline-none focus:border-yellow-600 resize-none"
                 />
                 <div className="flex gap-2">
                   <button
@@ -1641,7 +1641,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             onChange={(e) => setEditingTrackNotes({ ...editingTrackNotes, [track.id]: e.target.value })}
                             placeholder="Add private notes..."
                             rows={2}
-                            className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green resize-none"
+                            className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-base sm:text-sm text-white focus:outline-none focus:border-neon-green resize-none"
                           />
                           <div className="flex gap-2">
                             <button
@@ -1744,7 +1744,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <textarea
                       value={projectNoteContent}
                       onChange={(e) => setProjectNoteContent(e.target.value)}
-                      className="w-full bg-black border border-gray-700 rounded p-3 text-sm text-white focus:outline-none focus:border-neon-green h-48 mb-4"
+                      className="w-full bg-black border border-gray-700 rounded p-3 text-base sm:text-sm text-white focus:outline-none focus:border-neon-green h-48 mb-4"
                       placeholder="Add your private notes about this project..."
                     />
                     <div className="flex justify-end gap-2">

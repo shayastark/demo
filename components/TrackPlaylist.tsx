@@ -317,22 +317,6 @@ export default function TrackPlaylist({
     setOpenMenuIndex(null)
   }
 
-  const handleEditClick = (track: Track) => {
-    // Store track reference before closing menu
-    const trackToEdit = { ...track }
-    
-    // Close menu first
-    setOpenMenuIndex(null)
-    
-    // Use longer timeout to ensure menu is fully closed before opening modal
-    // Especially important on mobile where animations may take longer
-    setTimeout(() => {
-      if (onEditTrack) {
-        onEditTrack(trackToEdit)
-      }
-    }, 250)
-  }
-
   const handleDeleteClick = (trackId: string) => {
     if (onDeleteTrack) {
       onDeleteTrack(trackId)
@@ -644,39 +628,23 @@ export default function TrackPlaylist({
               {isCreator && onEditTrack && openMenuIndex !== null && tracks[openMenuIndex] && (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    const track = tracks[openMenuIndex]
-                    if (track) {
-                      handleEditClick(track)
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Handle touch specifically for mobile reliability
-                    e.preventDefault()
-                    const track = tracks[openMenuIndex]
-                    if (track) {
-                      handleEditClick(track)
-                    }
-                  }}
+                  disabled
                   style={{
                     width: '100%',
                     padding: '16px 20px',
                     backgroundColor: '#1f2937',
-                    color: '#fff',
+                    color: '#6b7280',
                     border: '1px solid #374151',
                     borderRadius: '12px',
                     fontSize: '16px',
                     fontWeight: 500,
-                    cursor: 'pointer',
+                    cursor: 'not-allowed',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '14px',
                     textAlign: 'left',
-                    WebkitTapHighlightColor: 'transparent',
+                    opacity: 0.7,
                   }}
-                  className="hover:bg-gray-700 transition active:bg-gray-600"
                 >
                   <div style={{
                     width: '44px',
@@ -687,14 +655,13 @@ export default function TrackPlaylist({
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
-                    pointerEvents: 'none',
                   }}>
-                    <Edit style={{ width: '22px', height: '22px', color: '#39FF14', pointerEvents: 'none' }} />
+                    <Edit style={{ width: '22px', height: '22px', color: '#6b7280' }} />
                   </div>
-                  <div style={{ pointerEvents: 'none' }}>
+                  <div>
                     <div style={{ fontWeight: 600 }}>Edit Track</div>
                     <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                      Modify track name
+                      Premium soon
                     </div>
                   </div>
                 </button>
