@@ -436,6 +436,15 @@ export default function NewProjectPage() {
                 />
               </div>
             )}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Or choose image file</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleCoverImageChange}
+                className="w-full text-sm text-white file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-white file:text-black hover:file:bg-gray-200"
+              />
+            </div>
           </div>
 
           {/* Title */}
@@ -518,6 +527,18 @@ export default function NewProjectPage() {
                   if (e.target.files?.length) handleBulkTrackUpload(e.target.files)
                 }}
                 className="hidden"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Or choose audio files</label>
+              <input
+                type="file"
+                multiple
+                accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
+                onChange={(e) => {
+                  if (e.target.files?.length) handleBulkTrackUpload(e.target.files)
+                }}
+                className="w-full text-sm text-white file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-white file:text-black hover:file:bg-gray-200"
               />
             </div>
             {tracks.length > 0 && tracks[0].file && (
@@ -605,6 +626,15 @@ export default function NewProjectPage() {
                           </div>
                         </div>
                       </div>
+                      <input
+                        type="file"
+                        accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleTrackFileChange(index, file)
+                        }}
+                        className="w-full text-xs text-gray-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-gray-200 file:text-black hover:file:bg-white"
+                      />
                       
                       {/* Track Title */}
                       <div className="space-y-1.5">
