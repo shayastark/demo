@@ -472,6 +472,13 @@ textarea::placeholder {
   color: #6b7280;
 }
 
+/* Prevent iOS focus zoom for note editors on mobile */
+@media (max-width: 640px) {
+  .note-input {
+    font-size: 16px !important;
+  }
+}
+
 /* ===== POLISHED RANGE INPUT ===== */
 input[type="range"] {
   -webkit-appearance: none;

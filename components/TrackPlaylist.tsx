@@ -662,7 +662,7 @@ export default function TrackPlaylist({
                   <div>
                     <div style={{ fontWeight: 600 }}>Edit Track</div>
                     <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                      Premium soon
+                      Premium feature
                     </div>
                   </div>
                 </button>
