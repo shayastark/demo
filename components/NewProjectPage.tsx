@@ -1,7 +1,7 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -21,6 +21,9 @@ export default function NewProjectPage() {
   const [dragOverImage, setDragOverImage] = useState(false)
   const [dragOverTracks, setDragOverTracks] = useState(false)
   const [dismissedAutoFillTip, setDismissedAutoFillTip] = useState(false)
+  const coverImageInputRef = useRef<HTMLInputElement | null>(null)
+  const bulkTrackInputRef = useRef<HTMLInputElement | null>(null)
+  const trackFileInputRefs = useRef<Array<HTMLInputElement | null>>([])
 
   const setCoverImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -139,28 +142,42 @@ export default function NewProjectPage() {
       }
     }
     
-    const { data, error } = await supabase.storage
-      .from('hubba-files')
-      .upload(`${path}/${Date.now()}-${file.name}`, file, {
-        contentType,
-        upsert: false,
-      })
+    try {
+      const { data, error } = await supabase.storage
+        .from('hubba-files')
+        .upload(`${path}/${Date.now()}-${file.name}`, file, {
+          contentType,
+          upsert: false,
+        })
 
-    if (error) {
-      console.error(`Upload error for ${file.name}:`, error)
-      // Provide more helpful error messages
-      if (error.message.includes('exceeded') || error.message.includes('size')) {
-        throw new Error(`"${file.name}" is too large for upload. Try a smaller file or compress it.`)
+      if (error) {
+        console.error(`Upload error for ${file.name}:`, error)
+        if (error.message.includes('exceeded') || error.message.includes('size')) {
+          throw new Error(`"${file.name}" is too large for upload. Try a smaller file or compress it.`)
+        }
+        throw new Error(error.message)
       }
-      throw new Error(`Failed to upload "${file.name}": ${error.message}`)
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('hubba-files')
+        .getPublicUrl(data.path)
+
+      console.log(`Upload successful: ${file.name}`)
+      return publicUrl
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown upload error'
+      const isLargeWav = fileType === 'audio' && /\.wav$/i.test(file.name) && file.size > 25 * 1024 * 1024
+
+      if (isLargeWav && /(network|fetch|timeout|failed)/i.test(errorMessage)) {
+        throw new Error(`WAV upload failed for "${file.name}". Large WAV files can fail on slower networks. Try again or convert to MP3.`)
+      }
+
+      if (errorMessage.includes('too large')) {
+        throw new Error(errorMessage)
+      }
+
+      throw new Error(`Failed to upload "${file.name}": ${errorMessage}`)
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('hubba-files')
-      .getPublicUrl(data.path)
-
-    console.log(`Upload successful: ${file.name}`)
-    return publicUrl
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -204,6 +221,16 @@ export default function NewProjectPage() {
 
       if (!dbUser) throw new Error('User not found')
 
+      const tracksToUpload = tracks.filter((t) => t.file)
+      if (tracksToUpload.length === 0) {
+        throw new Error('Add at least one audio track before creating your project.')
+      }
+
+      const hasUntitledTrack = tracksToUpload.some((t) => !t.title.trim())
+      if (hasUntitledTrack) {
+        throw new Error('Each uploaded track needs a title. Click to edit any track name, then try again.')
+      }
+
       // Upload cover image if provided
       let coverImageUrl: string | undefined
       if (coverImage) {
@@ -234,11 +261,9 @@ export default function NewProjectPage() {
       const project = projectData.project
 
       // Upload and create tracks via secure API
-      const tracksToUpload = tracks.filter(t => t.file)
-      
       for (let i = 0; i < tracksToUpload.length; i++) {
         const track = tracksToUpload[i]
-        const trackName = track.title || track.file.name
+        const trackName = track.title.trim() || track.file.name
         
         try {
           console.log(`Processing track ${i + 1}/${tracksToUpload.length}: ${trackName}`)
@@ -253,7 +278,7 @@ export default function NewProjectPage() {
             },
             body: JSON.stringify({
               project_id: project.id,
-              title: track.title || `Track ${i + 1}`,
+              title: track.title.trim() || `Track ${i + 1}`,
               audio_url: audioUrl,
               order: i,
             }),
@@ -329,7 +354,18 @@ export default function NewProjectPage() {
             </div>
             {coverImagePreview ? (
               <div className="relative rounded-xl overflow-hidden border border-gray-700 group">
-                <label className="relative cursor-pointer block w-full h-52 sm:h-64 focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black rounded-xl">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => coverImageInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      coverImageInputRef.current?.click()
+                    }
+                  }}
+                  className="relative cursor-pointer block w-full h-52 sm:h-64 focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black rounded-xl"
+                >
                   <img
                     src={coverImagePreview}
                     alt="Cover preview"
@@ -340,12 +376,13 @@ export default function NewProjectPage() {
                     <span className="text-white text-sm font-medium">Change image</span>
                   </div>
                   <input
+                    ref={coverImageInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleCoverImageChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    className="hidden"
                   />
-                </label>
+                </div>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -361,7 +398,16 @@ export default function NewProjectPage() {
                 </button>
               </div>
             ) : (
-              <label
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => coverImageInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    coverImageInputRef.current?.click()
+                  }
+                }}
                 className={`relative w-full border-2 border-dashed rounded-xl cursor-pointer transition p-6 sm:p-8 flex flex-col items-center justify-center gap-3 text-center focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black ${
                   dragOverImage
                     ? 'border-neon-green bg-neon-green/10'
@@ -382,12 +428,13 @@ export default function NewProjectPage() {
                   <p className="text-xs text-gray-500">JPG, PNG, WEBP up to 25MB</p>
                 </div>
                 <input
+                  ref={coverImageInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleCoverImageChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  className="hidden"
                 />
-              </label>
+              </div>
             )}
           </div>
 
@@ -433,7 +480,16 @@ export default function NewProjectPage() {
               </p>
             </div>
 
-            <label
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => bulkTrackInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  bulkTrackInputRef.current?.click()
+                }
+              }}
               className={`relative w-full border-2 border-dashed rounded-xl cursor-pointer transition p-5 sm:p-6 flex flex-col items-center justify-center gap-3 text-center focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black ${
                 dragOverTracks
                   ? 'border-neon-green bg-neon-green/10'
@@ -454,15 +510,16 @@ export default function NewProjectPage() {
                 <p className="text-sm sm:text-base font-medium text-white">Drop audio files here or click to browse</p>
               </div>
               <input
+                ref={bulkTrackInputRef}
                 type="file"
                 multiple
                 accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
                 onChange={(e) => {
                   if (e.target.files?.length) handleBulkTrackUpload(e.target.files)
                 }}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                className="hidden"
               />
-            </label>
+            </div>
             {tracks.length > 0 && tracks[0].file && (
               <div className="flex justify-end">
                 <button
@@ -505,16 +562,29 @@ export default function NewProjectPage() {
                     
                     <div className="flex-1 min-w-0 space-y-3">
                       {/* File Upload */}
-                      <label className="relative block cursor-pointer focus-within:ring-2 focus-within:ring-neon-green/50 rounded-lg">
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => trackFileInputRefs.current[index]?.click()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            trackFileInputRefs.current[index]?.click()
+                          }
+                        }}
+                        className="relative block cursor-pointer focus-within:ring-2 focus-within:ring-neon-green/50 rounded-lg"
+                      >
                         <input
+                          ref={(el) => {
+                            trackFileInputRefs.current[index] = el
+                          }}
                           type="file"
                           accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
                           onChange={(e) => {
                             const file = e.target.files?.[0]
                             if (file) handleTrackFileChange(index, file)
                           }}
-                          required
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          className="hidden"
                         />
                         <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed transition ${
                           track.file 
@@ -534,7 +604,7 @@ export default function NewProjectPage() {
                             )}
                           </div>
                         </div>
-                      </label>
+                      </div>
                       
                       {/* Track Title */}
                       <div className="space-y-1.5">
@@ -558,7 +628,6 @@ export default function NewProjectPage() {
                             setTracks(newTracks)
                           }}
                           placeholder="Track title"
-                          required
                           className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 text-sm transition"
                         />
                         <p className="text-xs text-gray-500">

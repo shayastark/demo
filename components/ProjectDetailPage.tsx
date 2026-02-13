@@ -791,13 +791,46 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     const timestamp = Date.now()
     const uploadPath = `${path}/${timestamp}-${sanitizedName}`
 
+    // Apply conservative file size guardrails before upload
+    const isAudioFile = file.type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|flac|ogg)$/i.test(file.name)
+    const maxSize = isAudioFile ? 100 * 1024 * 1024 : 25 * 1024 * 1024
+    if (file.size > maxSize) {
+      const sizeMB = Math.round(maxSize / 1024 / 1024)
+      throw new Error(`"${file.name}" is too large. Maximum size is ${sizeMB}MB.`)
+    }
+
+    let contentType = file.type
+    const ext = file.name.toLowerCase().split('.').pop()
+    if (isAudioFile) {
+      const audioMimeTypes: Record<string, string> = {
+        mp3: 'audio/mpeg',
+        wav: 'audio/wav',
+        m4a: 'audio/mp4',
+        aac: 'audio/aac',
+        flac: 'audio/flac',
+        ogg: 'audio/ogg',
+      }
+      if (ext && audioMimeTypes[ext]) {
+        contentType = audioMimeTypes[ext]
+      }
+    }
+
     const { data, error } = await supabase.storage
       .from('hubba-files')
-      .upload(uploadPath, file)
+      .upload(uploadPath, file, {
+        contentType,
+        upsert: false,
+      })
 
     if (error) {
       console.error('Storage upload error:', error)
-      throw new Error(`Failed to upload file: ${error.message}`)
+      if (error.message.includes('exceeded') || error.message.includes('size')) {
+        throw new Error(`"${file.name}" is too large for upload. Try a smaller file or compress it.`)
+      }
+      if (isAudioFile && /\.wav$/i.test(file.name) && file.size > 25 * 1024 * 1024) {
+        throw new Error(`WAV upload failed for "${file.name}". Large WAV files can fail on slower networks. Try again or convert to MP3.`)
+      }
+      throw new Error(`Failed to upload "${file.name}": ${error.message}`)
     }
 
     if (!data) {
