@@ -329,7 +329,7 @@ export default function NewProjectPage() {
             </div>
             {coverImagePreview ? (
               <div className="relative rounded-xl overflow-hidden border border-gray-700 group">
-                <label className="cursor-pointer block w-full h-52 sm:h-64 focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black rounded-xl">
+                <label className="relative cursor-pointer block w-full h-52 sm:h-64 focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black rounded-xl">
                   <img
                     src={coverImagePreview}
                     alt="Cover preview"
@@ -343,7 +343,7 @@ export default function NewProjectPage() {
                     type="file"
                     accept="image/*"
                     onChange={handleCoverImageChange}
-                    className="sr-only"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
                 </label>
                 <button
@@ -354,7 +354,7 @@ export default function NewProjectPage() {
                     setCoverImage(null)
                     setCoverImagePreview(null)
                   }}
-                  className="absolute top-3 right-3 bg-black/75 hover:bg-red-500 text-white rounded-full p-1.5 transition"
+                  className="absolute top-3 right-3 z-20 bg-black/75 hover:bg-red-500 text-white rounded-full p-1.5 transition"
                   title="Remove image"
                 >
                   <X className="w-4 h-4" />
@@ -362,7 +362,7 @@ export default function NewProjectPage() {
               </div>
             ) : (
               <label
-                className={`w-full border-2 border-dashed rounded-xl cursor-pointer transition p-6 sm:p-8 flex flex-col items-center justify-center gap-3 text-center focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black ${
+                className={`relative w-full border-2 border-dashed rounded-xl cursor-pointer transition p-6 sm:p-8 flex flex-col items-center justify-center gap-3 text-center focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black ${
                   dragOverImage
                     ? 'border-neon-green bg-neon-green/10'
                     : 'border-gray-600 hover:border-neon-green/60 hover:bg-gray-900/50'
@@ -385,7 +385,7 @@ export default function NewProjectPage() {
                   type="file"
                   accept="image/*"
                   onChange={handleCoverImageChange}
-                  className="sr-only"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
               </label>
             )}
@@ -434,7 +434,7 @@ export default function NewProjectPage() {
             </div>
 
             <label
-              className={`w-full border-2 border-dashed rounded-xl cursor-pointer transition p-5 sm:p-6 flex flex-col items-center justify-center gap-3 text-center focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black ${
+              className={`relative w-full border-2 border-dashed rounded-xl cursor-pointer transition p-5 sm:p-6 flex flex-col items-center justify-center gap-3 text-center focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black ${
                 dragOverTracks
                   ? 'border-neon-green bg-neon-green/10'
                   : 'border-gray-600 hover:border-neon-green/60 hover:bg-gray-900/50'
@@ -460,7 +460,7 @@ export default function NewProjectPage() {
                 onChange={(e) => {
                   if (e.target.files?.length) handleBulkTrackUpload(e.target.files)
                 }}
-                className="sr-only"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
             </label>
             {tracks.length > 0 && tracks[0].file && (
@@ -505,7 +505,7 @@ export default function NewProjectPage() {
                     
                     <div className="flex-1 min-w-0 space-y-3">
                       {/* File Upload */}
-                      <label className="block cursor-pointer focus-within:ring-2 focus-within:ring-neon-green/50 rounded-lg">
+                      <label className="relative block cursor-pointer focus-within:ring-2 focus-within:ring-neon-green/50 rounded-lg">
                         <input
                           type="file"
                           accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
@@ -514,7 +514,7 @@ export default function NewProjectPage() {
                             if (file) handleTrackFileChange(index, file)
                           }}
                           required
-                          className="sr-only"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         />
                         <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed transition ${
                           track.file 
