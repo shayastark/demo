@@ -15,11 +15,12 @@ export default function NewProjectPage() {
   const [description, setDescription] = useState('')
   const [coverImage, setCoverImage] = useState<File | null>(null)
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
-  const [tracks, setTracks] = useState<Array<{ file: File; title: string }>>([{ file: null as any, title: '' }])
+  const [tracks, setTracks] = useState<Array<{ file: File; title: string; autoFilledTitle: boolean }>>([{ file: null as any, title: '', autoFilledTitle: false }])
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [dragOverImage, setDragOverImage] = useState(false)
   const [dragOverTracks, setDragOverTracks] = useState(false)
+  const [dismissedAutoFillTip, setDismissedAutoFillTip] = useState(false)
 
   const setCoverImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -40,7 +41,7 @@ export default function NewProjectPage() {
   }
 
   const handleAddTrack = () => {
-    setTracks([...tracks, { file: null as any, title: '' }])
+    setTracks([...tracks, { file: null as any, title: '', autoFilledTitle: false }])
   }
 
   const handleTrackFileChange = (index: number, file: File) => {
@@ -53,10 +54,12 @@ export default function NewProjectPage() {
 
     const name = file.name.replace(/\.[^/.]+$/, '')
     const newTracks = [...tracks]
+    const shouldAutoFillTitle = !newTracks[index].title.trim()
     newTracks[index] = {
       ...newTracks[index],
       file,
-      title: newTracks[index].title || name,
+      title: shouldAutoFillTitle ? name : newTracks[index].title,
+      autoFilledTitle: shouldAutoFillTitle,
     }
     setTracks(newTracks)
   }
@@ -85,6 +88,7 @@ export default function NewProjectPage() {
       .map((file) => ({
         file,
         title: file.name.replace(/\.[^/.]+$/, ''),
+        autoFilledTitle: true,
       }))
 
     if (preparedTracks.length === 0) return
@@ -100,6 +104,10 @@ export default function NewProjectPage() {
   const removeTrack = (index: number) => {
     setTracks(tracks.filter((_, i) => i !== index))
   }
+
+  const hasTrack = tracks.some((t) => !!t.file)
+  const canSubmit = !loading && !submitted && !!title.trim() && hasTrack
+  const shouldShowAutoFillTip = !dismissedAutoFillTip && tracks.some((t) => t.autoFilledTitle)
 
   const uploadFile = async (file: File, path: string, fileType: 'audio' | 'image' = 'image'): Promise<string> => {
     // File size limits
@@ -470,6 +478,21 @@ export default function NewProjectPage() {
             </label>
 
             <div className="space-y-3">
+              {shouldShowAutoFillTip && (
+                <div className="flex items-start justify-between gap-3 bg-neon-green/10 border border-neon-green/30 rounded-lg px-3 py-2.5">
+                  <p className="text-xs text-neon-green">
+                    Track names were auto-filled from filenames. You can edit any track name before creating the project.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setDismissedAutoFillTip(true)}
+                    className="text-neon-green/80 hover:text-neon-green transition shrink-0 p-0.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/60"
+                    title="Dismiss tip"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               {tracks.map((track, index) => (
                 <div 
                   key={index} 
@@ -515,18 +538,34 @@ export default function NewProjectPage() {
                       </label>
                       
                       {/* Track Title */}
-                      <input
-                        type="text"
-                        value={track.title}
-                        onChange={(e) => {
-                          const newTracks = [...tracks]
-                          newTracks[index].title = e.target.value
-                          setTracks(newTracks)
-                        }}
-                        placeholder="Track title"
-                        required
-                        className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 text-sm transition"
-                      />
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="block text-xs font-medium text-gray-400">
+                            Track name (editable)
+                          </label>
+                          {track.autoFilledTitle && (
+                            <span className="text-[10px] uppercase tracking-wide px-2 py-1 rounded-full bg-neon-green/15 border border-neon-green/35 text-neon-green">
+                              Auto-filled
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          value={track.title}
+                          onChange={(e) => {
+                            const newTracks = [...tracks]
+                            newTracks[index].title = e.target.value
+                            newTracks[index].autoFilledTitle = false
+                            setTracks(newTracks)
+                          }}
+                          placeholder="Track title"
+                          required
+                          className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 text-sm transition"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Auto-filled from filename. You can rename this.
+                        </p>
+                      </div>
                     </div>
                     
                     {tracks.length > 1 && (
@@ -550,6 +589,29 @@ export default function NewProjectPage() {
               </p>
             )}
           </div>
+
+          {/* Inline submit section for better visibility */}
+          <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-4 sm:p-5 space-y-3">
+            <h3 className="text-sm font-semibold text-white">Ready to publish?</h3>
+            {!canSubmit && (
+              <p className="text-xs text-gray-500">
+                Add a project title and at least one track to enable project creation.
+              </p>
+            )}
+            <button
+              type="submit"
+              form="new-project-form"
+              disabled={!canSubmit}
+              className="w-full py-3.5 rounded-xl font-semibold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              style={{
+                backgroundColor: '#39FF14',
+                color: '#000',
+                boxShadow: canSubmit ? '0 0 16px rgba(57, 255, 20, 0.3)' : 'none',
+              }}
+            >
+              {loading || submitted ? 'Creating Project...' : 'Create Project'}
+            </button>
+          </div>
         </form>
       </main>
 
@@ -559,12 +621,12 @@ export default function NewProjectPage() {
           <button
             type="submit"
             form="new-project-form"
-            disabled={loading || submitted || !title.trim() || tracks.every(t => !t.file)}
+            disabled={!canSubmit}
             className="w-full py-4 rounded-full font-bold text-base transition disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             style={{
-              backgroundColor: (loading || submitted || !title.trim() || tracks.every(t => !t.file)) ? '#39FF14' : '#39FF14',
+              backgroundColor: '#39FF14',
               color: '#000',
-              boxShadow: (!loading && !submitted && title.trim() && !tracks.every(t => !t.file))
+              boxShadow: canSubmit
                 ? '0 0 20px rgba(57, 255, 20, 0.3)'
                 : 'none',
             }}
