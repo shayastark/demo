@@ -583,30 +583,19 @@ export default function NewProjectPage() {
               ))}
             </div>
 
-            {(!tracks[0]?.file || tracks.length === 0) && (
-              <p className="text-xs text-gray-500 mt-1 text-center">
-                Upload at least one track to create your project
-              </p>
-            )}
           </div>
 
           {/* Inline submit section for better visibility */}
-          <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-4 sm:p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-white">Ready to publish?</h3>
-            {!canSubmit && (
-              <p className="text-xs text-gray-500">
-                Add a project title and at least one track to enable project creation.
-              </p>
-            )}
+          <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-4 sm:p-5">
             <button
               type="submit"
               form="new-project-form"
               disabled={!canSubmit}
-              className="w-full py-3.5 rounded-xl font-semibold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              className="w-full py-5 rounded-2xl font-bold text-base transition disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               style={{
                 backgroundColor: '#39FF14',
                 color: '#000',
-                boxShadow: canSubmit ? '0 0 16px rgba(57, 255, 20, 0.3)' : 'none',
+                boxShadow: canSubmit ? '0 0 22px rgba(57, 255, 20, 0.34)' : 'none',
               }}
             >
               {loading || submitted ? 'Creating Project...' : 'Create Project'}
