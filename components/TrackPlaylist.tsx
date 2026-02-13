@@ -35,6 +35,7 @@ export default function TrackPlaylist({
   onMenuOpen,
   forceCloseMenu
 }: TrackPlaylistProps) {
+  const mobileBottomSheetOffset = 'calc(88px + env(safe-area-inset-bottom, 0px))'
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isRepeat, setIsRepeat] = useState(false)
@@ -585,7 +586,7 @@ export default function TrackPlaylist({
           <div
             style={{
               position: 'fixed',
-              bottom: isMobile ? 0 : '50%',
+              bottom: isMobile ? mobileBottomSheetOffset : '50%',
               left: isMobile ? 0 : '50%',
               right: isMobile ? 0 : 'auto',
               transform: isMobile ? 'none' : 'translate(-50%, 50%)',
