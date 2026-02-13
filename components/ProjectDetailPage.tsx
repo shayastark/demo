@@ -164,36 +164,30 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         if (dbUser && dbUser.id === projectData.creator_id) {
           setIsCreator(true)
 
-          // Load project note
-          const { data: projectNoteData } = await supabase
-            .from('project_notes')
-            .select('*')
-            .eq('project_id', projectId)
-            .single()
-
-          if (projectNoteData) {
-            setProjectNote(projectNoteData)
-            setProjectNoteContent(projectNoteData.content)
-          }
-
-          // Load track notes
-          if (tracksData && tracksData.length > 0) {
-            const trackIds = tracksData.map(t => t.id)
-            const { data: trackNotesData } = await supabase
-              .from('track_notes')
-              .select('*')
-              .in('track_id', trackIds)
-
-            if (trackNotesData) {
-              const notesMap: Record<string, TrackNote> = {}
-              const editingMap: Record<string, string> = {}
-              trackNotesData.forEach(note => {
-                notesMap[note.track_id] = note
-                editingMap[note.track_id] = note.content
+          try {
+            const token = await getAccessToken()
+            if (token) {
+              const notesResponse = await fetch(`/api/notes?project_id=${projectId}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
               })
-              setTrackNotes(notesMap)
-              setEditingTrackNotes(editingMap)
+
+              if (notesResponse.ok) {
+                const notesResult = await notesResponse.json()
+                const projectNoteData = notesResult.projectNote as ProjectNote | null
+                const trackNotesData = notesResult.trackNotes as Record<string, TrackNote> | null
+
+                if (projectNoteData) {
+                  setProjectNote(projectNoteData)
+                  setProjectNoteContent(projectNoteData.content)
+                }
+
+                if (trackNotesData) {
+                  setTrackNotes(trackNotesData)
+                }
+              }
             }
+          } catch (notesError) {
+            console.error('Error loading notes:', notesError)
           }
         }
       }
@@ -698,30 +692,36 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     setSavingNote(trackId)
 
     try {
-      const content = editingTrackNotes[trackId] || ''
-
-      if (trackNotes[trackId]) {
-        // Update existing note
-        const { data, error } = await supabase
-          .from('track_notes')
-          .update({ content })
-          .eq('id', trackNotes[trackId].id)
-          .select()
-          .single()
-
-        if (error) throw error
-        setTrackNotes({ ...trackNotes, [trackId]: data })
-      } else {
-        // Create new note
-        const { data, error } = await supabase
-          .from('track_notes')
-          .insert({ track_id: trackId, content })
-          .select()
-          .single()
-
-        if (error) throw error
-        setTrackNotes({ ...trackNotes, [trackId]: data })
+      const content = (editingTrackNotes[trackId] || '').trim()
+      if (!content) {
+        throw new Error('Track note cannot be empty')
       }
+
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+
+      const existingNoteId = trackNotes[trackId]?.id
+      const response = await fetch('/api/notes', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'track',
+          track_id: trackId,
+          note_id: existingNoteId,
+          content,
+        }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save track note')
+      }
+
+      const note = result.note as TrackNote
+      setTrackNotes({ ...trackNotes, [trackId]: note })
 
       // Exit edit mode by removing from editingTrackNotes
       const newEditing = { ...editingTrackNotes }
