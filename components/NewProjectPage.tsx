@@ -420,29 +420,17 @@ export default function NewProjectPage() {
 
           {/* Audio Tracks */}
           <div className="bg-sky-500/[0.03] border border-sky-400/20 rounded-2xl p-4 sm:p-5 space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-400/30 text-sky-300 text-xs font-medium mb-3">
-                  <Music2 className="w-3.5 h-3.5" />
-                  Step 2
-                </div>
-                <h2 className="text-base sm:text-lg font-semibold text-white">
-                  Audio Tracks <span className="text-red-400">*</span>
-                </h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  Upload at least one track. You can add multiple files at once.
-                </p>
+            <div>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-400/30 text-sky-300 text-xs font-medium mb-3">
+                <Music2 className="w-3.5 h-3.5" />
+                Step 2
               </div>
-              {tracks.length > 0 && tracks[0].file && (
-                <button
-                  type="button"
-                  onClick={handleAddTrack}
-                  className="text-sm text-neon-green hover:text-neon-green/80 transition flex items-center gap-1 font-medium whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/60 rounded-md px-1"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Empty Row
-                </button>
-              )}
+              <h2 className="text-base sm:text-lg font-semibold text-white">
+                Audio Tracks <span className="text-red-400">*</span>
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">
+                Upload at least one track. You can add multiple files at once. Set track permissions after your project is created.
+              </p>
             </div>
 
             <label
@@ -464,7 +452,6 @@ export default function NewProjectPage() {
               <Music2 className="w-7 h-7 text-gray-300" />
               <div className="space-y-1">
                 <p className="text-sm sm:text-base font-medium text-white">Drop audio files here or click to browse</p>
-                <p className="text-xs text-gray-500">MP3, WAV, M4A, AAC, FLAC, OGG up to 100MB each</p>
               </div>
               <input
                 type="file"
@@ -476,6 +463,18 @@ export default function NewProjectPage() {
                 className="sr-only"
               />
             </label>
+            {tracks.length > 0 && tracks[0].file && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleAddTrack}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/8 border border-white/20 text-white text-sm font-medium hover:bg-white/12 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Track
+                </button>
+              </div>
+            )}
 
             <div className="space-y-3">
               {shouldShowAutoFillTip && (
@@ -563,7 +562,7 @@ export default function NewProjectPage() {
                           className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 text-sm transition"
                         />
                         <p className="text-xs text-gray-500">
-                          Auto-filled from filename. You can rename this.
+                          Auto-filled from filename. Click to edit.
                         </p>
                       </div>
                     </div>
