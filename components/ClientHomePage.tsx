@@ -5,10 +5,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
+import FAQModal from './FAQModal'
 
 export default function ClientHomePage() {
   const { ready, authenticated, user, login, logout } = usePrivy()
   const [username, setUsername] = useState<string | null>(null)
+  const [showFAQ, setShowFAQ] = useState(false)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const loadingProfileRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
@@ -117,7 +119,13 @@ export default function ClientHomePage() {
         
         {/* Header with sign in */}
         <header className="relative z-10 px-4 py-4">
-          <div className="max-w-7xl mx-auto flex justify-end">
+          <div className="max-w-7xl mx-auto flex justify-end items-center gap-4">
+            <button
+              onClick={() => setShowFAQ(true)}
+              className="text-sm text-gray-400 hover:text-white transition"
+            >
+              FAQ
+            </button>
             <button
               onClick={login}
               className="text-sm text-gray-400 hover:text-white transition"
@@ -151,7 +159,14 @@ export default function ClientHomePage() {
           >
             Get Started
           </button>
+          <div className="mt-8 text-sm text-gray-500">
+            Questions?{' '}
+            <a href="mailto:info@demo.supply" className="text-gray-300 hover:text-white transition">
+              info@demo.supply
+            </a>
+          </div>
         </div>
+        <FAQModal isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
       </div>
     )
   }
@@ -182,10 +197,16 @@ export default function ClientHomePage() {
           >
             Dashboard
           </Link>
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+            <button
+              onClick={() => setShowFAQ(true)}
+              className="text-sm text-gray-400 hover:text-white transition whitespace-nowrap flex-shrink-0"
+            >
+              FAQ
+            </button>
             <Link
               href="/account"
-              className="text-sm text-gray-400 hover:text-white transition truncate max-w-[120px] sm:max-w-[200px]"
+              className="text-sm text-gray-400 hover:text-white transition truncate max-w-[120px] sm:max-w-[200px] pr-1"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
@@ -223,8 +244,15 @@ export default function ClientHomePage() {
           >
             Go to Your Dashboard
           </Link>
+          <div className="mt-8 text-sm text-gray-500">
+            Questions?{' '}
+            <a href="mailto:info@demo.supply" className="text-gray-300 hover:text-white transition">
+              info@demo.supply
+            </a>
+          </div>
         </div>
       </main>
+      <FAQModal isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
     </div>
   )
 }
