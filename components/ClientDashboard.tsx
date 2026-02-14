@@ -480,27 +480,27 @@ export default function ClientDashboard() {
       />
       
       <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-20 overflow-x-hidden">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
           <Link href="/" className="text-lg sm:text-xl font-bold text-white flex-shrink-0">
             Demo
           </Link>
-          <div className="flex items-center min-w-0 gap-3 sm:gap-4">
+          <div className="flex items-center justify-end min-w-0 gap-4 sm:gap-4">
             <Link
               href="/account"
-              className="text-xs sm:text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
+              className="text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
             >
               Account
             </Link>
             <Link
               href="/dashboard/projects/new"
-              className="flex items-center gap-1 bg-neon-green text-black px-2 sm:px-3 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm whitespace-nowrap"
+              className="flex items-center gap-1 bg-neon-green text-black px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full font-semibold text-sm whitespace-nowrap"
             >
               <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
               New Project
             </Link>
             <button
               onClick={logout}
-              className="btn-unstyled text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
+              className="btn-unstyled text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
             >
               Sign out
             </button>
