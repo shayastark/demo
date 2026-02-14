@@ -500,7 +500,7 @@ export default function ClientDashboard() {
             </Link>
             <button
               onClick={logout}
-              className="text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
+              className="btn-unstyled text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
             >
               Sign out
             </button>

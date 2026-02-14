@@ -399,6 +399,18 @@ a:active {
   .btn-icon:active {
     transform: scale(0.95);
   }
+
+  /* Use for text-only buttons to avoid iOS default pill styles */
+  .btn-unstyled {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+  }
   
   /* Cassette reel animations */
   @keyframes spin-reel {

@@ -1070,7 +1070,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           </Link>
           <button
             onClick={logout}
-            className="text-sm text-gray-500 hover:text-gray-300 transition"
+            className="btn-unstyled text-sm text-gray-500 hover:text-gray-300 transition"
           >
             Sign out
           </button>
