@@ -6,11 +6,13 @@ import Image from 'next/image'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import FAQModal from './FAQModal'
+import { MoreVertical } from 'lucide-react'
 
 export default function ClientHomePage() {
   const { ready, authenticated, user, login, logout } = usePrivy()
   const [username, setUsername] = useState<string | null>(null)
   const [showFAQ, setShowFAQ] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const loadingProfileRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
@@ -121,12 +123,6 @@ export default function ClientHomePage() {
         <header className="relative z-10 px-4 py-4">
           <div className="max-w-7xl mx-auto flex justify-end items-center gap-4">
             <button
-              onClick={() => setShowFAQ(true)}
-              className="text-sm text-gray-400 hover:text-white transition"
-            >
-              FAQ
-            </button>
-            <button
               onClick={login}
               className="btn-unstyled text-sm text-gray-400 hover:text-white transition"
             >
@@ -197,7 +193,7 @@ export default function ClientHomePage() {
           >
             Dashboard
           </Link>
-          <div className="flex items-center min-w-0 ml-3 sm:ml-0 gap-2.5 sm:gap-4">
+          <div className="hidden sm:flex items-center min-w-0 ml-3 sm:ml-0 gap-2.5 sm:gap-4">
             <button
               onClick={() => setShowFAQ(true)}
               className="btn-unstyled text-sm text-neon-green underline underline-offset-4 decoration-neon-green/80 hover:opacity-80 transition whitespace-nowrap flex-shrink-0"
@@ -217,6 +213,22 @@ export default function ClientHomePage() {
               className="btn-unstyled text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap flex-shrink-0"
             >
               Sign out
+            </button>
+          </div>
+          <div className="flex sm:hidden items-center gap-3">
+            <Link
+              href="/account"
+              className="text-sm text-gray-300 hover:text-white transition truncate max-w-[110px]"
+            >
+              {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Account'}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowMobileMenu(true)}
+              className="btn-unstyled w-8 h-8 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition flex items-center justify-center"
+              aria-label="Open menu"
+            >
+              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -255,6 +267,46 @@ export default function ClientHomePage() {
         </div>
       </main>
       <FAQModal isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
+      {showMobileMenu && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/70 z-[110]"
+            onClick={() => setShowMobileMenu(false)}
+          />
+          <div className="fixed left-0 right-0 bottom-0 z-[111] bg-gray-900 border-t border-gray-700 rounded-t-2xl p-4 space-y-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowMobileMenu(false)
+                setShowFAQ(true)
+              }}
+              className="w-full text-left px-4 py-3 rounded-xl bg-gray-800 text-neon-green underline underline-offset-4 decoration-neon-green/80"
+            >
+              FAQ
+            </button>
+            <a
+              href="mailto:info@demo.supply"
+              className="block w-full text-left px-4 py-3 rounded-xl bg-gray-800 text-gray-200 hover:text-white transition"
+            >
+              Contact: info@demo.supply
+            </a>
+            <button
+              type="button"
+              onClick={logout}
+              className="w-full text-left px-4 py-3 rounded-xl bg-gray-800 text-gray-300 hover:text-white transition"
+            >
+              Sign out
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowMobileMenu(false)}
+              className="w-full text-center px-4 py-3 rounded-xl bg-gray-700 text-white mt-1"
+            >
+              Close
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
