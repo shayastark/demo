@@ -484,23 +484,26 @@ export default function ClientDashboard() {
           <Link href="/" className="text-lg sm:text-xl font-bold text-white flex-shrink-0">
             Demo
           </Link>
-          <div className="flex items-center min-w-0 gap-2.5 sm:gap-4">
+          <div className="flex items-center min-w-0 rounded-full bg-gray-900/70 border border-gray-800 px-2 py-1">
             <Link
               href="/account"
-              className="text-xs sm:text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
+              className="text-sm text-gray-400 hover:text-white transition whitespace-nowrap px-1.5"
             >
               Account
             </Link>
+            <span className="text-gray-600 text-xs select-none">|</span>
             <Link
               href="/dashboard/projects/new"
-              className="flex items-center gap-1 bg-neon-green text-black px-2 sm:px-3 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm whitespace-nowrap"
+              className="flex items-center gap-1 bg-neon-green text-black px-2.5 py-1 rounded-full font-semibold text-xs sm:text-sm whitespace-nowrap"
             >
               <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-              New Project
+              <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">New Project</span>
             </Link>
+            <span className="text-gray-600 text-xs select-none">|</span>
             <button
               onClick={logout}
-              className="btn-unstyled text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
+              className="btn-unstyled text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap px-1.5"
             >
               Sign out
             </button>
