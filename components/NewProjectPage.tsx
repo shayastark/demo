@@ -5,7 +5,7 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Upload, X, ArrowLeft, Plus, ImagePlus, Music2 } from 'lucide-react'
+import { X, ArrowLeft, ImagePlus, Music2 } from 'lucide-react'
 import { showToast } from './Toast'
 
 export default function NewProjectPage() {
@@ -15,7 +15,7 @@ export default function NewProjectPage() {
   const [description, setDescription] = useState('')
   const [coverImage, setCoverImage] = useState<File | null>(null)
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
-  const [tracks, setTracks] = useState<Array<{ file: File; title: string; autoFilledTitle: boolean }>>([{ file: null as any, title: '', autoFilledTitle: false }])
+  const [tracks, setTracks] = useState<Array<{ file: File; title: string; autoFilledTitle: boolean }>>([])
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [dragOverImage, setDragOverImage] = useState(false)
@@ -23,7 +23,6 @@ export default function NewProjectPage() {
   const [dismissedAutoFillTip, setDismissedAutoFillTip] = useState(false)
   const coverImageInputRef = useRef<HTMLInputElement | null>(null)
   const bulkTrackInputRef = useRef<HTMLInputElement | null>(null)
-  const trackFileInputRefs = useRef<Array<HTMLInputElement | null>>([])
 
   const setCoverImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -41,30 +40,6 @@ export default function NewProjectPage() {
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) setCoverImageFile(file)
-  }
-
-  const handleAddTrack = () => {
-    setTracks([...tracks, { file: null as any, title: '', autoFilledTitle: false }])
-  }
-
-  const handleTrackFileChange = (index: number, file: File) => {
-    // Validate file size (100MB max for audio)
-    const maxAudioSize = 100 * 1024 * 1024
-    if (file.size > maxAudioSize) {
-      showToast(`"${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 100MB.`, 'error')
-      return
-    }
-
-    const name = file.name.replace(/\.[^/.]+$/, '')
-    const newTracks = [...tracks]
-    const shouldAutoFillTitle = !newTracks[index].title.trim()
-    newTracks[index] = {
-      ...newTracks[index],
-      file,
-      title: shouldAutoFillTitle ? name : newTracks[index].title,
-      autoFilledTitle: shouldAutoFillTitle,
-    }
-    setTracks(newTracks)
   }
 
   const handleBulkTrackUpload = (fileList: FileList | File[]) => {
@@ -96,10 +71,7 @@ export default function NewProjectPage() {
 
     if (preparedTracks.length === 0) return
 
-    setTracks((prev) => {
-      const hasOnlyEmptyStarter = prev.length === 1 && !prev[0].file && !prev[0].title
-      return hasOnlyEmptyStarter ? preparedTracks : [...prev, ...preparedTracks]
-    })
+    setTracks((prev) => [...prev, ...preparedTracks])
 
     showToast(`${validFilesCount} track${validFilesCount > 1 ? 's' : ''} added`, 'success')
   }
@@ -517,6 +489,7 @@ export default function NewProjectPage() {
               <Music2 className="w-7 h-7 text-gray-300" />
               <div className="space-y-1">
                 <p className="text-sm sm:text-base font-medium text-white">Drop audio files here or click to browse</p>
+                <p className="text-xs text-gray-500">MP3, WAV, M4A, AAC, FLAC, OGG (up to 100MB each)</p>
               </div>
               <input
                 ref={bulkTrackInputRef}
@@ -529,30 +502,6 @@ export default function NewProjectPage() {
                 className="hidden"
               />
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Or choose audio files</label>
-              <input
-                type="file"
-                multiple
-                accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
-                onChange={(e) => {
-                  if (e.target.files?.length) handleBulkTrackUpload(e.target.files)
-                }}
-                className="w-full text-sm text-white file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-white file:text-black hover:file:bg-gray-200"
-              />
-            </div>
-            {tracks.length > 0 && tracks[0].file && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleAddTrack}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/8 border border-white/20 text-white text-sm font-medium hover:bg-white/12 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Track
-                </button>
-              </div>
-            )}
 
             <div className="space-y-3">
               {shouldShowAutoFillTip && (
@@ -582,59 +531,9 @@ export default function NewProjectPage() {
                     </div>
                     
                     <div className="flex-1 min-w-0 space-y-3">
-                      {/* File Upload */}
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => trackFileInputRefs.current[index]?.click()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            trackFileInputRefs.current[index]?.click()
-                          }
-                        }}
-                        className="relative block cursor-pointer focus-within:ring-2 focus-within:ring-neon-green/50 rounded-lg"
-                      >
-                        <input
-                          ref={(el) => {
-                            trackFileInputRefs.current[index] = el
-                          }}
-                          type="file"
-                          accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) handleTrackFileChange(index, file)
-                          }}
-                          className="hidden"
-                        />
-                        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed transition ${
-                          track.file 
-                            ? 'border-neon-green/40 bg-neon-green/5' 
-                            : 'border-gray-700 hover:border-gray-500 hover:bg-gray-800/50'
-                        }`}>
-                          <Upload className={`w-4 h-4 flex-shrink-0 ${track.file ? 'text-neon-green' : 'text-gray-500'}`} />
-                          <div className="min-w-0 flex-1">
-                            {track.file ? (
-                              <span className="text-sm text-neon-green truncate block">
-                                {track.file.name}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-gray-400">
-                                Upload track file <span className="text-gray-600">· MP3, WAV, M4A, FLAC</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <input
-                        type="file"
-                        accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) handleTrackFileChange(index, file)
-                        }}
-                        className="w-full text-xs text-gray-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-gray-200 file:text-black hover:file:bg-white"
-                      />
+                      <p className="text-sm text-neon-green truncate">
+                        {track.file.name}
+                      </p>
                       
                       {/* Track Title */}
                       <div className="space-y-1.5">
@@ -679,6 +578,11 @@ export default function NewProjectPage() {
                   </div>
                 </div>
               ))}
+              {tracks.length === 0 && (
+                <p className="text-xs text-gray-500 text-center">
+                  Uploaded tracks will appear here.
+                </p>
+              )}
             </div>
 
           </div>
