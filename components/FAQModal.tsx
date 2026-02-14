@@ -11,7 +11,7 @@ interface FAQModalProps {
 const faqs = [
   {
     question: 'What is Demo?',
-    answer: 'Demo lets you share unreleased music with fans, collaborators, or anyone you choose. You control who can listen, view project metrics, and receive tips from fans.',
+    answer: 'Demo lets you share unreleased music with fans, collaborators, or any specific audience. Control track permissions, view project metrics, and receive tips from fans.',
   },
   {
     question: 'How do I create a project?',
