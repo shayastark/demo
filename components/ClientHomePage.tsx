@@ -184,29 +184,29 @@ export default function ClientHomePage() {
       />
       
       <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-20 overflow-x-hidden">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
+        <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
           <Link
             href="/dashboard"
             className="text-lg sm:text-xl font-semibold tracking-tight text-white hover:text-neon-green transition flex-shrink-0"
           >
             Dashboard
           </Link>
-          <div className="flex items-center justify-end min-w-0 gap-4 sm:gap-5">
+          <div className="flex items-center min-w-0 gap-2.5 sm:gap-4">
             <button
               onClick={() => setShowFAQ(true)}
-              className="btn-unstyled text-sm text-neon-green underline underline-offset-4 decoration-neon-green/80 hover:opacity-80 transition whitespace-nowrap flex-shrink-0"
+              className="btn-unstyled text-xs sm:text-sm text-neon-green underline underline-offset-4 decoration-neon-green/80 hover:opacity-80 transition whitespace-nowrap flex-shrink-0"
             >
               FAQ
             </button>
             <Link
               href="/account"
-              className="text-sm text-gray-300 hover:text-white transition truncate max-w-[120px] sm:max-w-[220px]"
+              className="text-xs sm:text-sm text-gray-300 hover:text-white transition truncate max-w-[88px] sm:max-w-[220px]"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
             <button
               onClick={logout}
-              className="btn-unstyled text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap flex-shrink-0"
+              className="btn-unstyled text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap flex-shrink-0"
             >
               Sign out
             </button>
