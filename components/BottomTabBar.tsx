@@ -778,6 +778,20 @@ export default function BottomTabBar() {
 
   // Determine if we should show the full UI (but always keep audio element mounted)
   const showFullUI = ready && authenticated && pathname !== '/' && !pathname?.startsWith('/share/')
+
+  // Safety reset: if auth state changes while a sheet is open, ensure body scroll isn't left locked.
+  useEffect(() => {
+    if (!authenticated) {
+      setIsQueueOpen(false)
+      setIsNowPlayingOpen(false)
+      setIsNotificationsOpen(false)
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.overflow = ''
+    }
+  }, [authenticated])
   
   // Always render the audio element to persist playback across navigation
   // But hide the visual UI on certain pages

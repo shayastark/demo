@@ -484,25 +484,25 @@ export default function ClientDashboard() {
           <Link href="/" className="text-lg sm:text-xl font-bold text-white flex-shrink-0">
             Demo
           </Link>
-          <div className="flex items-center min-w-0 gap-2.5 sm:gap-4">
+          <div className="flex items-center min-w-0 gap-3 max-[390px]:gap-1.5 sm:gap-4 pr-0.5">
             <Link
               href="/account"
-              className="text-xs sm:text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
+              className="text-xs max-[390px]:text-[10px] sm:text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
             >
               Account
             </Link>
-            <span className="text-gray-600 text-xs select-none">|</span>
+            <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/dashboard/projects/new"
-              className="flex items-center gap-1 text-neon-green hover:text-white transition whitespace-nowrap text-xs sm:text-sm font-medium"
+              className="flex items-center gap-1 max-[390px]:gap-0.5 text-neon-green hover:text-white transition whitespace-nowrap text-xs max-[390px]:text-[10px] sm:text-sm font-medium"
             >
-              <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+              <Plus className="w-3 h-3 max-[390px]:w-2.5 max-[390px]:h-2.5 sm:w-4 sm:h-4" />
               New Project
             </Link>
-            <span className="text-gray-600 text-xs select-none">|</span>
+            <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <button
               onClick={logout}
-              className="btn-unstyled text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
+              className="btn-unstyled text-xs max-[390px]:text-[10px] sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
             >
               Sign out
             </button>

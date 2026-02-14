@@ -131,6 +131,13 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* iOS Safari can mispaint fixed overlays (e.g. auth modals) when background is fixed */
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
 /* Prevent long-press context menu on images and non-interactive elements */
 img, div:not([onclick]):not([role="button"]) {
   -webkit-touch-callout: none;
