@@ -197,22 +197,22 @@ export default function ClientHomePage() {
           >
             Dashboard
           </Link>
-          <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+          <div className="flex items-center min-w-0 ml-3 sm:ml-0 gap-3 sm:gap-5">
             <button
               onClick={() => setShowFAQ(true)}
-              className="text-sm text-gray-400 hover:text-white transition whitespace-nowrap flex-shrink-0"
+              className="text-sm text-neon-green underline underline-offset-4 decoration-neon-green/80 hover:opacity-80 transition whitespace-nowrap flex-shrink-0 px-1"
             >
               FAQ
             </button>
             <Link
               href="/account"
-              className="text-sm text-gray-400 hover:text-white transition truncate max-w-[120px] sm:max-w-[200px] pr-1"
+              className="text-sm text-gray-300 hover:text-white transition truncate max-w-[110px] sm:max-w-[220px] px-1"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
             <button
               onClick={logout}
-              className="text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap flex-shrink-0"
+              className="text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap flex-shrink-0 px-1"
             >
               Sign out
             </button>
