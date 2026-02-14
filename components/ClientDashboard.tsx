@@ -32,7 +32,6 @@ export default function ClientDashboard() {
   const [shareModalProject, setShareModalProject] = useState<Project | null>(null)
   const [dbUserId, setDbUserId] = useState<string | null>(null)
   const [isMiniPlayerShowing, setIsMiniPlayerShowing] = useState(false)
-  const [showMobileTopMenu, setShowMobileTopMenu] = useState(false)
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -485,10 +484,10 @@ export default function ClientDashboard() {
           <Link href="/" className="text-lg sm:text-xl font-bold text-white flex-shrink-0">
             Demo
           </Link>
-          <div className="hidden sm:flex items-center" style={{ gap: '16px' }}>
+          <div className="flex items-center min-w-0 gap-3 sm:gap-4">
             <Link
               href="/account"
-              className="text-xs sm:text-sm text-gray-400 hover:text-white transition"
+              className="text-xs sm:text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
             >
               Account
             </Link>
@@ -504,22 +503,6 @@ export default function ClientDashboard() {
               className="btn-unstyled text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
             >
               Sign out
-            </button>
-          </div>
-          <div className="flex sm:hidden items-center gap-3">
-            <Link
-              href="/account"
-              className="text-sm text-gray-300 hover:text-white transition"
-            >
-              Account
-            </Link>
-            <button
-              type="button"
-              onClick={() => setShowMobileTopMenu(true)}
-              className="btn-unstyled w-8 h-8 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition flex items-center justify-center"
-              aria-label="Open menu"
-            >
-              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -779,52 +762,6 @@ export default function ClientDashboard() {
           shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${shareModalProject.share_token}`}
           title={shareModalProject.title}
         />
-      )}
-
-      {/* Top nav mobile menu */}
-      {showMobileTopMenu && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/70 z-[110]"
-            onClick={() => setShowMobileTopMenu(false)}
-          />
-          <div className="fixed left-0 right-0 bottom-0 z-[111] bg-gray-900 border-t border-gray-700 rounded-t-2xl p-4 space-y-2">
-            <Link
-              href="/dashboard/projects/new"
-              onClick={() => setShowMobileTopMenu(false)}
-              className="block w-full text-left px-4 py-3 rounded-xl bg-gray-800 text-white hover:bg-gray-700 transition"
-            >
-              + New Project
-            </Link>
-            <Link
-              href="/account"
-              onClick={() => setShowMobileTopMenu(false)}
-              className="block w-full text-left px-4 py-3 rounded-xl bg-gray-800 text-gray-200 hover:text-white transition"
-            >
-              Account
-            </Link>
-            <a
-              href="mailto:info@demo.supply"
-              className="block w-full text-left px-4 py-3 rounded-xl bg-gray-800 text-gray-200 hover:text-white transition"
-            >
-              Contact: info@demo.supply
-            </a>
-            <button
-              type="button"
-              onClick={logout}
-              className="w-full text-left px-4 py-3 rounded-xl bg-gray-800 text-gray-300 hover:text-white transition"
-            >
-              Sign out
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowMobileTopMenu(false)}
-              className="w-full text-center px-4 py-3 rounded-xl bg-gray-700 text-white mt-1"
-            >
-              Close
-            </button>
-          </div>
-        </>
       )}
 
       {/* Project Menu Modal - Rendered at root level for proper z-index */}
