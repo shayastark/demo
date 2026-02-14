@@ -457,7 +457,7 @@ export default function NewProjectPage() {
                 Audio Tracks <span className="text-red-400">*</span>
               </h2>
               <p className="text-sm text-gray-400 mt-1">
-                Upload at least one track. You can add multiple files at once. Set track permissions after your project is created.
+                Upload at least one track. Set track permissions after your project is created.
               </p>
             </div>
 
