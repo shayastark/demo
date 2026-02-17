@@ -24,6 +24,14 @@ export default function NewProjectPage() {
   const coverImageInputRef = useRef<HTMLInputElement | null>(null)
   const bulkTrackInputRef = useRef<HTMLInputElement | null>(null)
 
+  const sanitizeFileName = (fileName: string): string => {
+    return fileName
+      .replace(/[:,\/\\?*|"<>]/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_+|_+$/g, '')
+  }
+
   const setCoverImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       showToast('Please upload an image file (JPG, PNG, or WEBP).', 'error')
@@ -115,9 +123,12 @@ export default function NewProjectPage() {
     }
     
     try {
+      const sanitizedName = sanitizeFileName(file.name) || 'file'
+      const uploadPath = `${path}/${Date.now()}-${sanitizedName}`
+
       const { data, error } = await supabase.storage
         .from('hubba-files')
-        .upload(`${path}/${Date.now()}-${file.name}`, file, {
+        .upload(uploadPath, file, {
           contentType,
           upsert: false,
         })
@@ -159,8 +170,11 @@ export default function NewProjectPage() {
     if (!user || loading || submitted) return
 
     setLoading(true)
+    let token: string | null = null
+    let createdProjectId: string | null = null
+
     try {
-      const token = await getAccessToken()
+      token = await getAccessToken()
       if (!token) throw new Error('Not authenticated')
 
       // Get or create user via API
@@ -231,6 +245,7 @@ export default function NewProjectPage() {
 
       const projectData = await projectResponse.json()
       const project = projectData.project
+      createdProjectId = project.id
 
       // Upload and create tracks via secure API
       for (let i = 0; i < tracksToUpload.length; i++) {
@@ -287,6 +302,20 @@ export default function NewProjectPage() {
       }, 500)
       
     } catch (error: unknown) {
+      // Prevent orphaned empty projects when any track fails after project creation.
+      if (createdProjectId && token) {
+        try {
+          await fetch(`/api/projects?id=${createdProjectId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          })
+        } catch (cleanupError) {
+          console.error('Failed to rollback partially created project:', cleanupError)
+        }
+      }
+
       console.error('Error creating project:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create project. Please try again.'
       showToast(errorMessage, 'error')
