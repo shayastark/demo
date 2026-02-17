@@ -325,7 +325,7 @@ export default function NewProjectPage() {
               </p>
             </div>
             {coverImagePreview ? (
-              <div className="relative rounded-xl overflow-hidden border border-gray-700 group">
+              <div className="relative rounded-xl overflow-hidden border border-gray-700 group w-full max-w-sm sm:max-w-md mx-auto">
                 <div
                   role="button"
                   tabIndex={0}
@@ -336,7 +336,7 @@ export default function NewProjectPage() {
                       coverImageInputRef.current?.click()
                     }
                   }}
-                  className="relative cursor-pointer block w-full h-52 sm:h-64 focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black rounded-xl"
+                  className="relative cursor-pointer block w-full h-40 sm:h-48 focus-within:ring-2 focus-within:ring-neon-green/70 focus-within:ring-offset-2 focus-within:ring-offset-black rounded-xl"
                 >
                   <img
                     src={coverImagePreview}

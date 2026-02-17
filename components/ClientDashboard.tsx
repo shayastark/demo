@@ -542,7 +542,7 @@ export default function ClientDashboard() {
                   padding: '12px',
                   position: 'relative',
                 }}
-                className="hover:bg-gray-800 transition group"
+                className="hover:bg-gray-800 transition group w-full md:max-w-[190px] md:mx-auto"
               >
                 {/* Pinned badge */}
                 {project.pinned && (
@@ -655,7 +655,7 @@ export default function ClientDashboard() {
                     padding: '12px',
                     position: 'relative',
                   }}
-                  className="hover:bg-gray-800 transition group"
+                  className="hover:bg-gray-800 transition group w-full md:max-w-[190px] md:mx-auto"
                 >
                   {/* Pinned badge */}
                   {project.pinned && (
