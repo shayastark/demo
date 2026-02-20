@@ -54,6 +54,26 @@ CREATE TABLE track_notes (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Public comments (project-level and timestamped track-level)
+CREATE TABLE comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  track_id UUID REFERENCES tracks(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  timestamp_seconds INTEGER,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT comments_target_check CHECK (
+    (project_id IS NOT NULL AND track_id IS NULL) OR
+    (project_id IS NULL AND track_id IS NOT NULL)
+  ),
+  CONSTRAINT comments_track_timestamp_check CHECK (
+    (track_id IS NULL AND timestamp_seconds IS NULL) OR
+    (track_id IS NOT NULL AND timestamp_seconds IS NOT NULL AND timestamp_seconds >= 0)
+  )
+);
+
 -- Project metrics
 CREATE TABLE project_metrics (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -95,6 +115,10 @@ CREATE TABLE project_shares (
 CREATE INDEX idx_projects_creator_id ON projects(creator_id);
 CREATE INDEX idx_projects_share_token ON projects(share_token);
 CREATE INDEX idx_tracks_project_id ON tracks(project_id);
+CREATE INDEX idx_comments_project_id ON comments(project_id);
+CREATE INDEX idx_comments_track_id ON comments(track_id);
+CREATE INDEX idx_comments_user_id ON comments(user_id);
+CREATE INDEX idx_comments_created_at ON comments(created_at DESC);
 CREATE INDEX idx_track_plays_track_id ON track_plays(track_id);
 CREATE INDEX idx_track_plays_played_at ON track_plays(played_at);
 CREATE INDEX idx_project_shares_project_id ON project_shares(project_id);
@@ -107,6 +131,7 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tracks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE track_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_metrics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE track_plays ENABLE ROW LEVEL SECURITY;
@@ -144,6 +169,13 @@ CREATE POLICY "Project notes are private" ON project_notes
 CREATE POLICY "Track notes are private" ON track_notes
   FOR ALL USING (true); -- Enforced by application logic
 
+-- Comments are publicly readable, writes are app-enforced
+CREATE POLICY "Comments are viewable by everyone" ON comments
+  FOR SELECT USING (true);
+
+CREATE POLICY "Comments are manageable by app logic" ON comments
+  FOR ALL USING (true); -- Enforced by application logic
+
 -- Metrics are public for viewing
 CREATE POLICY "Metrics are viewable by everyone" ON project_metrics
   FOR SELECT USING (true);
@@ -179,6 +211,9 @@ CREATE TRIGGER update_project_notes_updated_at BEFORE UPDATE ON project_notes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_track_notes_updated_at BEFORE UPDATE ON track_notes
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_comments_updated_at BEFORE UPDATE ON comments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_project_metrics_updated_at BEFORE UPDATE ON project_metrics

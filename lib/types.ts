@@ -38,6 +38,27 @@ export interface TrackNote {
   updated_at: string
 }
 
+export interface Comment {
+  id: string
+  user_id: string
+  project_id: string | null
+  track_id: string | null
+  content: string
+  timestamp_seconds: number | null
+  created_at: string
+  updated_at: string
+  author_name?: string
+  can_edit?: boolean
+  can_delete?: boolean
+}
+
+export interface CreateCommentPayload {
+  project_id?: string
+  track_id?: string
+  content: string
+  timestamp_seconds?: number
+}
+
 export interface ProjectMetrics {
   id: string
   project_id: string

@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { apiRequest } from '@/lib/api'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
+import CommentsPanel from './CommentsPanel'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -59,6 +60,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [editingTrackTitle, setEditingTrackTitle] = useState('') // Title being edited
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
+  const [playbackSnapshot, setPlaybackSnapshot] = useState<{ trackId: string | null; currentTime: number; duration: number }>({
+    trackId: null,
+    currentTime: 0,
+    duration: 0,
+  })
+  const [seekRequest, setSeekRequest] = useState<{ requestId: number; trackId: string; time: number } | null>(null)
 
   // Detect mobile vs desktop
   useEffect(() => {
@@ -1532,6 +1539,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               allowDownloads={project.allow_downloads}
               onEditTrack={startEditingTrack}
               onDeleteTrack={handleDeleteTrack}
+              onPlaybackSnapshotChange={setPlaybackSnapshot}
+              seekRequest={seekRequest}
               onMenuOpen={() => {
                 setIsProjectMenuOpen(false) // Close project menu when track menu opens
                 setTrackMenuOpen(true)
@@ -1675,6 +1684,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               </div>
             </div>
           )}
+
+          <CommentsPanel
+            projectId={project.id}
+            tracks={tracks}
+            authenticated={!!user}
+            getAccessToken={getAccessToken}
+            onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
+            playbackTrackId={playbackSnapshot.trackId}
+            playbackCurrentTime={playbackSnapshot.currentTime}
+            onSeekToTimestamp={(trackId, time) => {
+              setSeekRequest({ requestId: Date.now(), trackId, time })
+            }}
+          />
 
         </div>
       </main>

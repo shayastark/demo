@@ -21,6 +21,8 @@ interface TrackPlaylistProps {
   onDeleteTrack?: (trackId: string) => void
   onMenuOpen?: () => void // Called when a track menu opens, so parent can close its menu
   forceCloseMenu?: boolean // When true, close any open track menu
+  onPlaybackSnapshotChange?: (snapshot: { trackId: string | null; currentTime: number; duration: number }) => void
+  seekRequest?: { requestId: number; trackId: string; time: number } | null
 }
 
 export default function TrackPlaylist({ 
@@ -33,7 +35,9 @@ export default function TrackPlaylist({
   onEditTrack,
   onDeleteTrack,
   onMenuOpen,
-  forceCloseMenu
+  forceCloseMenu,
+  onPlaybackSnapshotChange,
+  seekRequest
 }: TrackPlaylistProps) {
   const mobileBottomSheetOffset = 'calc(88px + env(safe-area-inset-bottom, 0px))'
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null)
@@ -158,6 +162,14 @@ export default function TrackPlaylist({
       setOpenMenuIndex(null)
     }
   }, [forceCloseMenu])
+
+  useEffect(() => {
+    onPlaybackSnapshotChange?.({
+      trackId: currentTrack?.id || null,
+      currentTime,
+      duration,
+    })
+  }, [onPlaybackSnapshotChange, currentTrack?.id, currentTime, duration])
 
   // Play a track by dispatching to the global player
   const playTrackAtIndex = useCallback((index: number) => {
@@ -324,6 +336,22 @@ export default function TrackPlaylist({
     }
     setOpenMenuIndex(null)
   }
+
+  useEffect(() => {
+    if (!seekRequest) return
+    const targetIndex = tracks.findIndex((track) => track.id === seekRequest.trackId)
+    if (targetIndex === -1) return
+
+    playTrackAtIndex(targetIndex)
+    const timeout = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('demo-cassette-seek', {
+        detail: { time: seekRequest.time }
+      }))
+      setCurrentTime(seekRequest.time)
+    }, 220)
+
+    return () => window.clearTimeout(timeout)
+  }, [seekRequest, tracks, playTrackAtIndex])
 
   return (
     <div className="space-y-6">
