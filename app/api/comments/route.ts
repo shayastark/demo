@@ -84,7 +84,12 @@ export async function GET(request: NextRequest) {
       .eq('id', projectId)
       .single()
 
-    if (!project || project.sharing_enabled === false) {
+    const canAccessProjectComments = !!project && (
+      project.sharing_enabled !== false ||
+      (!!currentUser && currentUser.id === project.creator_id)
+    )
+
+    if (!canAccessProjectComments) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
@@ -168,11 +173,16 @@ export async function POST(request: NextRequest) {
 
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id, sharing_enabled')
+      .select('id, creator_id, sharing_enabled')
       .eq('id', project_id)
       .single()
 
-    if (!project || project.sharing_enabled === false) {
+    const canCreateComment = !!project && (
+      project.sharing_enabled !== false ||
+      user.id === project.creator_id
+    )
+
+    if (!canCreateComment) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 

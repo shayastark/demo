@@ -154,7 +154,7 @@ export default function CommentsPanel({
   }, [projectComments])
 
   return (
-    <div className="mt-8 bg-gray-900 rounded-xl border border-gray-800 p-4 sm:p-5">
+    <div className="mt-6 bg-gray-900/60 rounded-lg border border-gray-800 p-3 sm:p-4">
       <button
         type="button"
         onClick={() => setCommentsOpen((prev) => !prev)}
@@ -162,7 +162,7 @@ export default function CommentsPanel({
       >
         <div className="flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-neon-green" />
-          <h3 className="text-white font-semibold">Project Comments</h3>
+          <h3 className="text-sm text-white font-semibold">Project Comments</h3>
           <span className="text-xs text-gray-400">({projectComments.length})</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -172,37 +172,37 @@ export default function CommentsPanel({
       </button>
 
       {!commentsOpen && latestPreview && (
-        <p className="mt-3 text-sm text-gray-400 truncate">
+        <p className="mt-2 text-xs text-gray-400 truncate">
           Latest: {latestPreview.author_name}: {latestPreview.content}
         </p>
       )}
 
       {commentsOpen && (
         <>
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-3">
             <input
               value={projectInput}
               onChange={(e) => setProjectInput(e.target.value)}
               placeholder="Leave project-level feedback..."
-              className="flex-1 bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+              className="flex-1 bg-black border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
             />
             <button
               onClick={submitProjectComment}
               disabled={submittingProject || !projectInput.trim()}
-              className="px-3 py-2 rounded-lg bg-neon-green text-black font-medium disabled:opacity-40"
+              className="px-3 py-2 rounded-md bg-neon-green text-black font-medium disabled:opacity-40"
             >
               <Send className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="space-y-2 mt-4">
+          <div className="space-y-2 mt-3 max-h-64 overflow-y-auto pr-1">
             {loadingProjectComments ? (
               <p className="text-sm text-gray-500">Loading comments...</p>
             ) : projectComments.length === 0 ? (
               <p className="text-sm text-gray-500">No project comments yet.</p>
             ) : (
               projectComments.map((comment) => (
-                <div key={comment.id} className="bg-black/40 border border-gray-800 rounded-lg px-3 py-2">
+                <div key={comment.id} className="bg-black/40 border border-gray-800 rounded-md px-3 py-2">
                   <div className="flex items-center justify-between gap-3 mb-1">
                     <span className="text-xs text-gray-400">{comment.author_name}</span>
                     <div className="flex items-center gap-2">
