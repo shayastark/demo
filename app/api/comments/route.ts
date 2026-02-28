@@ -14,6 +14,27 @@ type CommentRecord = {
   updated_at: string
 }
 
+async function getOrCreateUserByPrivyId(privyId: string) {
+  const existingUser = await getUserByPrivyId(privyId)
+  if (existingUser) return existingUser
+
+  const { data: createdUser, error: createError } = await supabaseAdmin
+    .from('users')
+    .insert({ privy_id: privyId })
+    .select('*')
+    .single()
+
+  if (!createError && createdUser) return createdUser
+
+  const { data: retryUser } = await supabaseAdmin
+    .from('users')
+    .select('*')
+    .eq('privy_id', privyId)
+    .single()
+
+  return retryUser || null
+}
+
 async function getTrackProject(trackId: string): Promise<{ id: string; creator_id: string; sharing_enabled: boolean | null } | null> {
   const { data: track } = await supabaseAdmin
     .from('tracks')
@@ -44,61 +65,39 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('project_id')
     const trackId = searchParams.get('track_id')
 
-    if ((projectId && trackId) || (!projectId && !trackId)) {
-      return NextResponse.json({ error: 'Provide either project_id or track_id' }, { status: 400 })
+    if (!projectId) {
+      if (trackId) {
+        return NextResponse.json({ error: 'Track comments are no longer supported' }, { status: 400 })
+      }
+      return NextResponse.json({ error: 'project_id is required' }, { status: 400 })
     }
 
     const currentUser = await getCurrentUserFromRequest(request)
 
-    let targetCreatorId: string | null = null
-    let comments: CommentRecord[] = []
-
-    if (projectId) {
-      if (!isValidUUID(projectId)) {
-        return NextResponse.json({ error: 'Invalid project_id' }, { status: 400 })
-      }
-
-      const { data: project } = await supabaseAdmin
-        .from('projects')
-        .select('id, creator_id, sharing_enabled')
-        .eq('id', projectId)
-        .single()
-
-      if (!project || project.sharing_enabled === false) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-      }
-
-      targetCreatorId = project.creator_id
-
-      const { data, error } = await supabaseAdmin
-        .from('comments')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      comments = (data as CommentRecord[]) || []
-    } else if (trackId) {
-      if (!isValidUUID(trackId)) {
-        return NextResponse.json({ error: 'Invalid track_id' }, { status: 400 })
-      }
-
-      const trackProject = await getTrackProject(trackId)
-      if (!trackProject || trackProject.sharing_enabled === false) {
-        return NextResponse.json({ error: 'Track not found' }, { status: 404 })
-      }
-
-      targetCreatorId = trackProject.creator_id
-
-      const { data, error } = await supabaseAdmin
-        .from('comments')
-        .select('*')
-        .eq('track_id', trackId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      comments = (data as CommentRecord[]) || []
+    if (!isValidUUID(projectId)) {
+      return NextResponse.json({ error: 'Invalid project_id' }, { status: 400 })
     }
+
+    const { data: project } = await supabaseAdmin
+      .from('projects')
+      .select('id, creator_id, sharing_enabled')
+      .eq('id', projectId)
+      .single()
+
+    if (!project || project.sharing_enabled === false) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const targetCreatorId = project.creator_id
+
+    const { data, error } = await supabaseAdmin
+      .from('comments')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    const comments: CommentRecord[] = (data as CommentRecord[]) || []
 
     const userIds = Array.from(new Set(comments.map((comment) => comment.user_id)))
     let usersById: Record<string, { username: string | null; email: string | null }> = {}
@@ -142,7 +141,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await getUserByPrivyId(authResult.privyId)
+    const user = await getOrCreateUserByPrivyId(authResult.privyId)
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
@@ -151,55 +150,38 @@ export async function POST(request: NextRequest) {
     const { project_id, track_id } = body
     const content = sanitizeText(body.content, 2000)
 
-    if ((project_id && track_id) || (!project_id && !track_id)) {
-      return NextResponse.json({ error: 'Provide either project_id or track_id' }, { status: 400 })
+    if (track_id) {
+      return NextResponse.json({ error: 'Track comments are no longer supported' }, { status: 400 })
+    }
+
+    if (!project_id) {
+      return NextResponse.json({ error: 'project_id is required' }, { status: 400 })
     }
 
     if (!content) {
       return NextResponse.json({ error: 'Comment content is required' }, { status: 400 })
     }
 
-    let insertPayload: Record<string, unknown> = {
-      user_id: user.id,
-      content,
+    if (!isValidUUID(project_id)) {
+      return NextResponse.json({ error: 'Invalid project_id' }, { status: 400 })
     }
 
-    if (project_id) {
-      if (!isValidUUID(project_id)) {
-        return NextResponse.json({ error: 'Invalid project_id' }, { status: 400 })
-      }
+    const { data: project } = await supabaseAdmin
+      .from('projects')
+      .select('id, sharing_enabled')
+      .eq('id', project_id)
+      .single()
 
-      const { data: project } = await supabaseAdmin
-        .from('projects')
-        .select('id, sharing_enabled')
-        .eq('id', project_id)
-        .single()
+    if (!project || project.sharing_enabled === false) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
 
-      if (!project || project.sharing_enabled === false) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-      }
-
-      insertPayload.project_id = project_id
-      insertPayload.track_id = null
-      insertPayload.timestamp_seconds = null
-    } else if (track_id) {
-      if (!isValidUUID(track_id)) {
-        return NextResponse.json({ error: 'Invalid track_id' }, { status: 400 })
-      }
-
-      const trackProject = await getTrackProject(track_id)
-      if (!trackProject || trackProject.sharing_enabled === false) {
-        return NextResponse.json({ error: 'Track not found' }, { status: 404 })
-      }
-
-      const parsedTimestamp = Number(body.timestamp_seconds)
-      if (!Number.isFinite(parsedTimestamp) || parsedTimestamp < 0) {
-        return NextResponse.json({ error: 'Valid non-negative timestamp_seconds is required for track comments' }, { status: 400 })
-      }
-
-      insertPayload.project_id = null
-      insertPayload.track_id = track_id
-      insertPayload.timestamp_seconds = Math.floor(parsedTimestamp)
+    const insertPayload: Record<string, unknown> = {
+      user_id: user.id,
+      project_id,
+      track_id: null,
+      timestamp_seconds: null,
+      content,
     }
 
     const { data: comment, error } = await supabaseAdmin
@@ -224,7 +206,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await getUserByPrivyId(authResult.privyId)
+    const user = await getOrCreateUserByPrivyId(authResult.privyId)
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
@@ -278,7 +260,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await getUserByPrivyId(authResult.privyId)
+    const user = await getOrCreateUserByPrivyId(authResult.privyId)
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
