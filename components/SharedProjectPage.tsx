@@ -61,12 +61,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
-  const [playbackSnapshot, setPlaybackSnapshot] = useState<{ trackId: string | null; currentTime: number; duration: number }>({
-    trackId: null,
-    currentTime: 0,
-    duration: 0,
-  })
-  const [seekRequest, setSeekRequest] = useState<{ requestId: number; trackId: string; time: number } | null>(null)
   const projectMenuRef = useRef<HTMLDivElement>(null)
 
   // Detect mobile vs desktop
@@ -679,6 +673,13 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           )}
         </div>
 
+        <CommentsPanel
+          projectId={project.id}
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+          onRequireAuth={handleRequireAuthForFeedback}
+        />
+
         {/* Tracks */}
         <div className="space-y-4">
           {tracks.length === 0 ? (
@@ -692,8 +693,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
               projectTitle={project.title}
               allowDownloads={project.allow_downloads}
               onTrackPlay={handleTrackPlay}
-              onPlaybackSnapshotChange={setPlaybackSnapshot}
-              seekRequest={seekRequest}
               onMenuOpen={() => {
                 setIsProjectMenuOpen(false) // Close project menu when track menu opens
                 setTrackMenuOpen(true)
@@ -702,19 +701,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             />
           )}
         </div>
-
-        <CommentsPanel
-          projectId={project.id}
-          tracks={tracks}
-          authenticated={authenticated}
-          getAccessToken={getAccessToken}
-          onRequireAuth={handleRequireAuthForFeedback}
-          playbackTrackId={playbackSnapshot.trackId}
-          playbackCurrentTime={playbackSnapshot.currentTime}
-          onSeekToTimestamp={(trackId, time) => {
-            setSeekRequest({ requestId: Date.now(), trackId, time })
-          }}
-        />
       </div>
 
       {/* Project Menu Bottom Tray - Full width on mobile like ShareModal */}
