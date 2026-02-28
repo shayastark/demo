@@ -673,13 +673,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           )}
         </div>
 
-        <CommentsPanel
-          projectId={project.id}
-          authenticated={authenticated}
-          getAccessToken={getAccessToken}
-          onRequireAuth={handleRequireAuthForFeedback}
-        />
-
         {/* Tracks */}
         <div className="space-y-4">
           {tracks.length === 0 ? (
@@ -701,6 +694,13 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             />
           )}
         </div>
+
+        <CommentsPanel
+          projectId={project.id}
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+          onRequireAuth={handleRequireAuthForFeedback}
+        />
       </div>
 
       {/* Project Menu Bottom Tray - Full width on mobile like ShareModal */}

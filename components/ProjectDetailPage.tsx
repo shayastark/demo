@@ -1425,13 +1425,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           )}
         </div>
 
-        <CommentsPanel
-          projectId={project.id}
-          authenticated={!!user}
-          getAccessToken={getAccessToken}
-          onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
-        />
-
         {/* Tracks */}
         <div>
           {/* Add Track Form (for creators) */}
@@ -1682,6 +1675,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               </div>
             </div>
           )}
+
+          <CommentsPanel
+            projectId={project.id}
+            authenticated={!!user}
+            getAccessToken={getAccessToken}
+            onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
+          />
 
         </div>
       </main>
