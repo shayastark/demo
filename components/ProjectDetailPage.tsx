@@ -12,6 +12,7 @@ import CommentsPanel from './CommentsPanel'
 import ProjectUpdatesPanel from './ProjectUpdatesPanel'
 import TipPromptCard from './TipPromptCard'
 import TopSupportersCard from './TopSupportersCard'
+import ProjectAttachmentsPanel from './ProjectAttachmentsPanel'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -1715,6 +1716,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             authenticated={!!user}
             getAccessToken={getAccessToken}
             onRequireAuth={() => showToast('Please sign in to post updates.', 'error')}
+            source="project_detail"
+          />
+          <ProjectAttachmentsPanel
+            projectId={project.id}
+            authenticated={!!user}
+            getAccessToken={getAccessToken}
+            onRequireAuth={() => showToast('Please sign in to manage attachments.', 'error')}
             source="project_detail"
           />
 

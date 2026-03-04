@@ -10,6 +10,7 @@ import CommentsPanel from './CommentsPanel'
 import ProjectUpdatesPanel from './ProjectUpdatesPanel'
 import TipPromptCard from './TipPromptCard'
 import TopSupportersCard from './TopSupportersCard'
+import ProjectAttachmentsPanel from './ProjectAttachmentsPanel'
 import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, Trash2, User, LayoutDashboard } from 'lucide-react'
 import { setPendingProject } from '@/lib/pendingProject'
 import { showToast } from './Toast'
@@ -760,6 +761,13 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           }}
         />
         <ProjectUpdatesPanel
+          projectId={project.id}
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+          onRequireAuth={handleRequireAuthForFeedback}
+          source="shared_project"
+        />
+        <ProjectAttachmentsPanel
           projectId={project.id}
           authenticated={authenticated}
           getAccessToken={getAccessToken}
