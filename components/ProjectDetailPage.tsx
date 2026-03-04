@@ -11,6 +11,7 @@ import TrackPlaylist from './TrackPlaylist'
 import CommentsPanel from './CommentsPanel'
 import ProjectUpdatesPanel from './ProjectUpdatesPanel'
 import TipPromptCard from './TipPromptCard'
+import TopSupportersCard from './TopSupportersCard'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -1685,6 +1686,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             authenticated={!!user}
             getAccessToken={getAccessToken}
             onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
+          />
+          <TopSupportersCard
+            projectId={project.id}
+            source="project_detail"
+            authenticated={!!user}
+            getAccessToken={getAccessToken}
+            onOpenSupporter={(supporterUserId) => {
+              setCreatorId(supporterUserId)
+              setShowCreatorModal(true)
+            }}
           />
           <TipPromptCard
             source="project_detail"

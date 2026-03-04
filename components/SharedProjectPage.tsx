@@ -9,6 +9,7 @@ import TrackPlaylist from './TrackPlaylist'
 import CommentsPanel from './CommentsPanel'
 import ProjectUpdatesPanel from './ProjectUpdatesPanel'
 import TipPromptCard from './TipPromptCard'
+import TopSupportersCard from './TopSupportersCard'
 import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, Trash2, User, LayoutDashboard } from 'lucide-react'
 import { setPendingProject } from '@/lib/pendingProject'
 import { showToast } from './Toast'
@@ -734,6 +735,16 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           authenticated={authenticated}
           getAccessToken={getAccessToken}
           onRequireAuth={handleRequireAuthForFeedback}
+        />
+        <TopSupportersCard
+          projectId={project.id}
+          source="shared_project"
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+          onOpenSupporter={(supporterUserId) => {
+            setCreatorId(supporterUserId)
+            setShowCreatorModal(true)
+          }}
         />
         <TipPromptCard
           source="shared_project"
