@@ -10,6 +10,7 @@ import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/ty
 import TrackPlaylist from './TrackPlaylist'
 import CommentsPanel from './CommentsPanel'
 import ProjectUpdatesPanel from './ProjectUpdatesPanel'
+import TipPromptCard from './TipPromptCard'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -18,6 +19,7 @@ import ShareModal from './ShareModal'
 import CreatorProfileModal from './CreatorProfileModal'
 import { addToQueue } from './BottomTabBar'
 import { User } from 'lucide-react'
+import type { TipPromptTrigger } from '@/lib/tipPrompt'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -61,6 +63,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [editingTrackTitle, setEditingTrackTitle] = useState('') // Title being edited
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
+  const [tipPromptTrigger, setTipPromptTrigger] = useState<TipPromptTrigger | null>(null)
   // Detect mobile vs desktop
   useEffect(() => {
     const checkMobile = () => {
@@ -1683,6 +1686,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             getAccessToken={getAccessToken}
             onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
           />
+          <TipPromptCard
+            source="project_detail"
+            projectId={project.id}
+            creatorId={project.creator_id}
+            authenticated={!!user}
+            isCreator={isCreator}
+            viewerKey={user?.id || null}
+            trackIds={tracks.map((track) => track.id)}
+            onSendTip={(trigger) => {
+              setTipPromptTrigger(trigger)
+              setShowCreatorModal(true)
+            }}
+          />
           <ProjectUpdatesPanel
             projectId={project.id}
             authenticated={!!user}
@@ -2208,8 +2224,22 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       {creatorId && (
         <CreatorProfileModal
           isOpen={showCreatorModal}
-          onClose={() => setShowCreatorModal(false)}
+          onClose={() => {
+            setShowCreatorModal(false)
+            setTipPromptTrigger(null)
+          }}
           creatorId={creatorId}
+          openTipComposer={!!tipPromptTrigger}
+          tipContext={
+            tipPromptTrigger
+              ? {
+                  source: 'project_detail',
+                  trigger: tipPromptTrigger,
+                  projectId: project.id,
+                }
+              : null
+          }
+          viewerKey={user?.id || null}
         />
       )}
     </div>

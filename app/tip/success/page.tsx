@@ -1,10 +1,49 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle, Heart } from 'lucide-react'
+import { markTipPromptConvertedInSession } from '@/lib/tipPrompt'
 
 export default function TipSuccessPage() {
   const router = useRouter()
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const source = params.get('source')
+    const trigger = params.get('trigger')
+    const projectId = params.get('project_id')
+    const creatorId = params.get('creator_id')
+    const viewerKey = params.get('viewer_key')
+
+    const hasPromptContext =
+      !!projectId &&
+      (source === 'project_detail' || source === 'shared_project') &&
+      (trigger === 'playback_threshold' || trigger === 'comment_post')
+
+    if (!hasPromptContext) return
+    if (viewerKey) {
+      markTipPromptConvertedInSession(projectId, viewerKey)
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('tip_prompt_converted', {
+          detail: {
+            schema: 'tip_prompt.v1',
+            action: 'converted',
+            source,
+            trigger,
+            project_id: projectId,
+            creator_id: creatorId || null,
+            authenticated: true,
+            is_creator: false,
+          },
+        })
+      )
+    }
+  }, [])
 
   const handleClose = () => {
     // Go back 2 pages (skip the Stripe checkout page)

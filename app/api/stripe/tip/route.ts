@@ -5,7 +5,17 @@ import { isValidUUID } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { creatorId, amount, tipperEmail, tipperUsername, message } = await request.json()
+    const {
+      creatorId,
+      amount,
+      tipperEmail,
+      tipperUsername,
+      message,
+      projectId,
+      tipPromptSource,
+      tipPromptTrigger,
+      viewerKey,
+    } = await request.json()
 
     if (!creatorId || !amount) {
       return NextResponse.json(
@@ -65,6 +75,15 @@ export async function POST(request: NextRequest) {
 
     // Use the configured app URL for redirects — never trust the Origin header
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const hasPromptContext =
+      typeof projectId === 'string' &&
+      isValidUUID(projectId) &&
+      (tipPromptSource === 'project_detail' || tipPromptSource === 'shared_project') &&
+      (tipPromptTrigger === 'playback_threshold' || tipPromptTrigger === 'comment_post')
+
+    const successUrl = hasPromptContext
+      ? `${appUrl}/tip/success?session_id={CHECKOUT_SESSION_ID}&project_id=${encodeURIComponent(projectId)}&source=${encodeURIComponent(tipPromptSource)}&trigger=${encodeURIComponent(tipPromptTrigger)}&creator_id=${encodeURIComponent(creatorId)}${typeof viewerKey === 'string' && viewerKey ? `&viewer_key=${encodeURIComponent(viewerKey.slice(0, 120))}` : ''}`
+      : `${appUrl}/tip/success?session_id={CHECKOUT_SESSION_ID}`
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -94,7 +113,7 @@ export async function POST(request: NextRequest) {
         },
       },
       customer_email: tipperEmail || undefined,
-      success_url: `${appUrl}/tip/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl,
       cancel_url: `${appUrl}/tip/cancelled`,
       metadata: {
         creator_id: creatorId,

@@ -8,6 +8,7 @@ import { Project, Track } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
 import CommentsPanel from './CommentsPanel'
 import ProjectUpdatesPanel from './ProjectUpdatesPanel'
+import TipPromptCard from './TipPromptCard'
 import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, Trash2, User, LayoutDashboard } from 'lucide-react'
 import { setPendingProject } from '@/lib/pendingProject'
 import { showToast } from './Toast'
@@ -16,6 +17,7 @@ import { ProjectDetailSkeleton } from './SkeletonLoader'
 import { addToQueue } from './BottomTabBar'
 import ShareModal from './ShareModal'
 import CreatorProfileModal from './CreatorProfileModal'
+import type { TipPromptTrigger } from '@/lib/tipPrompt'
 
 interface SharedProjectPageProps {
   token: string
@@ -63,6 +65,8 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [isMobile, setIsMobile] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
   const projectMenuRef = useRef<HTMLDivElement>(null)
+  const [isCreatorViewer, setIsCreatorViewer] = useState(false)
+  const [tipPromptTrigger, setTipPromptTrigger] = useState<TipPromptTrigger | null>(null)
 
   // Detect mobile vs desktop
   useEffect(() => {
@@ -103,6 +107,35 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, authenticated, user?.id, project?.id]) // Add ready check following Privy's pattern
+
+  useEffect(() => {
+    const checkCreatorViewer = async () => {
+      if (!authenticated || !creatorId) {
+        setIsCreatorViewer(false)
+        return
+      }
+      try {
+        const token = await getAccessToken()
+        if (!token) {
+          setIsCreatorViewer(false)
+          return
+        }
+        const response = await fetch('/api/user', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!response.ok) {
+          setIsCreatorViewer(false)
+          return
+        }
+        const data = await response.json()
+        setIsCreatorViewer(data.user?.id === creatorId)
+      } catch {
+        setIsCreatorViewer(false)
+      }
+    }
+
+    checkCreatorViewer()
+  }, [authenticated, creatorId, getAccessToken])
 
   // Close project menu when clicking outside (desktop only)
   useEffect(() => {
@@ -702,6 +735,19 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           getAccessToken={getAccessToken}
           onRequireAuth={handleRequireAuthForFeedback}
         />
+        <TipPromptCard
+          source="shared_project"
+          projectId={project.id}
+          creatorId={project.creator_id}
+          authenticated={authenticated}
+          isCreator={isCreatorViewer}
+          viewerKey={user?.id || null}
+          trackIds={tracks.map((track) => track.id)}
+          onSendTip={(trigger) => {
+            setTipPromptTrigger(trigger)
+            setShowCreatorModal(true)
+          }}
+        />
         <ProjectUpdatesPanel
           projectId={project.id}
           authenticated={authenticated}
@@ -1060,8 +1106,22 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       {creatorId && (
         <CreatorProfileModal
           isOpen={showCreatorModal}
-          onClose={() => setShowCreatorModal(false)}
+          onClose={() => {
+            setShowCreatorModal(false)
+            setTipPromptTrigger(null)
+          }}
           creatorId={creatorId}
+          openTipComposer={!!tipPromptTrigger}
+          tipContext={
+            tipPromptTrigger
+              ? {
+                  source: 'shared_project',
+                  trigger: tipPromptTrigger,
+                  projectId: project.id,
+                }
+              : null
+          }
+          viewerKey={user?.id || null}
         />
       )}
     </div>

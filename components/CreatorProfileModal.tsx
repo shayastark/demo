@@ -8,6 +8,7 @@ import { showToast } from '@/components/Toast'
 import { usePrivy } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
 import { applyFollowerCountDelta } from '@/lib/follows'
+import { markTipPromptConvertedInSession, type TipPromptSource, type TipPromptTrigger } from '@/lib/tipPrompt'
 
 // Dynamically import CryptoTipButton to avoid SSR issues
 const CryptoTipButton = dynamic(() => import('@/components/CryptoTipButton'), {
@@ -51,9 +52,23 @@ interface CreatorProfileModalProps {
   isOpen: boolean
   onClose: () => void
   creatorId: string
+  openTipComposer?: boolean
+  tipContext?: {
+    source: TipPromptSource
+    trigger: TipPromptTrigger
+    projectId: string
+  } | null
+  viewerKey?: string | null
 }
 
-export default function CreatorProfileModal({ isOpen, onClose, creatorId }: CreatorProfileModalProps) {
+export default function CreatorProfileModal({
+  isOpen,
+  onClose,
+  creatorId,
+  openTipComposer = false,
+  tipContext = null,
+  viewerKey = null,
+}: CreatorProfileModalProps) {
   const { user, authenticated, login, getAccessToken } = usePrivy()
   const [creator, setCreator] = useState<CreatorProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -165,6 +180,12 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
     }
   }, [isOpen])
 
+  useEffect(() => {
+    if (isOpen && openTipComposer) {
+      setShowTipOptions(true)
+    }
+  }, [isOpen, openTipComposer])
+
   const handleSendTip = async () => {
     const amount = selectedTip || (customTip ? Math.round(parseFloat(customTip) * 100) : 0)
     
@@ -188,6 +209,10 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
           amount,
           message: tipMessage,
           tipperUsername: sendAnonymously ? null : tipperUsername,
+          projectId: tipContext?.projectId || null,
+          tipPromptSource: tipContext?.source || null,
+          tipPromptTrigger: tipContext?.trigger || null,
+          viewerKey,
         }),
       })
 
@@ -863,6 +888,25 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                               tipperUsername={sendAnonymously ? null : tipperUsername}
                               message={tipMessage || null}
                               onSuccess={() => {
+                                if (tipContext?.projectId && viewerKey) {
+                                  markTipPromptConvertedInSession(tipContext.projectId, viewerKey)
+                                  if (typeof window !== 'undefined') {
+                                    window.dispatchEvent(
+                                      new CustomEvent('tip_prompt_converted', {
+                                        detail: {
+                                          schema: 'tip_prompt.v1',
+                                          action: 'converted',
+                                          source: tipContext.source,
+                                          trigger: tipContext.trigger,
+                                          project_id: tipContext.projectId,
+                                          creator_id: creator.id,
+                                          authenticated: !!authenticated,
+                                          is_creator: currentDbUserId === creator.id,
+                                        },
+                                      })
+                                    )
+                                  }
+                                }
                                 setShowTipOptions(false)
                                 setSelectedTip(null)
                                 setCustomTip('')
