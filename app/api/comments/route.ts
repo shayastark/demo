@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
-import { summarizeCommentReactions, type ReactionType } from '@/lib/commentReactions'
+import { summarizeCommentReactions, type ReactionType, isReactionType } from '@/lib/commentReactions'
 
 type CommentRecord = {
   id: string
@@ -106,15 +106,26 @@ export async function GET(request: NextRequest) {
     const comments: CommentRecord[] = (data as CommentRecord[]) || []
     const commentIds = comments.map((comment) => comment.id)
 
-    let reactionSummaryByComment: Record<string, { like: number; viewerReaction: ReactionType | null }> = {}
+    let reactionSummaryByComment: Record<
+      string,
+      {
+        helpful: number
+        fire: number
+        agree: number
+        like: number
+        viewerReactions: Partial<Record<ReactionType, boolean>>
+        viewerReaction: ReactionType | null
+      }
+    > = {}
     if (commentIds.length > 0) {
       const { data: reactions } = await supabaseAdmin
         .from('comment_reactions')
         .select('comment_id, user_id, reaction_type')
         .in('comment_id', commentIds)
 
+      const safeReactions = (reactions || []).filter((row) => isReactionType(row.reaction_type))
       reactionSummaryByComment = summarizeCommentReactions(
-        (reactions || []) as Array<{ comment_id: string; user_id: string; reaction_type: ReactionType }>,
+        safeReactions as Array<{ comment_id: string; user_id: string; reaction_type: ReactionType }>,
         currentUser?.id
       )
     }
@@ -145,8 +156,12 @@ export async function GET(request: NextRequest) {
         can_edit: isOwner,
         can_delete: isOwner || isCreator,
         reactions: {
+          helpful: reactionSummaryByComment[comment.id]?.helpful || 0,
+          fire: reactionSummaryByComment[comment.id]?.fire || 0,
+          agree: reactionSummaryByComment[comment.id]?.agree || 0,
           like: reactionSummaryByComment[comment.id]?.like || 0,
         },
+        viewer_reactions: reactionSummaryByComment[comment.id]?.viewerReactions || {},
         viewer_reaction: reactionSummaryByComment[comment.id]?.viewerReaction || null,
       }
     })

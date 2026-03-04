@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { MessageCircle, ChevronDown, Pencil, Trash2, Send, Heart } from 'lucide-react'
+import { MessageCircle, ChevronDown, Pencil, Trash2, Send } from 'lucide-react'
 import { Comment } from '@/lib/types'
 import { showToast } from './Toast'
+import { COMMENT_REACTION_TYPES, type ReactionType } from '@/lib/commentReactions'
 
 interface CommentsPanelProps {
   projectId: string
@@ -25,6 +26,13 @@ export default function CommentsPanel({
   const [submittingProject, setSubmittingProject] = useState(false)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState('')
+  const [pendingReactions, setPendingReactions] = useState<Record<string, boolean>>({})
+
+  const reactionLabels: Record<ReactionType, string> = {
+    helpful: 'helpful',
+    fire: 'fire',
+    agree: 'agree',
+  }
 
   const withAuthHeaders = async (): Promise<Record<string, string>> => {
     if (!authenticated || !getAccessToken) return {}
@@ -148,53 +156,82 @@ export default function CommentsPanel({
     }
   }
 
-  const toggleCommentReaction = async (commentId: string, currentlyLiked: boolean) => {
+  const withOptimisticReaction = (
+    comments: Comment[],
+    commentId: string,
+    reactionType: ReactionType,
+    shouldAdd: boolean
+  ): Comment[] => {
+    return comments.map((comment) => {
+      if (comment.id !== commentId) return comment
+
+      const currentCounts = comment.reactions || { helpful: 0, fire: 0, agree: 0, like: 0 }
+      const nextCount = Math.max(0, (currentCounts[reactionType] || 0) + (shouldAdd ? 1 : -1))
+      return {
+        ...comment,
+        reactions: {
+          ...currentCounts,
+          [reactionType]: nextCount,
+          like: currentCounts.like || 0,
+        },
+        viewer_reactions: {
+          ...(comment.viewer_reactions || {}),
+          [reactionType]: shouldAdd,
+        },
+      }
+    })
+  }
+
+  const toggleCommentReaction = async (commentId: string, reactionType: ReactionType) => {
     if (!authenticated) {
       onRequireAuth()
       return
     }
     if (!getAccessToken) return
 
-    emitEvent('comment_reaction_toggle_started', {
-      commentId,
-      action: currentlyLiked ? 'unlike' : 'like',
+    const key = `${commentId}:${reactionType}`
+    const targetComment = projectComments.find((comment) => comment.id === commentId)
+    const currentlyReacted = !!targetComment?.viewer_reactions?.[reactionType]
+    const action = currentlyReacted ? 'remove' : 'add'
+    const previousComments = projectComments
+
+    emitEvent('comment_reaction_event', {
+      schema: 'comment_reaction.v1',
+      action,
+      reaction_type: reactionType,
+      comment_id: commentId,
+      source: 'comments_panel',
     })
+    setPendingReactions((prev) => ({ ...prev, [key]: true }))
+    setProjectComments((prev) => withOptimisticReaction(prev, commentId, reactionType, !currentlyReacted))
 
     try {
       const token = await getAccessToken()
       if (!token) throw new Error('Not authenticated')
 
-      const response = await fetch(
-        currentlyLiked
-          ? `/api/comment-reactions?comment_id=${commentId}`
-          : '/api/comment-reactions',
-        {
-          method: currentlyLiked ? 'DELETE' : 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: currentlyLiked
-            ? undefined
-            : JSON.stringify({ comment_id: commentId, reaction_type: 'like' }),
-        }
-      )
+      const response = await fetch('/api/comment-reactions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ comment_id: commentId, reaction_type: reactionType }),
+      })
 
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to update reaction')
 
       await loadProjectComments()
-      emitEvent('comment_reaction_toggle_succeeded', {
-        commentId,
-        action: currentlyLiked ? 'unlike' : 'like',
-      })
     } catch (error) {
-      emitEvent('comment_reaction_toggle_failed', {
-        commentId,
-        action: currentlyLiked ? 'unlike' : 'like',
-      })
+      setProjectComments(previousComments)
       console.error('Error toggling comment reaction:', error)
       showToast(error instanceof Error ? error.message : 'Failed to update reaction', 'error')
+    } finally {
+      setPendingReactions((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
     }
   }
 
@@ -349,14 +386,27 @@ export default function CommentsPanel({
                           <>
                             <p className="text-sm text-gray-100 whitespace-pre-wrap break-words">{comment.content}</p>
                             <div className="mt-2 flex items-center gap-3">
-                              <button
-                                onClick={() => toggleCommentReaction(comment.id, comment.viewer_reaction === 'like')}
-                                className={`inline-flex items-center gap-1 text-xs transition-colors ${comment.viewer_reaction === 'like' ? 'text-neon-green' : 'text-gray-500 hover:text-gray-300'}`}
-                                aria-label={comment.viewer_reaction === 'like' ? 'Remove like' : 'Like comment'}
-                              >
-                                <Heart className={`w-3.5 h-3.5 ${comment.viewer_reaction === 'like' ? 'fill-current' : ''}`} />
-                                <span>{comment.reactions?.like || 0}</span>
-                              </button>
+                              {COMMENT_REACTION_TYPES.map((reactionType) => {
+                                const active = !!comment.viewer_reactions?.[reactionType]
+                                const key = `${comment.id}:${reactionType}`
+                                const isPending = !!pendingReactions[key]
+                                return (
+                                  <button
+                                    key={reactionType}
+                                    onClick={() => toggleCommentReaction(comment.id, reactionType)}
+                                    disabled={isPending}
+                                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
+                                      active
+                                        ? 'border-neon-green/70 text-neon-green'
+                                        : 'border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700'
+                                    } ${isPending ? 'opacity-60' : ''}`}
+                                    aria-label={`${active ? 'Remove' : 'Add'} ${reactionLabels[reactionType]} reaction`}
+                                  >
+                                    <span>{reactionLabels[reactionType]}</span>
+                                    <span>{comment.reactions?.[reactionType] || 0}</span>
+                                  </button>
+                                )
+                              })}
                             </div>
                           </>
                         )}

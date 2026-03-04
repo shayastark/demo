@@ -51,9 +51,13 @@ export interface Comment {
   can_edit?: boolean
   can_delete?: boolean
   reactions?: {
+    helpful: number
+    fire: number
+    agree: number
     like: number
   }
-  viewer_reaction?: 'like' | null
+  viewer_reactions?: Partial<Record<'helpful' | 'fire' | 'agree', boolean>>
+  viewer_reaction?: 'helpful' | 'fire' | 'agree' | null
 }
 
 export interface CreateCommentPayload {
