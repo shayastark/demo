@@ -8,6 +8,12 @@ import { usePrivy } from '@privy-io/react-auth'
 import { showToast } from './Toast'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeNotificationType, type NotificationType } from '@/lib/notificationTypes'
+import {
+  getFollowerNotificationName,
+  getNotificationPrimaryText,
+  getNotificationTargetPath,
+  sortNotificationsForInbox,
+} from '@/lib/notificationInbox'
 
 // Create a Supabase client for realtime subscriptions
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -25,18 +31,6 @@ interface Notification {
 }
 
 const NOTIFICATION_ACTION_EVENT = 'notification_inbox_event'
-
-function getNotificationTarget(notification: Notification): string | null {
-  const normalizedType = normalizeNotificationType(notification.type)
-  const directTarget = typeof notification.data?.targetPath === 'string' ? notification.data.targetPath : null
-  if (directTarget) return directTarget
-
-  if (normalizedType === 'tip_received') return '/account'
-  if (normalizedType === 'new_follower') return '/account'
-  if (normalizedType === 'new_track') return '/dashboard'
-  if (normalizedType === 'project_saved' || normalizedType === 'project_shared') return '/dashboard'
-  return null
-}
 
 function getNotificationTypeLabel(type: NotificationType): string {
   if (type === 'tip_received') return 'Tip'
@@ -688,7 +682,7 @@ export default function BottomTabBar() {
       
       if (response.ok) {
         const data = await response.json()
-        setNotifications(data.notifications || [])
+        setNotifications(sortNotificationsForInbox(data.notifications || []))
         setUnreadNotificationCount(data.unreadCount || 0)
       }
     } catch (error) {
@@ -748,7 +742,7 @@ export default function BottomTabBar() {
           console.log('New notification received:', payload)
           const newNotification = payload.new as Notification
           
-          setNotifications((prev) => [newNotification, ...prev])
+          setNotifications((prev) => sortNotificationsForInbox([newNotification, ...prev]))
           setUnreadNotificationCount((prev) => prev + 1)
           
           showToast(newNotification.title, 'success')
@@ -782,8 +776,10 @@ export default function BottomTabBar() {
       
       if (notificationIds) {
         setNotifications((prev) =>
-          prev.map((n) =>
+          sortNotificationsForInbox(
+            prev.map((n) =>
             notificationIds.includes(n.id) ? { ...n, is_read: true } : n
+          )
           )
         )
         setUnreadNotificationCount((prev) => Math.max(0, prev - notificationIds.length))
@@ -792,11 +788,11 @@ export default function BottomTabBar() {
           emitNotificationEvent('read', {
             notificationId,
             notificationType: matched?.type,
-            targetPath: matched ? getNotificationTarget(matched) : null,
+            targetPath: matched ? getNotificationTargetPath(matched) : null,
           })
         })
       } else {
-        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+        setNotifications((prev) => sortNotificationsForInbox(prev.map((n) => ({ ...n, is_read: true }))))
         setUnreadNotificationCount(0)
         emitNotificationEvent('read')
       }
@@ -832,7 +828,7 @@ export default function BottomTabBar() {
       emitNotificationEvent('delete', {
         notificationId,
         notificationType: notification?.type,
-        targetPath: notification ? getNotificationTarget(notification) : null,
+        targetPath: notification ? getNotificationTargetPath(notification) : null,
       })
     } catch (error) {
       console.error('Error deleting notification:', error)
@@ -840,7 +836,7 @@ export default function BottomTabBar() {
   }
 
   const handleNotificationClick = async (notification: Notification) => {
-    const target = getNotificationTarget(notification)
+    const target = getNotificationTargetPath(notification)
 
     emitNotificationEvent('click', {
       notificationId: notification.id,
@@ -1863,7 +1859,12 @@ export default function BottomTabBar() {
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                         {(() => {
                           const normalizedType = normalizeNotificationType(notification.type)
-                          const targetPath = getNotificationTarget(notification)
+                          const targetPath = getNotificationTargetPath(notification)
+                          const primaryText = getNotificationPrimaryText(notification)
+                          const followerName =
+                            normalizedType === 'new_follower'
+                              ? getFollowerNotificationName(notification)
+                              : null
 
                           return (
                             <>
@@ -1871,14 +1872,29 @@ export default function BottomTabBar() {
                         <div style={{
                           padding: '8px',
                           borderRadius: '50%',
-                          backgroundColor: '#1f2937',
+                          backgroundColor: normalizedType === 'new_follower' ? 'rgba(57, 255, 20, 0.15)' : '#1f2937',
+                          border: normalizedType === 'new_follower' ? '1px solid rgba(57, 255, 20, 0.35)' : '1px solid transparent',
                           flexShrink: 0,
                         }}>
                           {getNotificationIcon(normalizedType)}
                         </div>
                         
                         {/* Content */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <button
+                          onClick={() => {
+                            if (targetPath) handleNotificationClick(notification)
+                          }}
+                          disabled={!targetPath}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            border: 'none',
+                            background: 'transparent',
+                            textAlign: 'left',
+                            padding: 0,
+                            cursor: targetPath ? 'pointer' : 'default',
+                          }}
+                        >
                           <p style={{ color: '#6b7280', fontSize: '11px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             {getNotificationTypeLabel(normalizedType)}
                           </p>
@@ -1888,9 +1904,13 @@ export default function BottomTabBar() {
                             fontWeight: !notification.is_read ? 500 : 400,
                             margin: 0,
                           }}>
-                            {notification.title}
+                            {primaryText}
                           </p>
-                          {notification.message && (
+                          {normalizedType === 'new_follower' ? (
+                            <p style={{ color: '#6b7280', fontSize: '12px', margin: '4px 0 0 0' }}>
+                              {followerName ? `From @${followerName.replace(/\s+/g, '').toLowerCase()} ` : 'New follower '}• {formatNotificationTime(notification.created_at)}
+                            </p>
+                          ) : notification.message && (
                             <p style={{ 
                               color: '#6b7280',
                               fontSize: '13px',
@@ -1900,14 +1920,16 @@ export default function BottomTabBar() {
                               &quot;{notification.message}&quot;
                             </p>
                           )}
-                          <p style={{ 
-                            color: '#6b7280',
-                            fontSize: '12px',
-                            margin: '6px 0 0 0',
-                          }}>
-                            {formatNotificationTime(notification.created_at)}
-                          </p>
-                        </div>
+                          {normalizedType !== 'new_follower' && (
+                            <p style={{ 
+                              color: '#6b7280',
+                              fontSize: '12px',
+                              margin: '6px 0 0 0',
+                            }}>
+                              {formatNotificationTime(notification.created_at)}
+                            </p>
+                          )}
+                        </button>
                         
                         {/* Actions */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

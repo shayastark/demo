@@ -133,17 +133,27 @@ END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  -- Remove legacy permissive write policy if present.
+  IF EXISTS (
     SELECT 1
     FROM pg_policies
     WHERE schemaname = 'public'
       AND tablename = 'user_follows'
       AND policyname = 'User follows are managed by app logic'
   ) THEN
-    CREATE POLICY "User follows are managed by app logic"
+    DROP POLICY "User follows are managed by app logic" ON user_follows;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_follows'
+      AND policyname = 'User follows are readable'
+  ) THEN
+    CREATE POLICY "User follows are readable"
       ON user_follows
-      FOR ALL
-      USING (true)
-      WITH CHECK (true);
+      FOR SELECT
+      USING (true);
   END IF;
 END $$;

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from './supabaseAdmin'
-import { buildFollowerNotificationTitle } from './follows'
+import { buildFollowerNotificationTitle, getFollowerDisplayName } from './follows'
 import { CreatableNotificationType } from './notificationTypes'
 
 export type NotificationType = CreatableNotificationType
@@ -160,13 +160,20 @@ export async function createFollowerNotification({
   followerName?: string | null
   followerId: string
 }): Promise<{ success: boolean; error?: string }> {
+  const displayName = getFollowerDisplayName(followerName)
+
   return createNotification({
     userId: creatorId,
     type: 'new_follower',
-    title: buildFollowerNotificationTitle(followerName),
+    title: buildFollowerNotificationTitle(displayName),
     data: {
+      // New canonical payload keys.
+      follower_id: followerId,
+      follower_name: displayName,
+      targetPath: `/account?follower_id=${encodeURIComponent(followerId)}`,
+      // Backward-compat keys kept for existing client expectations.
       followerId,
-      followerName: followerName || null,
+      followerName: displayName,
     },
   })
 }

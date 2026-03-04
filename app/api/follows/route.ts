@@ -145,11 +145,25 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const body = await request.json().catch(() => ({}))
-    const { searchParams } = new URL(request.url)
-    const followingId = (body.following_id || body.creator_id || searchParams.get('following_id') || searchParams.get('creator_id')) as string | null
+    const contentType = request.headers.get('content-type') || ''
+    if (!contentType.toLowerCase().includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Content-Type must be application/json' },
+        { status: 400 }
+      )
+    }
 
-    if (!followingId || !isValidUUID(followingId)) {
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    const parsedBody = body as Record<string, unknown>
+    const followingId = parsedBody.following_id
+
+    if (typeof followingId !== 'string' || !isValidUUID(followingId)) {
       return NextResponse.json({ error: 'Valid following_id is required' }, { status: 400 })
     }
 
