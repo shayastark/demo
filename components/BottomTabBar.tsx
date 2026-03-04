@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Home, ListMusic, User, X, Play, Pause, Trash2, SkipForward, SkipBack, Bell, Check, DollarSign, Trash } from 'lucide-react'
+import { Home, ListMusic, User, X, Play, Pause, Trash2, SkipForward, SkipBack, Bell, Check, DollarSign, Trash, UserPlus, Music2, Share2 } from 'lucide-react'
 import { usePrivy } from '@privy-io/react-auth'
 import { showToast } from './Toast'
 import { createClient } from '@supabase/supabase-js'
+import { normalizeNotificationType, type NotificationType } from '@/lib/notificationTypes'
 
 // Create a Supabase client for realtime subscriptions
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -23,6 +24,29 @@ interface Notification {
   created_at: string
 }
 
+const NOTIFICATION_ACTION_EVENT = 'notification_inbox_event'
+
+function getNotificationTarget(notification: Notification): string | null {
+  const normalizedType = normalizeNotificationType(notification.type)
+  const directTarget = typeof notification.data?.targetPath === 'string' ? notification.data.targetPath : null
+  if (directTarget) return directTarget
+
+  if (normalizedType === 'tip_received') return '/account'
+  if (normalizedType === 'new_follower') return '/account'
+  if (normalizedType === 'new_track') return '/dashboard'
+  if (normalizedType === 'project_saved' || normalizedType === 'project_shared') return '/dashboard'
+  return null
+}
+
+function getNotificationTypeLabel(type: NotificationType): string {
+  if (type === 'tip_received') return 'Tip'
+  if (type === 'new_follower') return 'Follower'
+  if (type === 'new_track') return 'New Track'
+  if (type === 'project_saved') return 'Project Saved'
+  if (type === 'project_shared') return 'Project Shared'
+  return 'Notification'
+}
+
 interface QueueItem {
   id: string
   title: string
@@ -34,6 +58,7 @@ interface QueueItem {
 
 export default function BottomTabBar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { authenticated, ready, getAccessToken } = usePrivy()
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [isQueueOpen, setIsQueueOpen] = useState(false)
@@ -81,6 +106,35 @@ export default function BottomTabBar() {
   const externalIsPlaying = cassetteIsPlaying
   const setExternalTrack = setCassetteTrack
   const setExternalIsPlaying = setCassetteIsPlaying
+
+  const emitNotificationEvent = useCallback(
+    (
+      action: 'open' | 'read' | 'delete' | 'click',
+      payload?: {
+        notificationId?: string
+        notificationType?: string
+        targetPath?: string | null
+      }
+    ) => {
+      if (typeof window === 'undefined') return
+
+      window.dispatchEvent(
+        new CustomEvent(NOTIFICATION_ACTION_EVENT, {
+          detail: {
+            schema: 'notification_inbox.v1',
+            action,
+            source: 'bottom_tab_bar',
+            notification_id: payload?.notificationId || null,
+            notification_type: payload?.notificationType || null,
+            target_path: payload?.targetPath || null,
+            unread_count: unreadNotificationCount,
+            total_count: notifications.length,
+          },
+        })
+      )
+    },
+    [notifications.length, unreadNotificationCount]
+  )
 
   // Detect mobile
   useEffect(() => {
@@ -713,7 +767,7 @@ export default function BottomTabBar() {
     
     try {
       const token = await getAccessToken()
-      await fetch('/api/notifications', {
+      const response = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -721,6 +775,10 @@ export default function BottomTabBar() {
         },
         body: JSON.stringify({ notificationIds }),
       })
+
+      if (!response.ok) {
+        throw new Error('Failed to mark notifications as read')
+      }
       
       if (notificationIds) {
         setNotifications((prev) =>
@@ -729,9 +787,18 @@ export default function BottomTabBar() {
           )
         )
         setUnreadNotificationCount((prev) => Math.max(0, prev - notificationIds.length))
+        notificationIds.forEach((notificationId) => {
+          const matched = notifications.find((n) => n.id === notificationId)
+          emitNotificationEvent('read', {
+            notificationId,
+            notificationType: matched?.type,
+            targetPath: matched ? getNotificationTarget(matched) : null,
+          })
+        })
       } else {
         setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
         setUnreadNotificationCount(0)
+        emitNotificationEvent('read')
       }
     } catch (error) {
       console.error('Error marking notifications as read:', error)
@@ -744,7 +811,7 @@ export default function BottomTabBar() {
     
     try {
       const token = await getAccessToken()
-      await fetch('/api/notifications', {
+      const response = await fetch('/api/notifications', {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -752,14 +819,42 @@ export default function BottomTabBar() {
         },
         body: JSON.stringify({ notificationIds: [notificationId] }),
       })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete notification')
+      }
       
       const notification = notifications.find((n) => n.id === notificationId)
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
       if (notification && !notification.is_read) {
         setUnreadNotificationCount((prev) => Math.max(0, prev - 1))
       }
+      emitNotificationEvent('delete', {
+        notificationId,
+        notificationType: notification?.type,
+        targetPath: notification ? getNotificationTarget(notification) : null,
+      })
     } catch (error) {
       console.error('Error deleting notification:', error)
+    }
+  }
+
+  const handleNotificationClick = async (notification: Notification) => {
+    const target = getNotificationTarget(notification)
+
+    emitNotificationEvent('click', {
+      notificationId: notification.id,
+      notificationType: notification.type,
+      targetPath: target,
+    })
+
+    if (!notification.is_read) {
+      await markNotificationsAsRead([notification.id])
+    }
+
+    if (target) {
+      setIsNotificationsOpen(false)
+      router.push(target)
     }
   }
 
@@ -774,6 +869,22 @@ export default function BottomTabBar() {
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
     if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`
     return date.toLocaleDateString()
+  }
+
+  const getNotificationIcon = (type: NotificationType) => {
+    if (type === 'tip_received') {
+      return <DollarSign style={{ width: '16px', height: '16px', color: '#39FF14' }} />
+    }
+    if (type === 'new_follower') {
+      return <UserPlus style={{ width: '16px', height: '16px', color: '#39FF14' }} />
+    }
+    if (type === 'new_track') {
+      return <Music2 style={{ width: '16px', height: '16px', color: '#39FF14' }} />
+    }
+    if (type === 'project_shared' || type === 'project_saved') {
+      return <Share2 style={{ width: '16px', height: '16px', color: '#39FF14' }} />
+    }
+    return <Bell style={{ width: '16px', height: '16px', color: '#9ca3af' }} />
   }
 
   // Determine if we should show the full UI (but always keep audio element mounted)
@@ -812,6 +923,7 @@ export default function BottomTabBar() {
     { href: '#queue', icon: ListMusic, label: 'Queue', onClick: () => setIsQueueOpen(true), badge: queue.length },
     { href: '#notifications', icon: Bell, label: 'Alerts', onClick: () => {
       setIsNotificationsOpen(true)
+      emitNotificationEvent('open')
       // Mark first 5 unread as read when opening
       const unreadIds = notifications.filter((n) => !n.is_read).slice(0, 5).map((n) => n.id)
       if (unreadIds.length > 0) {
@@ -1749,6 +1861,12 @@ export default function BottomTabBar() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                        {(() => {
+                          const normalizedType = normalizeNotificationType(notification.type)
+                          const targetPath = getNotificationTarget(notification)
+
+                          return (
+                            <>
                         {/* Icon */}
                         <div style={{
                           padding: '8px',
@@ -1756,15 +1874,14 @@ export default function BottomTabBar() {
                           backgroundColor: '#1f2937',
                           flexShrink: 0,
                         }}>
-                          {notification.type === 'tip_received' ? (
-                            <DollarSign style={{ width: '16px', height: '16px', color: '#39FF14' }} />
-                          ) : (
-                            <Bell style={{ width: '16px', height: '16px', color: '#9ca3af' }} />
-                          )}
+                          {getNotificationIcon(normalizedType)}
                         </div>
                         
                         {/* Content */}
                         <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ color: '#6b7280', fontSize: '11px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {getNotificationTypeLabel(normalizedType)}
+                          </p>
                           <p style={{ 
                             color: !notification.is_read ? '#fff' : '#d1d5db',
                             fontSize: '14px',
@@ -1794,6 +1911,24 @@ export default function BottomTabBar() {
                         
                         {/* Actions */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {targetPath && (
+                            <button
+                              onClick={() => handleNotificationClick(notification)}
+                              style={{
+                                padding: '6px 8px',
+                                borderRadius: '8px',
+                                backgroundColor: 'transparent',
+                                border: '1px solid #374151',
+                                color: '#9ca3af',
+                                cursor: 'pointer',
+                                fontSize: '11px',
+                                lineHeight: 1.2,
+                              }}
+                              title="Open notification target"
+                            >
+                              Open
+                            </button>
+                          )}
                           {!notification.is_read && (
                             <button
                               onClick={() => markNotificationsAsRead([notification.id])}
@@ -1823,6 +1958,9 @@ export default function BottomTabBar() {
                             <Trash style={{ width: '14px', height: '14px', color: '#9ca3af' }} />
                           </button>
                         </div>
+                            </>
+                          )
+                        })()}
                       </div>
                     </div>
                   ))}

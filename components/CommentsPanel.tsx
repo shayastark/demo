@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { MessageCircle, ChevronDown, Pencil, Trash2, Send } from 'lucide-react'
+import { MessageCircle, ChevronDown, Pencil, Trash2, Send, Heart } from 'lucide-react'
 import { Comment } from '@/lib/types'
 import { showToast } from './Toast'
 
@@ -145,6 +145,56 @@ export default function CommentsPanel({
     } catch (error) {
       console.error('Error deleting comment:', error)
       showToast(error instanceof Error ? error.message : 'Failed to delete comment', 'error')
+    }
+  }
+
+  const toggleCommentReaction = async (commentId: string, currentlyLiked: boolean) => {
+    if (!authenticated) {
+      onRequireAuth()
+      return
+    }
+    if (!getAccessToken) return
+
+    emitEvent('comment_reaction_toggle_started', {
+      commentId,
+      action: currentlyLiked ? 'unlike' : 'like',
+    })
+
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+
+      const response = await fetch(
+        currentlyLiked
+          ? `/api/comment-reactions?comment_id=${commentId}`
+          : '/api/comment-reactions',
+        {
+          method: currentlyLiked ? 'DELETE' : 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: currentlyLiked
+            ? undefined
+            : JSON.stringify({ comment_id: commentId, reaction_type: 'like' }),
+        }
+      )
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update reaction')
+
+      await loadProjectComments()
+      emitEvent('comment_reaction_toggle_succeeded', {
+        commentId,
+        action: currentlyLiked ? 'unlike' : 'like',
+      })
+    } catch (error) {
+      emitEvent('comment_reaction_toggle_failed', {
+        commentId,
+        action: currentlyLiked ? 'unlike' : 'like',
+      })
+      console.error('Error toggling comment reaction:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to update reaction', 'error')
     }
   }
 
@@ -296,7 +346,19 @@ export default function CommentsPanel({
                             </div>
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-100 whitespace-pre-wrap break-words">{comment.content}</p>
+                          <>
+                            <p className="text-sm text-gray-100 whitespace-pre-wrap break-words">{comment.content}</p>
+                            <div className="mt-2 flex items-center gap-3">
+                              <button
+                                onClick={() => toggleCommentReaction(comment.id, comment.viewer_reaction === 'like')}
+                                className={`inline-flex items-center gap-1 text-xs transition-colors ${comment.viewer_reaction === 'like' ? 'text-neon-green' : 'text-gray-500 hover:text-gray-300'}`}
+                                aria-label={comment.viewer_reaction === 'like' ? 'Remove like' : 'Like comment'}
+                              >
+                                <Heart className={`w-3.5 h-3.5 ${comment.viewer_reaction === 'like' ? 'fill-current' : ''}`} />
+                                <span>{comment.reactions?.like || 0}</span>
+                              </button>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>

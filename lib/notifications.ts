@@ -1,18 +1,15 @@
 import { supabaseAdmin } from './supabaseAdmin'
+import { buildFollowerNotificationTitle } from './follows'
+import { CreatableNotificationType } from './notificationTypes'
 
-export type NotificationType = 
-  | 'tip_received'
-  | 'project_saved'
-  | 'new_follower'
-  | 'project_shared'
-  | 'new_track'
+export type NotificationType = CreatableNotificationType
 
 interface CreateNotificationParams {
   userId: string
   type: NotificationType
   title: string
   message?: string
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 }
 
 /**
@@ -149,4 +146,27 @@ export async function notifyNewTrackAdded({
     console.error('Error in notifyNewTrackAdded:', error)
     return { success: false, notifiedCount: 0, error: 'Failed to create notifications' }
   }
+}
+
+/**
+ * Create a notification when a creator gets a new follower.
+ */
+export async function createFollowerNotification({
+  creatorId,
+  followerName,
+  followerId,
+}: {
+  creatorId: string
+  followerName?: string | null
+  followerId: string
+}): Promise<{ success: boolean; error?: string }> {
+  return createNotification({
+    userId: creatorId,
+    type: 'new_follower',
+    title: buildFollowerNotificationTitle(followerName),
+    data: {
+      followerId,
+      followerName: followerName || null,
+    },
+  })
 }

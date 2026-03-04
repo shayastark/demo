@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
+import { summarizeCommentReactions, type ReactionType } from '@/lib/commentReactions'
 
 type CommentRecord = {
   id: string
@@ -103,6 +104,20 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
     const comments: CommentRecord[] = (data as CommentRecord[]) || []
+    const commentIds = comments.map((comment) => comment.id)
+
+    let reactionSummaryByComment: Record<string, { like: number; viewerReaction: ReactionType | null }> = {}
+    if (commentIds.length > 0) {
+      const { data: reactions } = await supabaseAdmin
+        .from('comment_reactions')
+        .select('comment_id, user_id, reaction_type')
+        .in('comment_id', commentIds)
+
+      reactionSummaryByComment = summarizeCommentReactions(
+        (reactions || []) as Array<{ comment_id: string; user_id: string; reaction_type: ReactionType }>,
+        currentUser?.id
+      )
+    }
 
     const userIds = Array.from(new Set(comments.map((comment) => comment.user_id)))
     let usersById: Record<string, { username: string | null; email: string | null }> = {}
@@ -129,6 +144,10 @@ export async function GET(request: NextRequest) {
         author_name: author?.username || author?.email || 'Unknown',
         can_edit: isOwner,
         can_delete: isOwner || isCreator,
+        reactions: {
+          like: reactionSummaryByComment[comment.id]?.like || 0,
+        },
+        viewer_reaction: reactionSummaryByComment[comment.id]?.viewerReaction || null,
       }
     })
 

@@ -50,6 +50,10 @@ export interface Comment {
   author_name?: string
   can_edit?: boolean
   can_delete?: boolean
+  reactions?: {
+    like: number
+  }
+  viewer_reaction?: 'like' | null
 }
 
 export interface CreateCommentPayload {

@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Mail, Globe, Instagram, ExternalLink, Heart, Loader2, EyeOff, CreditCard, Wallet } from 'lucide-react'
+import { X, Mail, Globe, Instagram, ExternalLink, Heart, Loader2, EyeOff, CreditCard, Wallet, UserPlus, UserCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import { showToast } from '@/components/Toast'
 import { usePrivy } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
+import { applyFollowerCountDelta } from '@/lib/follows'
 
 // Dynamically import CryptoTipButton to avoid SSR issues
 const CryptoTipButton = dynamic(() => import('@/components/CryptoTipButton'), {
@@ -53,11 +54,15 @@ interface CreatorProfileModalProps {
 }
 
 export default function CreatorProfileModal({ isOpen, onClose, creatorId }: CreatorProfileModalProps) {
-  const { user, authenticated } = usePrivy()
+  const { user, authenticated, login, getAccessToken } = usePrivy()
   const [creator, setCreator] = useState<CreatorProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [projectCount, setProjectCount] = useState(0)
+  const [followerCount, setFollowerCount] = useState(0)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
   const [tipperUsername, setTipperUsername] = useState<string | null>(null)
+  const [currentDbUserId, setCurrentDbUserId] = useState<string | null>(null)
   
   // Tip state
   const [showTipOptions, setShowTipOptions] = useState(false)
@@ -74,6 +79,28 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
     { value: 2000, label: '$20' },
     { value: 10000, label: '$100' },
   ]
+
+  const emitEvent = (name: string, detail?: Record<string, unknown>) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(new CustomEvent(name, { detail }))
+  }
+
+  const fetchFollowState = async () => {
+    if (!creatorId) return
+
+    const headers: Record<string, string> = {}
+    if (authenticated) {
+      const token = await getAccessToken()
+      if (token) headers.Authorization = `Bearer ${token}`
+    }
+
+    const response = await fetch(`/api/follows?creator_id=${creatorId}`, { headers })
+    if (!response.ok) return
+
+    const result = await response.json()
+    setFollowerCount(result.followerCount || 0)
+    setIsFollowing(!!result.isFollowing)
+  }
 
   useEffect(() => {
     if (!isOpen || !creatorId) return
@@ -102,17 +129,18 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
           setProjectCount(count || 0)
         }
 
+        await fetchFollowState()
+
         // Fetch current user's username for tipping
         if (authenticated && user?.id) {
           const { data: tipperData } = await supabase
             .from('users')
-            .select('username')
+            .select('id, username')
             .eq('privy_id', user.id)
             .single()
           
-          if (tipperData?.username) {
-            setTipperUsername(tipperData.username)
-          }
+          setCurrentDbUserId(tipperData?.id || null)
+          setTipperUsername(tipperData?.username || null)
         }
       } catch (error) {
         console.error('Error loading creator profile:', error)
@@ -133,6 +161,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
       setTipMessage('')
       setSendAnonymously(false)
       setPaymentMethod('card')
+      setCurrentDbUserId(null)
     }
   }, [isOpen])
 
@@ -174,6 +203,63 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
       showToast('Failed to process tip', 'error')
     } finally {
       setProcessingTip(false)
+    }
+  }
+
+  const handleToggleFollow = async () => {
+    if (!authenticated) {
+      emitEvent('creator_follow_auth_required', { creatorId })
+      login()
+      return
+    }
+
+    if (!creator || followLoading) return
+    if (currentDbUserId && currentDbUserId === creator.id) return
+
+    setFollowLoading(true)
+    emitEvent('creator_follow_toggle_started', {
+      creatorId: creator.id,
+      action: isFollowing ? 'unfollow' : 'follow',
+    })
+
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+
+      const response = await fetch(
+        isFollowing
+          ? `/api/follows?creator_id=${creator.id}`
+          : '/api/follows',
+        {
+          method: isFollowing ? 'DELETE' : 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: isFollowing ? undefined : JSON.stringify({ creator_id: creator.id }),
+        }
+      )
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update follow status')
+
+      const nextIsFollowing = !isFollowing
+      setIsFollowing(nextIsFollowing)
+      setFollowerCount((prev) => applyFollowerCountDelta(prev, nextIsFollowing))
+
+      emitEvent('creator_follow_toggle_succeeded', {
+        creatorId: creator.id,
+        action: nextIsFollowing ? 'follow' : 'unfollow',
+      })
+    } catch (error) {
+      emitEvent('creator_follow_toggle_failed', {
+        creatorId: creator.id,
+        action: isFollowing ? 'unfollow' : 'follow',
+      })
+      console.error('Error toggling follow:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to update follow status', 'error')
+    } finally {
+      setFollowLoading(false)
     }
   }
 
@@ -304,10 +390,51 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
                     {displayName}
                   </h3>
                   <p style={{ fontSize: '14px', color: '#9ca3af', margin: '4px 0 0 0' }}>
-                    {projectCount} {projectCount === 1 ? 'project' : 'projects'}
+                    {projectCount} {projectCount === 1 ? 'project' : 'projects'} • {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
                   </p>
                 </div>
               </div>
+
+              {/* Follow CTA */}
+              {(!authenticated || currentDbUserId !== creator.id) && (
+                <button
+                  onClick={handleToggleFollow}
+                  disabled={followLoading}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    backgroundColor: isFollowing ? '#1f2937' : '#39FF14',
+                    color: isFollowing ? '#fff' : '#000',
+                    borderRadius: '12px',
+                    border: isFollowing ? '1px solid #374151' : 'none',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: followLoading ? 'not-allowed' : 'pointer',
+                    opacity: followLoading ? 0.7 : 1,
+                  }}
+                >
+                  {followLoading ? (
+                    <>
+                      <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
+                      Saving...
+                    </>
+                  ) : isFollowing ? (
+                    <>
+                      <UserCheck style={{ width: '16px', height: '16px' }} />
+                      Following
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus style={{ width: '16px', height: '16px' }} />
+                      Follow
+                    </>
+                  )}
+                </button>
+              )}
 
               {/* Bio */}
               {creator.bio && (
