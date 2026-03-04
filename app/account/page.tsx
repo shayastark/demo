@@ -12,6 +12,7 @@ import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
 import { TipsSkeleton } from '@/components/SkeletonLoader'
 import FAQModal from '@/components/FAQModal'
 import CreatorProfileModal from '@/components/CreatorProfileModal'
+import CreatorEarningsSnapshot from '@/components/CreatorEarningsSnapshot'
 import { getFollowerIdFromQueryParam } from '@/lib/notificationInbox'
 
 interface UserProfile {
@@ -981,6 +982,13 @@ function AccountPageContent() {
             </div>
           </div>
         </div>
+
+        {/* Payments Section */}
+        <CreatorEarningsSnapshot
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+          source="account"
+        />
 
         {/* Payments Section */}
         <div 
