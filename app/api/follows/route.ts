@@ -34,7 +34,12 @@ export async function GET(request: NextRequest) {
     const { count: followerCount } = await supabaseAdmin
       .from('user_follows')
       .select('id', { count: 'exact', head: true })
-      .eq('followed_id', creatorId)
+      .eq('following_id', creatorId)
+
+    const { count: followingCount } = await supabaseAdmin
+      .from('user_follows')
+      .select('id', { count: 'exact', head: true })
+      .eq('follower_id', creatorId)
 
     let isFollowing = false
     if (currentUser) {
@@ -42,7 +47,7 @@ export async function GET(request: NextRequest) {
         .from('user_follows')
         .select('id')
         .eq('follower_id', currentUser.id)
-        .eq('followed_id', creatorId)
+        .eq('following_id', creatorId)
         .maybeSingle()
 
       isFollowing = !!existingFollow
@@ -51,6 +56,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       creatorId,
       followerCount: followerCount || 0,
+      followingCount: followingCount || 0,
       isFollowing,
     })
   } catch (error) {
@@ -72,20 +78,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const creatorId = body.creator_id as string
+    const followingId = (body.following_id || body.creator_id) as string
 
-    if (!creatorId || !isValidUUID(creatorId)) {
-      return NextResponse.json({ error: 'Valid creator_id is required' }, { status: 400 })
+    if (!followingId || !isValidUUID(followingId)) {
+      return NextResponse.json({ error: 'Valid following_id is required' }, { status: 400 })
     }
 
-    if (creatorId === currentUser.id) {
+    if (followingId === currentUser.id) {
       return NextResponse.json({ error: 'You cannot follow yourself' }, { status: 400 })
     }
 
     const { data: creator } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('id', creatorId)
+      .eq('id', followingId)
       .single()
 
     if (!creator) {
@@ -96,7 +102,7 @@ export async function POST(request: NextRequest) {
       .from('user_follows')
       .select('id')
       .eq('follower_id', currentUser.id)
-      .eq('followed_id', creatorId)
+      .eq('following_id', followingId)
       .maybeSingle()
 
     if (existingFollow) {
@@ -107,13 +113,13 @@ export async function POST(request: NextRequest) {
       .from('user_follows')
       .insert({
         follower_id: currentUser.id,
-        followed_id: creatorId,
+        following_id: followingId,
       })
 
     if (error) throw error
 
     createFollowerNotification({
-      creatorId,
+      creatorId: followingId,
       followerName: currentUser.username || currentUser.email || null,
       followerId: currentUser.id,
     }).catch((notificationError) => {
@@ -139,18 +145,19 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    const body = await request.json().catch(() => ({}))
     const { searchParams } = new URL(request.url)
-    const creatorId = searchParams.get('creator_id')
+    const followingId = (body.following_id || body.creator_id || searchParams.get('following_id') || searchParams.get('creator_id')) as string | null
 
-    if (!creatorId || !isValidUUID(creatorId)) {
-      return NextResponse.json({ error: 'Valid creator_id is required' }, { status: 400 })
+    if (!followingId || !isValidUUID(followingId)) {
+      return NextResponse.json({ error: 'Valid following_id is required' }, { status: 400 })
     }
 
     const { error } = await supabaseAdmin
       .from('user_follows')
       .delete()
       .eq('follower_id', currentUser.id)
-      .eq('followed_id', creatorId)
+      .eq('following_id', followingId)
 
     if (error) throw error
 

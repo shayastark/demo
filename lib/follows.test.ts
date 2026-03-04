@@ -9,7 +9,7 @@ test('getFollowerDisplayName normalizes empty names', () => {
 })
 
 test('buildFollowerNotificationTitle uses normalized name', () => {
-  assert.equal(buildFollowerNotificationTitle('  hubbaFan '), 'hubbaFan started following you')
+  assert.equal(buildFollowerNotificationTitle('  demoFan '), 'demoFan started following you')
   assert.equal(buildFollowerNotificationTitle(null), 'Someone started following you')
 })
 

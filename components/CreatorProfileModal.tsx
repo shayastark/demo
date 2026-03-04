@@ -228,7 +228,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
 
       const response = await fetch(
         isFollowing
-          ? `/api/follows?creator_id=${creator.id}`
+          ? '/api/follows'
           : '/api/follows',
         {
           method: isFollowing ? 'DELETE' : 'POST',
@@ -236,7 +236,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: isFollowing ? undefined : JSON.stringify({ creator_id: creator.id }),
+          body: JSON.stringify({ following_id: creator.id }),
         }
       )
 
