@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe, PLATFORM_FEE_PERCENT } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { isValidUUID } from '@/lib/validation'
+import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +17,10 @@ export async function POST(request: NextRequest) {
       tipPromptTrigger,
       viewerKey,
     } = await request.json()
+
+    const authResult = await verifyPrivyToken(request.headers.get('authorization'))
+    const authenticatedUser =
+      authResult.success && authResult.privyId ? await getUserByPrivyId(authResult.privyId) : null
 
     if (!creatorId || !amount) {
       return NextResponse.json(
@@ -110,6 +115,8 @@ export async function POST(request: NextRequest) {
           creator_id: creatorId,
           tipper_username: sanitizedUsername,
           message: sanitizedMessage,
+          project_id: typeof projectId === 'string' && isValidUUID(projectId) ? projectId : '',
+          tipper_user_id: authenticatedUser?.id || '',
         },
       },
       customer_email: tipperEmail || undefined,
@@ -119,6 +126,8 @@ export async function POST(request: NextRequest) {
         creator_id: creatorId,
         tipper_username: sanitizedUsername,
         type: 'tip',
+        project_id: typeof projectId === 'string' && isValidUUID(projectId) ? projectId : '',
+        tipper_user_id: authenticatedUser?.id || '',
       },
     })
 

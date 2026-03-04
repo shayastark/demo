@@ -201,9 +201,13 @@ export default function CreatorProfileModal({
 
     setProcessingTip(true)
     try {
+      const token = authenticated ? await getAccessToken() : null
       const response = await fetch('/api/stripe/tip', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           creatorId: creator?.id,
           amount,
@@ -887,6 +891,8 @@ export default function CreatorProfileModal({
                               amount={getTipAmountDollars()}
                               tipperUsername={sendAnonymously ? null : tipperUsername}
                               message={tipMessage || null}
+                              projectId={tipContext?.projectId || null}
+                              getAccessToken={getAccessToken}
                               onSuccess={() => {
                                 if (tipContext?.projectId && viewerKey) {
                                   markTipPromptConvertedInSession(tipContext.projectId, viewerKey)

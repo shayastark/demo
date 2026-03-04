@@ -52,6 +52,7 @@ export interface Comment {
   can_delete?: boolean
   can_pin?: boolean
   is_pinned?: boolean
+  is_supporter_for_project?: boolean
   reactions?: {
     helpful: number
     fire: number

@@ -4,6 +4,28 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { createTipNotification } from '@/lib/notifications'
 import Stripe from 'stripe'
 
+let cachedHasTipSupportColumns: boolean | null = null
+
+async function hasTipSupportColumns(): Promise<boolean> {
+  if (cachedHasTipSupportColumns !== null) return cachedHasTipSupportColumns
+
+  const { data: columns, error } = await supabaseAdmin
+    .from('information_schema.columns')
+    .select('column_name')
+    .eq('table_schema', 'public')
+    .eq('table_name', 'tips')
+    .in('column_name', ['project_id', 'tipper_user_id'])
+
+  if (error) {
+    cachedHasTipSupportColumns = false
+    return cachedHasTipSupportColumns
+  }
+
+  const names = new Set((columns || []).map((column) => column.column_name))
+  cachedHasTipSupportColumns = names.has('project_id') && names.has('tipper_user_id')
+  return cachedHasTipSupportColumns
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
@@ -43,6 +65,8 @@ export async function POST(request: NextRequest) {
           const creatorId = session.metadata.creator_id
           const amount = session.amount_total || 0
           const tipperUsername = session.metadata.tipper_username || null
+          const projectId = session.metadata.project_id || null
+          const tipperUserId = session.metadata.tipper_user_id || null
           
           // Idempotency check: skip if this session was already recorded
           const { data: existingTip } = await supabaseAdmin
@@ -61,19 +85,26 @@ export async function POST(request: NextRequest) {
             ? session.payment_intent
             : null
 
+          const insertPayload: Record<string, unknown> = {
+            creator_id: creatorId,
+            amount: amount,
+            currency: session.currency || 'usd',
+            tipper_email: session.customer_email || null,
+            tipper_username: tipperUsername,
+            message: message,
+            stripe_session_id: session.id,
+            stripe_payment_intent_id: paymentIntentId,
+            status: 'completed',
+          }
+
+          if (await hasTipSupportColumns()) {
+            insertPayload.project_id = projectId
+            insertPayload.tipper_user_id = tipperUserId
+          }
+
           const { error: tipError } = await supabaseAdmin
             .from('tips')
-            .insert({
-              creator_id: creatorId,
-              amount: amount,
-              currency: session.currency || 'usd',
-              tipper_email: session.customer_email || null,
-              tipper_username: tipperUsername,
-              message: message,
-              stripe_session_id: session.id,
-              stripe_payment_intent_id: paymentIntentId,
-              status: 'completed',
-            })
+            .insert(insertPayload)
 
           if (tipError) {
             console.error('Error saving tip to database:', tipError)

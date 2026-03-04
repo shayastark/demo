@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { createTipNotification } from '@/lib/notifications'
 import { isValidUUID, isValidTxHash } from '@/lib/validation'
+import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
+
+let cachedHasTipSupportColumns: boolean | null = null
+
+async function hasTipSupportColumns(): Promise<boolean> {
+  if (cachedHasTipSupportColumns !== null) return cachedHasTipSupportColumns
+
+  const { data: columns, error } = await supabaseAdmin
+    .from('information_schema.columns')
+    .select('column_name')
+    .eq('table_schema', 'public')
+    .eq('table_name', 'tips')
+    .in('column_name', ['project_id', 'tipper_user_id'])
+
+  if (error) {
+    cachedHasTipSupportColumns = false
+    return cachedHasTipSupportColumns
+  }
+
+  const names = new Set((columns || []).map((column) => column.column_name))
+  cachedHasTipSupportColumns = names.has('project_id') && names.has('tipper_user_id')
+  return cachedHasTipSupportColumns
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +36,12 @@ export async function POST(request: NextRequest) {
       paymentId,
       txHash,
       chainId,
+      projectId,
     } = await request.json()
+
+    const authResult = await verifyPrivyToken(request.headers.get('authorization'))
+    const authenticatedUser =
+      authResult.success && authResult.privyId ? await getUserByPrivyId(authResult.privyId) : null
 
     // --- Validation ---
 
@@ -91,19 +119,26 @@ export async function POST(request: NextRequest) {
     // For now, we rely on duplicate prevention and field validation.
 
     // Insert the tip record
+    const insertPayload: Record<string, unknown> = {
+      creator_id: creatorId,
+      amount: amountInCents,
+      currency: 'usdc',
+      tipper_username: sanitizedUsername,
+      message: sanitizedMessage,
+      stripe_payment_intent_id: txHash, // Store tx hash for reference
+      stripe_session_id: paymentId, // Store Daimo payment ID for reference
+      status: 'completed',
+      is_read: false,
+    }
+
+    if (await hasTipSupportColumns()) {
+      insertPayload.project_id = typeof projectId === 'string' && isValidUUID(projectId) ? projectId : null
+      insertPayload.tipper_user_id = authenticatedUser?.id || null
+    }
+
     const { data, error } = await supabaseAdmin
       .from('tips')
-      .insert({
-        creator_id: creatorId,
-        amount: amountInCents,
-        currency: 'usdc',
-        tipper_username: sanitizedUsername,
-        message: sanitizedMessage,
-        stripe_payment_intent_id: txHash, // Store tx hash for reference
-        stripe_session_id: paymentId, // Store Daimo payment ID for reference
-        status: 'completed',
-        is_read: false,
-      })
+      .insert(insertPayload)
       .select()
       .single()
 

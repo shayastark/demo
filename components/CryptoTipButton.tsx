@@ -15,6 +15,8 @@ interface CryptoTipButtonProps {
   amount: string // Amount in dollars as string, e.g. "5.00"
   tipperUsername?: string | null
   message?: string | null
+  projectId?: string | null
+  getAccessToken?: () => Promise<string | null>
   onSuccess?: () => void
 }
 
@@ -29,14 +31,20 @@ function CryptoTipButtonInner({
   amount, 
   tipperUsername,
   message,
+  projectId,
+  getAccessToken,
   onSuccess 
 }: CryptoTipButtonProps) {
   
   const recordCryptoTip = async (paymentId: string, txHash: string, chainId: number) => {
     try {
+      const token = getAccessToken ? await getAccessToken() : null
       const response = await fetch('/api/tips/crypto', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           creatorId,
           amount,
@@ -45,6 +53,7 @@ function CryptoTipButtonInner({
           paymentId,
           txHash,
           chainId,
+          projectId: projectId || null,
         }),
       })
       

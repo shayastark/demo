@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MessageCircle, ChevronDown, Pencil, Trash2, Send, Pin } from 'lucide-react'
 import { Comment } from '@/lib/types'
 import { showToast } from './Toast'
@@ -29,6 +29,7 @@ export default function CommentsPanel({
   const [editingContent, setEditingContent] = useState('')
   const [pendingReactions, setPendingReactions] = useState<Record<string, boolean>>({})
   const [pendingPinCommentId, setPendingPinCommentId] = useState<string | null>(null)
+  const supporterImpressionSentRef = useRef<Set<string>>(new Set())
 
   const reactionLabels: Record<ReactionType, string> = {
     helpful: 'helpful',
@@ -62,6 +63,28 @@ export default function CommentsPanel({
     loadProjectComments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, authenticated])
+
+  useEffect(() => {
+    supporterImpressionSentRef.current = new Set()
+  }, [projectId])
+
+  useEffect(() => {
+    for (const comment of projectComments) {
+      if (!comment.is_supporter_for_project) continue
+      if (supporterImpressionSentRef.current.has(comment.id)) continue
+
+      emitEvent('supporter_badge_event', {
+        schema: 'supporter_badge.v1',
+        action: 'impression',
+        project_id: projectId,
+        comment_id: comment.id,
+        author_id: comment.user_id,
+        source: 'comments_panel',
+      })
+      supporterImpressionSentRef.current.add(comment.id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectComments, projectId])
 
   const emitEvent = (name: string, detail?: Record<string, unknown>) => {
     if (typeof window === 'undefined') return
@@ -393,6 +416,11 @@ export default function CommentsPanel({
                         <div className="flex items-center justify-between gap-3 mb-1">
                           <div className="min-w-0 flex items-center gap-2">
                             <span className="text-xs text-gray-300 truncate">{comment.author_name}</span>
+                            {comment.is_supporter_for_project && (
+                              <span className="inline-flex items-center rounded-full border border-neon-green/30 bg-neon-green/10 px-2 py-0.5 text-[10px] text-neon-green">
+                                Supporter
+                              </span>
+                            )}
                             <span className="text-[11px] text-gray-500">{formatRelativeTime(comment.created_at)}</span>
                             {comment.is_pinned && (
                               <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-300">

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
 import { summarizeCommentReactions, type ReactionType, isReactionType } from '@/lib/commentReactions'
+import { buildSupporterAuthorSet, isSupporterForProject } from '@/lib/supporterBadge'
 import {
   canUserPinComment,
   sortCommentsPinnedFirst,
@@ -19,6 +20,28 @@ type CommentRecord = {
   timestamp_seconds: number | null
   created_at: string
   updated_at: string
+}
+
+let cachedHasTipSupportColumns: boolean | null = null
+
+async function hasTipSupportColumns(): Promise<boolean> {
+  if (cachedHasTipSupportColumns !== null) return cachedHasTipSupportColumns
+
+  const { data: columns, error } = await supabaseAdmin
+    .from('information_schema.columns')
+    .select('column_name')
+    .eq('table_schema', 'public')
+    .eq('table_name', 'tips')
+    .in('column_name', ['project_id', 'tipper_user_id'])
+
+  if (error) {
+    cachedHasTipSupportColumns = false
+    return cachedHasTipSupportColumns
+  }
+
+  const names = new Set((columns || []).map((column) => column.column_name))
+  cachedHasTipSupportColumns = names.has('project_id') && names.has('tipper_user_id')
+  return cachedHasTipSupportColumns
 }
 
 async function getOrCreateUserByPrivyId(privyId: string) {
@@ -137,6 +160,23 @@ export async function GET(request: NextRequest) {
     }
 
     const userIds = Array.from(new Set(comments.map((comment) => comment.user_id)))
+    let supporterAuthorIds = new Set<string>()
+    if (projectId && userIds.length > 0 && (await hasTipSupportColumns())) {
+      try {
+        const { data: supporterTips } = await supabaseAdmin
+          .from('tips')
+          .select('tipper_user_id')
+          .eq('project_id', projectId)
+          .eq('status', 'completed')
+          .in('tipper_user_id', userIds)
+
+        supporterAuthorIds = buildSupporterAuthorSet((supporterTips || []) as Array<{ tipper_user_id: string | null }>)
+      } catch (supporterError) {
+        console.error('Supporter badge lookup failed, continuing without badges:', supporterError)
+        supporterAuthorIds = new Set<string>()
+      }
+    }
+
     let usersById: Record<string, { username: string | null; email: string | null }> = {}
 
     if (userIds.length > 0) {
@@ -163,6 +203,7 @@ export async function GET(request: NextRequest) {
         can_edit: isOwner,
         can_delete: isOwner || isCreator,
         can_pin: isCreator,
+        is_supporter_for_project: isSupporterForProject(comment.user_id, supporterAuthorIds),
         reactions: {
           helpful: reactionSummaryByComment[comment.id]?.helpful || 0,
           fire: reactionSummaryByComment[comment.id]?.fire || 0,
