@@ -13,6 +13,7 @@ import { TipsSkeleton } from '@/components/SkeletonLoader'
 import FAQModal from '@/components/FAQModal'
 import CreatorProfileModal from '@/components/CreatorProfileModal'
 import CreatorEarningsSnapshot from '@/components/CreatorEarningsSnapshot'
+import CreatorDigestCard from '@/components/CreatorDigestCard'
 import NotificationPreferencesSection from '@/components/NotificationPreferencesSection'
 import SocialGraphListModal from '@/components/SocialGraphListModal'
 import type { SocialGraphListType } from '@/lib/socialGraph'
@@ -1046,6 +1047,11 @@ function AccountPageContent() {
 
         {/* Payments Section */}
         <CreatorEarningsSnapshot
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+          source="account"
+        />
+        <CreatorDigestCard
           authenticated={authenticated}
           getAccessToken={getAccessToken}
           source="account"
