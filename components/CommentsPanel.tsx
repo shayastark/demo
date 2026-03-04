@@ -119,6 +119,31 @@ export default function CommentsPanel({
       if (!response.ok) throw new Error(result.error || 'Failed to post comment')
 
       setProjectInput('')
+      const updateEngagementNotification = result.update_engagement_notification as
+        | {
+            action?: 'created' | 'skipped_self' | 'skipped_preference'
+            project_id?: string
+            update_id?: string
+            actor_user_id?: string
+            recipient_user_id?: string
+            notification_type?: string
+          }
+        | undefined
+      if (
+        updateEngagementNotification?.action === 'created' ||
+        updateEngagementNotification?.action === 'skipped_self' ||
+        updateEngagementNotification?.action === 'skipped_preference'
+      ) {
+        emitEvent('update_engagement_notification_event', {
+          schema: 'update_engagement_notification.v1',
+          action: updateEngagementNotification.action,
+          project_id: updateEngagementNotification.project_id || projectId,
+          update_id: updateEngagementNotification.update_id || null,
+          actor_user_id: updateEngagementNotification.actor_user_id || null,
+          recipient_user_id: updateEngagementNotification.recipient_user_id || null,
+          notification_type: updateEngagementNotification.notification_type || 'new_track',
+        })
+      }
       await loadProjectComments()
       emitEvent('comment_post_succeeded', { target: 'project' })
       showToast('Comment posted', 'success')

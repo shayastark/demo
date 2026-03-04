@@ -4,6 +4,7 @@ import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
 import { summarizeCommentReactions, type ReactionType, isReactionType } from '@/lib/commentReactions'
 import { buildSupporterAuthorSet, isSupporterForProject } from '@/lib/supporterBadge'
+import { notifyCreatorUpdateEngagement } from '@/lib/notifications'
 import {
   canUserPinComment,
   sortCommentsPinnedFirst,
@@ -285,7 +286,30 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json({ comment }, { status: 201 })
+    let updateEngagementNotification: Record<string, unknown> | null = null
+    try {
+      const { data: latestUpdate } = await supabaseAdmin
+        .from('project_updates')
+        .select('id')
+        .eq('project_id', project_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (latestUpdate?.id && typeof project?.creator_id === 'string') {
+        updateEngagementNotification = await notifyCreatorUpdateEngagement({
+          recipientUserId: project.creator_id,
+          actorUserId: user.id,
+          actorName: user.username || user.email || null,
+          projectId: project_id,
+          updateId: latestUpdate.id,
+        })
+      }
+    } catch (notificationError) {
+      console.error('Update engagement notification failed, continuing:', notificationError)
+    }
+
+    return NextResponse.json({ comment, update_engagement_notification: updateEngagementNotification }, { status: 201 })
   } catch (error) {
     console.error('Error creating comment:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

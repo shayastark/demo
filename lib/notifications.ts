@@ -5,6 +5,12 @@ import {
   getPreferenceFieldForNotificationType,
   type NotificationPreferenceField,
 } from './notificationPreferences'
+import {
+  buildUpdateEngagementTargetPath,
+  decideUpdateEngagementNotificationAction,
+  getUpdateEngagementActorName,
+  type UpdateEngagementNotificationAction,
+} from './updateEngagementNotifications'
 
 export type NotificationType = CreatableNotificationType
 
@@ -77,11 +83,16 @@ export async function createNotification({
   title,
   message,
   data = {},
-}: CreateNotificationParams): Promise<{ success: boolean; notificationId?: string; error?: string }> {
+}: CreateNotificationParams): Promise<{
+  success: boolean
+  notificationId?: string
+  error?: string
+  skippedPreference?: boolean
+}> {
   try {
     const isEnabled = await isUserNotificationEnabled(userId, type)
     if (!isEnabled) {
-      return { success: true }
+      return { success: true, skippedPreference: true }
     }
 
     const { data: notification, error } = await supabaseAdmin
@@ -344,5 +355,76 @@ export async function notifyFollowersProjectUpdate({
   } catch (error) {
     console.error('Error notifying followers of project update:', error)
     return { success: false, notifiedCount: 0, error: 'Failed to create notifications' }
+  }
+}
+
+export async function notifyCreatorUpdateEngagement({
+  recipientUserId,
+  actorUserId,
+  actorName,
+  projectId,
+  updateId,
+}: {
+  recipientUserId: string
+  actorUserId: string
+  actorName?: string | null
+  projectId: string
+  updateId: string
+}): Promise<{
+  success: boolean
+  action: UpdateEngagementNotificationAction
+  recipient_user_id: string
+  actor_user_id: string
+  project_id: string
+  update_id: string
+  notification_type: NotificationType
+}> {
+  const notificationType: NotificationType = 'new_track'
+
+  if (recipientUserId === actorUserId) {
+    return {
+      success: true,
+      action: 'skipped_self',
+      recipient_user_id: recipientUserId,
+      actor_user_id: actorUserId,
+      project_id: projectId,
+      update_id: updateId,
+      notification_type: notificationType,
+    }
+  }
+
+  const actorDisplayName = getUpdateEngagementActorName(actorName)
+  const result = await createNotification({
+    userId: recipientUserId,
+    type: notificationType,
+    title: `${actorDisplayName} engaged with your update`,
+    message: 'New discussion activity on your project update',
+    data: {
+      project_id: projectId,
+      update_id: updateId,
+      actor_user_id: actorUserId,
+      actor_name: actorDisplayName,
+      targetPath: buildUpdateEngagementTargetPath(projectId, updateId),
+      projectId,
+      updateId,
+      actorUserId,
+      actorName: actorDisplayName,
+    },
+  })
+
+  const action = decideUpdateEngagementNotificationAction({
+    recipientUserId,
+    actorUserId,
+    skippedPreference: !!result.skippedPreference,
+  })
+
+  return {
+    success: result.success,
+    action,
+    recipient_user_id: recipientUserId,
+    actor_user_id: actorUserId,
+    project_id: projectId,
+    update_id: updateId,
+    notification_type: notificationType,
   }
 }

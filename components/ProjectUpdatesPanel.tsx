@@ -32,6 +32,7 @@ export default function ProjectUpdatesPanel({
   const [versionLabel, setVersionLabel] = useState('')
   const [posting, setPosting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [highlightedUpdateId, setHighlightedUpdateId] = useState<string | null>(null)
   const hasEmittedView = useRef(false)
 
   const emitEvent = (detail: Record<string, unknown>) => {
@@ -81,6 +82,26 @@ export default function ProjectUpdatesPanel({
     loadUpdates()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, authenticated])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || updates.length === 0) return
+    const params = new URLSearchParams(window.location.search)
+    const targetUpdateId = params.get('update_id')
+    if (!targetUpdateId) return
+
+    const targetElement = document.getElementById(`project-update-${targetUpdateId}`)
+    if (!targetElement) return
+
+    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setHighlightedUpdateId(targetUpdateId)
+    const timeoutId = window.setTimeout(() => {
+      setHighlightedUpdateId(null)
+    }, 2200)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [updates])
 
   const createUpdate = async () => {
     const trimmed = content.trim()
@@ -225,7 +246,12 @@ export default function ProjectUpdatesPanel({
             {updates.map((update) => (
               <li key={update.id} className="border-t border-gray-900 px-3 sm:px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <div
+                    id={`project-update-${update.id}`}
+                    className={`min-w-0 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors ${
+                      highlightedUpdateId === update.id ? 'bg-neon-green/10 border border-neon-green/20' : ''
+                    }`}
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs text-gray-300">{update.author_name || 'Creator'}</span>
                       {update.version_label && (
