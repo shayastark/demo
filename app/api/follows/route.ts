@@ -4,6 +4,44 @@ import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import { createFollowerNotification } from '@/lib/notifications'
 
+type FollowColumnName = 'following_id' | 'followed_id'
+
+let cachedFollowColumn: FollowColumnName | null = null
+
+async function resolveFollowColumn(): Promise<FollowColumnName> {
+  if (cachedFollowColumn) return cachedFollowColumn
+
+  const { data: newColumn } = await supabaseAdmin
+    .from('information_schema.columns')
+    .select('column_name')
+    .eq('table_schema', 'public')
+    .eq('table_name', 'user_follows')
+    .eq('column_name', 'following_id')
+    .maybeSingle()
+
+  if (newColumn?.column_name === 'following_id') {
+    cachedFollowColumn = 'following_id'
+    return cachedFollowColumn
+  }
+
+  const { data: legacyColumn } = await supabaseAdmin
+    .from('information_schema.columns')
+    .select('column_name')
+    .eq('table_schema', 'public')
+    .eq('table_name', 'user_follows')
+    .eq('column_name', 'followed_id')
+    .maybeSingle()
+
+  if (legacyColumn?.column_name === 'followed_id') {
+    cachedFollowColumn = 'followed_id'
+    return cachedFollowColumn
+  }
+
+  // Default to latest schema if detection fails.
+  cachedFollowColumn = 'following_id'
+  return cachedFollowColumn
+}
+
 async function getCurrentUserFromRequest(request: NextRequest) {
   const authResult = await verifyPrivyToken(request.headers.get('authorization'))
   if (!authResult.success || !authResult.privyId) return null
@@ -33,6 +71,7 @@ async function getOrCreateUserByPrivyId(privyId: string) {
 
 export async function GET(request: NextRequest) {
   try {
+    const followColumn = await resolveFollowColumn()
     const { searchParams } = new URL(request.url)
     const creatorId = searchParams.get('creator_id')
 
@@ -55,7 +94,7 @@ export async function GET(request: NextRequest) {
     const { count: followerCount } = await supabaseAdmin
       .from('user_follows')
       .select('id', { count: 'exact', head: true })
-      .eq('following_id', creatorId)
+      .eq(followColumn, creatorId)
 
     const { count: followingCount } = await supabaseAdmin
       .from('user_follows')
@@ -68,7 +107,7 @@ export async function GET(request: NextRequest) {
         .from('user_follows')
         .select('id')
         .eq('follower_id', currentUser.id)
-        .eq('following_id', creatorId)
+        .eq(followColumn, creatorId)
         .maybeSingle()
 
       isFollowing = !!existingFollow
@@ -88,6 +127,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const followColumn = await resolveFollowColumn()
     const authResult = await verifyPrivyToken(request.headers.get('authorization'))
     if (!authResult.success || !authResult.privyId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -123,7 +163,7 @@ export async function POST(request: NextRequest) {
       .from('user_follows')
       .select('id')
       .eq('follower_id', currentUser.id)
-      .eq('following_id', followingId)
+      .eq(followColumn, followingId)
       .maybeSingle()
 
     if (existingFollow) {
@@ -134,7 +174,7 @@ export async function POST(request: NextRequest) {
       .from('user_follows')
       .insert({
         follower_id: currentUser.id,
-        following_id: followingId,
+        [followColumn]: followingId,
       })
 
     if (error) throw error
@@ -156,6 +196,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const followColumn = await resolveFollowColumn()
     const authResult = await verifyPrivyToken(request.headers.get('authorization'))
     if (!authResult.success || !authResult.privyId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -192,7 +233,7 @@ export async function DELETE(request: NextRequest) {
       .from('user_follows')
       .delete()
       .eq('follower_id', currentUser.id)
-      .eq('following_id', followingId)
+      .eq(followColumn, followingId)
 
     if (error) throw error
 
