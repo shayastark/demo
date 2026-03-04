@@ -11,7 +11,7 @@ export interface InboxNotification {
   created_at: string
 }
 
-export function isUuidLike(value: string | null | undefined): boolean {
+export function isUuidLike(value: string | null | undefined): value is string {
   if (!value) return false
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
 }
