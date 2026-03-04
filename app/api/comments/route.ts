@@ -3,12 +3,18 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
 import { summarizeCommentReactions, type ReactionType, isReactionType } from '@/lib/commentReactions'
+import {
+  canUserPinComment,
+  sortCommentsPinnedFirst,
+  withPinnedFlag,
+} from '@/lib/commentPinning'
 
 type CommentRecord = {
   id: string
   user_id: string
   project_id: string | null
   track_id: string | null
+  is_pinned: boolean | null
   content: string
   timestamp_seconds: number | null
   created_at: string
@@ -103,7 +109,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    const comments: CommentRecord[] = (data as CommentRecord[]) || []
+    const comments: CommentRecord[] = sortCommentsPinnedFirst((data as CommentRecord[]) || [])
     const commentIds = comments.map((comment) => comment.id)
 
     let reactionSummaryByComment: Record<
@@ -152,9 +158,11 @@ export async function GET(request: NextRequest) {
 
       return {
         ...comment,
+        ...withPinnedFlag(comment),
         author_name: author?.username || author?.email || 'Unknown',
         can_edit: isOwner,
         can_delete: isOwner || isCreator,
+        can_pin: isCreator,
         reactions: {
           helpful: reactionSummaryByComment[comment.id]?.helpful || 0,
           fire: reactionSummaryByComment[comment.id]?.fire || 0,
@@ -257,14 +265,13 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
     const id = body.id as string
-    const content = sanitizeText(body.content, 2000)
+    const contentRaw = typeof body.content === 'string' ? body.content : null
+    const content = contentRaw ? sanitizeText(contentRaw, 2000) : ''
+    const hasPinUpdate = typeof body.is_pinned === 'boolean'
+    const nextPinnedState = body.is_pinned as boolean
 
     if (!id || !isValidUUID(id)) {
       return NextResponse.json({ error: 'Valid comment id is required' }, { status: 400 })
-    }
-
-    if (!content) {
-      return NextResponse.json({ error: 'Comment content is required' }, { status: 400 })
     }
 
     const { data: existing } = await supabaseAdmin
@@ -275,6 +282,53 @@ export async function PATCH(request: NextRequest) {
 
     if (!existing) {
       return NextResponse.json({ error: 'Comment not found' }, { status: 404 })
+    }
+
+    if (hasPinUpdate) {
+      if (!existing.project_id) {
+        return NextResponse.json({ error: 'Only project comments can be pinned' }, { status: 400 })
+      }
+
+      const { data: project } = await supabaseAdmin
+        .from('projects')
+        .select('id, creator_id')
+        .eq('id', existing.project_id)
+        .single()
+
+      if (!project) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+
+      if (!canUserPinComment(user.id, project.creator_id)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
+      if (nextPinnedState) {
+        const { error: clearError } = await supabaseAdmin
+          .from('comments')
+          .update({ is_pinned: false })
+          .eq('project_id', existing.project_id)
+          .eq('is_pinned', true)
+          .neq('id', id)
+
+        if (clearError) throw clearError
+      }
+
+      const { data: comment, error } = await supabaseAdmin
+        .from('comments')
+        .update({ is_pinned: nextPinnedState })
+        .eq('id', id)
+        .eq('project_id', existing.project_id)
+        .select('*')
+        .single()
+
+      if (error) throw error
+
+      return NextResponse.json({ comment })
+    }
+
+    if (!content) {
+      return NextResponse.json({ error: 'Comment content is required' }, { status: 400 })
     }
 
     if (existing.user_id !== user.id) {

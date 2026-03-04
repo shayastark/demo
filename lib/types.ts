@@ -50,6 +50,8 @@ export interface Comment {
   author_name?: string
   can_edit?: boolean
   can_delete?: boolean
+  can_pin?: boolean
+  is_pinned?: boolean
   reactions?: {
     helpful: number
     fire: number

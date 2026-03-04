@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { MessageCircle, ChevronDown, Pencil, Trash2, Send } from 'lucide-react'
+import { MessageCircle, ChevronDown, Pencil, Trash2, Send, Pin } from 'lucide-react'
 import { Comment } from '@/lib/types'
 import { showToast } from './Toast'
 import { COMMENT_REACTION_TYPES, type ReactionType } from '@/lib/commentReactions'
+import { sortCommentsPinnedFirst } from '@/lib/commentPinning'
 
 interface CommentsPanelProps {
   projectId: string
@@ -27,6 +28,7 @@ export default function CommentsPanel({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState('')
   const [pendingReactions, setPendingReactions] = useState<Record<string, boolean>>({})
+  const [pendingPinCommentId, setPendingPinCommentId] = useState<string | null>(null)
 
   const reactionLabels: Record<ReactionType, string> = {
     helpful: 'helpful',
@@ -47,7 +49,7 @@ export default function CommentsPanel({
       const response = await fetch(`/api/comments?project_id=${projectId}`, { headers })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to load comments')
-      setProjectComments(result.comments || [])
+      setProjectComments(sortCommentsPinnedFirst(result.comments || []))
     } catch (error) {
       console.error('Error loading project comments:', error)
     } finally {
@@ -182,6 +184,22 @@ export default function CommentsPanel({
     })
   }
 
+  const withOptimisticPin = (
+    comments: Comment[],
+    commentId: string,
+    shouldPin: boolean
+  ): Comment[] => {
+    return sortCommentsPinnedFirst(comments.map((comment) => {
+      if (comment.id === commentId) {
+        return { ...comment, is_pinned: shouldPin }
+      }
+      if (shouldPin) {
+        return { ...comment, is_pinned: false }
+      }
+      return comment
+    }))
+  }
+
   const toggleCommentReaction = async (commentId: string, reactionType: ReactionType) => {
     if (!authenticated) {
       onRequireAuth()
@@ -232,6 +250,51 @@ export default function CommentsPanel({
         delete next[key]
         return next
       })
+    }
+  }
+
+  const togglePinComment = async (commentId: string, currentlyPinned: boolean) => {
+    if (!authenticated) {
+      onRequireAuth()
+      return
+    }
+    if (!getAccessToken) return
+
+    const shouldPin = !currentlyPinned
+    const previousComments = projectComments
+    setPendingPinCommentId(commentId)
+    setProjectComments((prev) => withOptimisticPin(prev, commentId, shouldPin))
+
+    emitEvent('comment_pin_event', {
+      schema: 'comment_pin.v1',
+      action: shouldPin ? 'pin' : 'unpin',
+      comment_id: commentId,
+      project_id: projectId,
+      source: 'comments_panel',
+    })
+
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+
+      const response = await fetch('/api/comments', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: commentId, is_pinned: shouldPin }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update pin')
+
+      await loadProjectComments()
+    } catch (error) {
+      setProjectComments(previousComments)
+      console.error('Error toggling comment pin:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to update pin', 'error')
+    } finally {
+      setPendingPinCommentId(null)
     }
   }
 
@@ -330,8 +393,24 @@ export default function CommentsPanel({
                           <div className="min-w-0 flex items-center gap-2">
                             <span className="text-xs text-gray-300 truncate">{comment.author_name}</span>
                             <span className="text-[11px] text-gray-500">{formatRelativeTime(comment.created_at)}</span>
+                            {comment.is_pinned && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-300">
+                                <Pin className="h-2.5 w-2.5" />
+                                Pinned
+                              </span>
+                            )}
                           </div>
                           <div className={`flex items-center gap-2 ${editingCommentId === comment.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                            {comment.can_pin && (
+                              <button
+                                onClick={() => togglePinComment(comment.id, !!comment.is_pinned)}
+                                disabled={pendingPinCommentId === comment.id}
+                                className="text-gray-500 hover:text-amber-300 disabled:opacity-50"
+                                aria-label={comment.is_pinned ? 'Unpin comment' : 'Pin comment'}
+                              >
+                                <Pin className={`w-3.5 h-3.5 ${comment.is_pinned ? 'fill-current text-amber-300' : ''}`} />
+                              </button>
+                            )}
                             {comment.can_edit && (
                               <button
                                 onClick={() => {
