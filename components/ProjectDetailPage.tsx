@@ -9,6 +9,7 @@ import { apiRequest } from '@/lib/api'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
 import CommentsPanel from './CommentsPanel'
+import ProjectUpdatesPanel from './ProjectUpdatesPanel'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -1681,6 +1682,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             authenticated={!!user}
             getAccessToken={getAccessToken}
             onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
+          />
+          <ProjectUpdatesPanel
+            projectId={project.id}
+            authenticated={!!user}
+            getAccessToken={getAccessToken}
+            onRequireAuth={() => showToast('Please sign in to post updates.', 'error')}
+            source="project_detail"
           />
 
         </div>

@@ -101,3 +101,15 @@ export interface User {
   created_at: string
 }
 
+export interface ProjectUpdate {
+  id: string
+  project_id: string
+  user_id: string
+  content: string
+  version_label: string | null
+  created_at: string
+  updated_at: string
+  author_name?: string
+  can_delete?: boolean
+}
+

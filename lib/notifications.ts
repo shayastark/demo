@@ -177,3 +177,92 @@ export async function createFollowerNotification({
     },
   })
 }
+
+type FollowColumnName = 'following_id' | 'followed_id'
+let cachedFollowColumn: FollowColumnName | null = null
+
+async function resolveFollowColumn(): Promise<FollowColumnName> {
+  if (cachedFollowColumn) return cachedFollowColumn
+
+  const { data: newColumn } = await supabaseAdmin
+    .from('information_schema.columns')
+    .select('column_name')
+    .eq('table_schema', 'public')
+    .eq('table_name', 'user_follows')
+    .eq('column_name', 'following_id')
+    .maybeSingle()
+
+  if (newColumn?.column_name === 'following_id') {
+    cachedFollowColumn = 'following_id'
+    return cachedFollowColumn
+  }
+
+  cachedFollowColumn = 'followed_id'
+  return cachedFollowColumn
+}
+
+export async function notifyFollowersProjectUpdate({
+  creatorId,
+  projectId,
+  projectTitle,
+  content,
+  versionLabel,
+}: {
+  creatorId: string
+  projectId: string
+  projectTitle: string
+  content: string
+  versionLabel?: string | null
+}): Promise<{ success: boolean; notifiedCount: number; error?: string }> {
+  try {
+    const followColumn = await resolveFollowColumn()
+
+    const { data: followers, error: followersError } = await supabaseAdmin
+      .from('user_follows')
+      .select('follower_id')
+      .eq(followColumn, creatorId)
+
+    if (followersError) {
+      return { success: false, notifiedCount: 0, error: followersError.message }
+    }
+
+    const followerIds = Array.from(
+      new Set((followers || []).map((row) => row.follower_id).filter((id): id is string => !!id && id !== creatorId))
+    )
+
+    if (followerIds.length === 0) {
+      return { success: true, notifiedCount: 0 }
+    }
+
+    const trimmedContent = content.trim().slice(0, 140)
+    const titlePrefix = versionLabel ? `${versionLabel}: ` : ''
+
+    const notifications = followerIds.map((userId) => ({
+      user_id: userId,
+      type: 'new_track' as const,
+      title: `Project update: "${projectTitle}"`,
+      message: `${titlePrefix}${trimmedContent}`,
+      data: {
+        projectId,
+        projectTitle,
+        updatePreview: trimmedContent,
+        versionLabel: versionLabel || null,
+        targetPath: `/dashboard/projects/${projectId}`,
+      },
+      is_read: false,
+    }))
+
+    const { error: insertError } = await supabaseAdmin
+      .from('notifications')
+      .insert(notifications)
+
+    if (insertError) {
+      return { success: false, notifiedCount: 0, error: insertError.message }
+    }
+
+    return { success: true, notifiedCount: followerIds.length }
+  } catch (error) {
+    console.error('Error notifying followers of project update:', error)
+    return { success: false, notifiedCount: 0, error: 'Failed to create notifications' }
+  }
+}
