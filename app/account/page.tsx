@@ -2,7 +2,7 @@
 
 import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState, useRef, useCallback, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet, HelpCircle, User } from 'lucide-react'
@@ -11,6 +11,8 @@ import Image from 'next/image'
 import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
 import { TipsSkeleton } from '@/components/SkeletonLoader'
 import FAQModal from '@/components/FAQModal'
+import CreatorProfileModal from '@/components/CreatorProfileModal'
+import { getFollowerIdFromQueryParam } from '@/lib/notificationInbox'
 
 interface UserProfile {
   id: string
@@ -53,8 +55,10 @@ export default function AccountPage() {
 function AccountPageContent() {
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy()
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const isOnboarding = searchParams.get('onboarding') === 'true'
+  const followerIdFromQuery = getFollowerIdFromQueryParam(searchParams.get('follower_id'))
   
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isEditingUsername, setIsEditingUsername] = useState(false)
@@ -98,9 +102,12 @@ function AccountPageContent() {
   const [editingWalletAddress, setEditingWalletAddress] = useState('')
   const [savingWallet, setSavingWallet] = useState(false)
   const [showFAQ, setShowFAQ] = useState(false)
+  const [deepLinkedCreatorId, setDeepLinkedCreatorId] = useState<string | null>(null)
+  const [isCreatorProfileOpen, setIsCreatorProfileOpen] = useState(false)
 
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
+  const processedFollowerDeepLinkRef = useRef<string | null>(null)
   
   // Helper function for authenticated API requests
   const apiRequest = useCallback(async (
@@ -123,6 +130,11 @@ function AccountPageContent() {
     if (!response.ok) throw new Error(data.error || 'Request failed')
     return data
   }, [getAccessToken])
+
+  const emitEvent = (name: string, detail?: Record<string, unknown>) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(new CustomEvent(name, { detail }))
+  }
 
   useEffect(() => {
     if (!ready) return
@@ -197,6 +209,39 @@ function AccountPageContent() {
       setIsEditingProfile(true)
     }
   }, [isOnboarding, loaded, profile])
+
+  // Deep-link entry point: /account?follower_id=<uuid>
+  useEffect(() => {
+    if (!ready || !authenticated) return
+    if (!followerIdFromQuery) return
+    if (processedFollowerDeepLinkRef.current === followerIdFromQuery) return
+    processedFollowerDeepLinkRef.current = followerIdFromQuery
+
+    const resolveFollowerDeepLink = async () => {
+      try {
+        const { data: followerUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', followerIdFromQuery)
+          .single()
+
+        if (!followerUser?.id) return
+
+        setDeepLinkedCreatorId(followerUser.id)
+        setIsCreatorProfileOpen(true)
+
+        emitEvent('creator_profile_opened', {
+          source: 'notification',
+          creator_id: followerUser.id,
+          entry_path: `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`,
+        })
+      } catch (error) {
+        console.error('Invalid or missing follower deep-link target:', error)
+      }
+    }
+
+    resolveFollowerDeepLink()
+  }, [authenticated, followerIdFromQuery, pathname, ready, searchParams])
 
   // Check Stripe Connect status
   useEffect(() => {
@@ -1225,6 +1270,15 @@ function AccountPageContent() {
 
       {/* FAQ Modal */}
       <FAQModal isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
+
+      {/* Follower deep-link profile modal entry point */}
+      {deepLinkedCreatorId && (
+        <CreatorProfileModal
+          isOpen={isCreatorProfileOpen}
+          onClose={() => setIsCreatorProfileOpen(false)}
+          creatorId={deepLinkedCreatorId}
+        />
+      )}
     </div>
   )
 }

@@ -11,6 +11,16 @@ export interface InboxNotification {
   created_at: string
 }
 
+export function isUuidLike(value: string | null | undefined): boolean {
+  if (!value) return false
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+}
+
+export function getFollowerIdFromQueryParam(value: string | null | undefined): string | null {
+  if (!isUuidLike(value)) return null
+  return value
+}
+
 function toTimestamp(iso: string): number {
   const value = new Date(iso).getTime()
   return Number.isFinite(value) ? value : 0
@@ -48,9 +58,10 @@ export function getNotificationTargetPath(notification: InboxNotification): stri
 
   const normalizedType = normalizeNotificationType(notification.type)
   if (normalizedType === 'new_follower') {
-    const followerId =
+    const rawFollowerId =
       (notification.data?.follower_id as string | undefined) ||
       (notification.data?.followerId as string | undefined)
+    const followerId = getFollowerIdFromQueryParam(rawFollowerId)
     return followerId ? `/account?follower_id=${encodeURIComponent(followerId)}` : '/account'
   }
 

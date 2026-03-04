@@ -10,6 +10,27 @@ async function getCurrentUserFromRequest(request: NextRequest) {
   return getUserByPrivyId(authResult.privyId)
 }
 
+async function getOrCreateUserByPrivyId(privyId: string) {
+  const existingUser = await getUserByPrivyId(privyId)
+  if (existingUser) return existingUser
+
+  const { data: createdUser, error: createError } = await supabaseAdmin
+    .from('users')
+    .insert({ privy_id: privyId })
+    .select('*')
+    .single()
+
+  if (!createError && createdUser) return createdUser
+
+  const { data: retryUser } = await supabaseAdmin
+    .from('users')
+    .select('*')
+    .eq('privy_id', privyId)
+    .single()
+
+  return retryUser || null
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -72,7 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const currentUser = await getUserByPrivyId(authResult.privyId)
+    const currentUser = await getOrCreateUserByPrivyId(authResult.privyId)
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
@@ -140,7 +161,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const currentUser = await getUserByPrivyId(authResult.privyId)
+    const currentUser = await getOrCreateUserByPrivyId(authResult.privyId)
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }

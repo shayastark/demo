@@ -1,8 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  getFollowerIdFromQueryParam,
   getNotificationPrimaryText,
   getNotificationTargetPath,
+  isUuidLike,
   sortNotificationsForInbox,
   type InboxNotification,
 } from './notificationInbox'
@@ -50,9 +52,9 @@ test('getNotificationTargetPath honors targetPath then fallbacks', () => {
   const followerFallback: InboxNotification = {
     ...baseNotification,
     type: 'new_follower',
-    data: { follower_id: 'abc-123' },
+    data: { follower_id: '123e4567-e89b-12d3-a456-426614174000' },
   }
-  assert.equal(getNotificationTargetPath(followerFallback), '/account?follower_id=abc-123')
+  assert.equal(getNotificationTargetPath(followerFallback), '/account?follower_id=123e4567-e89b-12d3-a456-426614174000')
 
   const emptyFollower: InboxNotification = {
     ...baseNotification,
@@ -60,4 +62,21 @@ test('getNotificationTargetPath honors targetPath then fallbacks', () => {
     data: {},
   }
   assert.equal(getNotificationTargetPath(emptyFollower), '/account')
+
+  const invalidFollower: InboxNotification = {
+    ...baseNotification,
+    type: 'new_follower',
+    data: { follower_id: 'not-a-uuid' },
+  }
+  assert.equal(getNotificationTargetPath(invalidFollower), '/account')
+})
+
+test('follower deep-link parsing validates uuid format', () => {
+  const validUuid = '123e4567-e89b-12d3-a456-426614174000'
+  assert.equal(isUuidLike(validUuid), true)
+  assert.equal(getFollowerIdFromQueryParam(validUuid), validUuid)
+
+  assert.equal(isUuidLike('not-a-uuid'), false)
+  assert.equal(getFollowerIdFromQueryParam('not-a-uuid'), null)
+  assert.equal(getFollowerIdFromQueryParam(undefined), null)
 })

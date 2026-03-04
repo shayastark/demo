@@ -246,6 +246,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creatorId }: Crea
       const nextIsFollowing = !isFollowing
       setIsFollowing(nextIsFollowing)
       setFollowerCount((prev) => applyFollowerCountDelta(prev, nextIsFollowing))
+      await fetchFollowState()
 
       emitEvent('creator_follow_toggle_succeeded', {
         creatorId: creator.id,
