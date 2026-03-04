@@ -9,6 +9,8 @@ import { usePrivy } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
 import { applyFollowerCountDelta } from '@/lib/follows'
 import { markTipPromptConvertedInSession, type TipPromptSource, type TipPromptTrigger } from '@/lib/tipPrompt'
+import SocialGraphListModal from '@/components/SocialGraphListModal'
+import type { SocialGraphListType } from '@/lib/socialGraph'
 
 // Dynamically import CryptoTipButton to avoid SSR issues
 const CryptoTipButton = dynamic(() => import('@/components/CryptoTipButton'), {
@@ -70,14 +72,18 @@ export default function CreatorProfileModal({
   viewerKey = null,
 }: CreatorProfileModalProps) {
   const { user, authenticated, login, getAccessToken } = usePrivy()
+  const [activeCreatorId, setActiveCreatorId] = useState(creatorId)
   const [creator, setCreator] = useState<CreatorProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [projectCount, setProjectCount] = useState(0)
   const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
   const [tipperUsername, setTipperUsername] = useState<string | null>(null)
   const [currentDbUserId, setCurrentDbUserId] = useState<string | null>(null)
+  const [isSocialGraphOpen, setIsSocialGraphOpen] = useState(false)
+  const [socialGraphType, setSocialGraphType] = useState<SocialGraphListType>('followers')
   
   // Tip state
   const [showTipOptions, setShowTipOptions] = useState(false)
@@ -100,8 +106,8 @@ export default function CreatorProfileModal({
     window.dispatchEvent(new CustomEvent(name, { detail }))
   }
 
-  const fetchFollowState = async () => {
-    if (!creatorId) return
+  const fetchFollowState = async (targetCreatorId: string) => {
+    if (!targetCreatorId) return
 
     const headers: Record<string, string> = {}
     if (authenticated) {
@@ -109,16 +115,23 @@ export default function CreatorProfileModal({
       if (token) headers.Authorization = `Bearer ${token}`
     }
 
-    const response = await fetch(`/api/follows?creator_id=${creatorId}`, { headers })
+    const response = await fetch(`/api/follows?creator_id=${targetCreatorId}`, { headers })
     if (!response.ok) return
 
     const result = await response.json()
     setFollowerCount(result.followerCount || 0)
+    setFollowingCount(result.followingCount || 0)
     setIsFollowing(!!result.isFollowing)
   }
 
   useEffect(() => {
-    if (!isOpen || !creatorId) return
+    if (isOpen) {
+      setActiveCreatorId(creatorId)
+    }
+  }, [isOpen, creatorId])
+
+  useEffect(() => {
+    if (!isOpen || !activeCreatorId) return
 
     const loadCreator = async () => {
       setLoading(true)
@@ -127,7 +140,7 @@ export default function CreatorProfileModal({
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('id, username, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, stripe_onboarding_complete, wallet_address')
-          .eq('id', creatorId)
+          .eq('id', activeCreatorId)
           .single()
 
         if (userError) throw userError
@@ -137,14 +150,14 @@ export default function CreatorProfileModal({
         const { count, error: countError } = await supabase
           .from('projects')
           .select('id', { count: 'exact', head: true })
-          .eq('creator_id', creatorId)
+          .eq('creator_id', activeCreatorId)
           .eq('sharing_enabled', true)
 
         if (!countError) {
           setProjectCount(count || 0)
         }
 
-        await fetchFollowState()
+        await fetchFollowState(activeCreatorId)
 
         // Fetch current user's username for tipping
         if (authenticated && user?.id) {
@@ -165,7 +178,7 @@ export default function CreatorProfileModal({
     }
 
     loadCreator()
-  }, [isOpen, creatorId, authenticated, user?.id])
+  }, [isOpen, activeCreatorId, authenticated, user?.id])
 
   // Reset tip state when modal closes
   useEffect(() => {
@@ -237,7 +250,7 @@ export default function CreatorProfileModal({
 
   const handleToggleFollow = async () => {
     if (!authenticated) {
-      emitEvent('creator_follow_auth_required', { creatorId })
+        emitEvent('creator_follow_auth_required', { creatorId: activeCreatorId })
       login()
       return
     }
@@ -275,7 +288,7 @@ export default function CreatorProfileModal({
       const nextIsFollowing = !isFollowing
       setIsFollowing(nextIsFollowing)
       setFollowerCount((prev) => applyFollowerCountDelta(prev, nextIsFollowing))
-      await fetchFollowState()
+      await fetchFollowState(creator.id)
 
       emitEvent('creator_follow_toggle_succeeded', {
         creatorId: creator.id,
@@ -419,9 +432,45 @@ export default function CreatorProfileModal({
                   <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', margin: 0 }}>
                     {displayName}
                   </h3>
-                  <p style={{ fontSize: '14px', color: '#9ca3af', margin: '4px 0 0 0' }}>
-                    {projectCount} {projectCount === 1 ? 'project' : 'projects'} • {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
-                  </p>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '14px', color: '#9ca3af' }}>
+                      {projectCount} {projectCount === 1 ? 'project' : 'projects'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSocialGraphType('followers')
+                        setIsSocialGraphOpen(true)
+                      }}
+                      style={{
+                        border: '1px solid #374151',
+                        borderRadius: '999px',
+                        padding: '2px 8px',
+                        background: 'transparent',
+                        color: '#d1d5db',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {followerCount} followers
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSocialGraphType('following')
+                        setIsSocialGraphOpen(true)
+                      }}
+                      style={{
+                        border: '1px solid #374151',
+                        borderRadius: '999px',
+                        padding: '2px 8px',
+                        background: 'transparent',
+                        color: '#d1d5db',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {followingCount} following
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -980,6 +1029,20 @@ export default function CreatorProfileModal({
           )}
         </div>
       </div>
+      {activeCreatorId ? (
+        <SocialGraphListModal
+          isOpen={isSocialGraphOpen}
+          onClose={() => setIsSocialGraphOpen(false)}
+          profileUserId={activeCreatorId}
+          listType={socialGraphType}
+          source="creator_profile"
+          currentDbUserId={currentDbUserId}
+          onOpenUser={(userId) => {
+            setIsSocialGraphOpen(false)
+            setActiveCreatorId(userId)
+          }}
+        />
+      ) : null}
     </>
   )
 }

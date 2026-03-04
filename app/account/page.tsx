@@ -14,6 +14,8 @@ import FAQModal from '@/components/FAQModal'
 import CreatorProfileModal from '@/components/CreatorProfileModal'
 import CreatorEarningsSnapshot from '@/components/CreatorEarningsSnapshot'
 import NotificationPreferencesSection from '@/components/NotificationPreferencesSection'
+import SocialGraphListModal from '@/components/SocialGraphListModal'
+import type { SocialGraphListType } from '@/lib/socialGraph'
 import { getFollowerIdFromQueryParam } from '@/lib/notificationInbox'
 
 interface UserProfile {
@@ -106,6 +108,10 @@ function AccountPageContent() {
   const [showFAQ, setShowFAQ] = useState(false)
   const [deepLinkedCreatorId, setDeepLinkedCreatorId] = useState<string | null>(null)
   const [isCreatorProfileOpen, setIsCreatorProfileOpen] = useState(false)
+  const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
+  const [isSocialGraphOpen, setIsSocialGraphOpen] = useState(false)
+  const [socialGraphType, setSocialGraphType] = useState<SocialGraphListType>('followers')
 
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -274,6 +280,27 @@ function AccountPageContent() {
 
     checkStripeStatus()
   }, [profile?.id, getAccessToken])
+
+  useEffect(() => {
+    if (!profile?.id) return
+
+    const loadFollowCounts = async () => {
+      try {
+        const token = authenticated ? await getAccessToken() : null
+        const response = await fetch(`/api/follows?creator_id=${profile.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        })
+        if (!response.ok) return
+        const result = await response.json()
+        setFollowerCount(result.followerCount || 0)
+        setFollowingCount(result.followingCount || 0)
+      } catch (error) {
+        console.error('Error loading social graph counts:', error)
+      }
+    }
+
+    loadFollowCounts()
+  }, [authenticated, getAccessToken, profile?.id])
 
   // Load tips
   useEffect(() => {
@@ -660,6 +687,39 @@ function AccountPageContent() {
         )}
         
         <h1 className="text-3xl font-bold mb-6 text-white">{isOnboarding ? 'Set Up Your Profile' : 'Account'}</h1>
+
+        {profile?.id ? (
+          <div
+            className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
+            style={{ padding: '16px 20px' }}
+          >
+            <h2 className="font-semibold text-neon-green text-base" style={{ marginBottom: '10px' }}>
+              Social Graph
+            </h2>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSocialGraphType('followers')
+                  setIsSocialGraphOpen(true)
+                }}
+                className="text-sm border border-gray-700 rounded-full px-3 py-1.5 text-gray-200 hover:border-gray-600"
+              >
+                {followerCount} Followers
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSocialGraphType('following')
+                  setIsSocialGraphOpen(true)
+                }}
+                className="text-sm border border-gray-700 rounded-full px-3 py-1.5 text-gray-200 hover:border-gray-600"
+              >
+                {followingCount} Following
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {/* Basic Info Section */}
         <div 
@@ -1293,6 +1353,22 @@ function AccountPageContent() {
           creatorId={deepLinkedCreatorId}
         />
       )}
+
+      {profile?.id ? (
+        <SocialGraphListModal
+          isOpen={isSocialGraphOpen}
+          onClose={() => setIsSocialGraphOpen(false)}
+          profileUserId={profile.id}
+          listType={socialGraphType}
+          source="account"
+          currentDbUserId={profile.id}
+          onOpenUser={(userId) => {
+            setIsSocialGraphOpen(false)
+            setDeepLinkedCreatorId(userId)
+            setIsCreatorProfileOpen(true)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
