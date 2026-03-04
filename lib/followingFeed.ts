@@ -22,6 +22,12 @@ export interface FeedUpdateRow {
 type ProjectLookup = { id: string; title: string | null; creator_id: string | null }
 type UserLookup = { id: string; username: string | null; email: string | null }
 
+export function sortFeedUpdatesNewestFirst(updates: FeedUpdateRow[]): FeedUpdateRow[] {
+  return [...updates].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+}
+
 export function getCreatorName(user?: UserLookup | null): string {
   return user?.username?.trim() || user?.email?.trim() || 'Unknown creator'
 }
@@ -35,7 +41,7 @@ export function buildFollowingFeedItems(
   projectsById: Record<string, ProjectLookup>,
   usersById: Record<string, UserLookup>
 ): FollowingFeedItem[] {
-  return updates.map((update) => {
+  return sortFeedUpdatesNewestFirst(updates).map((update) => {
     const project = projectsById[update.project_id]
     const creatorId = project?.creator_id || update.user_id
     const creator = usersById[creatorId]
@@ -49,7 +55,9 @@ export function buildFollowingFeedItems(
       content: update.content || '',
       version_label: update.version_label || null,
       created_at: update.created_at,
-      target_path: update.project_id ? `/dashboard/projects/${update.project_id}` : '/dashboard',
+      target_path: update.project_id
+        ? `/dashboard/projects/${update.project_id}?update_id=${encodeURIComponent(update.id)}`
+        : '/dashboard',
     }
   })
 }
