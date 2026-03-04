@@ -13,6 +13,7 @@ import { TipsSkeleton } from '@/components/SkeletonLoader'
 import FAQModal from '@/components/FAQModal'
 import CreatorProfileModal from '@/components/CreatorProfileModal'
 import CreatorEarningsSnapshot from '@/components/CreatorEarningsSnapshot'
+import NotificationPreferencesSection from '@/components/NotificationPreferencesSection'
 import { getFollowerIdFromQueryParam } from '@/lib/notificationInbox'
 
 interface UserProfile {
@@ -988,6 +989,11 @@ function AccountPageContent() {
           authenticated={authenticated}
           getAccessToken={getAccessToken}
           source="account"
+        />
+
+        <NotificationPreferencesSection
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
         />
 
         {/* Payments Section */}

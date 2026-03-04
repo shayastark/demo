@@ -1,6 +1,10 @@
 import { supabaseAdmin } from './supabaseAdmin'
 import { buildFollowerNotificationTitle, getFollowerDisplayName } from './follows'
 import { CreatableNotificationType } from './notificationTypes'
+import {
+  getPreferenceFieldForNotificationType,
+  type NotificationPreferenceField,
+} from './notificationPreferences'
 
 export type NotificationType = CreatableNotificationType
 
@@ -10,6 +14,57 @@ interface CreateNotificationParams {
   title: string
   message?: string
   data?: Record<string, unknown>
+}
+
+async function isUserNotificationEnabled(
+  userId: string,
+  type: NotificationType
+): Promise<boolean> {
+  const preferenceField = getPreferenceFieldForNotificationType(type)
+  if (!preferenceField) return true
+
+  const { data, error } = await supabaseAdmin
+    .from('notification_preferences')
+    .select(preferenceField)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error reading notification preference:', error)
+    // Fail open to avoid breaking existing notification behavior.
+    return true
+  }
+
+  const value = (data as Record<string, unknown> | null)?.[preferenceField]
+  if (typeof value === 'boolean') return value
+  return true
+}
+
+async function filterUsersByNotificationPreference(
+  userIds: string[],
+  preferenceField: NotificationPreferenceField
+): Promise<string[]> {
+  if (userIds.length === 0) return []
+
+  const { data: rows, error } = await supabaseAdmin
+    .from('notification_preferences')
+    .select(`user_id, ${preferenceField}`)
+    .in('user_id', userIds)
+
+  if (error) {
+    console.error('Error filtering notification preferences:', error)
+    // Fail open to avoid suppressing notifications due to transient read failures.
+    return userIds
+  }
+
+  const disabledUserIds = new Set(
+    (rows || [])
+      .filter((row) => (row as Record<string, unknown>)[preferenceField] === false)
+      .map((row) => row.user_id)
+      .filter((id): id is string => typeof id === 'string')
+  )
+
+  return userIds.filter((id) => !disabledUserIds.has(id))
 }
 
 /**
@@ -24,6 +79,11 @@ export async function createNotification({
   data = {},
 }: CreateNotificationParams): Promise<{ success: boolean; notificationId?: string; error?: string }> {
   try {
+    const isEnabled = await isUserNotificationEnabled(userId, type)
+    if (!isEnabled) {
+      return { success: true }
+    }
+
     const { data: notification, error } = await supabaseAdmin
       .from('notifications')
       .insert({
@@ -118,9 +178,21 @@ export async function notifyNewTrackAdded({
       return { success: true, notifiedCount: 0 }
     }
 
-    // Create notifications for each user
-    const notifications = savedByUsers.map((row) => ({
-      user_id: row.user_id,
+    const recipientIds = savedByUsers
+      .map((row) => row.user_id)
+      .filter((id): id is string => typeof id === 'string')
+    const enabledRecipientIds = await filterUsersByNotificationPreference(
+      recipientIds,
+      'notify_project_updates'
+    )
+
+    if (enabledRecipientIds.length === 0) {
+      return { success: true, notifiedCount: 0 }
+    }
+
+    // Create notifications for each opted-in user.
+    const notifications = enabledRecipientIds.map((userId) => ({
+      user_id: userId,
       type: 'new_track' as const,
       title: `New track added to "${projectTitle}"`,
       message: `"${trackTitle}" was just added`,
@@ -141,7 +213,7 @@ export async function notifyNewTrackAdded({
       return { success: false, notifiedCount: 0, error: insertError.message }
     }
 
-    return { success: true, notifiedCount: savedByUsers.length }
+    return { success: true, notifiedCount: enabledRecipientIds.length }
   } catch (error) {
     console.error('Error in notifyNewTrackAdded:', error)
     return { success: false, notifiedCount: 0, error: 'Failed to create notifications' }
@@ -234,10 +306,18 @@ export async function notifyFollowersProjectUpdate({
       return { success: true, notifiedCount: 0 }
     }
 
+    const enabledFollowerIds = await filterUsersByNotificationPreference(
+      followerIds,
+      'notify_project_updates'
+    )
+    if (enabledFollowerIds.length === 0) {
+      return { success: true, notifiedCount: 0 }
+    }
+
     const trimmedContent = content.trim().slice(0, 140)
     const titlePrefix = versionLabel ? `${versionLabel}: ` : ''
 
-    const notifications = followerIds.map((userId) => ({
+    const notifications = enabledFollowerIds.map((userId) => ({
       user_id: userId,
       type: 'new_track' as const,
       title: `Project update: "${projectTitle}"`,
@@ -260,7 +340,7 @@ export async function notifyFollowersProjectUpdate({
       return { success: false, notifiedCount: 0, error: insertError.message }
     }
 
-    return { success: true, notifiedCount: followerIds.length }
+    return { success: true, notifiedCount: enabledFollowerIds.length }
   } catch (error) {
     console.error('Error notifying followers of project update:', error)
     return { success: false, notifiedCount: 0, error: 'Failed to create notifications' }
