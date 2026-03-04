@@ -287,12 +287,14 @@ async function resolveFollowColumn(): Promise<FollowColumnName> {
 export async function notifyFollowersProjectUpdate({
   creatorId,
   projectId,
+  updateId,
   projectTitle,
   content,
   versionLabel,
 }: {
   creatorId: string
   projectId: string
+  updateId: string
   projectTitle: string
   content: string
   versionLabel?: string | null
@@ -335,10 +337,11 @@ export async function notifyFollowersProjectUpdate({
       message: `${titlePrefix}${trimmedContent}`,
       data: {
         projectId,
+        updateId,
         projectTitle,
         updatePreview: trimmedContent,
         versionLabel: versionLabel || null,
-        targetPath: `/dashboard/projects/${projectId}`,
+        targetPath: buildUpdateEngagementTargetPath(projectId, updateId) + '&from_notification=true',
       },
       is_read: false,
     }))
@@ -404,7 +407,7 @@ export async function notifyCreatorUpdateEngagement({
       update_id: updateId,
       actor_user_id: actorUserId,
       actor_name: actorDisplayName,
-      targetPath: buildUpdateEngagementTargetPath(projectId, updateId),
+      targetPath: buildUpdateEngagementTargetPath(projectId, updateId) + '&from_notification=true',
       projectId,
       updateId,
       actorUserId,

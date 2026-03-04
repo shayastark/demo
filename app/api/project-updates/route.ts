@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
     notifyFollowersProjectUpdate({
       creatorId: currentUser.id,
       projectId,
+      updateId: update.id,
       projectTitle: project.title,
       content,
       versionLabel,

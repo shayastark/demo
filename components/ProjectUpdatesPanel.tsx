@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Megaphone, Send, Trash2 } from 'lucide-react'
 import { ProjectUpdate } from '@/lib/types'
 import { showToast } from './Toast'
+import { parseUpdateDeeplink, resolveUpdateIdInList } from '@/lib/updateDeeplink'
 
 interface ProjectUpdatesPanelProps {
   projectId: string
@@ -33,7 +34,18 @@ export default function ProjectUpdatesPanel({
   const [posting, setPosting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [highlightedUpdateId, setHighlightedUpdateId] = useState<string | null>(null)
+  const [deeplinkNotice, setDeeplinkNotice] = useState<{
+    action: 'resolved' | 'not_found' | 'invalid_id'
+    updateId: string | null
+    fromNotification: boolean
+  } | null>(null)
   const hasEmittedView = useRef(false)
+  const deeplinkTargetRef = useRef<string | null>(null)
+  const deeplinkFromNotificationRef = useRef(false)
+  const deeplinkHandledRef = useRef(false)
+  const highlightTimeoutRef = useRef<number | null>(null)
+  const deeplinkAttemptedRef = useRef(false)
+  const updatesContainerRef = useRef<HTMLDivElement>(null)
 
   const emitEvent = (detail: Record<string, unknown>) => {
     if (typeof window === 'undefined') return
@@ -43,6 +55,22 @@ export default function ProjectUpdatesPanel({
           schema: 'project_update.v1',
           source,
           ...detail,
+        },
+      })
+    )
+  }
+
+  const emitDeeplinkEvent = (action: 'resolved' | 'not_found' | 'invalid_id', updateId: string | null) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('update_deeplink_event', {
+        detail: {
+          schema: 'update_deeplink.v1',
+          action,
+          source,
+          project_id: projectId,
+          update_id: updateId,
+          from_notification: deeplinkFromNotificationRef.current,
         },
       })
     )
@@ -79,29 +107,78 @@ export default function ProjectUpdatesPanel({
 
   useEffect(() => {
     hasEmittedView.current = false
+    deeplinkTargetRef.current = null
+    deeplinkFromNotificationRef.current = false
+    deeplinkHandledRef.current = false
+    deeplinkAttemptedRef.current = false
+    setDeeplinkNotice(null)
+    setHighlightedUpdateId(null)
+    if (highlightTimeoutRef.current) {
+      window.clearTimeout(highlightTimeoutRef.current)
+      highlightTimeoutRef.current = null
+    }
+
+    if (typeof window !== 'undefined') {
+      const parsed = parseUpdateDeeplink(window.location.search)
+      deeplinkFromNotificationRef.current = parsed.fromNotification
+      if (parsed.state === 'invalid') {
+        deeplinkHandledRef.current = true
+        setDeeplinkNotice({
+          action: 'invalid_id',
+          updateId: parsed.updateId,
+          fromNotification: parsed.fromNotification,
+        })
+        emitDeeplinkEvent('invalid_id', parsed.updateId)
+      } else if (parsed.state === 'valid') {
+        deeplinkTargetRef.current = parsed.updateId
+      }
+    }
+
     loadUpdates()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, authenticated])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || updates.length === 0) return
-    const params = new URLSearchParams(window.location.search)
-    const targetUpdateId = params.get('update_id')
+    if (typeof window === 'undefined') return
+    if (deeplinkHandledRef.current) return
+
+    const targetUpdateId = deeplinkTargetRef.current
     if (!targetUpdateId) return
+    if (loading) return
+    if (deeplinkAttemptedRef.current) return
 
-    const targetElement = document.getElementById(`project-update-${targetUpdateId}`)
-    if (!targetElement) return
+    deeplinkAttemptedRef.current = true
 
-    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setHighlightedUpdateId(targetUpdateId)
-    const timeoutId = window.setTimeout(() => {
-      setHighlightedUpdateId(null)
-    }, 2200)
+    const resolution = resolveUpdateIdInList(targetUpdateId, updates)
+    if (resolution === 'resolved') {
+      const targetElement = document.getElementById(`project-update-${targetUpdateId}`)
+      targetElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setHighlightedUpdateId(targetUpdateId)
+      setDeeplinkNotice({
+        action: 'resolved',
+        updateId: targetUpdateId,
+        fromNotification: deeplinkFromNotificationRef.current,
+      })
+      emitDeeplinkEvent('resolved', targetUpdateId)
 
-    return () => {
-      window.clearTimeout(timeoutId)
+      if (highlightTimeoutRef.current) {
+        window.clearTimeout(highlightTimeoutRef.current)
+      }
+      highlightTimeoutRef.current = window.setTimeout(() => {
+        setHighlightedUpdateId(null)
+        highlightTimeoutRef.current = null
+      }, 2400)
+    } else {
+      updatesContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setDeeplinkNotice({
+        action: 'not_found',
+        updateId: targetUpdateId,
+        fromNotification: deeplinkFromNotificationRef.current,
+      })
+      emitDeeplinkEvent('not_found', targetUpdateId)
     }
-  }, [updates])
+    deeplinkHandledRef.current = true
+  }, [loading, updates])
 
   const createUpdate = async () => {
     const trimmed = content.trim()
@@ -194,7 +271,10 @@ export default function ProjectUpdatesPanel({
   }, [updates])
 
   return (
-    <section className="mt-6 border border-gray-800/80 rounded-lg bg-gray-950/40 overflow-hidden">
+    <section
+      ref={updatesContainerRef}
+      className="mt-6 border border-gray-800/80 rounded-lg bg-gray-950/40 overflow-hidden"
+    >
       <div className="w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5">
         <div className="flex items-center gap-2">
           <Megaphone className="w-4 h-4 text-neon-green" />
@@ -203,6 +283,28 @@ export default function ProjectUpdatesPanel({
         </div>
         {latestSummary && <p className="text-[11px] text-gray-500 truncate max-w-[50%]">{latestSummary}</p>}
       </div>
+
+      {deeplinkNotice && (
+        <div className="mx-3 sm:mx-4 mb-3 rounded-md border border-neon-green/30 bg-neon-green/10 px-3 py-2 text-xs text-neon-green flex items-center justify-between gap-3">
+          <span>
+            {deeplinkNotice.action === 'resolved'
+              ? 'Jumped from notification to this update.'
+              : deeplinkNotice.action === 'not_found'
+                ? 'Linked update was not found. Showing latest updates.'
+                : 'Invalid update link. Showing latest updates.'}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setHighlightedUpdateId(null)
+              setDeeplinkNotice(null)
+            }}
+            className="text-[11px] text-neon-green/90 hover:text-neon-green underline underline-offset-2"
+          >
+            Clear focus
+          </button>
+        </div>
+      )}
 
       {canManage && (
         <div className="px-3 sm:px-4 pb-3">
