@@ -49,7 +49,8 @@ export default function CommentsPanel({
       const response = await fetch(`/api/comments?project_id=${projectId}`, { headers })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to load comments')
-      setProjectComments(sortCommentsPinnedFirst(result.comments || []))
+      const nextComments = sortCommentsPinnedFirst<Comment>((result.comments || []) as Comment[])
+      setProjectComments(nextComments)
     } catch (error) {
       console.error('Error loading project comments:', error)
     } finally {

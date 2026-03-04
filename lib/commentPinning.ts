@@ -1,5 +1,5 @@
 type PinSortableComment = {
-  is_pinned: boolean | null | undefined
+  is_pinned?: boolean | null | undefined
   created_at: string
 }
 
