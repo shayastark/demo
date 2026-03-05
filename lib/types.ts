@@ -112,5 +112,11 @@ export interface ProjectUpdate {
   updated_at: string
   author_name?: string
   can_delete?: boolean
+  reactions?: {
+    helpful: number
+    fire: number
+    agree: number
+  }
+  viewer_reactions?: Partial<Record<'helpful' | 'fire' | 'agree', boolean>>
 }
 

@@ -5,6 +5,10 @@ import { Megaphone, Send, Trash2 } from 'lucide-react'
 import { ProjectUpdate } from '@/lib/types'
 import { showToast } from './Toast'
 import { parseUpdateDeeplink, resolveUpdateIdInList } from '@/lib/updateDeeplink'
+import {
+  buildEmptyProjectUpdateReactionSummary,
+  type ProjectUpdateReactionType,
+} from '@/lib/projectUpdateReactions'
 
 interface ProjectUpdatesPanelProps {
   projectId: string
@@ -18,6 +22,24 @@ type UpdatesResponse = {
   updates?: ProjectUpdate[]
   can_manage?: boolean
 }
+
+type UpdateReactionsResponse = {
+  reactionsByUpdate?: Record<
+    string,
+    {
+      helpful: number
+      fire: number
+      agree: number
+      viewerReactions: Partial<Record<ProjectUpdateReactionType, boolean>>
+    }
+  >
+}
+
+const UPDATE_REACTION_CHIPS: Array<{ key: ProjectUpdateReactionType; label: string }> = [
+  { key: 'helpful', label: 'Helpful' },
+  { key: 'fire', label: 'Fire' },
+  { key: 'agree', label: 'Agree' },
+]
 
 export default function ProjectUpdatesPanel({
   projectId,
@@ -33,6 +55,18 @@ export default function ProjectUpdatesPanel({
   const [versionLabel, setVersionLabel] = useState('')
   const [posting, setPosting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [reactionsByUpdate, setReactionsByUpdate] = useState<
+    Record<
+      string,
+      {
+        helpful: number
+        fire: number
+        agree: number
+        viewerReactions: Partial<Record<ProjectUpdateReactionType, boolean>>
+      }
+    >
+  >({})
+  const [reactionLoadingKey, setReactionLoadingKey] = useState<string | null>(null)
   const [highlightedUpdateId, setHighlightedUpdateId] = useState<string | null>(null)
   const [deeplinkNotice, setDeeplinkNotice] = useState<{
     action: 'resolved' | 'not_found' | 'invalid_id'
@@ -96,12 +130,39 @@ export default function ProjectUpdatesPanel({
         emitEvent({ action: 'view', project_id: projectId })
         hasEmittedView.current = true
       }
+
+      const nextUpdates = result.updates || []
+      if (nextUpdates.length > 0) {
+        await loadReactions(nextUpdates.map((update) => update.id), headers)
+      } else {
+        setReactionsByUpdate({})
+      }
     } catch (error) {
       console.error('Error loading project updates:', error)
       setUpdates([])
       setCanManage(false)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadReactions = async (updateIds: string[], headersFromUpdates?: Record<string, string>) => {
+    if (updateIds.length === 0) {
+      setReactionsByUpdate({})
+      return
+    }
+    try {
+      const headers = headersFromUpdates || (await withAuthHeaders())
+      const response = await fetch(
+        `/api/project-update-reactions?update_ids=${encodeURIComponent(updateIds.join(','))}`,
+        { headers }
+      )
+      const result = (await response.json()) as UpdateReactionsResponse & { error?: string }
+      if (!response.ok) throw new Error(result.error || 'Failed to load update reactions')
+      setReactionsByUpdate(result.reactionsByUpdate || {})
+    } catch (error) {
+      console.error('Error loading update reactions:', error)
+      setReactionsByUpdate({})
     }
   }
 
@@ -270,6 +331,75 @@ export default function ProjectUpdatesPanel({
     return latest.version_label ? `${latest.version_label}: ${latest.content}` : latest.content
   }, [updates])
 
+  const toggleReaction = async (updateId: string, reactionType: ProjectUpdateReactionType) => {
+    if (!authenticated) {
+      onRequireAuth?.()
+      return
+    }
+    if (!getAccessToken) return
+
+    const key = `${updateId}-${reactionType}`
+    setReactionLoadingKey(key)
+    const previous = reactionsByUpdate
+    const current = reactionsByUpdate[updateId] || buildEmptyProjectUpdateReactionSummary()
+    const wasActive = !!current.viewerReactions[reactionType]
+    const nextCount = Math.max(0, (current[reactionType] || 0) + (wasActive ? -1 : 1))
+
+    setReactionsByUpdate({
+      ...reactionsByUpdate,
+      [updateId]: {
+        ...current,
+        [reactionType]: nextCount,
+        viewerReactions: {
+          ...current.viewerReactions,
+          [reactionType]: !wasActive,
+        },
+      },
+    })
+
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+
+      const response = await fetch('/api/project-update-reactions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          update_id: updateId,
+          reaction_type: reactionType,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to toggle update reaction')
+
+      const action = result.action === 'remove' ? 'remove' : 'add'
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_update_reaction_event', {
+            detail: {
+              schema: 'project_update_reaction.v1',
+              action,
+              source,
+              project_id: projectId,
+              update_id: updateId,
+              reaction_type: reactionType,
+              is_authenticated: !!authenticated,
+            },
+          })
+        )
+      }
+    } catch (error) {
+      setReactionsByUpdate(previous)
+      console.error('Error toggling project update reaction:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to toggle reaction', 'error')
+    } finally {
+      setReactionLoadingKey(null)
+    }
+  }
+
   return (
     <section
       ref={updatesContainerRef}
@@ -364,6 +494,31 @@ export default function ProjectUpdatesPanel({
                       <span className="text-[11px] text-gray-500">{new Date(update.created_at).toLocaleString()}</span>
                     </div>
                     <p className="text-sm text-gray-100 whitespace-pre-wrap break-words">{update.content}</p>
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      {UPDATE_REACTION_CHIPS.map((chip) => {
+                        const reactionState =
+                          reactionsByUpdate[update.id] || buildEmptyProjectUpdateReactionSummary()
+                        const isActive = !!reactionState.viewerReactions[chip.key]
+                        const count = reactionState[chip.key] || 0
+                        const isLoading = reactionLoadingKey === `${update.id}-${chip.key}`
+
+                        return (
+                          <button
+                            key={`${update.id}-${chip.key}`}
+                            type="button"
+                            onClick={() => toggleReaction(update.id, chip.key)}
+                            disabled={isLoading}
+                            className={`text-[11px] px-2.5 py-1 rounded-full border transition ${
+                              isActive
+                                ? 'border-neon-green text-neon-green bg-neon-green/10'
+                                : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                            }`}
+                          >
+                            {chip.label} {count}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                   {(canManage || update.can_delete) && (
                     <button
