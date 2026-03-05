@@ -10,7 +10,7 @@ import {
   sortCommentsPinnedFirst,
   withPinnedFlag,
 } from '@/lib/commentPinning'
-import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
+import { canCommentProject, canViewProject } from '@/lib/projectAccessPolicyServer'
 
 type CommentRecord = {
   id: string
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
       .eq('id', projectId)
       .single()
 
-    const canAccessProjectComments = !!project && await canUserAccessProjectRow({
+    const canAccessProjectComments = !!project && await canViewProject({
       project: {
         id: project.id,
         creator_id: project.creator_id,
@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
       .eq('id', project_id)
       .single()
 
-    const canCreateComment = !!project && await canUserAccessProjectRow({
+    const canViewProjectComments = !!project && await canViewProject({
       project: {
         id: project.id,
         creator_id: project.creator_id,
@@ -280,19 +280,21 @@ export async function POST(request: NextRequest) {
       isDirectAccess: true,
     })
 
-    if (!canCreateComment) {
+    if (!canViewProjectComments) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    if (project.visibility === 'private' && user.id !== project.creator_id) {
-      const canCommentAsCollaborator = await hasProjectRole({
-        projectId: project.id,
-        projectCreatorId: project.creator_id,
-        userId: user.id,
-        minRole: 'commenter',
-      })
-      if (!canCommentAsCollaborator) {
-        return NextResponse.json({ error: 'Insufficient project role' }, { status: 403 })
-      }
+    const canCreateComment = !!project && await canCommentProject({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: user.id,
+      isDirectAccess: true,
+    })
+    if (!canCreateComment) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const insertPayload: Record<string, unknown> = {

@@ -6,7 +6,7 @@ import {
   parseProjectSubscriptionProjectIdFromBody,
   parseProjectSubscriptionProjectIdFromDelete,
 } from '@/lib/projectSubscriptions'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canViewProject } from '@/lib/projectAccessPolicyServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    const canAccess = await canUserAccessProjectRow({
+    const canAccess = await canViewProject({
       project: {
         id: project.id,
         creator_id: project.creator_id,
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    const canAccess = await canUserAccessProjectRow({
+    const canAccess = await canViewProject({
       project: {
         id: project.id,
         creator_id: project.creator_id,

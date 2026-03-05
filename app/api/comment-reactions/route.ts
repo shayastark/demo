@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import { isReactionType, summarizeCommentReactions, getReactionToggleAction } from '@/lib/commentReactions'
-import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
+import { canReactProject, canViewProject } from '@/lib/projectAccessPolicyServer'
 
 async function getAuthenticatedUser(request: NextRequest) {
   const authResult = await verifyPrivyToken(request.headers.get('authorization'))
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canAccess = await canUserAccessProjectRow({
+    const canView = await canViewProject({
       project: {
         id: project.id,
         creator_id: project.creator_id,
@@ -98,19 +98,21 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       isDirectAccess: true,
     })
-    if (!canAccess) {
+    if (!canView) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    if (project.visibility === 'private' && user.id !== project.creator_id) {
-      const canReactAsCollaborator = await hasProjectRole({
-        projectId: project.id,
-        projectCreatorId: project.creator_id,
-        userId: user.id,
-        minRole: 'commenter',
-      })
-      if (!canReactAsCollaborator) {
-        return NextResponse.json({ error: 'Insufficient project role' }, { status: 403 })
-      }
+    const canReact = await canReactProject({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: user.id,
+      isDirectAccess: true,
+    })
+    if (!canReact) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const { data: existingReaction } = await supabaseAdmin

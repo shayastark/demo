@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { notifyNewTrackAdded } from '@/lib/notifications'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canViewProject } from '@/lib/projectAccessPolicyServer'
 
 // Helper to verify project ownership and get project details
 async function getProjectIfOwner(projectId: string, userId: string): Promise<{ id: string; title: string; creator_id: string } | null> {
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canAccess = await canUserAccessProjectRow({
+    const canAccess = await canViewProject({
       project: {
         id: project.id,
         creator_id: project.creator_id,

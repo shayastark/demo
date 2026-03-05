@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { parseLimit } from '@/lib/validation'
 import { buildFollowingFeedItems, type FeedUpdateRow } from '@/lib/followingFeed'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canViewProject } from '@/lib/projectAccessPolicyServer'
 
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
 
     const visibleProjectsById: Record<string, { id: string; title: string | null; creator_id: string | null }> = {}
     for (const project of projects || []) {
-      const canAccess = await canUserAccessProjectRow({
+      const canAccess = await canViewProject({
         project: {
           id: project.id,
           creator_id: project.creator_id,

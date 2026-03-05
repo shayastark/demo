@@ -7,7 +7,7 @@ import {
   getSupporterName,
   parseTopSupportersLimit,
 } from '@/lib/topSupporters'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canViewProject } from '@/lib/projectAccessPolicyServer'
 
 let cachedHasTipSupportColumns: boolean | null = null
 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canAccessProject = await canUserAccessProjectRow({
+    const canAccessProject = await canViewProject({
       project: {
         id: project.data.id,
         creator_id: project.data.creator_id,

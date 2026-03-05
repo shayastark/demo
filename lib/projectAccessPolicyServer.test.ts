@@ -135,6 +135,28 @@ test('visibility semantics: public visible, unlisted direct-only, private grant-
   assert.equal(privateBlocked.canView, false)
 })
 
+test('parity: authenticated viewers can comment/react on public and unlisted direct projects', () => {
+  const publicViewer = buildProjectPolicySnapshot({
+    userId: 'user',
+    project: publicProject,
+    isDirectAccess: false,
+    hasActiveGrant: false,
+    grantRole: null,
+  })
+  assert.equal(publicViewer.canComment, true)
+  assert.equal(publicViewer.canReact, true)
+
+  const unlistedDirectViewer = buildProjectPolicySnapshot({
+    userId: 'user',
+    project: unlistedProject,
+    isDirectAccess: true,
+    hasActiveGrant: false,
+    grantRole: null,
+  })
+  assert.equal(unlistedDirectViewer.canComment, true)
+  assert.equal(unlistedDirectViewer.canReact, true)
+})
+
 test('request review path semantics: approve grants view, deny remains blocked', () => {
   const approveShouldUpsert = shouldUpsertAccessGrantOnReview('approve')
   assert.equal(approveShouldUpsert, true)
