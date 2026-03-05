@@ -509,6 +509,13 @@ export default function ClientDashboard() {
             </Link>
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <Link
+              href="/explore"
+              className="text-xs max-[390px]:text-[10px] sm:text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
+            >
+              Explore
+            </Link>
+            <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
+            <Link
               href="/dashboard/projects/new"
               className="flex items-center gap-1 max-[390px]:gap-0.5 text-neon-green hover:text-white transition whitespace-nowrap text-xs max-[390px]:text-[10px] sm:text-sm font-medium"
             >

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Home, ListMusic, User, X, Play, Pause, Trash2, SkipForward, SkipBack, Bell, Check, DollarSign, Trash, UserPlus, Music2, Share2 } from 'lucide-react'
+import { Home, ListMusic, User, X, Play, Pause, Trash2, SkipForward, SkipBack, Bell, Check, DollarSign, Trash, UserPlus, Music2, Share2, Compass } from 'lucide-react'
 import { usePrivy } from '@privy-io/react-auth'
 import { showToast } from './Toast'
 import { createClient } from '@supabase/supabase-js'
@@ -1003,6 +1003,7 @@ export default function BottomTabBar() {
 
   const tabs = [
     { href: '/dashboard', icon: Home, label: 'Home' },
+    { href: '/explore', icon: Compass, label: 'Explore' },
     { href: '#queue', icon: ListMusic, label: 'Queue', onClick: () => setIsQueueOpen(true), badge: queue.length },
     { href: '#notifications', icon: Bell, label: 'Alerts', onClick: () => {
       setIsNotificationsOpen(true)
