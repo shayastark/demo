@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const { data: row, error } = await supabaseAdmin
       .from('notification_preferences')
       .select(
-        'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, updated_at'
+        'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, delivery_mode, digest_window, updated_at'
       )
       .eq('user_id', currentUser.id)
       .maybeSingle()
@@ -71,7 +71,7 @@ export async function PATCH(request: NextRequest) {
         { onConflict: 'user_id' }
       )
       .select(
-        'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, updated_at'
+        'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, delivery_mode, digest_window, updated_at'
       )
       .single()
 

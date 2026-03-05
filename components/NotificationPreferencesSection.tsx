@@ -5,7 +5,8 @@ import { Bell } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
-  type NotificationPreferenceField,
+  type NotificationDeliveryMode,
+  type NotificationDigestWindow,
   type NotificationPreferences,
 } from '@/lib/notificationPreferences'
 
@@ -14,14 +15,20 @@ interface NotificationPreferencesSectionProps {
   getAccessToken: () => Promise<string | null>
 }
 
-const PREFERENCE_LABELS: Record<NotificationPreferenceField, string> = {
+type NotificationToggleField =
+  | 'notify_new_follower'
+  | 'notify_project_updates'
+  | 'notify_tips'
+  | 'notify_project_saved'
+
+const PREFERENCE_LABELS: Record<NotificationToggleField, string> = {
   notify_new_follower: 'New followers',
   notify_project_updates: 'Project updates',
   notify_tips: 'Tips received',
   notify_project_saved: 'Project saved activity',
 }
 
-const PREFERENCE_FIELDS: NotificationPreferenceField[] = [
+const PREFERENCE_FIELDS: NotificationToggleField[] = [
   'notify_new_follower',
   'notify_project_updates',
   'notify_tips',
@@ -36,7 +43,7 @@ export default function NotificationPreferencesSection({
     DEFAULT_NOTIFICATION_PREFERENCES
   )
   const [loading, setLoading] = useState(false)
-  const [savingField, setSavingField] = useState<NotificationPreferenceField | null>(null)
+  const [savingField, setSavingField] = useState<NotificationToggleField | null>(null)
   const [error, setError] = useState<string | null>(null)
   const hasSentViewRef = useRef(false)
 
@@ -102,7 +109,7 @@ export default function NotificationPreferencesSection({
     emitEvent({ action: 'view' })
   }, [authenticated, loading])
 
-  const togglePreference = async (field: NotificationPreferenceField) => {
+  const togglePreference = async (field: NotificationToggleField) => {
     if (!authenticated || loading || savingField) return
 
     const previousValue = preferences[field]
@@ -150,6 +157,58 @@ export default function NotificationPreferencesSection({
     }
   }
 
+  const updateDeliveryPreference = async (updates: {
+    delivery_mode?: NotificationDeliveryMode
+    digest_window?: NotificationDigestWindow
+  }) => {
+    if (!authenticated || loading || savingField) return
+    const previous = preferences
+    setError(null)
+    setPreferences((prev) => ({ ...prev, ...updates }))
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/notification-preferences', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to save notification preferences')
+      const nextPreferences =
+        (result.preferences as NotificationPreferences) || DEFAULT_NOTIFICATION_PREFERENCES
+      setPreferences(nextPreferences)
+      emitEvent({
+        action: 'mode_change',
+        delivery_mode: nextPreferences.delivery_mode,
+        digest_window: nextPreferences.digest_window,
+      })
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('notification_digest_event', {
+            detail: {
+              schema: 'notification_digest.v1',
+              action: 'mode_change',
+              source: 'account',
+              delivery_mode: nextPreferences.delivery_mode,
+              digest_window: nextPreferences.digest_window,
+              group_type: null,
+              grouped_count: null,
+            },
+          })
+        )
+      }
+    } catch (saveError) {
+      console.error('Error saving delivery preferences:', saveError)
+      setPreferences(previous)
+      setError('Failed to save digest mode. Please try again.')
+      showToast('Failed to save digest mode preference', 'error')
+    }
+  }
+
   return (
     <div
       className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
@@ -163,6 +222,60 @@ export default function NotificationPreferencesSection({
       <p className="text-sm text-gray-500 mb-4">
         Choose which in-app notifications you want to receive.
       </p>
+
+      <div className="mb-4 border border-gray-800 rounded-lg p-3">
+        <p className="text-xs text-gray-400 mb-2">Delivery mode</p>
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => updateDeliveryPreference({ delivery_mode: 'instant' })}
+            className={`text-xs px-2.5 py-1.5 rounded border ${
+              preferences.delivery_mode === 'instant'
+                ? 'border-neon-green text-neon-green'
+                : 'border-gray-700 text-gray-300'
+            }`}
+          >
+            Instant
+          </button>
+          <button
+            type="button"
+            onClick={() => updateDeliveryPreference({ delivery_mode: 'digest' })}
+            className={`text-xs px-2.5 py-1.5 rounded border ${
+              preferences.delivery_mode === 'digest'
+                ? 'border-neon-green text-neon-green'
+                : 'border-gray-700 text-gray-300'
+            }`}
+          >
+            Digest
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={preferences.delivery_mode !== 'digest'}
+            onClick={() => updateDeliveryPreference({ digest_window: 'daily' })}
+            className={`text-xs px-2.5 py-1.5 rounded border ${
+              preferences.digest_window === 'daily'
+                ? 'border-neon-green text-neon-green'
+                : 'border-gray-700 text-gray-300'
+            } disabled:opacity-60`}
+          >
+            Daily
+          </button>
+          <button
+            type="button"
+            disabled={preferences.delivery_mode !== 'digest'}
+            onClick={() => updateDeliveryPreference({ digest_window: 'weekly' })}
+            className={`text-xs px-2.5 py-1.5 rounded border ${
+              preferences.digest_window === 'weekly'
+                ? 'border-neon-green text-neon-green'
+                : 'border-gray-700 text-gray-300'
+            } disabled:opacity-60`}
+          >
+            Weekly
+          </button>
+        </div>
+      </div>
 
       {error ? <p className="text-xs text-gray-500 mb-3">{error}</p> : null}
 

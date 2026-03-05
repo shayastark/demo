@@ -16,6 +16,14 @@ test('toNotificationPreferences applies defaults when row is missing', () => {
       notify_tips: false,
     }
   )
+  assert.deepEqual(
+    toNotificationPreferences({ delivery_mode: 'digest', digest_window: 'weekly' }),
+    {
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      delivery_mode: 'digest',
+      digest_window: 'weekly',
+    }
+  )
 })
 
 test('parseNotificationPreferencesPatch validates allowed fields and booleans', () => {
@@ -23,11 +31,23 @@ test('parseNotificationPreferencesPatch validates allowed fields and booleans', 
   assert.equal(valid.success, true)
   assert.deepEqual(valid.updates, { notify_tips: false, notify_new_follower: true })
 
+  const validDelivery = parseNotificationPreferencesPatch({
+    delivery_mode: 'digest',
+    digest_window: 'weekly',
+  })
+  assert.equal(validDelivery.success, true)
+  assert.deepEqual(validDelivery.updates, {
+    delivery_mode: 'digest',
+    digest_window: 'weekly',
+  })
+
   const unknown = parseNotificationPreferencesPatch({ invalid_field: true })
   assert.equal(unknown.success, false)
 
   const invalidType = parseNotificationPreferencesPatch({ notify_tips: 'nope' })
   assert.equal(invalidType.success, false)
+  const invalidDeliveryMode = parseNotificationPreferencesPatch({ delivery_mode: 'fast' })
+  assert.equal(invalidDeliveryMode.success, false)
 
   const empty = parseNotificationPreferencesPatch({})
   assert.equal(empty.success, false)

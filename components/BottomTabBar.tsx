@@ -8,6 +8,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { showToast } from './Toast'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeNotificationType, type NotificationType } from '@/lib/notificationTypes'
+import type { NotificationDeliveryMode, NotificationDigestWindow } from '@/lib/notificationPreferences'
 import {
   getProjectAccessInviteProjectId,
   getFollowerNotificationName,
@@ -30,6 +31,15 @@ interface Notification {
   data: Record<string, any>
   is_read: boolean
   created_at: string
+}
+
+interface NotificationDigestGroup {
+  id: string
+  group_type: string
+  grouped_count: number
+  latest_created_at: string
+  target_path: string | null
+  title: string
 }
 
 const NOTIFICATION_ACTION_EVENT = 'notification_inbox_event'
@@ -66,6 +76,10 @@ export default function BottomTabBar() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [notificationDeliveryMode, setNotificationDeliveryMode] = useState<NotificationDeliveryMode>('instant')
+  const [notificationDigestWindow, setNotificationDigestWindow] = useState<NotificationDigestWindow>('daily')
+  const [digestGroups, setDigestGroups] = useState<NotificationDigestGroup[]>([])
+  const [digestLoading, setDigestLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   
   // Queue playback state
@@ -158,6 +172,32 @@ export default function BottomTabBar() {
       )
     },
     []
+  )
+
+  const emitNotificationDigestEvent = useCallback(
+    (
+      action: 'mode_change' | 'digest_view' | 'digest_click',
+      payload?: {
+        groupType?: string | null
+        groupedCount?: number | null
+      }
+    ) => {
+      if (typeof window === 'undefined') return
+      window.dispatchEvent(
+        new CustomEvent('notification_digest_event', {
+          detail: {
+            schema: 'notification_digest.v1',
+            action,
+            source: 'bottom_tab_bar',
+            delivery_mode: notificationDeliveryMode,
+            digest_window: notificationDigestWindow,
+            group_type: payload?.groupType || null,
+            grouped_count: payload?.groupedCount ?? null,
+          },
+        })
+      )
+    },
+    [notificationDeliveryMode, notificationDigestWindow]
   )
 
   // Detect mobile
@@ -722,6 +762,57 @@ export default function BottomTabBar() {
     }
   }, [authenticated, getAccessToken])
 
+  const fetchNotificationDeliveryPreferences = useCallback(async () => {
+    if (!authenticated) return
+    try {
+      const token = await getAccessToken()
+      const response = await fetch('/api/notification-preferences', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) return
+      const data = await response.json()
+      const mode =
+        data?.preferences?.delivery_mode === 'digest' || data?.preferences?.delivery_mode === 'instant'
+          ? data.preferences.delivery_mode
+          : 'instant'
+      const window =
+        data?.preferences?.digest_window === 'weekly' || data?.preferences?.digest_window === 'daily'
+          ? data.preferences.digest_window
+          : 'daily'
+      setNotificationDeliveryMode(mode)
+      setNotificationDigestWindow(window)
+    } catch (error) {
+      console.error('Error loading notification delivery preferences:', error)
+    }
+  }, [authenticated, getAccessToken])
+
+  const fetchDigestGroups = useCallback(async () => {
+    if (!authenticated) return
+    setDigestLoading(true)
+    try {
+      const token = await getAccessToken()
+      const response = await fetch(
+        `/api/notifications/digest?window=${encodeURIComponent(notificationDigestWindow)}&limit=10`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      if (!response.ok) {
+        setDigestGroups([])
+        return
+      }
+      const data = await response.json()
+      const nextGroups = (data.items || []) as NotificationDigestGroup[]
+      setDigestGroups(nextGroups)
+      emitNotificationDigestEvent('digest_view')
+    } catch (error) {
+      console.error('Error loading notification digest groups:', error)
+      setDigestGroups([])
+    } finally {
+      setDigestLoading(false)
+    }
+  }, [authenticated, getAccessToken, notificationDigestWindow, emitNotificationDigestEvent])
+
   // Fetch user ID for realtime subscription
   useEffect(() => {
     const fetchUserId = async () => {
@@ -751,8 +842,14 @@ export default function BottomTabBar() {
   useEffect(() => {
     if (authenticated) {
       fetchNotifications()
+      fetchNotificationDeliveryPreferences()
     }
-  }, [authenticated, fetchNotifications])
+  }, [authenticated, fetchNotifications, fetchNotificationDeliveryPreferences])
+
+  useEffect(() => {
+    if (!authenticated || notificationDeliveryMode !== 'digest') return
+    fetchDigestGroups()
+  }, [authenticated, notificationDeliveryMode, notificationDigestWindow, fetchDigestGroups])
 
   // Subscribe to realtime notifications
   useEffect(() => {
@@ -862,6 +959,48 @@ export default function BottomTabBar() {
       })
     } catch (error) {
       console.error('Error deleting notification:', error)
+    }
+  }
+
+  const updateNotificationDigestMode = async (
+    mode: NotificationDeliveryMode,
+    window: NotificationDigestWindow = notificationDigestWindow
+  ) => {
+    if (!authenticated) return
+    const prevMode = notificationDeliveryMode
+    const prevWindow = notificationDigestWindow
+    setNotificationDeliveryMode(mode)
+    setNotificationDigestWindow(window)
+    try {
+      const token = await getAccessToken()
+      const response = await fetch('/api/notification-preferences', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          delivery_mode: mode,
+          digest_window: window,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update digest mode')
+      const resolvedMode =
+        result?.preferences?.delivery_mode === 'digest' || result?.preferences?.delivery_mode === 'instant'
+          ? result.preferences.delivery_mode
+          : mode
+      const resolvedWindow =
+        result?.preferences?.digest_window === 'weekly' || result?.preferences?.digest_window === 'daily'
+          ? result.preferences.digest_window
+          : window
+      setNotificationDeliveryMode(resolvedMode)
+      setNotificationDigestWindow(resolvedWindow)
+      emitNotificationDigestEvent('mode_change')
+    } catch (error) {
+      console.error('Error updating digest mode:', error)
+      setNotificationDeliveryMode(prevMode)
+      setNotificationDigestWindow(prevWindow)
     }
   }
 
@@ -1008,6 +1147,10 @@ export default function BottomTabBar() {
     { href: '#notifications', icon: Bell, label: 'Alerts', onClick: () => {
       setIsNotificationsOpen(true)
       emitNotificationEvent('open')
+      fetchNotificationDeliveryPreferences()
+      if (notificationDeliveryMode === 'digest') {
+        fetchDigestGroups()
+      }
       // Mark first 5 unread as read when opening
       const unreadIds = notifications.filter((n) => !n.is_read).slice(0, 5).map((n) => n.id)
       if (unreadIds.length > 0) {
@@ -1909,6 +2052,86 @@ export default function BottomTabBar() {
               </div>
             </div>
 
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 20px',
+                borderBottom: '1px solid #1f2937',
+                gap: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => updateNotificationDigestMode('instant')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: notificationDeliveryMode === 'instant' ? '#39FF14' : '#374151',
+                    color: notificationDeliveryMode === 'instant' ? '#39FF14' : '#9ca3af',
+                    backgroundColor: 'transparent',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Instant
+                </button>
+                <button
+                  onClick={() => updateNotificationDigestMode('digest')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: notificationDeliveryMode === 'digest' ? '#39FF14' : '#374151',
+                    color: notificationDeliveryMode === 'digest' ? '#39FF14' : '#9ca3af',
+                    backgroundColor: 'transparent',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Digest
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button
+                  disabled={notificationDeliveryMode !== 'digest'}
+                  onClick={() => updateNotificationDigestMode(notificationDeliveryMode, 'daily')}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: notificationDigestWindow === 'daily' ? '#39FF14' : '#374151',
+                    color: notificationDigestWindow === 'daily' ? '#39FF14' : '#9ca3af',
+                    backgroundColor: 'transparent',
+                    fontSize: '11px',
+                    cursor: notificationDeliveryMode === 'digest' ? 'pointer' : 'default',
+                    opacity: notificationDeliveryMode === 'digest' ? 1 : 0.5,
+                  }}
+                >
+                  Daily
+                </button>
+                <button
+                  disabled={notificationDeliveryMode !== 'digest'}
+                  onClick={() => updateNotificationDigestMode(notificationDeliveryMode, 'weekly')}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: notificationDigestWindow === 'weekly' ? '#39FF14' : '#374151',
+                    color: notificationDigestWindow === 'weekly' ? '#39FF14' : '#9ca3af',
+                    backgroundColor: 'transparent',
+                    fontSize: '11px',
+                    cursor: notificationDeliveryMode === 'digest' ? 'pointer' : 'default',
+                    opacity: notificationDeliveryMode === 'digest' ? 1 : 0.5,
+                  }}
+                >
+                  Weekly
+                </button>
+              </div>
+            </div>
+
             {/* Notifications Content */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {notificationsLoading && notifications.length === 0 ? (
@@ -1934,6 +2157,50 @@ export default function BottomTabBar() {
                 </div>
               ) : (
                 <div>
+                  {notificationDeliveryMode === 'digest' ? (
+                    <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid #1f2937' }}>
+                      <p style={{ color: '#9ca3af', fontSize: '11px', margin: '0 0 8px 4px', textTransform: 'uppercase' }}>
+                        Digest summary
+                      </p>
+                      {digestLoading ? (
+                        <p style={{ color: '#6b7280', fontSize: '12px', padding: '0 4px 6px' }}>Loading digest...</p>
+                      ) : digestGroups.length === 0 ? (
+                        <p style={{ color: '#6b7280', fontSize: '12px', padding: '0 4px 6px' }}>No digest groups in this window.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {digestGroups.map((group) => (
+                            <button
+                              key={group.id}
+                              onClick={() => {
+                                emitNotificationDigestEvent('digest_click', {
+                                  groupType: group.group_type,
+                                  groupedCount: group.grouped_count,
+                                })
+                                if (group.target_path) {
+                                  setIsNotificationsOpen(false)
+                                  router.push(group.target_path)
+                                }
+                              }}
+                              style={{
+                                border: '1px solid #374151',
+                                borderRadius: '10px',
+                                backgroundColor: '#1f2937',
+                                padding: '10px 12px',
+                                color: '#e5e7eb',
+                                textAlign: 'left',
+                                cursor: group.target_path ? 'pointer' : 'default',
+                              }}
+                            >
+                              <div style={{ fontSize: '13px', fontWeight: 500 }}>{group.title}</div>
+                              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+                                {group.grouped_count} grouped • {formatNotificationTime(group.latest_created_at)}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}

@@ -5,15 +5,21 @@ export interface NotificationPreferences {
   notify_project_updates: boolean
   notify_tips: boolean
   notify_project_saved: boolean
+  delivery_mode: NotificationDeliveryMode
+  digest_window: NotificationDigestWindow
 }
 
 export type NotificationPreferenceField = keyof NotificationPreferences
+export type NotificationDeliveryMode = 'instant' | 'digest'
+export type NotificationDigestWindow = 'daily' | 'weekly'
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   notify_new_follower: true,
   notify_project_updates: true,
   notify_tips: true,
   notify_project_saved: true,
+  delivery_mode: 'instant',
+  digest_window: 'daily',
 }
 
 const PREFERENCE_FIELDS: NotificationPreferenceField[] = [
@@ -21,7 +27,15 @@ const PREFERENCE_FIELDS: NotificationPreferenceField[] = [
   'notify_project_updates',
   'notify_tips',
   'notify_project_saved',
+  'delivery_mode',
+  'digest_window',
 ]
+const BOOLEAN_PREFERENCE_FIELDS = new Set<NotificationPreferenceField>([
+  'notify_new_follower',
+  'notify_project_updates',
+  'notify_tips',
+  'notify_project_saved',
+])
 
 const NOTIFICATION_TYPE_TO_PREFERENCE: Record<NotificationType, NotificationPreferenceField | null> = {
   new_follower: 'notify_new_follower',
@@ -58,6 +72,14 @@ export function toNotificationPreferences(
       typeof row?.notify_project_saved === 'boolean'
         ? row.notify_project_saved
         : DEFAULT_NOTIFICATION_PREFERENCES.notify_project_saved,
+    delivery_mode:
+      row?.delivery_mode === 'digest' || row?.delivery_mode === 'instant'
+        ? row.delivery_mode
+        : DEFAULT_NOTIFICATION_PREFERENCES.delivery_mode,
+    digest_window:
+      row?.digest_window === 'weekly' || row?.digest_window === 'daily'
+        ? row.digest_window
+        : DEFAULT_NOTIFICATION_PREFERENCES.digest_window,
   }
 }
 
@@ -82,10 +104,28 @@ export function parseNotificationPreferencesPatch(body: unknown): {
       return { success: false, error: `Unknown preference field: ${key}` }
     }
     const value = record[key]
+    if (key === 'delivery_mode') {
+      if (value !== 'instant' && value !== 'digest') {
+        return { success: false, error: 'delivery_mode must be instant or digest' }
+      }
+      updates[key] = value
+      continue
+    }
+    if (key === 'digest_window') {
+      if (value !== 'daily' && value !== 'weekly') {
+        return { success: false, error: 'digest_window must be daily or weekly' }
+      }
+      updates[key] = value
+      continue
+    }
+    if (!BOOLEAN_PREFERENCE_FIELDS.has(key as NotificationPreferenceField)) {
+      return { success: false, error: `Unknown preference field: ${key}` }
+    }
     if (typeof value !== 'boolean') {
       return { success: false, error: `Preference field ${key} must be boolean` }
     }
-    updates[key as NotificationPreferenceField] = value
+    updates[key as 'notify_new_follower' | 'notify_project_updates' | 'notify_tips' | 'notify_project_saved'] =
+      value
   }
 
   return { success: true, updates }
