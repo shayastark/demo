@@ -598,42 +598,65 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* Ensure Privy auth UI stays above app overlays. */
+/* Keep Privy portal above app overlays; avoid broad wildcard selectors that affect modal layering. */
 [data-privy-portal],
 [data-privy-root],
-[id*="privy"],
-[class*="privy"],
 iframe[src*="privy.io"] {
   z-index: 2147483000 !important;
 }
 
-/* Prevent full-screen Privy wrappers/backdrops from intercepting modal input taps. */
-[id*="privy"] > div,
-[class*="privy"] > div {
-  pointer-events: none !important;
+/* Keep only a minimal layering override for Privy roots. */
+
+/* Keep Privy UI isolated from app-wide element overrides (links, inputs, focus rings). */
+[data-privy-portal],
+[data-privy-root] {
+  isolation: isolate;
 }
 
-[id*="privy"] [role="dialog"],
-[class*="privy"] [role="dialog"],
-[id*="privy"] [aria-modal="true"],
-[class*="privy"] [aria-modal="true"] {
-  z-index: 2147483001 !important;
-  pointer-events: auto !important;
-  filter: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+[data-privy-portal] a,
+[data-privy-root] a,
+[data-privy-portal] a:visited,
+[data-privy-root] a:visited,
+[data-privy-portal] a:hover,
+[data-privy-root] a:hover,
+[data-privy-portal] a:active,
+[data-privy-root] a:active {
+  color: revert !important;
 }
 
-[id*="privy"] [role="dialog"] *,
-[class*="privy"] [role="dialog"] *,
-[id*="privy"] [aria-modal="true"] *,
-[class*="privy"] [aria-modal="true"] * {
-  pointer-events: auto !important;
+[data-privy-portal] input[type="text"],
+[data-privy-root] input[type="text"],
+[data-privy-portal] input[type="email"],
+[data-privy-root] input[type="email"],
+[data-privy-portal] input[type="password"],
+[data-privy-root] input[type="password"],
+[data-privy-portal] input[type="url"],
+[data-privy-root] input[type="url"],
+[data-privy-portal] textarea,
+[data-privy-root] textarea {
+  background: revert !important;
+  border: revert !important;
+  border-radius: revert !important;
+  padding: revert !important;
+  color: revert !important;
+  font-size: revert !important;
+  transition: revert !important;
+  box-shadow: none !important;
 }
 
-[id*="privy"] input,
-[class*="privy"] input,
-[id*="privy"] button,
-[class*="privy"] button {
-  pointer-events: auto !important;
+[data-privy-portal] input:focus,
+[data-privy-root] input:focus,
+[data-privy-portal] textarea:focus,
+[data-privy-root] textarea:focus {
+  outline: revert !important;
+  border-color: revert !important;
+  box-shadow: revert !important;
+}
+
+[data-privy-portal] button:focus-visible,
+[data-privy-root] button:focus-visible,
+[data-privy-portal] a:focus-visible,
+[data-privy-root] a:focus-visible {
+  outline: revert !important;
+  outline-offset: revert !important;
 }
