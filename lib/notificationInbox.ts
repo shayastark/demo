@@ -99,7 +99,7 @@ export function getNotificationTargetPath(notification: InboxNotification): stri
       (notification.data?.follower_id as string | undefined) ||
       (notification.data?.followerId as string | undefined)
     const followerId = getFollowerIdFromQueryParam(rawFollowerId)
-    return followerId ? `/account?follower_id=${encodeURIComponent(followerId)}` : '/account'
+    return followerId ? `/creator/${encodeURIComponent(followerId)}` : '/dashboard'
   }
 
   if (normalizedType === 'tip_received') return '/account'

@@ -19,6 +19,7 @@ import {
   getProjectAccessGrantorName,
   type ProjectAccessNotificationAction,
 } from './projectAccessNotifications'
+import { getCreatorPublicPath } from './publicCreatorProfile'
 
 export type NotificationType = CreatableNotificationType
 
@@ -261,7 +262,7 @@ export async function createFollowerNotification({
       // New canonical payload keys.
       follower_id: followerId,
       follower_name: displayName,
-      targetPath: `/account?follower_id=${encodeURIComponent(followerId)}`,
+      targetPath: getCreatorPublicPath({ id: followerId, username: displayName }),
       // Backward-compat keys kept for existing client expectations.
       followerId,
       followerName: displayName,

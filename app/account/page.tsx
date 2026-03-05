@@ -18,6 +18,7 @@ import NotificationPreferencesSection from '@/components/NotificationPreferences
 import SocialGraphListModal from '@/components/SocialGraphListModal'
 import type { SocialGraphListType } from '@/lib/socialGraph'
 import { getFollowerIdFromQueryParam } from '@/lib/notificationInbox'
+import { getCreatorPublicPath } from '@/lib/publicCreatorProfile'
 
 interface UserProfile {
   id: string
@@ -1370,8 +1371,7 @@ function AccountPageContent() {
           currentDbUserId={profile.id}
           onOpenUser={(userId) => {
             setIsSocialGraphOpen(false)
-            setDeepLinkedCreatorId(userId)
-            setIsCreatorProfileOpen(true)
+            router.push(getCreatorPublicPath({ id: userId }))
           }}
         />
       ) : null}

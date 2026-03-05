@@ -73,21 +73,21 @@ test('getNotificationTargetPath honors targetPath then fallbacks', () => {
     type: 'new_follower',
     data: { follower_id: '123e4567-e89b-12d3-a456-426614174000' },
   }
-  assert.equal(getNotificationTargetPath(followerFallback), '/account?follower_id=123e4567-e89b-12d3-a456-426614174000')
+  assert.equal(getNotificationTargetPath(followerFallback), '/creator/123e4567-e89b-12d3-a456-426614174000')
 
   const emptyFollower: InboxNotification = {
     ...baseNotification,
     type: 'new_follower',
     data: {},
   }
-  assert.equal(getNotificationTargetPath(emptyFollower), '/account')
+  assert.equal(getNotificationTargetPath(emptyFollower), '/dashboard')
 
   const invalidFollower: InboxNotification = {
     ...baseNotification,
     type: 'new_follower',
     data: { follower_id: 'not-a-uuid' },
   }
-  assert.equal(getNotificationTargetPath(invalidFollower), '/account')
+  assert.equal(getNotificationTargetPath(invalidFollower), '/dashboard')
 })
 
 test('follower deep-link parsing validates uuid format', () => {

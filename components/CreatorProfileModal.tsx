@@ -7,10 +7,12 @@ import Image from 'next/image'
 import { showToast } from '@/components/Toast'
 import { usePrivy } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/navigation'
 import { applyFollowerCountDelta } from '@/lib/follows'
 import { markTipPromptConvertedInSession, type TipPromptSource, type TipPromptTrigger } from '@/lib/tipPrompt'
 import SocialGraphListModal from '@/components/SocialGraphListModal'
 import type { SocialGraphListType } from '@/lib/socialGraph'
+import { getCreatorPublicPath } from '@/lib/publicCreatorProfile'
 import {
   resolveProjectVisibility,
   shouldShowProjectOnCreatorProfile,
@@ -83,6 +85,7 @@ export default function CreatorProfileModal({
   tipContext = null,
   viewerKey = null,
 }: CreatorProfileModalProps) {
+  const router = useRouter()
   const { user, authenticated, login, getAccessToken } = usePrivy()
   const [activeCreatorId, setActiveCreatorId] = useState(creatorId)
   const [creator, setCreator] = useState<CreatorProfile | null>(null)
@@ -1120,7 +1123,8 @@ export default function CreatorProfileModal({
           currentDbUserId={currentDbUserId}
           onOpenUser={(userId) => {
             setIsSocialGraphOpen(false)
-            setActiveCreatorId(userId)
+            router.push(getCreatorPublicPath({ id: userId }))
+            onClose()
           }}
         />
       ) : null}
