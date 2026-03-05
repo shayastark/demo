@@ -8,6 +8,7 @@ import {
   type ProjectUpdateCommentRow,
 } from '@/lib/projectUpdateComments'
 import { notifyCreatorUpdateEngagement } from '@/lib/notifications'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -33,7 +34,7 @@ async function getUpdateWithProject(updateId: string) {
 
   const { data: project } = await supabaseAdmin
     .from('projects')
-    .select('id, creator_id, sharing_enabled')
+    .select('id, creator_id, sharing_enabled, visibility')
     .eq('id', updateRow.project_id)
     .single()
   if (!project) return null
@@ -55,8 +56,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
     }
 
-    const canAccess =
-      resolved.project.sharing_enabled !== false || resolved.project.creator_id === currentUser?.id
+    const canAccess = await canUserAccessProjectRow({
+      project: {
+        id: resolved.project.id,
+        creator_id: resolved.project.creator_id,
+        visibility: resolved.project.visibility,
+        sharing_enabled: resolved.project.sharing_enabled,
+      },
+      userId: currentUser?.id,
+      isDirectAccess: true,
+    })
     if (!canAccess) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
     }
@@ -136,8 +145,16 @@ export async function POST(request: NextRequest) {
     if (!resolved) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
     }
-    const canAccess =
-      resolved.project.sharing_enabled !== false || resolved.project.creator_id === currentUser.id
+    const canAccess = await canUserAccessProjectRow({
+      project: {
+        id: resolved.project.id,
+        creator_id: resolved.project.creator_id,
+        visibility: resolved.project.visibility,
+        sharing_enabled: resolved.project.sharing_enabled,
+      },
+      userId: currentUser.id,
+      isDirectAccess: true,
+    })
     if (!canAccess) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
     }

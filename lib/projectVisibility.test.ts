@@ -25,23 +25,27 @@ test('resolveProjectVisibility falls back to sharing_enabled', () => {
 
 test('canViewerAccessProject enforces public/unlisted/private semantics', () => {
   assert.equal(
-    canViewerAccessProject({ visibility: 'public', isCreator: false, isDirectAccess: false }),
+    canViewerAccessProject({ visibility: 'public', isCreator: false, isDirectAccess: false, isGrantedUser: false }),
     true
   )
   assert.equal(
-    canViewerAccessProject({ visibility: 'unlisted', isCreator: false, isDirectAccess: false }),
+    canViewerAccessProject({ visibility: 'unlisted', isCreator: false, isDirectAccess: false, isGrantedUser: false }),
     false
   )
   assert.equal(
-    canViewerAccessProject({ visibility: 'unlisted', isCreator: false, isDirectAccess: true }),
+    canViewerAccessProject({ visibility: 'unlisted', isCreator: false, isDirectAccess: true, isGrantedUser: false }),
     true
   )
   assert.equal(
-    canViewerAccessProject({ visibility: 'private', isCreator: false, isDirectAccess: true }),
+    canViewerAccessProject({ visibility: 'private', isCreator: false, isDirectAccess: true, isGrantedUser: false }),
     false
   )
   assert.equal(
-    canViewerAccessProject({ visibility: 'private', isCreator: true, isDirectAccess: false }),
+    canViewerAccessProject({ visibility: 'private', isCreator: false, isDirectAccess: true, isGrantedUser: true }),
+    true
+  )
+  assert.equal(
+    canViewerAccessProject({ visibility: 'private', isCreator: true, isDirectAccess: false, isGrantedUser: false }),
     true
   )
 })

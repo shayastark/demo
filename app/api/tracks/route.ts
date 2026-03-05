@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { notifyNewTrackAdded } from '@/lib/notifications'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 // Helper to verify project ownership and get project details
 async function getProjectIfOwner(projectId: string, userId: string): Promise<{ id: string; title: string; creator_id: string } | null> {
@@ -23,6 +24,60 @@ async function getProjectIfOwner(projectId: string, userId: string): Promise<{ i
 async function verifyProjectOwnership(projectId: string, userId: string): Promise<boolean> {
   const project = await getProjectIfOwner(projectId, userId)
   return project !== null
+}
+
+async function getOptionalUser(request: NextRequest) {
+  const authResult = await verifyPrivyToken(request.headers.get('authorization'))
+  if (!authResult.success || !authResult.privyId) return null
+  return getUserByPrivyId(authResult.privyId)
+}
+
+// GET /api/tracks?project_id=<uuid> - list tracks with project visibility enforcement
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const projectId = searchParams.get('project_id')
+    if (!projectId || !isValidUUID(projectId)) {
+      return NextResponse.json({ error: 'Valid project_id is required' }, { status: 400 })
+    }
+
+    const currentUser = await getOptionalUser(request)
+    const { data: project } = await supabaseAdmin
+      .from('projects')
+      .select('id, creator_id, visibility, sharing_enabled')
+      .eq('id', projectId)
+      .single()
+
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const canAccess = await canUserAccessProjectRow({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: currentUser?.id,
+      isDirectAccess: true,
+    })
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const { data: tracks, error } = await supabaseAdmin
+      .from('tracks')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('order', { ascending: true })
+    if (error) throw error
+
+    return NextResponse.json({ tracks: tracks || [] })
+  } catch (error) {
+    console.error('Error loading tracks:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 // POST /api/tracks - Create a new track

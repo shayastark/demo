@@ -10,6 +10,7 @@ import {
   type ProjectUpdateRow,
 } from '@/lib/projectUpdates'
 import { notifyFollowersProjectUpdate } from '@/lib/notifications'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -28,7 +29,7 @@ async function getRequiredCurrentUser(request: NextRequest) {
 async function getProject(projectId: string) {
   const { data: project } = await supabaseAdmin
     .from('projects')
-    .select('id, title, creator_id, share_token, sharing_enabled')
+    .select('id, title, creator_id, share_token, sharing_enabled, visibility')
     .eq('id', projectId)
     .single()
   return project
@@ -48,7 +49,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canAccess = project.sharing_enabled !== false || canManageProjectUpdates(currentUser?.id, project.creator_id)
+    const canAccess = await canUserAccessProjectRow({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: currentUser?.id,
+      isDirectAccess: true,
+    })
     if (!canAccess) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }

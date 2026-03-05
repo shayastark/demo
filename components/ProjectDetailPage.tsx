@@ -29,6 +29,16 @@ interface ProjectDetailPageProps {
   projectId: string
 }
 
+type ProjectAccessGrant = {
+  id: string
+  project_id: string
+  user_id: string
+  granted_by_user_id: string | null
+  created_at: string
+  username?: string | null
+  email?: string | null
+}
+
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
   const router = useRouter()
@@ -69,6 +79,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
   const [tipPromptTrigger, setTipPromptTrigger] = useState<TipPromptTrigger | null>(null)
   const visibilityViewTrackedRef = useRef<string | null>(null)
+  const [projectAccessGrants, setProjectAccessGrants] = useState<ProjectAccessGrant[]>([])
+  const [projectAccessLoading, setProjectAccessLoading] = useState(false)
+  const [projectAccessUserIdInput, setProjectAccessUserIdInput] = useState('')
+  const [projectAccessSaving, setProjectAccessSaving] = useState(false)
   // Detect mobile vs desktop
   useEffect(() => {
     const checkMobile = () => {
@@ -151,14 +165,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         setCreatorId(projectData.creator_id)
       }
 
-      const { data: tracksData, error: tracksError } = await supabase
-        .from('tracks')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('order', { ascending: true })
-
-      if (tracksError) throw tracksError
-      setTracks(tracksData || [])
+      const tracksResponse = await fetch(`/api/tracks?project_id=${encodeURIComponent(projectId)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
+      if (!tracksResponse.ok) {
+        const tracksErrorData = await tracksResponse.json().catch(() => ({}))
+        throw new Error(tracksErrorData.error || 'Failed to load tracks')
+      }
+      const tracksPayload = await tracksResponse.json()
+      setTracks(tracksPayload.tracks || [])
 
       const { data: metricsData } = await supabase
         .from('project_metrics')
@@ -232,6 +247,139 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       )
     }
   }, [isCreator, project?.id, project?.visibility, project?.sharing_enabled])
+
+  const loadProjectAccessGrants = async (targetProjectId: string) => {
+    if (!isCreator) return
+    setProjectAccessLoading(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) return
+      const response = await fetch(`/api/project-access?project_id=${encodeURIComponent(targetProjectId)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to load private access list')
+      setProjectAccessGrants(result.grants || [])
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_event', {
+            detail: {
+              schema: 'project_access.v1',
+              action: 'view_list',
+              project_id: targetProjectId,
+              source: 'project_detail_settings',
+            },
+          })
+        )
+      }
+    } catch (error) {
+      console.error('Error loading project access grants:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to load private access', 'error')
+    } finally {
+      setProjectAccessLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!project?.id || !isCreator) return
+    const visibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
+    if (visibility !== 'private') {
+      setProjectAccessGrants([])
+      return
+    }
+    loadProjectAccessGrants(project.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, project?.visibility, project?.sharing_enabled, isCreator])
+
+  const handleGrantProjectAccess = async () => {
+    if (!project?.id || !isCreator) return
+    const targetUserId = projectAccessUserIdInput.trim()
+    if (!targetUserId) {
+      showToast('Enter a user_id to grant access', 'error')
+      return
+    }
+    setProjectAccessSaving(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-access', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: project.id,
+          user_id: targetUserId,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to grant access')
+      setProjectAccessUserIdInput('')
+      await loadProjectAccessGrants(project.id)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_event', {
+            detail: {
+              schema: 'project_access.v1',
+              action: 'grant',
+              project_id: project.id,
+              target_user_id: targetUserId,
+              source: 'project_detail_settings',
+            },
+          })
+        )
+      }
+      showToast('Private access granted', 'success')
+    } catch (error) {
+      console.error('Error granting project access:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to grant access', 'error')
+    } finally {
+      setProjectAccessSaving(false)
+    }
+  }
+
+  const handleRevokeProjectAccess = async (targetUserId: string) => {
+    if (!project?.id || !isCreator) return
+    setProjectAccessSaving(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-access', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: project.id,
+          user_id: targetUserId,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to revoke access')
+      await loadProjectAccessGrants(project.id)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_event', {
+            detail: {
+              schema: 'project_access.v1',
+              action: 'revoke',
+              project_id: project.id,
+              target_user_id: targetUserId,
+              source: 'project_detail_settings',
+            },
+          })
+        )
+      }
+      showToast('Private access revoked', 'success')
+    } catch (error) {
+      console.error('Error revoking project access:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to revoke access', 'error')
+    } finally {
+      setProjectAccessSaving(false)
+    }
+  }
 
   const handleOpenShareModal = () => {
     if (!project) return
@@ -1043,14 +1191,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       setProject(projectData)
 
       // Reload tracks
-      const { data: tracksData, error: tracksError } = await supabase
-        .from('tracks')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('order', { ascending: true })
-
-      if (tracksError) throw tracksError
-      setTracks(tracksData || [])
+      const tracksResponse = await fetch(`/api/tracks?project_id=${encodeURIComponent(projectId)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
+      if (!tracksResponse.ok) {
+        const tracksErrorData = await tracksResponse.json().catch(() => ({}))
+        throw new Error(tracksErrorData.error || 'Failed to load tracks')
+      }
+      const tracksPayload = await tracksResponse.json()
+      setTracks(tracksPayload.tracks || [])
       
       // Reset form
       setNewTracks([])
@@ -1460,6 +1609,65 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   />
                 </button>
               </div>
+
+              {resolveProjectVisibility(project.visibility, project.sharing_enabled) === 'private' ? (
+                <div style={{ borderTop: '1px solid #374151', paddingTop: '24px' }}>
+                  <div className="font-medium text-white text-base">Private Access</div>
+                  <div className="text-sm text-gray-400" style={{ marginTop: '6px', marginBottom: '12px' }}>
+                    Grant view access to specific users by user_id.
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      placeholder="user_id (UUID)"
+                      value={projectAccessUserIdInput}
+                      onChange={(event) => setProjectAccessUserIdInput(event.target.value)}
+                      className="flex-1 bg-black border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-neon-green"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGrantProjectAccess}
+                      disabled={projectAccessSaving || !projectAccessUserIdInput.trim()}
+                      className="px-3 py-2 rounded bg-neon-green text-black text-sm font-medium disabled:opacity-50"
+                    >
+                      Grant
+                    </button>
+                  </div>
+                  {projectAccessLoading ? (
+                    <p className="text-xs text-gray-500">Loading access list...</p>
+                  ) : projectAccessGrants.length === 0 ? (
+                    <p className="text-xs text-gray-500">No invited viewers yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {projectAccessGrants.map((grant) => (
+                        <li key={grant.id} className="flex items-center justify-between gap-3 text-sm">
+                          <div className="min-w-0">
+                            <p className="text-white truncate">
+                              {grant.username || grant.email || grant.user_id}
+                            </p>
+                            <p className="text-gray-500 text-xs truncate">{grant.user_id}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRevokeProjectAccess(grant.user_id)}
+                            disabled={projectAccessSaving}
+                            className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : (
+                <div style={{ borderTop: '1px solid #374151', paddingTop: '24px' }}>
+                  <div className="font-medium text-white text-base">Private Access</div>
+                  <div className="text-sm text-gray-500" style={{ marginTop: '6px' }}>
+                    Set visibility to Private to invite specific viewers.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           )}

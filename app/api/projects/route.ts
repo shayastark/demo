@@ -3,10 +3,10 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
 import {
-  canViewerAccessProject,
   parseProjectVisibility,
   resolveProjectVisibility,
 } from '@/lib/projectVisibility'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 async function getOptionalUserFromAuthorizationHeader(value: string | null) {
   const authResult = await verifyPrivyToken(value)
@@ -41,9 +41,14 @@ export async function GET(request: NextRequest) {
       }
 
       const resolvedVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
-      const canAccess = canViewerAccessProject({
-        visibility: resolvedVisibility,
-        isCreator: optionalUser?.id === project.creator_id,
+      const canAccess = await canUserAccessProjectRow({
+        project: {
+          id: project.id,
+          creator_id: project.creator_id,
+          visibility: project.visibility,
+          sharing_enabled: project.sharing_enabled,
+        },
+        userId: optionalUser?.id,
         isDirectAccess: !!shareToken,
       })
       if (!canAccess) {

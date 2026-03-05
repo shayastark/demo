@@ -7,6 +7,7 @@ import {
   getSupporterName,
   parseTopSupportersLimit,
 } from '@/lib/topSupporters'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 let cachedHasTipSupportColumns: boolean | null = null
 
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       getOptionalCurrentUser(request),
       supabaseAdmin
         .from('projects')
-        .select('id, creator_id, sharing_enabled')
+        .select('id, creator_id, sharing_enabled, visibility')
         .eq('id', projectId)
         .single(),
     ])
@@ -66,9 +67,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canAccessProject =
-      project.data.sharing_enabled !== false ||
-      (!!currentUser && currentUser.id === project.data.creator_id)
+    const canAccessProject = await canUserAccessProjectRow({
+      project: {
+        id: project.data.id,
+        creator_id: project.data.creator_id,
+        visibility: project.data.visibility,
+        sharing_enabled: project.data.sharing_enabled,
+      },
+      userId: currentUser?.id,
+      isDirectAccess: true,
+    })
 
     if (!canAccessProject) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })

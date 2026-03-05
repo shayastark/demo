@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { parseLimit } from '@/lib/validation'
 import { buildFollowingFeedItems, type FeedUpdateRow } from '@/lib/followingFeed'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
     const [{ data: projects }, { data: users }] = await Promise.all([
       supabaseAdmin
         .from('projects')
-        .select('id, title, creator_id')
+        .select('id, title, creator_id, visibility, sharing_enabled')
         .in('id', projectIds),
       supabaseAdmin
         .from('users')
@@ -103,17 +104,34 @@ export async function GET(request: NextRequest) {
         .in('id', creatorIdsFromUpdates),
     ])
 
-    const projectsById = (projects || []).reduce<Record<string, { id: string; title: string | null; creator_id: string | null }>>((acc, project) => {
-      acc[project.id] = { id: project.id, title: project.title, creator_id: project.creator_id }
-      return acc
-    }, {})
+    const visibleProjectsById: Record<string, { id: string; title: string | null; creator_id: string | null }> = {}
+    for (const project of projects || []) {
+      const canAccess = await canUserAccessProjectRow({
+        project: {
+          id: project.id,
+          creator_id: project.creator_id,
+          visibility: project.visibility,
+          sharing_enabled: project.sharing_enabled,
+        },
+        userId: currentUser.id,
+        isDirectAccess: true,
+      })
+      if (canAccess) {
+        visibleProjectsById[project.id] = {
+          id: project.id,
+          title: project.title,
+          creator_id: project.creator_id,
+        }
+      }
+    }
 
     const usersById = (users || []).reduce<Record<string, { id: string; username: string | null; email: string | null }>>((acc, user) => {
       acc[user.id] = { id: user.id, username: user.username, email: user.email }
       return acc
     }, {})
 
-    const items = buildFollowingFeedItems(updates, projectsById, usersById)
+    const visibleUpdates = updates.filter((row) => !!visibleProjectsById[row.project_id])
+    const items = buildFollowingFeedItems(visibleUpdates, visibleProjectsById, usersById)
     return NextResponse.json({ items, limit })
   } catch (error) {
     console.error('Error in feed API:', error)

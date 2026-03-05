@@ -6,6 +6,7 @@ import {
   parseProjectSubscriptionProjectIdFromBody,
   parseProjectSubscriptionProjectIdFromDelete,
 } from '@/lib/projectSubscriptions'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -24,7 +25,7 @@ async function getRequiredCurrentUser(request: NextRequest) {
 async function getProject(projectId: string) {
   const { data: project } = await supabaseAdmin
     .from('projects')
-    .select('id, creator_id, sharing_enabled')
+    .select('id, creator_id, sharing_enabled, visibility')
     .eq('id', projectId)
     .single()
   return project
@@ -43,7 +44,16 @@ export async function GET(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    const canAccess = project.sharing_enabled !== false || project.creator_id === currentUser?.id
+    const canAccess = await canUserAccessProjectRow({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: currentUser?.id,
+      isDirectAccess: true,
+    })
     if (!canAccess) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
@@ -101,7 +111,16 @@ export async function POST(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    const canAccess = project.sharing_enabled !== false || project.creator_id === currentUser.id
+    const canAccess = await canUserAccessProjectRow({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: currentUser.id,
+      isDirectAccess: true,
+    })
     if (!canAccess) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }

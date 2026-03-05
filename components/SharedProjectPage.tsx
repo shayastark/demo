@@ -304,14 +304,15 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         setCreatorId(projectData.creator_id)
       }
 
-      const { data: tracksData, error: tracksError } = await supabase
-        .from('tracks')
-        .select('*')
-        .eq('project_id', projectData.id)
-        .order('order', { ascending: true })
-
-      if (tracksError) throw tracksError
-      setTracks(tracksData || [])
+      const tracksResponse = await fetch(`/api/tracks?project_id=${encodeURIComponent(projectData.id)}`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+      })
+      if (!tracksResponse.ok) {
+        const tracksErrorData = await tracksResponse.json().catch(() => ({}))
+        throw new Error(tracksErrorData.error || 'Failed to load tracks')
+      }
+      const tracksPayload = await tracksResponse.json()
+      setTracks(tracksPayload.tracks || [])
 
       // Track view - increment plays metric (only once per page load)
       // We'll track actual plays when tracks are played, not on page load

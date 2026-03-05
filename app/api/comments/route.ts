@@ -10,6 +10,7 @@ import {
   sortCommentsPinnedFirst,
   withPinnedFlag,
 } from '@/lib/commentPinning'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 type CommentRecord = {
   id: string
@@ -66,7 +67,7 @@ async function getOrCreateUserByPrivyId(privyId: string) {
   return retryUser || null
 }
 
-async function getTrackProject(trackId: string): Promise<{ id: string; creator_id: string; sharing_enabled: boolean | null } | null> {
+async function getTrackProject(trackId: string): Promise<{ id: string; creator_id: string; sharing_enabled: boolean | null; visibility: string | null } | null> {
   const { data: track } = await supabaseAdmin
     .from('tracks')
     .select(`
@@ -74,13 +75,14 @@ async function getTrackProject(trackId: string): Promise<{ id: string; creator_i
       project:projects(
         id,
         creator_id,
-        sharing_enabled
+        sharing_enabled,
+        visibility
       )
     `)
     .eq('id', trackId)
     .single()
 
-  const project = track?.project as { id: string; creator_id: string; sharing_enabled: boolean | null } | undefined
+  const project = track?.project as { id: string; creator_id: string; sharing_enabled: boolean | null; visibility: string | null } | undefined
   return project || null
 }
 
@@ -111,14 +113,20 @@ export async function GET(request: NextRequest) {
 
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id, creator_id, sharing_enabled')
+      .select('id, creator_id, sharing_enabled, visibility')
       .eq('id', projectId)
       .single()
 
-    const canAccessProjectComments = !!project && (
-      project.sharing_enabled !== false ||
-      (!!currentUser && currentUser.id === project.creator_id)
-    )
+    const canAccessProjectComments = !!project && await canUserAccessProjectRow({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: currentUser?.id,
+      isDirectAccess: true,
+    })
 
     if (!canAccessProjectComments) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
@@ -257,14 +265,20 @@ export async function POST(request: NextRequest) {
 
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id, creator_id, sharing_enabled')
+      .select('id, creator_id, sharing_enabled, visibility')
       .eq('id', project_id)
       .single()
 
-    const canCreateComment = !!project && (
-      project.sharing_enabled !== false ||
-      user.id === project.creator_id
-    )
+    const canCreateComment = !!project && await canUserAccessProjectRow({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: user.id,
+      isDirectAccess: true,
+    })
 
     if (!canCreateComment) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })

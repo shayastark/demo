@@ -19,9 +19,10 @@ export function canViewerAccessProject(args: {
   visibility: ProjectVisibility
   isCreator: boolean
   isDirectAccess: boolean
+  isGrantedUser?: boolean
 }): boolean {
   if (args.isCreator) return true
-  if (args.visibility === 'private') return false
+  if (args.visibility === 'private') return !!args.isGrantedUser
   if (args.visibility === 'public') return true
   return args.isDirectAccess
 }

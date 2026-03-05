@@ -8,6 +8,7 @@ import {
   summarizeProjectUpdateReactions,
 } from '@/lib/projectUpdateReactions'
 import { notifyCreatorUpdateEngagement } from '@/lib/notifications'
+import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
 
 async function getAuthenticatedUser(request: NextRequest) {
   const authResult = await verifyPrivyToken(request.headers.get('authorization'))
@@ -40,10 +41,50 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await getAuthenticatedUser(request)
+    const { data: updateRows } = await supabaseAdmin
+      .from('project_updates')
+      .select('id, project_id')
+      .in('id', updateIds)
+
+    const updateToProjectId = new Map<string, string>()
+    ;(updateRows || []).forEach((row) => updateToProjectId.set(row.id, row.project_id))
+    const projectIds = Array.from(new Set((updateRows || []).map((row) => row.project_id)))
+    if (projectIds.length === 0) {
+      return NextResponse.json({ reactionsByUpdate: {} })
+    }
+
+    const { data: projects } = await supabaseAdmin
+      .from('projects')
+      .select('id, creator_id, visibility, sharing_enabled')
+      .in('id', projectIds)
+
+    const allowedProjectIds = new Set<string>()
+    for (const project of projects || []) {
+      const canAccess = await canUserAccessProjectRow({
+        project: {
+          id: project.id,
+          creator_id: project.creator_id,
+          visibility: project.visibility,
+          sharing_enabled: project.sharing_enabled,
+        },
+        userId: user?.id,
+        isDirectAccess: true,
+      })
+      if (canAccess) allowedProjectIds.add(project.id)
+    }
+
+    const allowedUpdateIds = updateIds.filter((id) => {
+      const projectId = updateToProjectId.get(id)
+      return !!projectId && allowedProjectIds.has(projectId)
+    })
+    if (allowedUpdateIds.length === 0) {
+      return NextResponse.json({ reactionsByUpdate: {} })
+    }
+
     const { data: reactions, error } = await supabaseAdmin
       .from('project_update_reactions')
       .select('update_id, user_id, reaction_type')
-      .in('update_id', updateIds)
+      .in('update_id', allowedUpdateIds)
 
     if (error) throw error
 
@@ -93,11 +134,24 @@ export async function POST(request: NextRequest) {
 
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id, creator_id')
+      .select('id, creator_id, visibility, sharing_enabled')
       .eq('id', updateRow.project_id)
       .single()
 
     if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+    const canAccess = await canUserAccessProjectRow({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: user.id,
+      isDirectAccess: true,
+    })
+    if (!canAccess) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
