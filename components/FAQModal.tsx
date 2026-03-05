@@ -57,7 +57,7 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{ 
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        zIndex: 9999,
+        zIndex: 950,
         position: 'fixed',
         top: 0,
         left: 0,

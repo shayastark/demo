@@ -174,7 +174,7 @@ export default function SocialGraphListModal({
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          zIndex: 10000,
+          zIndex: 910,
         }}
       />
       <div
@@ -189,7 +189,7 @@ export default function SocialGraphListModal({
           backgroundColor: '#111827',
           borderRadius: '14px',
           border: '1px solid #374151',
-          zIndex: 10001,
+          zIndex: 911,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',

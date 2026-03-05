@@ -339,7 +339,7 @@ export default function CreatorProfileModal({
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          zIndex: 9998,
+          zIndex: 900,
         }}
       />
 
@@ -355,7 +355,7 @@ export default function CreatorProfileModal({
           maxHeight: '85vh',
           backgroundColor: '#111827',
           borderRadius: '16px',
-          zIndex: 9999,
+          zIndex: 901,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',

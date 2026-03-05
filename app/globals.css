@@ -597,3 +597,10 @@ a:focus-visible {
   outline: 2px solid var(--neon-green);
   outline-offset: 2px;
 }
+
+/* Ensure Privy auth UI always sits above app overlays */
+[id*="privy"],
+[class*="privy"],
+iframe[src*="privy.io"] {
+  z-index: 2147483000 !important;
+}

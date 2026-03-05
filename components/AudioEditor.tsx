@@ -107,7 +107,7 @@ export default function AudioEditor({ src, title, isOpen, audioElement, onClose 
   const eqLabels = ['31', '62', '125', '250', '500', '1k', '2k', '4k', '8k', '16k']
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-95 z-[950] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
         <button
