@@ -9,6 +9,10 @@ import {
   type CreatorRecommendationUserRow,
 } from '@/lib/creatorRecommendations'
 import { buildHiddenTargetSets } from '@/lib/discoveryPreferences'
+import {
+  buildCreatorPreferenceBoostById,
+  toOnboardingPreferences,
+} from '@/lib/onboardingPreferences'
 
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
@@ -76,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     const { data: publicProjects, error: publicProjectsError } = await supabaseAdmin
       .from('projects')
-      .select('id, creator_id, created_at')
+      .select('id, creator_id, title, description, created_at')
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(1200)
@@ -87,7 +91,20 @@ export async function GET(request: NextRequest) {
     }
 
     const publicProjectRows =
-      (publicProjects || []) as Array<{ id: string; creator_id: string; created_at: string }>
+      (publicProjects || []) as Array<{
+        id: string
+        creator_id: string
+        title: string | null
+        description: string | null
+        created_at: string
+      }>
+
+    const { data: onboardingRow } = await supabaseAdmin
+      .from('user_onboarding_preferences')
+      .select('preferred_genres, preferred_vibes, onboarding_completed_at')
+      .eq('user_id', currentUser.id)
+      .maybeSingle()
+    const onboardingPreferences = toOnboardingPreferences(onboardingRow)
 
     const { data: hiddenRows } = await supabaseAdmin
       .from('user_discovery_preferences')
@@ -107,6 +124,10 @@ export async function GET(request: NextRequest) {
     const visibleProjectRows = publicProjectRows.filter(
       (row) => !hiddenTargets.hiddenProjectIds.has(row.id) && !hiddenTargets.hiddenCreatorIds.has(row.creator_id)
     )
+    const creatorPreferenceBoostById = buildCreatorPreferenceBoostById({
+      projects: visibleProjectRows,
+      preferences: onboardingPreferences,
+    })
     const publicProjectIds = visibleProjectRows.map((row) => row.id)
 
     const { data: updateRows } = publicProjectIds.length
@@ -196,6 +217,7 @@ export async function GET(request: NextRequest) {
       viewerUserId: currentUser.id,
       alreadyFollowingIds,
       hiddenCreatorIds: suppressedCreatorIds,
+      creatorPreferenceBoostById,
       limit,
     })
 

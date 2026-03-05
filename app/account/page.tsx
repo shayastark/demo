@@ -16,6 +16,7 @@ import CreatorEarningsSnapshot from '@/components/CreatorEarningsSnapshot'
 import CreatorDigestCard from '@/components/CreatorDigestCard'
 import NotificationPreferencesSection from '@/components/NotificationPreferencesSection'
 import HiddenDiscoverySection from '@/components/HiddenDiscoverySection'
+import OnboardingPreferencesSection from '@/components/OnboardingPreferencesSection'
 import SocialGraphListModal from '@/components/SocialGraphListModal'
 import type { SocialGraphListType } from '@/lib/socialGraph'
 import { getFollowerIdFromQueryParam } from '@/lib/notificationInbox'
@@ -690,6 +691,13 @@ function AccountPageContent() {
         )}
         
         <h1 className="text-3xl font-bold mb-6 text-white">{isOnboarding ? 'Set Up Your Profile' : 'Account'}</h1>
+
+        <OnboardingPreferencesSection
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+          source={isOnboarding ? 'onboarding' : 'account_settings'}
+          isOnboardingMode={isOnboarding}
+        />
 
         {profile?.id ? (
           <div

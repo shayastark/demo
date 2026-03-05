@@ -134,6 +134,40 @@ test('buildCreatorRecommendations excludes hidden creators', () => {
   assert.deepEqual(results.map((item) => item.creator_id), ['a'])
 })
 
+test('buildCreatorRecommendations applies lightweight onboarding preference boost', () => {
+  const activity: Record<string, CreatorRecommendationActivityStats> = {
+    a: {
+      creator_id: 'a',
+      recent_public_projects_count: 1,
+      recent_public_updates_count: 1,
+      latest_public_activity_at: '2026-03-05T00:00:00.000Z',
+      follower_count: 0,
+    },
+    b: {
+      creator_id: 'b',
+      recent_public_projects_count: 1,
+      recent_public_updates_count: 1,
+      latest_public_activity_at: '2026-03-05T00:00:00.000Z',
+      follower_count: 0,
+    },
+  }
+
+  const results = buildCreatorRecommendations({
+    usersById: {
+      a: { id: 'a', username: 'alpha', email: null, avatar_url: null },
+      b: { id: 'b', username: 'beta', email: null, avatar_url: null },
+    },
+    activityByCreatorId: activity,
+    viewerUserId: 'viewer',
+    alreadyFollowingIds: new Set(),
+    hiddenCreatorIds: new Set(),
+    creatorPreferenceBoostById: { b: 2 },
+    limit: 5,
+  })
+
+  assert.deepEqual(results.map((item) => item.creator_id), ['b', 'a'])
+})
+
 test('filterCreatorsByVisiblePublicProjects excludes creators with only hidden projects', () => {
   const creatorIds = filterCreatorsByVisiblePublicProjects({
     projects: [

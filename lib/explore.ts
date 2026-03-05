@@ -6,6 +6,7 @@ export type ExploreSort = 'trending' | 'newest' | 'most_supported'
 export interface ExploreProjectRow {
   id: string
   title: string | null
+  description?: string | null
   cover_image_url: string | null
   creator_id: string
   visibility: string | null
@@ -98,6 +99,7 @@ export function buildExploreProjectItems(args: {
   recentUpdatesCountByProjectId: Record<string, number>
   latestUpdateAtByProjectId: Record<string, string | null>
   creatorReasonPenaltyById?: Record<string, number>
+  projectPreferenceBoostById?: Record<string, number>
   sort: ExploreSort
 }): ExploreProjectItem[] {
   const nowMs = Date.now()
@@ -126,6 +128,7 @@ export function buildExploreProjectItems(args: {
         recentUpdatesCount: args.recentUpdatesCountByProjectId[a.project_id] || 0,
         latestUpdateAt: args.latestUpdateAtByProjectId[a.project_id] || null,
         creatorPenalty: args.creatorReasonPenaltyById?.[a.creator_id] || 0,
+        preferenceBoost: args.projectPreferenceBoostById?.[a.project_id] || 0,
         nowMs,
       })
       const scoreB = getTrendingScore({
@@ -134,6 +137,7 @@ export function buildExploreProjectItems(args: {
         recentUpdatesCount: args.recentUpdatesCountByProjectId[b.project_id] || 0,
         latestUpdateAt: args.latestUpdateAtByProjectId[b.project_id] || null,
         creatorPenalty: args.creatorReasonPenaltyById?.[b.creator_id] || 0,
+        preferenceBoost: args.projectPreferenceBoostById?.[b.project_id] || 0,
         nowMs,
       })
       if (scoreB !== scoreA) return scoreB - scoreA
@@ -144,6 +148,9 @@ export function buildExploreProjectItems(args: {
         return b.supporter_count - a.supporter_count
       }
     }
+    const boostA = args.projectPreferenceBoostById?.[a.project_id] || 0
+    const boostB = args.projectPreferenceBoostById?.[b.project_id] || 0
+    if (boostB !== boostA) return boostB - boostA
     const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     if (timeDiff !== 0) return timeDiff
     return b.project_id.localeCompare(a.project_id)
@@ -156,6 +163,7 @@ function getTrendingScore(args: {
   recentUpdatesCount: number
   latestUpdateAt: string | null
   creatorPenalty: number
+  preferenceBoost: number
   nowMs: number
 }): number {
   const latestActivityMs = Math.max(
@@ -180,6 +188,9 @@ function getTrendingScore(args: {
 
   if (args.creatorPenalty > 0) {
     score -= args.creatorPenalty
+  }
+  if (args.preferenceBoost > 0) {
+    score += Math.min(args.preferenceBoost, 4) * 0.8
   }
 
   return score

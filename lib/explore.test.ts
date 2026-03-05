@@ -254,6 +254,48 @@ test('buildExploreProjectItems applies creator reason penalty in trending sort',
   assert.deepEqual(items.map((item) => item.project_id), ['p-b', 'p-a'])
 })
 
+test('buildExploreProjectItems applies onboarding preference boost as lightweight rank signal', () => {
+  const rows: ExploreProjectRow[] = [
+    {
+      id: 'p-a',
+      title: 'A',
+      cover_image_url: null,
+      creator_id: 'c1',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'a',
+      created_at: '2026-03-06T00:00:00.000Z',
+    },
+    {
+      id: 'p-b',
+      title: 'B',
+      cover_image_url: null,
+      creator_id: 'c2',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'b',
+      created_at: '2026-03-06T00:00:00.000Z',
+    },
+  ]
+
+  const items = buildExploreProjectItems({
+    projects: rows,
+    creatorsById: {
+      c1: { id: 'c1', username: 'alpha', email: null },
+      c2: { id: 'c2', username: 'beta', email: null },
+    },
+    supporterCountByProjectId: { 'p-a': 2, 'p-b': 2 },
+    engagementCountByProjectId: { 'p-a': 0, 'p-b': 0 },
+    recentUpdatesCountByProjectId: { 'p-a': 0, 'p-b': 0 },
+    latestUpdateAtByProjectId: { 'p-a': null, 'p-b': null },
+    creatorReasonPenaltyById: {},
+    projectPreferenceBoostById: { 'p-a': 1.5 },
+    sort: 'newest',
+  })
+
+  assert.deepEqual(items.map((item) => item.project_id), ['p-a', 'p-b'])
+})
+
 test('pagination correctness for explore items', () => {
   const rows: ExploreProjectRow[] = Array.from({ length: 6 }, (_, index) => ({
     id: `p-${index}`,

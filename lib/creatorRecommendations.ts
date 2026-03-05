@@ -40,6 +40,7 @@ export function buildCreatorRecommendations(args: {
   viewerUserId: string
   alreadyFollowingIds: Set<string>
   hiddenCreatorIds?: Set<string>
+  creatorPreferenceBoostById?: Record<string, number>
   limit: number
 }): CreatorRecommendationItem[] {
   const hiddenCreatorIds = args.hiddenCreatorIds || new Set<string>()
@@ -50,8 +51,8 @@ export function buildCreatorRecommendations(args: {
     .filter((row) => row.recent_public_projects_count > 0 || row.recent_public_updates_count > 0)
 
   const ranked = [...candidates].sort((a, b) => {
-    const scoreA = recommendationScore(a)
-    const scoreB = recommendationScore(b)
+    const scoreA = recommendationScore(a, args.creatorPreferenceBoostById?.[a.creator_id] || 0)
+    const scoreB = recommendationScore(b, args.creatorPreferenceBoostById?.[b.creator_id] || 0)
     if (scoreB !== scoreA) return scoreB - scoreA
     const timeA = a.latest_public_activity_at ? new Date(a.latest_public_activity_at).getTime() : 0
     const timeB = b.latest_public_activity_at ? new Date(b.latest_public_activity_at).getTime() : 0
@@ -126,8 +127,8 @@ export function collectSuppressedCreatorIdsFromReasonSignals(args: {
   return suppressed
 }
 
-function recommendationScore(row: CreatorRecommendationActivityStats): number {
+function recommendationScore(row: CreatorRecommendationActivityStats, preferenceBoost: number): number {
   const activityScore = row.recent_public_updates_count * 3 + row.recent_public_projects_count * 2
   const socialScore = Math.min(row.follower_count, 200) / 100
-  return activityScore + socialScore
+  return activityScore + socialScore + Math.min(preferenceBoost, 4) * 0.8
 }

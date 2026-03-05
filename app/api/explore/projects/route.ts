@@ -4,6 +4,10 @@ import { buildPaginatedItems } from '@/lib/pagination'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { buildHiddenTargetSets } from '@/lib/discoveryPreferences'
 import {
+  buildProjectPreferenceBoostById,
+  toOnboardingPreferences,
+} from '@/lib/onboardingPreferences'
+import {
   buildExploreProjectItems,
   filterExploreRowsByHiddenTargets,
   parseExploreProjectsQuery,
@@ -48,7 +52,9 @@ export async function GET(request: NextRequest) {
 
     const projectQuery = supabaseAdmin
       .from('projects')
-      .select('id, title, cover_image_url, creator_id, visibility, sharing_enabled, share_token, created_at')
+      .select(
+        'id, title, description, cover_image_url, creator_id, visibility, sharing_enabled, share_token, created_at'
+      )
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .range(0, SEARCH_SCAN_LIMIT - 1)
@@ -67,7 +73,19 @@ export async function GET(request: NextRequest) {
     let hiddenProjectIds = new Set<string>()
     let hiddenCreatorIds = new Set<string>()
     let creatorReasonPenaltyById: Record<string, number> = {}
+    let projectPreferenceBoostById: Record<string, number> = {}
     if (currentUser?.id) {
+      const { data: onboardingRow } = await supabaseAdmin
+        .from('user_onboarding_preferences')
+        .select('preferred_genres, preferred_vibes, onboarding_completed_at')
+        .eq('user_id', currentUser.id)
+        .maybeSingle()
+      const onboardingPreferences = toOnboardingPreferences(onboardingRow)
+      projectPreferenceBoostById = buildProjectPreferenceBoostById({
+        projects: rawProjects,
+        preferences: onboardingPreferences,
+      })
+
       const { data: hiddenRows } = await supabaseAdmin
         .from('user_discovery_preferences')
         .select('target_type, target_id, preference, reason_code')
@@ -239,6 +257,7 @@ export async function GET(request: NextRequest) {
       recentUpdatesCountByProjectId,
       latestUpdateAtByProjectId,
       creatorReasonPenaltyById,
+      projectPreferenceBoostById,
       sort: parsed.sort,
     })
 
