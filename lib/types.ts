@@ -120,3 +120,14 @@ export interface ProjectUpdate {
   viewer_reactions?: Partial<Record<'helpful' | 'fire' | 'agree', boolean>>
 }
 
+export interface ProjectUpdateComment {
+  id: string
+  update_id: string
+  user_id: string
+  content: string
+  created_at: string
+  updated_at: string
+  author_name?: string
+  can_delete?: boolean
+}
+

@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Megaphone, Send, Trash2 } from 'lucide-react'
-import { ProjectUpdate } from '@/lib/types'
+import { Megaphone, Send, Trash2, MessageCircle } from 'lucide-react'
+import { ProjectUpdate, ProjectUpdateComment } from '@/lib/types'
 import { showToast } from './Toast'
 import { parseUpdateDeeplink, resolveUpdateIdInList } from '@/lib/updateDeeplink'
 import {
@@ -33,6 +33,11 @@ type UpdateReactionsResponse = {
       viewerReactions: Partial<Record<ProjectUpdateReactionType, boolean>>
     }
   >
+}
+
+type UpdateCommentsResponse = {
+  comments?: ProjectUpdateComment[]
+  count?: number
 }
 
 const UPDATE_REACTION_CHIPS: Array<{ key: ProjectUpdateReactionType; label: string }> = [
@@ -67,6 +72,14 @@ export default function ProjectUpdatesPanel({
     >
   >({})
   const [reactionLoadingKey, setReactionLoadingKey] = useState<string | null>(null)
+  const [threadOpenByUpdate, setThreadOpenByUpdate] = useState<Record<string, boolean>>({})
+  const [commentsByUpdate, setCommentsByUpdate] = useState<Record<string, ProjectUpdateComment[]>>({})
+  const [commentCountByUpdate, setCommentCountByUpdate] = useState<Record<string, number>>({})
+  const [threadLoadingByUpdate, setThreadLoadingByUpdate] = useState<Record<string, boolean>>({})
+  const [threadErrorByUpdate, setThreadErrorByUpdate] = useState<Record<string, string | null>>({})
+  const [commentDraftByUpdate, setCommentDraftByUpdate] = useState<Record<string, string>>({})
+  const [postingCommentByUpdate, setPostingCommentByUpdate] = useState<Record<string, boolean>>({})
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
   const [highlightedUpdateId, setHighlightedUpdateId] = useState<string | null>(null)
   const [deeplinkNotice, setDeeplinkNotice] = useState<{
     action: 'resolved' | 'not_found' | 'invalid_id'
@@ -132,6 +145,13 @@ export default function ProjectUpdatesPanel({
       }
 
       const nextUpdates = result.updates || []
+      setCommentCountByUpdate((prev) => {
+        const next: Record<string, number> = {}
+        for (const update of nextUpdates) {
+          next[update.id] = prev[update.id] || 0
+        }
+        return next
+      })
       if (nextUpdates.length > 0) {
         await loadReactions(nextUpdates.map((update) => update.id), headers)
       } else {
@@ -174,6 +194,14 @@ export default function ProjectUpdatesPanel({
     deeplinkAttemptedRef.current = false
     setDeeplinkNotice(null)
     setHighlightedUpdateId(null)
+    setThreadOpenByUpdate({})
+    setCommentsByUpdate({})
+    setCommentCountByUpdate({})
+    setThreadLoadingByUpdate({})
+    setThreadErrorByUpdate({})
+    setCommentDraftByUpdate({})
+    setPostingCommentByUpdate({})
+    setDeletingCommentId(null)
     if (highlightTimeoutRef.current) {
       window.clearTimeout(highlightTimeoutRef.current)
       highlightTimeoutRef.current = null
@@ -400,6 +428,164 @@ export default function ProjectUpdatesPanel({
     }
   }
 
+  const loadUpdateComments = async (updateId: string) => {
+    setThreadLoadingByUpdate((prev) => ({ ...prev, [updateId]: true }))
+    setThreadErrorByUpdate((prev) => ({ ...prev, [updateId]: null }))
+    try {
+      const headers = await withAuthHeaders()
+      const response = await fetch(`/api/project-update-comments?update_id=${encodeURIComponent(updateId)}`, { headers })
+      const result = (await response.json()) as UpdateCommentsResponse & { error?: string }
+      if (!response.ok) throw new Error(result.error || 'Failed to load update comments')
+
+      const comments = result.comments || []
+      setCommentsByUpdate((prev) => ({ ...prev, [updateId]: comments }))
+      setCommentCountByUpdate((prev) => ({ ...prev, [updateId]: result.count ?? comments.length }))
+    } catch (error) {
+      console.error('Error loading update comments:', error)
+      setThreadErrorByUpdate((prev) => ({
+        ...prev,
+        [updateId]: error instanceof Error ? error.message : 'Failed to load comments',
+      }))
+    } finally {
+      setThreadLoadingByUpdate((prev) => ({ ...prev, [updateId]: false }))
+    }
+  }
+
+  const toggleThread = async (updateId: string) => {
+    const willOpen = !threadOpenByUpdate[updateId]
+    setThreadOpenByUpdate((prev) => ({ ...prev, [updateId]: willOpen }))
+    if (willOpen) {
+      if (typeof commentCountByUpdate[updateId] !== 'number') {
+        setCommentCountByUpdate((prev) => ({ ...prev, [updateId]: 0 }))
+      }
+      if (!commentsByUpdate[updateId]) {
+        await loadUpdateComments(updateId)
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_update_comment_event', {
+            detail: {
+              schema: 'project_update_comment.v1',
+              action: 'expand_thread',
+              source,
+              project_id: projectId,
+              update_id: updateId,
+            },
+          })
+        )
+      }
+    }
+  }
+
+  const createUpdateComment = async (updateId: string) => {
+    const draft = (commentDraftByUpdate[updateId] || '').trim()
+    if (!draft) return
+
+    if (!authenticated) {
+      onRequireAuth?.()
+      return
+    }
+    if (!getAccessToken) return
+
+    setPostingCommentByUpdate((prev) => ({ ...prev, [updateId]: true }))
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-update-comments', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          update_id: updateId,
+          content: draft,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to create update comment')
+
+      const createdComment = result.comment as ProjectUpdateComment
+      setCommentsByUpdate((prev) => ({
+        ...prev,
+        [updateId]: [...(prev[updateId] || []), createdComment],
+      }))
+      setCommentCountByUpdate((prev) => ({ ...prev, [updateId]: (prev[updateId] || 0) + 1 }))
+      setCommentDraftByUpdate((prev) => ({ ...prev, [updateId]: '' }))
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_update_comment_event', {
+            detail: {
+              schema: 'project_update_comment.v1',
+              action: 'create',
+              source,
+              project_id: projectId,
+              update_id: updateId,
+              comment_id: createdComment.id,
+            },
+          })
+        )
+      }
+    } catch (error) {
+      console.error('Error creating update comment:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to comment', 'error')
+    } finally {
+      setPostingCommentByUpdate((prev) => ({ ...prev, [updateId]: false }))
+    }
+  }
+
+  const deleteUpdateComment = async (updateId: string, commentId: string) => {
+    if (!authenticated) {
+      onRequireAuth?.()
+      return
+    }
+    if (!getAccessToken) return
+
+    const prevComments = commentsByUpdate[updateId] || []
+    setDeletingCommentId(commentId)
+    setCommentsByUpdate((prev) => ({
+      ...prev,
+      [updateId]: (prev[updateId] || []).filter((comment) => comment.id !== commentId),
+    }))
+    setCommentCountByUpdate((prev) => ({
+      ...prev,
+      [updateId]: Math.max(0, (prev[updateId] || 0) - 1),
+    }))
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch(`/api/project-update-comments?id=${encodeURIComponent(commentId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to delete update comment')
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_update_comment_event', {
+            detail: {
+              schema: 'project_update_comment.v1',
+              action: 'delete',
+              source,
+              project_id: projectId,
+              update_id: updateId,
+              comment_id: commentId,
+            },
+          })
+        )
+      }
+    } catch (error) {
+      setCommentsByUpdate((prev) => ({ ...prev, [updateId]: prevComments }))
+      setCommentCountByUpdate((prev) => ({ ...prev, [updateId]: prevComments.length }))
+      console.error('Error deleting update comment:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to delete comment', 'error')
+    } finally {
+      setDeletingCommentId(null)
+    }
+  }
+
   return (
     <section
       ref={updatesContainerRef}
@@ -518,6 +704,89 @@ export default function ProjectUpdatesPanel({
                           </button>
                         )
                       })}
+                    </div>
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleThread(update.id)}
+                        className="text-[11px] text-gray-400 hover:text-gray-300 inline-flex items-center gap-1"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Comments ({commentCountByUpdate[update.id] || 0})
+                      </button>
+
+                      {threadOpenByUpdate[update.id] ? (
+                        <div className="mt-2 border border-gray-800 rounded-md bg-black/30 p-2.5 space-y-2">
+                          {threadLoadingByUpdate[update.id] ? (
+                            <p className="text-[11px] text-gray-500">Loading comments...</p>
+                          ) : threadErrorByUpdate[update.id] ? (
+                            <p className="text-[11px] text-gray-500">Couldn&apos;t load comments right now.</p>
+                          ) : (commentsByUpdate[update.id] || []).length === 0 ? (
+                            <p className="text-[11px] text-gray-500">No comments yet.</p>
+                          ) : (
+                            <ul className="space-y-1.5">
+                              {(commentsByUpdate[update.id] || []).map((comment) => (
+                                <li key={comment.id} className="rounded border border-gray-800 px-2 py-1.5">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="text-[11px] text-gray-300">
+                                        {comment.author_name || 'User'} •{' '}
+                                        <span className="text-gray-500">{new Date(comment.created_at).toLocaleString()}</span>
+                                      </p>
+                                      <p className="text-xs text-gray-100 whitespace-pre-wrap break-words mt-0.5">
+                                        {comment.content}
+                                      </p>
+                                    </div>
+                                    {comment.can_delete ? (
+                                      <button
+                                        type="button"
+                                        disabled={deletingCommentId === comment.id}
+                                        onClick={() => deleteUpdateComment(update.id, comment.id)}
+                                        className="text-gray-500 hover:text-red-400 disabled:opacity-50"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          <div className="flex items-end gap-2 pt-1">
+                            <textarea
+                              rows={1}
+                              value={commentDraftByUpdate[update.id] || ''}
+                              onChange={(event) =>
+                                setCommentDraftByUpdate((prev) => ({
+                                  ...prev,
+                                  [update.id]: event.target.value,
+                                }))
+                              }
+                              onFocus={(event) => {
+                                if (!authenticated) {
+                                  event.currentTarget.blur()
+                                  onRequireAuth?.()
+                                }
+                              }}
+                              maxLength={2000}
+                              placeholder="Add a comment..."
+                              className="flex-1 bg-black/70 border border-gray-800 rounded-md px-2 py-1.5 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green resize-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => createUpdateComment(update.id)}
+                              disabled={
+                                !!postingCommentByUpdate[update.id] ||
+                                !(commentDraftByUpdate[update.id] || '').trim()
+                              }
+                              className="h-7 px-2 rounded-md bg-neon-green text-black text-[11px] font-medium disabled:opacity-40"
+                            >
+                              {postingCommentByUpdate[update.id] ? '...' : 'Send'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                   {(canManage || update.can_delete) && (
