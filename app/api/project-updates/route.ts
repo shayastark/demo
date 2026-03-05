@@ -3,10 +3,14 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import {
+  canScheduleProjectUpdate,
   canViewerSeeProjectUpdate,
+  dedupeProjectUpdateRowsById,
+  parseProjectUpdateScheduledPublishAt,
   sanitizeProjectUpdateContent,
   sanitizeProjectUpdateImportantFlag,
   sanitizeProjectUpdateStatus,
+  shouldAutoPublishScheduledUpdate,
   shouldNotifyForProjectUpdateTransition,
   sanitizeProjectUpdateVersionLabel,
   type ProjectUpdateRow,
@@ -37,6 +41,82 @@ async function getProject(projectId: string) {
   return project
 }
 
+async function autoPublishScheduledUpdates(args: {
+  projectId: string
+  projectTitle: string
+}): Promise<void> {
+  const nowIso = new Date().toISOString()
+  const { data: dueRows, error: dueError } = await supabaseAdmin
+    .from('project_updates')
+    .select('id, project_id, user_id, content, version_label, is_important, status, scheduled_publish_at')
+    .eq('project_id', args.projectId)
+    .eq('status', 'draft')
+    .lte('scheduled_publish_at', nowIso)
+
+  if (dueError) {
+    console.error('Error fetching scheduled updates for autopublish:', dueError)
+    return
+  }
+
+  const due = ((dueRows || []) as ProjectUpdateRow[]).filter((row) =>
+    shouldAutoPublishScheduledUpdate(
+      {
+        status: row.status,
+        scheduled_publish_at: row.scheduled_publish_at,
+      },
+      Date.parse(nowIso)
+    )
+  )
+  if (due.length === 0) return
+
+  const dueIds = due.map((row) => row.id)
+  const scheduledById = due.reduce<Record<string, string | null>>((acc, row) => {
+    acc[row.id] = row.scheduled_publish_at
+    return acc
+  }, {})
+
+  const { data: transitionedRows, error } = await supabaseAdmin
+    .from('project_updates')
+    .update({
+      status: 'published',
+      published_at: nowIso,
+      scheduled_publish_at: null,
+    })
+    .eq('project_id', args.projectId)
+    .eq('status', 'draft')
+    .in('id', dueIds)
+    .lte('scheduled_publish_at', nowIso)
+    .select('id, project_id, user_id, content, version_label, is_important')
+
+  if (error) {
+    console.error('Error auto-publishing scheduled updates:', error)
+    return
+  }
+
+  const uniqueRows = dedupeProjectUpdateRowsById(transitionedRows || [])
+  for (const row of uniqueRows) {
+    console.info('project_update_schedule_event', {
+      schema: 'project_update_schedule.v1',
+      action: 'schedule_autopublish',
+      project_id: row.project_id,
+      update_id: row.id,
+      scheduled_publish_at: scheduledById[row.id] || null,
+      source: 'project_updates_get',
+    })
+    notifyFollowersProjectUpdate({
+      creatorId: row.user_id,
+      projectId: row.project_id,
+      updateId: row.id,
+      projectTitle: args.projectTitle,
+      content: row.content,
+      versionLabel: row.version_label,
+      isImportant: row.is_important,
+    }).catch((notifyError) => {
+      console.error('Failed notifying for scheduled autopublish:', notifyError)
+    })
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -64,6 +144,11 @@ export async function GET(request: NextRequest) {
     if (!canAccess) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
+
+    await autoPublishScheduledUpdates({
+      projectId: project.id,
+      projectTitle: project.title,
+    })
 
     const canManage = await canPostProjectUpdate({
       project: {
@@ -137,6 +222,10 @@ export async function POST(request: NextRequest) {
     const versionLabel = sanitizeProjectUpdateVersionLabel(body.version_label)
     const isImportant = sanitizeProjectUpdateImportantFlag(body.is_important)
     const status = sanitizeProjectUpdateStatus(body.status, 'published')
+    const hasScheduledPublishAtField = Object.prototype.hasOwnProperty.call(body, 'scheduled_publish_at')
+    const scheduledPublishAt = hasScheduledPublishAtField
+      ? parseProjectUpdateScheduledPublishAt(body.scheduled_publish_at)
+      : undefined
 
     if (!projectId || !isValidUUID(projectId)) {
       return NextResponse.json({ error: 'Valid project_id is required' }, { status: 400 })
@@ -150,6 +239,18 @@ export async function POST(request: NextRequest) {
     }
     if (!status) {
       return NextResponse.json({ error: 'status must be draft or published' }, { status: 400 })
+    }
+    if (hasScheduledPublishAtField && scheduledPublishAt === undefined) {
+      return NextResponse.json(
+        { error: 'scheduled_publish_at must be a future ISO timestamp or null' },
+        { status: 400 }
+      )
+    }
+    if (scheduledPublishAt && !canScheduleProjectUpdate(status)) {
+      return NextResponse.json(
+        { error: 'scheduled_publish_at is only allowed for draft updates' },
+        { status: 400 }
+      )
     }
 
     const project = await getProject(projectId)
@@ -180,6 +281,7 @@ export async function POST(request: NextRequest) {
         is_important: isImportant,
         status,
         published_at: status === 'published' ? new Date().toISOString() : null,
+        scheduled_publish_at: status === 'draft' ? (scheduledPublishAt ?? null) : null,
       })
       .select('*')
       .single()
@@ -220,16 +322,26 @@ export async function PATCH(request: NextRequest) {
     const hasVersionLabelField = Object.prototype.hasOwnProperty.call(body, 'version_label')
     const hasImportantField = Object.prototype.hasOwnProperty.call(body, 'is_important')
     const hasStatusField = Object.prototype.hasOwnProperty.call(body, 'status')
+    const hasScheduledPublishAtField = Object.prototype.hasOwnProperty.call(body, 'scheduled_publish_at')
 
     const content = hasContentField ? sanitizeProjectUpdateContent(body.content) : undefined
     const versionLabel = hasVersionLabelField ? sanitizeProjectUpdateVersionLabel(body.version_label) : undefined
     const isImportant = hasImportantField ? sanitizeProjectUpdateImportantFlag(body.is_important) : undefined
     const status = hasStatusField ? sanitizeProjectUpdateStatus(body.status, 'published') : undefined
+    const scheduledPublishAt = hasScheduledPublishAtField
+      ? parseProjectUpdateScheduledPublishAt(body.scheduled_publish_at)
+      : undefined
 
     if (!id || !isValidUUID(id)) {
       return NextResponse.json({ error: 'Valid id is required' }, { status: 400 })
     }
-    if (!hasContentField && !hasVersionLabelField && !hasImportantField && !hasStatusField) {
+    if (
+      !hasContentField &&
+      !hasVersionLabelField &&
+      !hasImportantField &&
+      !hasStatusField &&
+      !hasScheduledPublishAtField
+    ) {
       return NextResponse.json({ error: 'At least one field is required' }, { status: 400 })
     }
     if (hasContentField && !content) {
@@ -241,10 +353,18 @@ export async function PATCH(request: NextRequest) {
     if (hasStatusField && !status) {
       return NextResponse.json({ error: 'status must be draft or published' }, { status: 400 })
     }
+    if (hasScheduledPublishAtField && scheduledPublishAt === undefined) {
+      return NextResponse.json(
+        { error: 'scheduled_publish_at must be a future ISO timestamp or null' },
+        { status: 400 }
+      )
+    }
 
     const { data: existingUpdate } = await supabaseAdmin
       .from('project_updates')
-      .select('id, project_id, user_id, content, version_label, is_important, status, published_at')
+      .select(
+        'id, project_id, user_id, content, version_label, is_important, status, published_at, scheduled_publish_at'
+      )
       .eq('id', id)
       .single()
     if (!existingUpdate) {
@@ -271,11 +391,20 @@ export async function PATCH(request: NextRequest) {
     }
 
     const nextStatus = status || existingUpdate.status
+    if (hasScheduledPublishAtField && scheduledPublishAt && !canScheduleProjectUpdate(nextStatus)) {
+      return NextResponse.json(
+        { error: 'scheduled_publish_at is only allowed for draft updates' },
+        { status: 400 }
+      )
+    }
     const updatePayload: Record<string, unknown> = {}
     if (hasContentField) updatePayload.content = content
     if (hasVersionLabelField) updatePayload.version_label = versionLabel || null
     if (hasImportantField) updatePayload.is_important = isImportant
     if (hasStatusField) updatePayload.status = nextStatus
+    if (hasScheduledPublishAtField) {
+      updatePayload.scheduled_publish_at = nextStatus === 'draft' ? scheduledPublishAt : null
+    }
     if (
       shouldNotifyForProjectUpdateTransition({
         previousStatus: existingUpdate.status === 'draft' ? 'draft' : 'published',
@@ -283,6 +412,7 @@ export async function PATCH(request: NextRequest) {
       })
     ) {
       updatePayload.published_at = new Date().toISOString()
+      updatePayload.scheduled_publish_at = null
     }
 
     const { data: updated, error } = await supabaseAdmin

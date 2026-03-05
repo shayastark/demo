@@ -112,6 +112,7 @@ export interface ProjectUpdate {
   is_important: boolean
   status: 'draft' | 'published'
   published_at: string | null
+  scheduled_publish_at?: string | null
   created_at: string
   updated_at: string
   author_name?: string

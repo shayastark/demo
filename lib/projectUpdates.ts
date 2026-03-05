@@ -11,6 +11,7 @@ export type ProjectUpdateRow = {
   is_important: boolean
   status: ProjectUpdateStatus
   published_at: string | null
+  scheduled_publish_at: string | null
   created_at: string
   updated_at: string
 }
@@ -58,6 +59,45 @@ export function shouldNotifyForProjectUpdateTransition(args: {
   if (args.nextStatus !== 'published') return false
   if (args.previousStatus === 'published') return false
   return true
+}
+
+export function parseProjectUpdateScheduledPublishAt(
+  value: unknown,
+  nowMs: number = Date.now()
+): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  if (typeof value !== 'string') return undefined
+  const parsedMs = new Date(value).getTime()
+  if (!Number.isFinite(parsedMs)) return undefined
+  if (parsedMs <= nowMs) return undefined
+  return new Date(parsedMs).toISOString()
+}
+
+export function canScheduleProjectUpdate(status: ProjectUpdateStatus): boolean {
+  return status === 'draft'
+}
+
+export function shouldAutoPublishScheduledUpdate(
+  row: Pick<ProjectUpdateRow, 'status' | 'scheduled_publish_at'>,
+  nowMs: number = Date.now()
+): boolean {
+  if (row.status !== 'draft') return false
+  if (!row.scheduled_publish_at) return false
+  const scheduledMs = new Date(row.scheduled_publish_at).getTime()
+  if (!Number.isFinite(scheduledMs)) return false
+  return scheduledMs <= nowMs
+}
+
+export function dedupeProjectUpdateRowsById<T extends { id: string }>(rows: T[]): T[] {
+  const seen = new Set<string>()
+  const deduped: T[] = []
+  for (const row of rows) {
+    if (seen.has(row.id)) continue
+    seen.add(row.id)
+    deduped.push(row)
+  }
+  return deduped
 }
 
 export function canManageProjectUpdates(userId: string | null | undefined, projectCreatorId: string | null | undefined): boolean {

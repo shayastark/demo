@@ -1,11 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  canScheduleProjectUpdate,
+  dedupeProjectUpdateRowsById,
   canViewerSeeProjectUpdate,
+  parseProjectUpdateScheduledPublishAt,
   sanitizeProjectUpdateContent,
   sanitizeProjectUpdateImportantFlag,
   sanitizeProjectUpdateStatus,
   sanitizeProjectUpdateVersionLabel,
+  shouldAutoPublishScheduledUpdate,
   shouldNotifyForProjectUpdateTransition,
   canManageProjectUpdates,
   formatProjectUpdatesListResponse,
@@ -63,6 +67,44 @@ test('shouldNotifyForProjectUpdateTransition notifies only on publish transition
   )
 })
 
+test('parseProjectUpdateScheduledPublishAt validates future timestamps', () => {
+  const now = Date.parse('2026-03-01T00:00:00.000Z')
+  assert.equal(parseProjectUpdateScheduledPublishAt(undefined, now), undefined)
+  assert.equal(parseProjectUpdateScheduledPublishAt(null, now), null)
+  assert.equal(parseProjectUpdateScheduledPublishAt('not-a-date', now), undefined)
+  assert.equal(parseProjectUpdateScheduledPublishAt('2026-02-28T00:00:00.000Z', now), undefined)
+  assert.equal(
+    parseProjectUpdateScheduledPublishAt('2026-03-02T00:00:00.000Z', now),
+    '2026-03-02T00:00:00.000Z'
+  )
+})
+
+test('scheduled autopublish transition and idempotent dedupe helpers', () => {
+  const now = Date.parse('2026-03-01T00:00:00.000Z')
+  assert.equal(canScheduleProjectUpdate('draft'), true)
+  assert.equal(canScheduleProjectUpdate('published'), false)
+  assert.equal(
+    shouldAutoPublishScheduledUpdate(
+      { status: 'draft', scheduled_publish_at: '2026-03-01T00:00:00.000Z' },
+      now
+    ),
+    true
+  )
+  assert.equal(
+    shouldAutoPublishScheduledUpdate(
+      { status: 'draft', scheduled_publish_at: '2026-03-02T00:00:00.000Z' },
+      now
+    ),
+    false
+  )
+  const deduped = dedupeProjectUpdateRowsById([
+    { id: 'u1' },
+    { id: 'u1' },
+    { id: 'u2' },
+  ])
+  assert.deepEqual(deduped.map((row) => row.id), ['u1', 'u2'])
+})
+
 test('canManageProjectUpdates enforces creator-only permissions', () => {
   assert.equal(canManageProjectUpdates('u1', 'u1'), true)
   assert.equal(canManageProjectUpdates('u1', 'u2'), false)
@@ -81,6 +123,7 @@ test('formatProjectUpdatesListResponse includes can_delete and can_manage', () =
         is_important: false,
         status: 'published',
         published_at: '2026-01-01T00:00:00.000Z',
+        scheduled_publish_at: null,
         created_at: '2026-01-01T00:00:00.000Z',
         updated_at: '2026-01-01T00:00:00.000Z',
       },

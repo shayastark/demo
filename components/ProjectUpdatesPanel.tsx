@@ -60,6 +60,7 @@ export default function ProjectUpdatesPanel({
   const [versionLabel, setVersionLabel] = useState('')
   const [isImportant, setIsImportant] = useState(false)
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null)
+  const [scheduledPublishAt, setScheduledPublishAt] = useState('')
   const [posting, setPosting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [reactionsByUpdate, setReactionsByUpdate] = useState<
@@ -141,6 +142,35 @@ export default function ProjectUpdatesPanel({
         },
       })
     )
+  }
+
+  const emitScheduleEvent = (
+    action: 'schedule_set' | 'schedule_cleared' | 'schedule_autopublish',
+    updateId: string | null,
+    scheduledIso: string | null
+  ) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('project_update_schedule_event', {
+        detail: {
+          schema: 'project_update_schedule.v1',
+          action,
+          project_id: projectId,
+          update_id: updateId,
+          scheduled_publish_at: scheduledIso,
+          source,
+        },
+      })
+    )
+  }
+
+  const toDateTimeLocalValue = (iso: string | null | undefined): string => {
+    if (!iso) return ''
+    const date = new Date(iso)
+    if (!Number.isFinite(date.getTime())) return ''
+    const tzOffsetMinutes = date.getTimezoneOffset()
+    const local = new Date(date.getTime() - tzOffsetMinutes * 60 * 1000)
+    return local.toISOString().slice(0, 16)
   }
 
   const withAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -309,6 +339,13 @@ export default function ProjectUpdatesPanel({
       if (!token) throw new Error('Not authenticated')
 
       const isEditingDraft = !!editingDraftId
+      const previousEditingDraft = isEditingDraft
+        ? updates.find((update) => update.id === editingDraftId)
+        : null
+      const scheduledIso =
+        targetStatus === 'draft' && scheduledPublishAt
+          ? new Date(scheduledPublishAt).toISOString()
+          : null
       const response = await fetch('/api/project-updates', {
         method: isEditingDraft ? 'PATCH' : 'POST',
         headers: {
@@ -323,6 +360,7 @@ export default function ProjectUpdatesPanel({
                 version_label: versionLabel.trim() || null,
                 is_important: isImportant,
                 status: targetStatus,
+                scheduled_publish_at: targetStatus === 'draft' ? scheduledIso : null,
               }
             : {
                 project_id: projectId,
@@ -330,6 +368,7 @@ export default function ProjectUpdatesPanel({
                 version_label: versionLabel.trim() || null,
                 is_important: isImportant,
                 status: targetStatus,
+                scheduled_publish_at: targetStatus === 'draft' ? scheduledIso : null,
               }
         ),
       })
@@ -339,6 +378,7 @@ export default function ProjectUpdatesPanel({
       setContent('')
       setVersionLabel('')
       setIsImportant(false)
+      setScheduledPublishAt('')
       setEditingDraftId(null)
       emitEvent({
         action: 'create',
@@ -347,6 +387,11 @@ export default function ProjectUpdatesPanel({
       })
       if (targetStatus === 'draft') {
         emitDraftEvent(isEditingDraft ? 'edit_draft' : 'save_draft', result.update?.id || null)
+        if (scheduledIso) {
+          emitScheduleEvent('schedule_set', result.update?.id || null, scheduledIso)
+        } else if (previousEditingDraft?.scheduled_publish_at) {
+          emitScheduleEvent('schedule_cleared', result.update?.id || null, null)
+        }
       } else if (isEditingDraft) {
         emitDraftEvent('publish_draft', result.update?.id || null)
       }
@@ -488,6 +533,7 @@ export default function ProjectUpdatesPanel({
     setContent(update.content)
     setVersionLabel(update.version_label || '')
     setIsImportant(!!update.is_important)
+    setScheduledPublishAt(toDateTimeLocalValue(update.scheduled_publish_at))
   }
 
   const publishDraft = async (update: ProjectUpdate) => {
@@ -859,6 +905,26 @@ export default function ProjectUpdatesPanel({
             />
             Mark as important
           </label>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="datetime-local"
+              value={scheduledPublishAt}
+              onChange={(event) => setScheduledPublishAt(event.target.value)}
+              className="bg-black/70 border border-gray-800 rounded-md px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-green"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setScheduledPublishAt('')
+                if (editingDraftId) {
+                  emitScheduleEvent('schedule_cleared', editingDraftId, null)
+                }
+              }}
+              className="text-[11px] px-2 py-1 rounded border border-gray-800 text-gray-400 hover:border-gray-700"
+            >
+              Clear schedule
+            </button>
+          </div>
           <p className="text-[11px] text-gray-500 mt-1">
             Mark important to notify followers who prefer important-only updates.
           </p>
@@ -870,6 +936,7 @@ export default function ProjectUpdatesPanel({
                 setContent('')
                 setVersionLabel('')
                 setIsImportant(false)
+                setScheduledPublishAt('')
               }}
               className="mt-1 text-[11px] text-gray-500 hover:text-gray-400 underline underline-offset-2"
             >
@@ -906,6 +973,11 @@ export default function ProjectUpdatesPanel({
                           <p className="text-[10px] text-gray-500 mt-0.5">
                             Draft • {new Date(update.created_at).toLocaleString()}
                           </p>
+                          {update.scheduled_publish_at ? (
+                            <p className="text-[10px] text-neon-green/90 mt-0.5">
+                              Scheduled for {new Date(update.scheduled_publish_at).toLocaleString()}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-1">
                           <button
