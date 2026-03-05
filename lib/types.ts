@@ -109,6 +109,7 @@ export interface ProjectUpdate {
   user_id: string
   content: string
   version_label: string | null
+  is_important: boolean
   created_at: string
   updated_at: string
   author_name?: string

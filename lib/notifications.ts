@@ -12,7 +12,10 @@ import {
   type UpdateEngagementNotificationAction,
 } from './updateEngagementNotifications'
 import { buildProjectUpdateRecipientIds } from './projectSubscriptions'
-import { filterProjectUpdateSubscriberIdsByMode, isImportantProjectUpdate } from './projectSubscriptions'
+import {
+  filterProjectUpdateSubscriberIdsByMode,
+  resolveProjectUpdateImportanceForNotification,
+} from './projectSubscriptions'
 import {
   buildProjectAccessInviteTargetPath,
   buildProjectAccessInviteTitle,
@@ -301,6 +304,7 @@ export async function notifyFollowersProjectUpdate({
   projectTitle,
   content,
   versionLabel,
+  isImportant,
 }: {
   creatorId: string
   projectId: string
@@ -308,6 +312,7 @@ export async function notifyFollowersProjectUpdate({
   projectTitle: string
   content: string
   versionLabel?: string | null
+  isImportant?: boolean | null
 }): Promise<{ success: boolean; notifiedCount: number; error?: string }> {
   try {
     const followColumn = await resolveFollowColumn()
@@ -338,7 +343,10 @@ export async function notifyFollowersProjectUpdate({
         user_id: row.user_id,
         notification_mode: row.notification_mode,
       })),
-      isImportant: isImportantProjectUpdate({ versionLabel }),
+      isImportant: resolveProjectUpdateImportanceForNotification({
+        isImportant,
+        versionLabel,
+      }),
     })
 
     const recipientIds = buildProjectUpdateRecipientIds({

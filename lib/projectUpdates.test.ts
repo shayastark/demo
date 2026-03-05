@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   sanitizeProjectUpdateContent,
+  sanitizeProjectUpdateImportantFlag,
   sanitizeProjectUpdateVersionLabel,
   canManageProjectUpdates,
   formatProjectUpdatesListResponse,
@@ -20,6 +21,13 @@ test('sanitizeProjectUpdateVersionLabel handles nullability safely', () => {
   assert.equal(sanitizeProjectUpdateVersionLabel('  v2  '), 'v2')
 })
 
+test('sanitizeProjectUpdateImportantFlag validates booleans strictly', () => {
+  assert.equal(sanitizeProjectUpdateImportantFlag(true), true)
+  assert.equal(sanitizeProjectUpdateImportantFlag(false), false)
+  assert.equal(sanitizeProjectUpdateImportantFlag(undefined), false)
+  assert.equal(sanitizeProjectUpdateImportantFlag('yes'), null)
+})
+
 test('canManageProjectUpdates enforces creator-only permissions', () => {
   assert.equal(canManageProjectUpdates('u1', 'u1'), true)
   assert.equal(canManageProjectUpdates('u1', 'u2'), false)
@@ -35,6 +43,7 @@ test('formatProjectUpdatesListResponse includes can_delete and can_manage', () =
         user_id: 'u1',
         content: 'mix v2 uploaded',
         version_label: 'v2',
+        is_important: false,
         created_at: '2026-01-01T00:00:00.000Z',
         updated_at: '2026-01-01T00:00:00.000Z',
       },

@@ -71,6 +71,14 @@ export function isImportantProjectUpdate(args: {
   return label.includes('final') || label.includes('release')
 }
 
+export function resolveProjectUpdateImportanceForNotification(args: {
+  isImportant?: boolean | null
+  versionLabel?: string | null
+}): boolean {
+  if (typeof args.isImportant === 'boolean') return args.isImportant
+  return isImportantProjectUpdate({ versionLabel: args.versionLabel })
+}
+
 export function filterProjectUpdateSubscriberIdsByMode(args: {
   rows: Array<{ user_id: string | null; notification_mode?: unknown }>
   isImportant: boolean

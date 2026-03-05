@@ -58,6 +58,7 @@ export default function ProjectUpdatesPanel({
   const [canManage, setCanManage] = useState(false)
   const [content, setContent] = useState('')
   const [versionLabel, setVersionLabel] = useState('')
+  const [isImportant, setIsImportant] = useState(false)
   const [posting, setPosting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [reactionsByUpdate, setReactionsByUpdate] = useState<
@@ -294,6 +295,7 @@ export default function ProjectUpdatesPanel({
           project_id: projectId,
           content: trimmed,
           version_label: versionLabel.trim() || null,
+          is_important: isImportant,
         }),
       })
       const result = await response.json()
@@ -301,11 +303,38 @@ export default function ProjectUpdatesPanel({
 
       setContent('')
       setVersionLabel('')
+      setIsImportant(false)
       emitEvent({
         action: 'create',
         project_id: projectId,
         update_id: result.update?.id || null,
       })
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_update_importance_event', {
+            detail: {
+              schema: 'project_update_importance.v1',
+              action: isImportant ? 'mark_important' : 'unmark_important',
+              project_id: projectId,
+              update_id: result.update?.id || null,
+              source,
+            },
+          })
+        )
+        if (isImportant) {
+          window.dispatchEvent(
+            new CustomEvent('project_update_importance_event', {
+              detail: {
+                schema: 'project_update_importance.v1',
+                action: 'important_notification_sent',
+                project_id: projectId,
+                update_id: result.update?.id || null,
+                source,
+              },
+            })
+          )
+        }
+      }
       await loadUpdates()
       showToast('Update posted', 'success')
     } catch (error) {
@@ -313,6 +342,57 @@ export default function ProjectUpdatesPanel({
       showToast(error instanceof Error ? error.message : 'Failed to post update', 'error')
     } finally {
       setPosting(false)
+    }
+  }
+
+  const toggleImportant = async (update: ProjectUpdate) => {
+    if (!authenticated) {
+      onRequireAuth?.()
+      return
+    }
+    if (!getAccessToken) return
+    const oldValue = !!update.is_important
+    const nextValue = !oldValue
+    const previous = updates
+    setUpdates((current) =>
+      current.map((item) => (item.id === update.id ? { ...item, is_important: nextValue } : item))
+    )
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-updates', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: update.id,
+          is_important: nextValue,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update importance')
+      setUpdates((current) =>
+        current.map((item) => (item.id === update.id ? { ...item, is_important: !!result.update?.is_important } : item))
+      )
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_update_importance_event', {
+            detail: {
+              schema: 'project_update_importance.v1',
+              action: nextValue ? 'mark_important' : 'unmark_important',
+              project_id: projectId,
+              update_id: update.id,
+              source,
+            },
+          })
+        )
+      }
+    } catch (error) {
+      setUpdates(previous)
+      console.error('Error updating update importance:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to update importance', 'error')
     }
   }
 
@@ -651,6 +731,15 @@ export default function ProjectUpdatesPanel({
               </span>
             </button>
           </div>
+          <label className="inline-flex items-center gap-2 text-xs text-gray-400">
+            <input
+              type="checkbox"
+              checked={isImportant}
+              onChange={(event) => setIsImportant(event.target.checked)}
+              className="accent-[#39FF14]"
+            />
+            Mark as important
+          </label>
         </div>
       )}
 
@@ -677,6 +766,11 @@ export default function ProjectUpdatesPanel({
                           {update.version_label}
                         </span>
                       )}
+                      {update.is_important ? (
+                        <span className="text-[10px] rounded-full border border-neon-green/60 px-2 py-0.5 text-neon-green">
+                          Important
+                        </span>
+                      ) : null}
                       <span className="text-[11px] text-gray-500">{new Date(update.created_at).toLocaleString()}</span>
                     </div>
                     <p className="text-sm text-gray-100 whitespace-pre-wrap break-words">{update.content}</p>
@@ -790,14 +884,26 @@ export default function ProjectUpdatesPanel({
                     </div>
                   </div>
                   {(canManage || update.can_delete) && (
-                    <button
-                      onClick={() => deleteUpdate(update.id)}
-                      disabled={deletingId === update.id}
-                      className="text-gray-500 hover:text-red-400 disabled:opacity-50"
-                      aria-label="Delete project update"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => toggleImportant(update)}
+                        className={`text-[10px] px-2 py-1 rounded-full border ${
+                          update.is_important
+                            ? 'border-neon-green text-neon-green'
+                            : 'border-gray-700 text-gray-400'
+                        }`}
+                      >
+                        {update.is_important ? 'Unmark' : 'Important'}
+                      </button>
+                      <button
+                        onClick={() => deleteUpdate(update.id)}
+                        disabled={deletingId === update.id}
+                        className="text-gray-500 hover:text-red-400 disabled:opacity-50"
+                        aria-label="Delete project update"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </li>

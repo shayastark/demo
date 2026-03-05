@@ -7,6 +7,7 @@ export type ProjectUpdateRow = {
   user_id: string
   content: string
   version_label: string | null
+  is_important: boolean
   created_at: string
   updated_at: string
 }
@@ -22,6 +23,12 @@ export function sanitizeProjectUpdateVersionLabel(value: unknown): string | null
   if (typeof value !== 'string') return null
   const sanitized = value.trim().slice(0, MAX_VERSION_LABEL_LENGTH)
   return sanitized || null
+}
+
+export function sanitizeProjectUpdateImportantFlag(value: unknown): boolean | null {
+  if (value === undefined) return false
+  if (typeof value !== 'boolean') return null
+  return value
 }
 
 export function canManageProjectUpdates(userId: string | null | undefined, projectCreatorId: string | null | undefined): boolean {

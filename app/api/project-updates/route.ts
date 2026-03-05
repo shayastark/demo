@@ -4,6 +4,7 @@ import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import {
   sanitizeProjectUpdateContent,
+  sanitizeProjectUpdateImportantFlag,
   sanitizeProjectUpdateVersionLabel,
   type ProjectUpdateRow,
 } from '@/lib/projectUpdates'
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest) {
     const projectId = typeof body.project_id === 'string' ? body.project_id : ''
     const content = sanitizeProjectUpdateContent(body.content)
     const versionLabel = sanitizeProjectUpdateVersionLabel(body.version_label)
+    const isImportant = sanitizeProjectUpdateImportantFlag(body.is_important)
 
     if (!projectId || !isValidUUID(projectId)) {
       return NextResponse.json({ error: 'Valid project_id is required' }, { status: 400 })
@@ -127,6 +129,9 @@ export async function POST(request: NextRequest) {
 
     if (!content) {
       return NextResponse.json({ error: 'Update content is required' }, { status: 400 })
+    }
+    if (isImportant === null) {
+      return NextResponse.json({ error: 'is_important must be boolean when provided' }, { status: 400 })
     }
 
     const project = await getProject(projectId)
@@ -154,6 +159,7 @@ export async function POST(request: NextRequest) {
         user_id: currentUser.id,
         content,
         version_label: versionLabel,
+        is_important: isImportant,
       })
       .select('*')
       .single()
@@ -167,6 +173,7 @@ export async function POST(request: NextRequest) {
       projectTitle: project.title,
       content,
       versionLabel,
+      isImportant,
     }).catch((notifyError) => {
       console.error('Failed to notify followers for project update:', notifyError)
     })
@@ -174,6 +181,67 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ update }, { status: 201 })
   } catch (error) {
     console.error('Error creating project update:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const currentUser = await getRequiredCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const id = typeof body.id === 'string' ? body.id : ''
+    const hasImportantField = Object.prototype.hasOwnProperty.call(body, 'is_important')
+    const isImportant = sanitizeProjectUpdateImportantFlag(body.is_important)
+    if (!id || !isValidUUID(id)) {
+      return NextResponse.json({ error: 'Valid id is required' }, { status: 400 })
+    }
+    if (!hasImportantField || isImportant === null) {
+      return NextResponse.json({ error: 'is_important must be a required boolean' }, { status: 400 })
+    }
+
+    const { data: existingUpdate } = await supabaseAdmin
+      .from('project_updates')
+      .select('id, project_id, user_id, is_important')
+      .eq('id', id)
+      .single()
+    if (!existingUpdate) {
+      return NextResponse.json({ error: 'Update not found' }, { status: 404 })
+    }
+
+    const project = await getProject(existingUpdate.project_id)
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const canEditByPolicy = await canPostProjectUpdate({
+      userId: currentUser.id,
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+    })
+    const canEdit = currentUser.id === project.creator_id || (canEditByPolicy && existingUpdate.user_id === currentUser.id)
+    if (!canEdit) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    const { data: updated, error } = await supabaseAdmin
+      .from('project_updates')
+      .update({ is_important: isImportant })
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error) throw error
+
+    return NextResponse.json({ update: updated })
+  } catch (error) {
+    console.error('Error updating project update:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

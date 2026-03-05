@@ -6,6 +6,7 @@ import {
   isImportantProjectUpdate,
   normalizeProjectSubscriptionNotificationMode,
   parseProjectSubscriptionNotificationModeFromBody,
+  resolveProjectUpdateImportanceForNotification,
   parseProjectSubscriptionProjectIdFromBody,
   parseProjectSubscriptionProjectIdFromDelete,
   parseProjectSubscriptionsLimit,
@@ -69,6 +70,30 @@ test('isImportantProjectUpdate uses version label keywords', () => {
   assert.equal(isImportantProjectUpdate({ versionLabel: 'release-candidate' }), true)
   assert.equal(isImportantProjectUpdate({ versionLabel: 'v2' }), false)
   assert.equal(isImportantProjectUpdate({ versionLabel: null }), false)
+})
+
+test('resolveProjectUpdateImportanceForNotification uses explicit flag first', () => {
+  assert.equal(
+    resolveProjectUpdateImportanceForNotification({
+      isImportant: true,
+      versionLabel: 'v1',
+    }),
+    true
+  )
+  assert.equal(
+    resolveProjectUpdateImportanceForNotification({
+      isImportant: false,
+      versionLabel: 'final release',
+    }),
+    false
+  )
+  assert.equal(
+    resolveProjectUpdateImportanceForNotification({
+      isImportant: null,
+      versionLabel: 'final release',
+    }),
+    true
+  )
 })
 
 test('filterProjectUpdateSubscriberIdsByMode enforces all/important/mute', () => {
