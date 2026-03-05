@@ -2,8 +2,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   canManageProjectAccess,
+  getProjectAccessGrantMutationAction,
   getProjectAccessIdentifierType,
+  isProjectAccessGrantActive,
   isRedundantProjectAccessGrant,
+  parseProjectAccessExpiryInput,
   parseProjectAccessGrantInput,
   resolveProjectAccessIdentifier,
 } from './projectAccess'
@@ -86,5 +89,95 @@ test('resolveProjectAccessIdentifier handles not found/ambiguous/success', () =>
     candidates: [{ id: 'u1', username: 'demo' }],
   })
   assert.deepEqual(notFound, { status: 'not_found' })
+})
+
+test('parseProjectAccessExpiryInput supports none, hours, and future expires_at', () => {
+  const now = new Date('2026-03-05T00:00:00.000Z')
+
+  assert.deepEqual(
+    parseProjectAccessExpiryInput({ body: {}, now }),
+    { ok: true, expiresAt: null, provided: false }
+  )
+
+  const byHours = parseProjectAccessExpiryInput({
+    body: { expires_in_hours: 24 },
+    now,
+  })
+  assert.equal(byHours.ok, true)
+  if (byHours.ok) {
+    assert.equal(byHours.provided, true)
+    assert.equal(byHours.expiresAt, '2026-03-06T00:00:00.000Z')
+  }
+
+  const byDate = parseProjectAccessExpiryInput({
+    body: { expires_at: '2026-03-07T00:00:00.000Z' },
+    now,
+  })
+  assert.deepEqual(byDate, {
+    ok: true,
+    expiresAt: '2026-03-07T00:00:00.000Z',
+    provided: true,
+  })
+})
+
+test('parseProjectAccessExpiryInput rejects invalid expiry payloads', () => {
+  const now = new Date('2026-03-05T00:00:00.000Z')
+
+  assert.equal(
+    parseProjectAccessExpiryInput({
+      body: {},
+      now,
+      requireProvided: true,
+    }).ok,
+    false
+  )
+  assert.equal(
+    parseProjectAccessExpiryInput({
+      body: { expires_in_hours: 0 },
+      now,
+    }).ok,
+    false
+  )
+  assert.equal(
+    parseProjectAccessExpiryInput({
+      body: { expires_at: '2026-03-04T00:00:00.000Z' },
+      now,
+    }).ok,
+    false
+  )
+})
+
+test('isProjectAccessGrantActive treats null as never-expiring and blocks past grants', () => {
+  const nowMs = new Date('2026-03-05T00:00:00.000Z').getTime()
+  assert.equal(isProjectAccessGrantActive(null, nowMs), true)
+  assert.equal(isProjectAccessGrantActive('2026-03-06T00:00:00.000Z', nowMs), true)
+  assert.equal(isProjectAccessGrantActive('2026-03-04T00:00:00.000Z', nowMs), false)
+})
+
+test('getProjectAccessGrantMutationAction distinguishes create renew unchanged', () => {
+  assert.equal(
+    getProjectAccessGrantMutationAction({
+      hasExistingGrant: false,
+      existingExpiresAt: null,
+      nextExpiresAt: null,
+    }),
+    'create'
+  )
+  assert.equal(
+    getProjectAccessGrantMutationAction({
+      hasExistingGrant: true,
+      existingExpiresAt: null,
+      nextExpiresAt: null,
+    }),
+    'unchanged'
+  )
+  assert.equal(
+    getProjectAccessGrantMutationAction({
+      hasExistingGrant: true,
+      existingExpiresAt: null,
+      nextExpiresAt: '2026-03-06T00:00:00.000Z',
+    }),
+    'renew'
+  )
 })
 

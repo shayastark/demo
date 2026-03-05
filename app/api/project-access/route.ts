@@ -5,8 +5,11 @@ import { isValidUUID } from '@/lib/validation'
 import { notifyPrivateProjectAccessGranted } from '@/lib/notifications'
 import {
   canManageProjectAccess,
+  getProjectAccessGrantMutationAction,
   getProjectAccessIdentifierType,
+  isProjectAccessGrantActive,
   isRedundantProjectAccessGrant,
+  parseProjectAccessExpiryInput,
   parseProjectAccessGrantInput,
   resolveProjectAccessIdentifier,
 } from '@/lib/projectAccess'
@@ -73,6 +76,15 @@ async function resolveTargetUserIdByIdentifier(identifier: string) {
   return { identifierType, resolution }
 }
 
+function parseGrantUpdateInput(value: unknown): { project_id: string; user_id: string } | null {
+  if (!value || typeof value !== 'object') return null
+  const projectId = (value as Record<string, unknown>).project_id
+  const userId = (value as Record<string, unknown>).user_id
+  if (typeof projectId !== 'string' || !isValidUUID(projectId)) return null
+  if (typeof userId !== 'string' || !isValidUUID(userId)) return null
+  return { project_id: projectId, user_id: userId }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const currentUser = await getRequiredCurrentUser(request)
@@ -92,7 +104,7 @@ export async function GET(request: NextRequest) {
 
     const { data: grants, error } = await supabaseAdmin
       .from('project_access_grants')
-      .select('id, project_id, user_id, granted_by_user_id, created_at')
+      .select('id, project_id, user_id, granted_by_user_id, created_at, expires_at')
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })
 
@@ -119,6 +131,7 @@ export async function GET(request: NextRequest) {
         ...grant,
         username: usersById[grant.user_id]?.username || null,
         email: usersById[grant.user_id]?.email || null,
+        is_expired: !isProjectAccessGrantActive(grant.expires_at || null),
       })),
     })
   } catch (error) {
@@ -175,28 +188,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const expiryResult = parseProjectAccessExpiryInput({ body })
+    if (!expiryResult.ok) {
+      return NextResponse.json(
+        { error: expiryResult.error, code: 'invalid_expiry', identifier_type: identifierType },
+        { status: 400 }
+      )
+    }
+
     const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
       .from('project_access_grants')
-      .select('id')
+      .select('id, expires_at')
       .eq('project_id', parsed.project_id)
       .eq('user_id', resolvedUserId)
       .maybeSingle()
     if (existingGrantError) throw existingGrantError
-    if (existingGrant) {
-      return NextResponse.json(
-        { error: 'User already has access', code: 'already_granted', identifier_type: identifierType },
-        { status: 409 }
-      )
-    }
 
-    const { error } = await supabaseAdmin
-      .from('project_access_grants')
-      .insert({
-        project_id: parsed.project_id,
-        user_id: resolvedUserId,
-        granted_by_user_id: currentUser.id,
-      })
-    if (error) throw error
+    const mutationAction = getProjectAccessGrantMutationAction({
+      hasExistingGrant: !!existingGrant,
+      existingExpiresAt: existingGrant?.expires_at || null,
+      nextExpiresAt: expiryResult.expiresAt,
+    })
+
+    if (mutationAction === 'create') {
+      const { error } = await supabaseAdmin
+        .from('project_access_grants')
+        .insert({
+          project_id: parsed.project_id,
+          user_id: resolvedUserId,
+          granted_by_user_id: currentUser.id,
+          expires_at: expiryResult.expiresAt,
+        })
+      if (error) throw error
+    } else if (mutationAction === 'renew') {
+      const { error } = await supabaseAdmin
+        .from('project_access_grants')
+        .update({
+          granted_by_user_id: currentUser.id,
+          expires_at: expiryResult.expiresAt,
+        })
+        .eq('project_id', parsed.project_id)
+        .eq('user_id', resolvedUserId)
+      if (error) throw error
+    }
 
     let notificationResult:
       | {
@@ -209,16 +243,18 @@ export async function POST(request: NextRequest) {
         (typeof currentUser.username === 'string' && currentUser.username.trim()) ||
         (typeof currentUser.email === 'string' && currentUser.email.trim()) ||
         null
-      const result = await notifyPrivateProjectAccessGranted({
-        recipientUserId: resolvedUserId,
-        grantedByUserId: currentUser.id,
-        grantedByName,
-        projectId: parsed.project_id,
-        projectTitle: typeof project.title === 'string' ? project.title : null,
-      })
-      notificationResult = {
-        action: result.action,
-        notification_type: result.notification_type,
+      if (mutationAction !== 'unchanged') {
+        const result = await notifyPrivateProjectAccessGranted({
+          recipientUserId: resolvedUserId,
+          grantedByUserId: currentUser.id,
+          grantedByName,
+          projectId: parsed.project_id,
+          projectTitle: typeof project.title === 'string' ? project.title : null,
+        })
+        notificationResult = {
+          action: result.action,
+          notification_type: result.notification_type,
+        }
       }
     } catch (notificationError) {
       console.error('Failed to create project access invite notification:', notificationError)
@@ -228,11 +264,112 @@ export async function POST(request: NextRequest) {
       success: true,
       project_id: parsed.project_id,
       user_id: resolvedUserId,
+      expires_at: expiryResult.expiresAt,
+      grant_action: mutationAction,
       identifier_type: identifierType,
       notification: notificationResult,
     })
   } catch (error) {
     console.error('Error in project access POST:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const currentUser = await getRequiredCurrentUser(request)
+    if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    const parsed = parseGrantUpdateInput(body)
+    if (!parsed) {
+      return NextResponse.json({ error: 'Valid project_id and user_id are required' }, { status: 400 })
+    }
+
+    const project = await getProject(parsed.project_id)
+    if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    if (!canManageProjectAccess(currentUser.id, project.creator_id)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    const expiryResult = parseProjectAccessExpiryInput({ body, requireProvided: true })
+    if (!expiryResult.ok) {
+      return NextResponse.json({ error: expiryResult.error, code: 'invalid_expiry' }, { status: 400 })
+    }
+
+    const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
+      .from('project_access_grants')
+      .select('id, expires_at')
+      .eq('project_id', parsed.project_id)
+      .eq('user_id', parsed.user_id)
+      .maybeSingle()
+    if (existingGrantError) throw existingGrantError
+    if (!existingGrant) {
+      return NextResponse.json({ error: 'Grant not found', code: 'grant_not_found' }, { status: 404 })
+    }
+
+    const mutationAction = getProjectAccessGrantMutationAction({
+      hasExistingGrant: true,
+      existingExpiresAt: existingGrant.expires_at || null,
+      nextExpiresAt: expiryResult.expiresAt,
+    })
+
+    if (mutationAction !== 'unchanged') {
+      const { error: updateError } = await supabaseAdmin
+        .from('project_access_grants')
+        .update({
+          granted_by_user_id: currentUser.id,
+          expires_at: expiryResult.expiresAt,
+        })
+        .eq('project_id', parsed.project_id)
+        .eq('user_id', parsed.user_id)
+      if (updateError) throw updateError
+    }
+
+    let notificationResult:
+      | {
+          action: 'created' | 'skipped_self' | 'skipped_preference'
+          notification_type: string
+        }
+      | null = null
+    if (mutationAction === 'renew') {
+      try {
+        const grantedByName =
+          (typeof currentUser.username === 'string' && currentUser.username.trim()) ||
+          (typeof currentUser.email === 'string' && currentUser.email.trim()) ||
+          null
+        const result = await notifyPrivateProjectAccessGranted({
+          recipientUserId: parsed.user_id,
+          grantedByUserId: currentUser.id,
+          grantedByName,
+          projectId: parsed.project_id,
+          projectTitle: typeof project.title === 'string' ? project.title : null,
+        })
+        notificationResult = {
+          action: result.action,
+          notification_type: result.notification_type,
+        }
+      } catch (notificationError) {
+        console.error('Failed to create project access renewal notification:', notificationError)
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      project_id: parsed.project_id,
+      user_id: parsed.user_id,
+      expires_at: expiryResult.expiresAt,
+      grant_action: mutationAction,
+      notification: notificationResult,
+    })
+  } catch (error) {
+    console.error('Error in project access PATCH:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

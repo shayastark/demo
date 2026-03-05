@@ -35,6 +35,8 @@ type ProjectAccessGrant = {
   user_id: string
   granted_by_user_id: string | null
   created_at: string
+  expires_at?: string | null
+  is_expired?: boolean
   username?: string | null
   email?: string | null
 }
@@ -45,6 +47,8 @@ type ProjectAccessInlineState = {
   tone: 'success' | 'error'
   message: string
 }
+
+type ProjectAccessExpiryPreset = 'never' | '24h' | '7d'
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -91,6 +95,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [projectAccessIdentifierInput, setProjectAccessIdentifierInput] = useState('')
   const [projectAccessSaving, setProjectAccessSaving] = useState(false)
   const [projectAccessInlineState, setProjectAccessInlineState] = useState<ProjectAccessInlineState | null>(null)
+  const [projectAccessExpiryPreset, setProjectAccessExpiryPreset] = useState<ProjectAccessExpiryPreset>('never')
   // Detect mobile vs desktop
   useEffect(() => {
     const checkMobile = () => {
@@ -347,6 +352,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         body: JSON.stringify({
           project_id: projectIdForEvent,
           identifier,
+          ...(projectAccessExpiryPreset === 'never'
+            ? {}
+            : { expires_in_hours: projectAccessExpiryPreset === '24h' ? 24 : 24 * 7 }),
         }),
       })
       const result = await response.json()
@@ -368,14 +376,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             })
           )
         }
-        if (failureReason === 'already_granted') {
-          setProjectAccessInlineState({ tone: 'error', message: 'This user already has access.' })
-        } else if (failureReason === 'user_not_found') {
+        if (failureReason === 'user_not_found') {
           setProjectAccessInlineState({ tone: 'error', message: 'No user found for that identifier.' })
         } else if (failureReason === 'self_grant') {
           setProjectAccessInlineState({ tone: 'error', message: 'You already have access as the project creator.' })
         } else if (failureReason === 'ambiguous_match') {
           setProjectAccessInlineState({ tone: 'error', message: 'That identifier matched multiple users. Use email or user ID.' })
+        } else if (failureReason === 'invalid_expiry') {
+          setProjectAccessInlineState({ tone: 'error', message: result.error || 'Invalid expiry value.' })
         } else {
           setProjectAccessInlineState({
             tone: 'error',
@@ -415,8 +423,41 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             })
           )
         }
+        if (result.grant_action === 'renew') {
+          window.dispatchEvent(
+            new CustomEvent('project_access_expiry_event', {
+              detail: {
+                schema: 'project_access_expiry.v1',
+                action: 'renew',
+                project_id: projectIdForEvent,
+                target_user_id: result.user_id,
+                expires_at: result.expires_at || null,
+                source: 'project_detail_settings',
+              },
+            })
+          )
+        } else if (projectAccessExpiryPreset !== 'never') {
+          window.dispatchEvent(
+            new CustomEvent('project_access_expiry_event', {
+              detail: {
+                schema: 'project_access_expiry.v1',
+                action: 'grant_with_expiry',
+                project_id: projectIdForEvent,
+                target_user_id: result.user_id,
+                expires_at: result.expires_at || null,
+                source: 'project_detail_settings',
+              },
+            })
+          )
+        }
       }
-      setProjectAccessInlineState({ tone: 'success', message: 'Invite sent successfully.' })
+      if (result.grant_action === 'unchanged') {
+        setProjectAccessInlineState({ tone: 'success', message: 'Access already configured with this expiry.' })
+      } else if (result.grant_action === 'renew') {
+        setProjectAccessInlineState({ tone: 'success', message: 'Access renewed successfully.' })
+      } else {
+        setProjectAccessInlineState({ tone: 'success', message: 'Invite sent successfully.' })
+      }
       showToast('Private access granted', 'success')
     } catch (error) {
       console.error('Error granting project access:', error)
@@ -436,6 +477,51 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       }
       setProjectAccessInlineState({ tone: 'error', message: 'Failed to grant access.' })
       showToast(error instanceof Error ? error.message : 'Failed to grant access', 'error')
+    } finally {
+      setProjectAccessSaving(false)
+    }
+  }
+
+  const handleRenewProjectAccess = async (targetUserId: string, hours: 24 | 168) => {
+    if (!project?.id || !isCreator) return
+    setProjectAccessSaving(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-access', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: project.id,
+          user_id: targetUserId,
+          expires_in_hours: hours,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to renew access')
+      await loadProjectAccessGrants(project.id)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_expiry_event', {
+            detail: {
+              schema: 'project_access_expiry.v1',
+              action: 'renew',
+              project_id: project.id,
+              target_user_id: targetUserId,
+              expires_at: result.expires_at || null,
+              source: 'project_detail_settings',
+            },
+          })
+        )
+      }
+      setProjectAccessInlineState({ tone: 'success', message: `Access renewed for ${hours === 24 ? '24h' : '7d'}.` })
+    } catch (error) {
+      console.error('Error renewing project access:', error)
+      setProjectAccessInlineState({ tone: 'error', message: 'Failed to renew access.' })
+      showToast(error instanceof Error ? error.message : 'Failed to renew access', 'error')
     } finally {
       setProjectAccessSaving(false)
     }
@@ -469,6 +555,18 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               action: 'revoke',
               project_id: project.id,
               target_user_id: targetUserId,
+              source: 'project_detail_settings',
+            },
+          })
+        )
+        window.dispatchEvent(
+          new CustomEvent('project_access_expiry_event', {
+            detail: {
+              schema: 'project_access_expiry.v1',
+              action: 'revoke',
+              project_id: project.id,
+              target_user_id: targetUserId,
+              expires_at: null,
               source: 'project_detail_settings',
             },
           })
@@ -1335,6 +1433,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
   const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${project.share_token}`
 
+  const formatGrantExpiryLabel = (grant: ProjectAccessGrant): string => {
+    if (!grant.expires_at) return 'No expiry'
+    if (grant.is_expired) return 'Expired'
+    const expiresAtMs = new Date(grant.expires_at).getTime()
+    if (!Number.isFinite(expiresAtMs)) return 'No expiry'
+    const remainingMs = expiresAtMs - Date.now()
+    if (remainingMs <= 0) return 'Expired'
+    const remainingHours = Math.floor(remainingMs / (60 * 60 * 1000))
+    if (remainingHours < 24) return `Expires in ${remainingHours}h`
+    const remainingDays = Math.ceil(remainingHours / 24)
+    return `Expires in ${remainingDays}d`
+  }
+
   return (
     <div className="min-h-screen bg-black text-white relative">
       {/* Subtle background gradient */}
@@ -1735,6 +1846,41 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       Grant
                     </button>
                   </div>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setProjectAccessExpiryPreset('never')}
+                      className={`px-2 py-1 rounded text-xs border ${
+                        projectAccessExpiryPreset === 'never'
+                          ? 'border-neon-green text-neon-green'
+                          : 'border-gray-700 text-gray-400'
+                      }`}
+                    >
+                      Never
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProjectAccessExpiryPreset('24h')}
+                      className={`px-2 py-1 rounded text-xs border ${
+                        projectAccessExpiryPreset === '24h'
+                          ? 'border-neon-green text-neon-green'
+                          : 'border-gray-700 text-gray-400'
+                      }`}
+                    >
+                      24h
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProjectAccessExpiryPreset('7d')}
+                      className={`px-2 py-1 rounded text-xs border ${
+                        projectAccessExpiryPreset === '7d'
+                          ? 'border-neon-green text-neon-green'
+                          : 'border-gray-700 text-gray-400'
+                      }`}
+                    >
+                      7d
+                    </button>
+                  </div>
                   {projectAccessInlineState ? (
                     <p
                       className={`text-xs mb-2 ${
@@ -1756,16 +1902,36 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             <p className="text-white truncate">
                               {grant.username || grant.email || grant.user_id}
                             </p>
-                            <p className="text-gray-500 text-xs truncate">{grant.user_id}</p>
+                            <p className="text-gray-500 text-xs truncate">
+                              {grant.user_id} • {formatGrantExpiryLabel(grant)}
+                            </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRevokeProjectAccess(grant.user_id)}
-                            disabled={projectAccessSaving}
-                            className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
-                          >
-                            Remove
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleRenewProjectAccess(grant.user_id, 24)}
+                              disabled={projectAccessSaving}
+                              className="text-xs text-gray-300 hover:text-white disabled:opacity-50"
+                            >
+                              +24h
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRenewProjectAccess(grant.user_id, 168)}
+                              disabled={projectAccessSaving}
+                              className="text-xs text-gray-300 hover:text-white disabled:opacity-50"
+                            >
+                              +7d
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRevokeProjectAccess(grant.user_id)}
+                              disabled={projectAccessSaving}
+                              className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>

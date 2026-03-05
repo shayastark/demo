@@ -909,6 +909,20 @@ export default function BottomTabBar() {
               grantedByUserId,
               notificationType: notification.type,
             })
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('project_access_expiry_event', {
+                  detail: {
+                    schema: 'project_access_expiry.v1',
+                    action: 'expired_block',
+                    project_id: projectId,
+                    target_user_id: userId,
+                    expires_at: null,
+                    source: 'bottom_tab_bar',
+                  },
+                })
+              )
+            }
             showToast('Access to this private project was removed.', 'error')
             setIsNotificationsOpen(false)
             router.push('/dashboard')

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { isProjectAccessGrantActive } from '@/lib/projectAccess'
 import { canViewerAccessProject, resolveProjectVisibility } from '@/lib/projectVisibility'
 
 export type ProjectAccessProjectRow = {
@@ -13,11 +14,12 @@ export type ProjectAccessProjectRow = {
 export async function hasProjectAccessGrant(projectId: string, userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from('project_access_grants')
-    .select('id')
+    .select('id, expires_at')
     .eq('project_id', projectId)
     .eq('user_id', userId)
     .maybeSingle()
-  return !!data
+  if (!data) return false
+  return isProjectAccessGrantActive((data as { expires_at?: string | null }).expires_at || null)
 }
 
 export async function canUserAccessProjectRow(args: {

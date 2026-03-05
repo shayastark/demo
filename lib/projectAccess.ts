@@ -6,6 +6,8 @@ export type ProjectAccessGrantInput = {
   identifier_type: ProjectAccessIdentifierType
 }
 
+export type ProjectAccessGrantMutationAction = 'create' | 'renew' | 'unchanged'
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function isUuid(value: string): boolean {
@@ -82,5 +84,93 @@ export function resolveProjectAccessIdentifier(args: {
   const uniqueUserIds = Array.from(new Set(exactMatches.map((match) => match.id)))
   if (uniqueUserIds.length !== 1) return { status: 'ambiguous' }
   return { status: 'ok', userId: uniqueUserIds[0] }
+}
+
+function toTimestamp(value: string | null | undefined): number | null {
+  if (!value) return null
+  const parsed = new Date(value).getTime()
+  if (!Number.isFinite(parsed)) return null
+  return parsed
+}
+
+export function isProjectAccessGrantActive(
+  expiresAt: string | null | undefined,
+  nowMs = Date.now()
+): boolean {
+  const expiresAtMs = toTimestamp(expiresAt)
+  if (expiresAtMs === null) return true
+  return expiresAtMs > nowMs
+}
+
+type ProjectAccessExpiryParseResult =
+  | { ok: true; expiresAt: string | null; provided: boolean }
+  | { ok: false; error: string }
+
+export function parseProjectAccessExpiryInput(args: {
+  body: unknown
+  requireProvided?: boolean
+  now?: Date
+}): ProjectAccessExpiryParseResult {
+  const now = args.now || new Date()
+  const record =
+    args.body && typeof args.body === 'object' ? (args.body as Record<string, unknown>) : {}
+  const rawExpiresAt = record.expires_at
+  const rawExpiresInHours = record.expires_in_hours
+
+  const hasExpiresAt = rawExpiresAt !== undefined
+  const hasExpiresInHours = rawExpiresInHours !== undefined
+  const provided = hasExpiresAt || hasExpiresInHours
+
+  if (!provided) {
+    if (args.requireProvided) {
+      return { ok: false, error: 'Provide expires_at or expires_in_hours' }
+    }
+    return { ok: true, expiresAt: null, provided: false }
+  }
+
+  if (hasExpiresAt && hasExpiresInHours) {
+    return { ok: false, error: 'Provide only one of expires_at or expires_in_hours' }
+  }
+
+  if (hasExpiresAt) {
+    if (rawExpiresAt === null || rawExpiresAt === '') {
+      return { ok: true, expiresAt: null, provided: true }
+    }
+    if (typeof rawExpiresAt !== 'string') {
+      return { ok: false, error: 'expires_at must be an ISO datetime string or null' }
+    }
+    const expiresAtDate = new Date(rawExpiresAt)
+    if (!Number.isFinite(expiresAtDate.getTime())) {
+      return { ok: false, error: 'expires_at must be a valid ISO datetime string' }
+    }
+    if (expiresAtDate.getTime() <= now.getTime()) {
+      return { ok: false, error: 'expires_at must be in the future' }
+    }
+    return { ok: true, expiresAt: expiresAtDate.toISOString(), provided: true }
+  }
+
+  if (!Number.isInteger(rawExpiresInHours)) {
+    return { ok: false, error: 'expires_in_hours must be an integer number of hours' }
+  }
+  const hours = rawExpiresInHours as number
+  if (hours <= 0 || hours > 24 * 365) {
+    return { ok: false, error: 'expires_in_hours must be between 1 and 8760' }
+  }
+
+  const expiresAtDate = new Date(now.getTime() + hours * 60 * 60 * 1000)
+  return { ok: true, expiresAt: expiresAtDate.toISOString(), provided: true }
+}
+
+export function getProjectAccessGrantMutationAction(args: {
+  hasExistingGrant: boolean
+  existingExpiresAt: string | null | undefined
+  nextExpiresAt: string | null
+}): ProjectAccessGrantMutationAction {
+  if (!args.hasExistingGrant) return 'create'
+
+  const existingExpiresAtMs = toTimestamp(args.existingExpiresAt)
+  const nextExpiresAtMs = toTimestamp(args.nextExpiresAt)
+  if (existingExpiresAtMs === nextExpiresAtMs) return 'unchanged'
+  return 'renew'
 }
 
