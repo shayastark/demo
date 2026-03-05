@@ -13,20 +13,29 @@ let cachedFollowColumn: FollowColumnName | null = null
 async function resolveFollowColumn(): Promise<FollowColumnName> {
   if (cachedFollowColumn) return cachedFollowColumn
 
-  const { data: newColumn } = await supabaseAdmin
-    .from('information_schema.columns')
-    .select('column_name')
-    .eq('table_schema', 'public')
-    .eq('table_name', 'user_follows')
-    .eq('column_name', 'following_id')
-    .maybeSingle()
+  // Probe real queryability first; information_schema access can vary by env.
+  const { error: followingProbeError } = await supabaseAdmin
+    .from('user_follows')
+    .select('following_id')
+    .limit(1)
 
-  if (newColumn?.column_name === 'following_id') {
+  if (!followingProbeError) {
     cachedFollowColumn = 'following_id'
     return cachedFollowColumn
   }
 
-  cachedFollowColumn = 'followed_id'
+  const { error: followedProbeError } = await supabaseAdmin
+    .from('user_follows')
+    .select('followed_id')
+    .limit(1)
+
+  if (!followedProbeError) {
+    cachedFollowColumn = 'followed_id'
+    return cachedFollowColumn
+  }
+
+  // Default to canonical column to keep behavior predictable on unexpected probe errors.
+  cachedFollowColumn = 'following_id'
   return cachedFollowColumn
 }
 
