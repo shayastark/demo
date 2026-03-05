@@ -117,12 +117,18 @@ export default function ClientHomePage() {
           }}
         />
         
-        {/* Header with sign in */}
+        {/* Header with FAQ + sign in */}
         <header className="relative z-10 px-4 py-4">
-          <div className="max-w-7xl mx-auto flex justify-end items-center gap-4">
+          <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
+            <button
+              onClick={() => setShowFAQ(true)}
+              className="btn-unstyled text-sm text-sky-400 hover:text-sky-300 transition"
+            >
+              FAQ
+            </button>
             <button
               onClick={login}
-              className="btn-unstyled text-sm text-gray-400 hover:text-white transition"
+              className="btn-unstyled text-sm text-sky-400 hover:text-sky-300 transition"
             >
               Sign in
             </button>
@@ -132,7 +138,7 @@ export default function ClientHomePage() {
         <div className="flex-1 flex flex-col items-center justify-center pb-24 relative z-10">
           <h1 className="text-5xl sm:text-6xl font-bold mb-3 text-white tracking-tight text-center">Demo</h1>
           <p className="text-lg sm:text-xl mb-12 text-gray-400 text-center max-w-md">
-            Share your unreleased tracks on your terms
+            From rough cuts to real support.
           </p>
           
           {/* Mixtape Cassette Image */}
@@ -149,16 +155,10 @@ export default function ClientHomePage() {
           
           <button
             onClick={login}
-            className="bg-neon-green text-black px-10 py-4 rounded-full font-semibold text-lg hover:shadow-lg hover:shadow-neon-green/30 transition-all hover:scale-105 active:scale-100"
+            className="bg-sky-500 text-white px-10 py-4 rounded-full font-semibold text-lg hover:bg-sky-400 hover:shadow-lg hover:shadow-sky-500/30 transition-all hover:scale-105 active:scale-100"
           >
             Get Started
           </button>
-          <div className="mt-8 text-sm text-gray-500">
-            Questions?{' '}
-            <a href="mailto:info@demo.supply" className="text-gray-300 hover:text-white transition">
-              info@demo.supply
-            </a>
-          </div>
         </div>
         <FAQModal isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
       </div>
@@ -219,7 +219,7 @@ export default function ClientHomePage() {
         <div className="text-center">
           <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-white tracking-tight">Welcome to Demo</h2>
           <p className="text-lg text-gray-400 mb-12 max-w-md mx-auto">
-            Share your unreleased tracks on your terms
+            From rough cuts to real support.
           </p>
           
           {/* Mixtape Cassette Image */}
@@ -240,12 +240,6 @@ export default function ClientHomePage() {
           >
             Go to Your Dashboard
           </Link>
-          <div className="mt-8 text-sm text-gray-500">
-            Questions?{' '}
-            <a href="mailto:info@demo.supply" className="text-gray-300 hover:text-white transition">
-              info@demo.supply
-            </a>
-          </div>
         </div>
       </main>
       <FAQModal isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
