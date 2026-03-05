@@ -11,6 +11,7 @@ import ProjectUpdatesPanel from './ProjectUpdatesPanel'
 import TipPromptCard from './TipPromptCard'
 import TopSupportersCard from './TopSupportersCard'
 import ProjectAttachmentsPanel from './ProjectAttachmentsPanel'
+import ProjectSubscriptionToggle from './ProjectSubscriptionToggle'
 import { Share2, Download, Plus, Copy, Check, X, MoreVertical, Pin, PinOff, ListMusic, Trash2, User, LayoutDashboard } from 'lucide-react'
 import { setPendingProject } from '@/lib/pendingProject'
 import { showToast } from './Toast'
@@ -706,6 +707,18 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           </div>
           {project.description && (
             <p className="text-gray-400 text-base mb-6 leading-relaxed">{project.description}</p>
+          )}
+          {creatorId && (
+            <div className="mb-6">
+              <ProjectSubscriptionToggle
+                projectId={project.id}
+                creatorId={creatorId}
+                authenticated={authenticated}
+                getAccessToken={getAccessToken}
+                onRequireAuth={handleRequireAuthForFeedback}
+                source="shared_project"
+              />
+            </div>
           )}
         </div>
 

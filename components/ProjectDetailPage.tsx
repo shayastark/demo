@@ -13,6 +13,7 @@ import ProjectUpdatesPanel from './ProjectUpdatesPanel'
 import TipPromptCard from './TipPromptCard'
 import TopSupportersCard from './TopSupportersCard'
 import ProjectAttachmentsPanel from './ProjectAttachmentsPanel'
+import ProjectSubscriptionToggle from './ProjectSubscriptionToggle'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -1216,6 +1217,18 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               </div>
               {project.description && (
                 <p className="text-gray-400 text-base mb-6 leading-relaxed">{project.description}</p>
+              )}
+              {creatorId && (
+                <div className="mb-6">
+                  <ProjectSubscriptionToggle
+                    projectId={project.id}
+                    creatorId={creatorId}
+                    authenticated={!!user}
+                    getAccessToken={getAccessToken}
+                    onRequireAuth={() => showToast('Please sign in to watch projects.', 'error')}
+                    source="project_detail"
+                  />
+                </div>
               )}
             </>
           )}

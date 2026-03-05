@@ -11,6 +11,7 @@ import {
   getUpdateEngagementActorName,
   type UpdateEngagementNotificationAction,
 } from './updateEngagementNotifications'
+import { buildProjectUpdateRecipientIds } from './projectSubscriptions'
 
 export type NotificationType = CreatableNotificationType
 
@@ -311,26 +312,44 @@ export async function notifyFollowersProjectUpdate({
       return { success: false, notifiedCount: 0, error: followersError.message }
     }
 
-    const followerIds = Array.from(
-      new Set((followers || []).map((row) => row.follower_id).filter((id): id is string => !!id && id !== creatorId))
-    )
+    const { data: subscribers, error: subscribersError } = await supabaseAdmin
+      .from('project_subscriptions')
+      .select('user_id')
+      .eq('project_id', projectId)
 
-    if (followerIds.length === 0) {
+    if (subscribersError) {
+      return { success: false, notifiedCount: 0, error: subscribersError.message }
+    }
+
+    const followerIds = (followers || [])
+      .map((row) => row.follower_id)
+      .filter((id): id is string => typeof id === 'string')
+    const subscriberIds = (subscribers || [])
+      .map((row) => row.user_id)
+      .filter((id): id is string => typeof id === 'string')
+
+    const recipientIds = buildProjectUpdateRecipientIds({
+      creatorId,
+      followerIds,
+      subscriberIds,
+    })
+
+    if (recipientIds.length === 0) {
       return { success: true, notifiedCount: 0 }
     }
 
-    const enabledFollowerIds = await filterUsersByNotificationPreference(
-      followerIds,
+    const enabledRecipientIds = await filterUsersByNotificationPreference(
+      recipientIds,
       'notify_project_updates'
     )
-    if (enabledFollowerIds.length === 0) {
+    if (enabledRecipientIds.length === 0) {
       return { success: true, notifiedCount: 0 }
     }
 
     const trimmedContent = content.trim().slice(0, 140)
     const titlePrefix = versionLabel ? `${versionLabel}: ` : ''
 
-    const notifications = enabledFollowerIds.map((userId) => ({
+    const notifications = enabledRecipientIds.map((userId) => ({
       user_id: userId,
       type: 'new_track' as const,
       title: `Project update: "${projectTitle}"`,
@@ -354,7 +373,7 @@ export async function notifyFollowersProjectUpdate({
       return { success: false, notifiedCount: 0, error: insertError.message }
     }
 
-    return { success: true, notifiedCount: enabledFollowerIds.length }
+    return { success: true, notifiedCount: enabledRecipientIds.length }
   } catch (error) {
     console.error('Error notifying followers of project update:', error)
     return { success: false, notifiedCount: 0, error: 'Failed to create notifications' }
