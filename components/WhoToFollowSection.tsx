@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Loader2, UserPlus } from 'lucide-react'
 import { showToast } from '@/components/Toast'
+import { type DiscoveryReasonCode } from '@/lib/discoveryPreferences'
 
 interface CreatorRecommendationItem {
   creator_id: string
@@ -21,6 +22,12 @@ interface WhoToFollowSectionProps {
   authenticated: boolean
   getAccessToken?: () => Promise<string | null>
 }
+
+const REASON_CHIPS: Array<{ code: DiscoveryReasonCode; label: string }> = [
+  { code: 'not_my_style', label: 'Style' },
+  { code: 'already_seen', label: 'Seen' },
+  { code: 'other', label: 'Other' },
+]
 
 export default function WhoToFollowSection({ authenticated, getAccessToken }: WhoToFollowSectionProps) {
   const [items, setItems] = useState<CreatorRecommendationItem[]>([])
@@ -56,6 +63,27 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
       new CustomEvent('discovery_preference_event', {
         detail: {
           schema: 'discovery_preference.v1',
+          source: 'who_to_follow',
+          action,
+          ...detail,
+        },
+      })
+    )
+  }
+
+  const emitDiscoveryFeedbackEvent = (
+    action: 'hide_with_reason' | 'hide_without_reason' | 'reason_selected',
+    detail: {
+      target_type: 'project' | 'creator'
+      target_id: string
+      reason_code: DiscoveryReasonCode | null
+    }
+  ) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('discovery_feedback_event', {
+        detail: {
+          schema: 'discovery_feedback.v1',
           source: 'who_to_follow',
           action,
           ...detail,
@@ -135,12 +163,23 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
     }
   }
 
-  const hideCreator = async (item: CreatorRecommendationItem, positionIndex: number) => {
+  const hideCreator = async (
+    item: CreatorRecommendationItem,
+    positionIndex: number,
+    reasonCode: DiscoveryReasonCode | null
+  ) => {
     if (!authenticated || !getAccessToken || preferenceLoadingId) return
     setPreferenceLoadingId(item.creator_id)
     const previousItems = items
     setItems((prev) => prev.filter((row) => row.creator_id !== item.creator_id))
     setLastHidden({ item, positionIndex })
+    if (reasonCode) {
+      emitDiscoveryFeedbackEvent('reason_selected', {
+        target_type: 'creator',
+        target_id: item.creator_id,
+        reason_code: reasonCode,
+      })
+    }
     try {
       const token = await getAccessToken()
       if (!token) throw new Error('Not authenticated')
@@ -154,6 +193,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
           target_type: 'creator',
           target_id: item.creator_id,
           preference: 'hide',
+          reason_code: reasonCode,
         }),
       })
       const result = await response.json()
@@ -162,6 +202,11 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
         target_type: 'creator',
         target_id: item.creator_id,
         position_index: positionIndex,
+      })
+      emitDiscoveryFeedbackEvent(reasonCode ? 'hide_with_reason' : 'hide_without_reason', {
+        target_type: 'creator',
+        target_id: item.creator_id,
+        reason_code: reasonCode,
       })
       emitEvent('dismiss', {
         creator_id: item.creator_id,
@@ -279,11 +324,24 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
                   <button
                     type="button"
                     disabled={preferenceLoadingId === item.creator_id}
-                    onClick={() => hideCreator(item, index)}
+                    onClick={() => hideCreator(item, index, null)}
                     className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
                   >
                     Not interested
                   </button>
+                  <div className="flex items-center gap-1">
+                    {REASON_CHIPS.map((reason) => (
+                      <button
+                        key={`${item.creator_id}-${reason.code}`}
+                        type="button"
+                        disabled={preferenceLoadingId === item.creator_id}
+                        onClick={() => hideCreator(item, index, reason.code)}
+                        className="text-[10px] px-1.5 py-0.5 rounded border border-gray-800 text-gray-400"
+                      >
+                        {reason.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </li>

@@ -206,10 +206,52 @@ test('buildExploreProjectItems trending prioritizes recent engagement', () => {
       'p-supported-old': '2025-01-03T00:00:00.000Z',
       'p-trending': '2026-03-06T00:00:00.000Z',
     },
+    creatorReasonPenaltyById: {},
     sort: 'trending',
   })
 
   assert.deepEqual(items.map((item) => item.project_id), ['p-trending', 'p-supported-old'])
+})
+
+test('buildExploreProjectItems applies creator reason penalty in trending sort', () => {
+  const rows: ExploreProjectRow[] = [
+    {
+      id: 'p-a',
+      title: 'A',
+      cover_image_url: null,
+      creator_id: 'c1',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'a',
+      created_at: '2026-03-06T00:00:00.000Z',
+    },
+    {
+      id: 'p-b',
+      title: 'B',
+      cover_image_url: null,
+      creator_id: 'c2',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'b',
+      created_at: '2026-03-06T00:00:00.000Z',
+    },
+  ]
+
+  const items = buildExploreProjectItems({
+    projects: rows,
+    creatorsById: {
+      c1: { id: 'c1', username: 'alpha', email: null },
+      c2: { id: 'c2', username: 'beta', email: null },
+    },
+    supporterCountByProjectId: { 'p-a': 10, 'p-b': 10 },
+    engagementCountByProjectId: { 'p-a': 5, 'p-b': 5 },
+    recentUpdatesCountByProjectId: { 'p-a': 3, 'p-b': 3 },
+    latestUpdateAtByProjectId: { 'p-a': '2026-03-06T00:00:00.000Z', 'p-b': '2026-03-06T00:00:00.000Z' },
+    creatorReasonPenaltyById: { c1: 4 },
+    sort: 'trending',
+  })
+
+  assert.deepEqual(items.map((item) => item.project_id), ['p-b', 'p-a'])
 })
 
 test('pagination correctness for explore items', () => {
@@ -230,6 +272,7 @@ test('pagination correctness for explore items', () => {
     engagementCountByProjectId: {},
     recentUpdatesCountByProjectId: {},
     latestUpdateAtByProjectId: {},
+    creatorReasonPenaltyById: {},
     sort: 'newest',
   })
   const pageRows = items.slice(2, 2 + 2 + 1)
@@ -270,6 +313,7 @@ test('stable ordering keeps pagination deterministic for same-score rows', () =>
     engagementCountByProjectId: { 'p-1': 0, 'p-2': 0 },
     recentUpdatesCountByProjectId: { 'p-1': 0, 'p-2': 0 },
     latestUpdateAtByProjectId: { 'p-1': null, 'p-2': null },
+    creatorReasonPenaltyById: {},
     sort: 'trending',
   })
 

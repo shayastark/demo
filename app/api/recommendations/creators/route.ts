@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import {
   buildCreatorRecommendations,
+  collectSuppressedCreatorIdsFromReasonSignals,
   parseCreatorRecommendationsLimit,
   type CreatorRecommendationActivityStats,
   type CreatorRecommendationUserRow,
@@ -90,10 +91,19 @@ export async function GET(request: NextRequest) {
 
     const { data: hiddenRows } = await supabaseAdmin
       .from('user_discovery_preferences')
-      .select('target_type, target_id, preference')
+      .select('target_type, target_id, preference, reason_code')
       .eq('user_id', currentUser.id)
       .eq('preference', 'hide')
     const hiddenTargets = buildHiddenTargetSets(hiddenRows || [])
+    const projectCreatorByIdAll = publicProjectRows.reduce<Record<string, string>>((acc, row) => {
+      acc[row.id] = row.creator_id
+      return acc
+    }, {})
+    const suppressedCreatorIds = collectSuppressedCreatorIdsFromReasonSignals({
+      hiddenRows: hiddenRows || [],
+      hiddenCreatorIds: hiddenTargets.hiddenCreatorIds,
+      projectCreatorById: projectCreatorByIdAll,
+    })
     const visibleProjectRows = publicProjectRows.filter(
       (row) => !hiddenTargets.hiddenProjectIds.has(row.id) && !hiddenTargets.hiddenCreatorIds.has(row.creator_id)
     )
@@ -185,7 +195,7 @@ export async function GET(request: NextRequest) {
       activityByCreatorId: creatorActivity,
       viewerUserId: currentUser.id,
       alreadyFollowingIds,
-      hiddenCreatorIds: hiddenTargets.hiddenCreatorIds,
+      hiddenCreatorIds: suppressedCreatorIds,
       limit,
     })
 

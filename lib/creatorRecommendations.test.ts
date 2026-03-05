@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildCreatorRecommendations,
+  collectSuppressedCreatorIdsFromReasonSignals,
   filterCreatorsByVisiblePublicProjects,
   parseCreatorRecommendationsLimit,
   type CreatorRecommendationActivityStats,
@@ -145,4 +146,36 @@ test('filterCreatorsByVisiblePublicProjects excludes creators with only hidden p
 
   assert.equal(creatorIds.has('a'), false)
   assert.equal(creatorIds.has('b'), true)
+})
+
+test('collectSuppressedCreatorIdsFromReasonSignals includes not_my_style creator/project signals', () => {
+  const suppressed = collectSuppressedCreatorIdsFromReasonSignals({
+    hiddenRows: [
+      {
+        target_type: 'creator',
+        target_id: 'c2',
+        reason_code: 'not_my_style',
+      },
+      {
+        target_type: 'project',
+        target_id: 'p3',
+        reason_code: 'not_my_style',
+      },
+      {
+        target_type: 'project',
+        target_id: 'p4',
+        reason_code: 'already_seen',
+      },
+    ],
+    hiddenCreatorIds: new Set(['c1']),
+    projectCreatorById: {
+      p3: 'c3',
+      p4: 'c4',
+    },
+  })
+
+  assert.equal(suppressed.has('c1'), true)
+  assert.equal(suppressed.has('c2'), true)
+  assert.equal(suppressed.has('c3'), true)
+  assert.equal(suppressed.has('c4'), false)
 })

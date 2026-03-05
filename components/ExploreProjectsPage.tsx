@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePrivy } from '@privy-io/react-auth'
 import { Loader2, Search } from 'lucide-react'
+import { type DiscoveryReasonCode } from '@/lib/discoveryPreferences'
 
 type ExploreSort = 'trending' | 'newest' | 'most_supported'
 
@@ -33,6 +34,12 @@ interface HiddenSnapshot {
   targetId: string
   positionIndex: number
 }
+
+const REASON_CHIPS: Array<{ code: DiscoveryReasonCode; label: string }> = [
+  { code: 'not_my_style', label: 'Style' },
+  { code: 'already_seen', label: 'Seen' },
+  { code: 'too_many_updates', label: 'Updates' },
+]
 
 export default function ExploreProjectsPage() {
   const { ready, authenticated, login, getAccessToken } = usePrivy()
@@ -101,6 +108,27 @@ export default function ExploreProjectsPage() {
       new CustomEvent('discovery_preference_event', {
         detail: {
           schema: 'discovery_preference.v1',
+          action,
+          source: 'explore',
+          ...detail,
+        },
+      })
+    )
+  }
+
+  const emitDiscoveryFeedbackEvent = (
+    action: 'hide_with_reason' | 'hide_without_reason' | 'reason_selected',
+    detail: {
+      target_type: 'project' | 'creator'
+      target_id: string
+      reason_code: DiscoveryReasonCode | null
+    }
+  ) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('discovery_feedback_event', {
+        detail: {
+          schema: 'discovery_feedback.v1',
           action,
           source: 'explore',
           ...detail,
@@ -203,6 +231,7 @@ export default function ExploreProjectsPage() {
     targetType: 'project' | 'creator'
     targetId: string
     positionIndex: number
+    reasonCode?: DiscoveryReasonCode | null
   }) => {
     if (preferenceLoadingId) return
     setPreferenceLoadingId(args.targetId)
@@ -219,6 +248,14 @@ export default function ExploreProjectsPage() {
       positionIndex: args.positionIndex,
     })
 
+    if (args.reasonCode) {
+      emitDiscoveryFeedbackEvent('reason_selected', {
+        target_type: args.targetType,
+        target_id: args.targetId,
+        reason_code: args.reasonCode,
+      })
+    }
+
     try {
       const token = await getAccessToken()
       if (!token) throw new Error('Not authenticated')
@@ -232,6 +269,7 @@ export default function ExploreProjectsPage() {
           target_type: args.targetType,
           target_id: args.targetId,
           preference: 'hide',
+          reason_code: args.reasonCode || null,
         }),
       })
       const result = await response.json()
@@ -241,6 +279,11 @@ export default function ExploreProjectsPage() {
         target_type: args.targetType,
         target_id: args.targetId,
         position_index: args.positionIndex,
+      })
+      emitDiscoveryFeedbackEvent(args.reasonCode ? 'hide_with_reason' : 'hide_without_reason', {
+        target_type: args.targetType,
+        target_id: args.targetId,
+        reason_code: args.reasonCode || null,
       })
     } catch (error) {
       console.error('Error hiding discovery target:', error)
@@ -412,6 +455,7 @@ export default function ExploreProjectsPage() {
                           targetType: 'project',
                           targetId: item.project_id,
                           positionIndex: index,
+                          reasonCode: null,
                         })
                       }
                       className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
@@ -427,12 +471,34 @@ export default function ExploreProjectsPage() {
                           targetType: 'creator',
                           targetId: item.creator_id,
                           positionIndex: index,
+                          reasonCode: null,
                         })
                       }
                       className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
                     >
                       Hide creator
                     </button>
+                  </div>
+                  <div className="mt-1 flex items-center gap-1 flex-wrap">
+                    {REASON_CHIPS.map((reason) => (
+                      <button
+                        key={`${item.project_id}-${reason.code}`}
+                        type="button"
+                        disabled={preferenceLoadingId === item.project_id}
+                        onClick={() =>
+                          hideTarget({
+                            item,
+                            targetType: 'project',
+                            targetId: item.project_id,
+                            positionIndex: index,
+                            reasonCode: reason.code,
+                          })
+                        }
+                        className="text-[10px] px-1.5 py-0.5 rounded border border-gray-800 text-gray-400"
+                      >
+                        {reason.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}

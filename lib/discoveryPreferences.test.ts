@@ -30,6 +30,22 @@ test('parseDiscoveryPreferencePayload validates input and target ids', () => {
     preference: 'hide',
   })
   assert.equal(invalidTargetId.ok, false)
+
+  const validReason = parseDiscoveryPreferencePayload({
+    target_type: 'creator',
+    target_id: '123e4567-e89b-12d3-a456-426614174099',
+    preference: 'hide',
+    reason_code: 'not_my_style',
+  })
+  assert.equal(validReason.ok, true)
+
+  const invalidReason = parseDiscoveryPreferencePayload({
+    target_type: 'creator',
+    target_id: '123e4567-e89b-12d3-a456-426614174099',
+    preference: 'hide',
+    reason_code: 'bad_reason',
+  })
+  assert.equal(invalidReason.ok, false)
 })
 
 test('buildHiddenTargetSets maps hidden projects and creators', () => {
@@ -54,6 +70,16 @@ test('buildHiddenTargetSets maps hidden projects and creators', () => {
   assert.equal(sets.hiddenProjectIds.has('123e4567-e89b-12d3-a456-426614174000'), true)
   assert.equal(sets.hiddenCreatorIds.has('123e4567-e89b-12d3-a456-426614174001'), true)
   assert.equal(sets.hiddenCreatorIds.has('123e4567-e89b-12d3-a456-426614174002'), false)
+})
+
+test('backward compatibility: rows without reason_code remain valid hidden records', () => {
+  const sets = buildHiddenTargetSets([
+    {
+      target_type: 'project',
+      target_id: '123e4567-e89b-12d3-a456-426614174777',
+    },
+  ])
+  assert.equal(sets.hiddenProjectIds.has('123e4567-e89b-12d3-a456-426614174777'), true)
 })
 
 test('upsertDiscoveryPreferenceRows keeps idempotent uniqueness', () => {

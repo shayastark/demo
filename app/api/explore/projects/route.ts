@@ -66,15 +66,33 @@ export async function GET(request: NextRequest) {
 
     let hiddenProjectIds = new Set<string>()
     let hiddenCreatorIds = new Set<string>()
+    let creatorReasonPenaltyById: Record<string, number> = {}
     if (currentUser?.id) {
       const { data: hiddenRows } = await supabaseAdmin
         .from('user_discovery_preferences')
-        .select('target_type, target_id, preference')
+        .select('target_type, target_id, preference, reason_code')
         .eq('user_id', currentUser.id)
         .eq('preference', 'hide')
       const hiddenTargets = buildHiddenTargetSets(hiddenRows || [])
       hiddenProjectIds = hiddenTargets.hiddenProjectIds
       hiddenCreatorIds = hiddenTargets.hiddenCreatorIds
+
+      const projectCreatorById = rawProjects.reduce<Record<string, string>>((acc, row) => {
+        acc[row.id] = row.creator_id
+        return acc
+      }, {})
+      for (const row of hiddenRows || []) {
+        if (row.reason_code !== 'not_my_style') continue
+        if (row.target_type === 'creator' && typeof row.target_id === 'string') {
+          creatorReasonPenaltyById[row.target_id] = (creatorReasonPenaltyById[row.target_id] || 0) + 2
+        }
+        if (row.target_type === 'project' && typeof row.target_id === 'string') {
+          const creatorId = projectCreatorById[row.target_id]
+          if (creatorId) {
+            creatorReasonPenaltyById[creatorId] = (creatorReasonPenaltyById[creatorId] || 0) + 1
+          }
+        }
+      }
     }
 
     const creatorIds = Array.from(new Set(rawProjects.map((row) => row.creator_id)))
@@ -220,6 +238,7 @@ export async function GET(request: NextRequest) {
       engagementCountByProjectId,
       recentUpdatesCountByProjectId,
       latestUpdateAtByProjectId,
+      creatorReasonPenaltyById,
       sort: parsed.sort,
     })
 

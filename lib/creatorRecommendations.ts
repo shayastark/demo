@@ -102,6 +102,30 @@ export function filterCreatorsByVisiblePublicProjects(args: {
   return visibleCreatorIds
 }
 
+export function collectSuppressedCreatorIdsFromReasonSignals(args: {
+  hiddenRows: Array<{
+    target_type: string | null
+    target_id: string | null
+    reason_code?: string | null
+  }>
+  hiddenCreatorIds: Set<string>
+  projectCreatorById: Record<string, string>
+}): Set<string> {
+  const suppressed = new Set<string>(args.hiddenCreatorIds)
+  for (const row of args.hiddenRows) {
+    if (row.reason_code !== 'not_my_style') continue
+    if (row.target_type === 'creator' && typeof row.target_id === 'string') {
+      suppressed.add(row.target_id)
+      continue
+    }
+    if (row.target_type === 'project' && typeof row.target_id === 'string') {
+      const creatorId = args.projectCreatorById[row.target_id]
+      if (creatorId) suppressed.add(creatorId)
+    }
+  }
+  return suppressed
+}
+
 function recommendationScore(row: CreatorRecommendationActivityStats): number {
   const activityScore = row.recent_public_updates_count * 3 + row.recent_public_projects_count * 2
   const socialScore = Math.min(row.follower_count, 200) / 100

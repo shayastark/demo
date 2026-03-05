@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseAdmin
       .from('user_discovery_preferences')
-      .select('target_type, target_id, created_at')
+      .select('target_type, target_id, reason_code, created_at')
       .eq('user_id', user.id)
       .eq('preference', parsed.preference)
       .order('created_at', { ascending: false })
@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
           target_type: parsed.target_type,
           target_id: parsed.target_id,
           preference: parsed.preference,
+          reason_code: parsed.reason_code,
         },
         { onConflict: 'user_id,target_type,target_id,preference' }
       )
@@ -161,6 +162,7 @@ export async function POST(request: NextRequest) {
       target_type: parsed.target_type,
       target_id: parsed.target_id,
       preference: parsed.preference,
+      reason_code: parsed.reason_code,
     })
   } catch (error) {
     console.error('Error in discovery preferences POST:', error)
@@ -205,6 +207,7 @@ export async function DELETE(request: NextRequest) {
       target_type: parsed.target_type,
       target_id: parsed.target_id,
       preference: parsed.preference,
+      reason_code: parsed.reason_code,
     })
   } catch (error) {
     console.error('Error in discovery preferences DELETE:', error)

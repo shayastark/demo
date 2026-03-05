@@ -97,6 +97,7 @@ export function buildExploreProjectItems(args: {
   engagementCountByProjectId: Record<string, number>
   recentUpdatesCountByProjectId: Record<string, number>
   latestUpdateAtByProjectId: Record<string, string | null>
+  creatorReasonPenaltyById?: Record<string, number>
   sort: ExploreSort
 }): ExploreProjectItem[] {
   const nowMs = Date.now()
@@ -124,6 +125,7 @@ export function buildExploreProjectItems(args: {
         engagementCount: args.engagementCountByProjectId[a.project_id] || 0,
         recentUpdatesCount: args.recentUpdatesCountByProjectId[a.project_id] || 0,
         latestUpdateAt: args.latestUpdateAtByProjectId[a.project_id] || null,
+        creatorPenalty: args.creatorReasonPenaltyById?.[a.creator_id] || 0,
         nowMs,
       })
       const scoreB = getTrendingScore({
@@ -131,6 +133,7 @@ export function buildExploreProjectItems(args: {
         engagementCount: args.engagementCountByProjectId[b.project_id] || 0,
         recentUpdatesCount: args.recentUpdatesCountByProjectId[b.project_id] || 0,
         latestUpdateAt: args.latestUpdateAtByProjectId[b.project_id] || null,
+        creatorPenalty: args.creatorReasonPenaltyById?.[b.creator_id] || 0,
         nowMs,
       })
       if (scoreB !== scoreA) return scoreB - scoreA
@@ -152,6 +155,7 @@ function getTrendingScore(args: {
   engagementCount: number
   recentUpdatesCount: number
   latestUpdateAt: string | null
+  creatorPenalty: number
   nowMs: number
 }): number {
   const latestActivityMs = Math.max(
@@ -172,6 +176,10 @@ function getTrendingScore(args: {
   }
   if (ageDays > 90 && args.item.supporter_count === 0 && args.engagementCount === 0) {
     score -= 2
+  }
+
+  if (args.creatorPenalty > 0) {
+    score -= args.creatorPenalty
   }
 
   return score
