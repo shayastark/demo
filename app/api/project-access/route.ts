@@ -7,10 +7,12 @@ import {
   canManageProjectAccess,
   getProjectAccessGrantMutationAction,
   getProjectAccessIdentifierType,
+  isProjectAccessRole,
   isProjectAccessGrantActive,
   isRedundantProjectAccessGrant,
   parseProjectAccessExpiryInput,
   parseProjectAccessGrantInput,
+  resolveProjectAccessRole,
   resolveProjectAccessIdentifier,
 } from '@/lib/projectAccess'
 
@@ -104,7 +106,7 @@ export async function GET(request: NextRequest) {
 
     const { data: grants, error } = await supabaseAdmin
       .from('project_access_grants')
-      .select('id, project_id, user_id, granted_by_user_id, created_at, expires_at')
+      .select('id, project_id, user_id, granted_by_user_id, created_at, expires_at, role')
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })
 
@@ -132,6 +134,7 @@ export async function GET(request: NextRequest) {
         username: usersById[grant.user_id]?.username || null,
         email: usersById[grant.user_id]?.email || null,
         is_expired: !isProjectAccessGrantActive(grant.expires_at || null),
+        role: resolveProjectAccessRole(grant.role),
       })),
     })
   } catch (error) {
@@ -195,10 +198,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    const rawRole = (body as Record<string, unknown>)?.role
+    if (rawRole !== undefined && !isProjectAccessRole(rawRole)) {
+      return NextResponse.json(
+        { error: 'role must be one of: viewer, commenter, contributor', code: 'invalid_role' },
+        { status: 400 }
+      )
+    }
+    const targetRole = resolveProjectAccessRole(rawRole)
 
     const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
       .from('project_access_grants')
-      .select('id, expires_at')
+      .select('id, expires_at, role')
       .eq('project_id', parsed.project_id)
       .eq('user_id', resolvedUserId)
       .maybeSingle()
@@ -209,6 +220,8 @@ export async function POST(request: NextRequest) {
       existingExpiresAt: existingGrant?.expires_at || null,
       nextExpiresAt: expiryResult.expiresAt,
     })
+    const roleChanged =
+      !!existingGrant && resolveProjectAccessRole(existingGrant.role) !== targetRole
 
     if (mutationAction === 'create') {
       const { error } = await supabaseAdmin
@@ -218,14 +231,16 @@ export async function POST(request: NextRequest) {
           user_id: resolvedUserId,
           granted_by_user_id: currentUser.id,
           expires_at: expiryResult.expiresAt,
+          role: targetRole,
         })
       if (error) throw error
-    } else if (mutationAction === 'renew') {
+    } else if (mutationAction === 'renew' || roleChanged) {
       const { error } = await supabaseAdmin
         .from('project_access_grants')
         .update({
           granted_by_user_id: currentUser.id,
           expires_at: expiryResult.expiresAt,
+          role: targetRole,
         })
         .eq('project_id', parsed.project_id)
         .eq('user_id', resolvedUserId)
@@ -243,7 +258,7 @@ export async function POST(request: NextRequest) {
         (typeof currentUser.username === 'string' && currentUser.username.trim()) ||
         (typeof currentUser.email === 'string' && currentUser.email.trim()) ||
         null
-      if (mutationAction !== 'unchanged') {
+      if (mutationAction !== 'unchanged' || roleChanged) {
         const result = await notifyPrivateProjectAccessGranted({
           recipientUserId: resolvedUserId,
           grantedByUserId: currentUser.id,
@@ -265,7 +280,8 @@ export async function POST(request: NextRequest) {
       project_id: parsed.project_id,
       user_id: resolvedUserId,
       expires_at: expiryResult.expiresAt,
-      grant_action: mutationAction,
+      grant_action: mutationAction === 'unchanged' && roleChanged ? 'renew' : mutationAction,
+      role: targetRole,
       identifier_type: identifierType,
       notification: notificationResult,
     })
@@ -298,14 +314,31 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const expiryResult = parseProjectAccessExpiryInput({ body, requireProvided: true })
+    const rawRole = (body as Record<string, unknown>)?.role
+    if (rawRole !== undefined && !isProjectAccessRole(rawRole)) {
+      return NextResponse.json(
+        { error: 'role must be one of: viewer, commenter, contributor', code: 'invalid_role' },
+        { status: 400 }
+      )
+    }
+    const hasExpiryInput =
+      (body as Record<string, unknown>)?.expires_at !== undefined ||
+      (body as Record<string, unknown>)?.expires_in_hours !== undefined
+    const expiryResult = parseProjectAccessExpiryInput({ body, requireProvided: false })
     if (!expiryResult.ok) {
       return NextResponse.json({ error: expiryResult.error, code: 'invalid_expiry' }, { status: 400 })
     }
+    if (!hasExpiryInput && rawRole === undefined) {
+      return NextResponse.json(
+        { error: 'Provide role and/or expiry fields to update' },
+        { status: 400 }
+      )
+    }
+    const targetRole = rawRole === undefined ? null : resolveProjectAccessRole(rawRole)
 
     const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
       .from('project_access_grants')
-      .select('id, expires_at')
+      .select('id, expires_at, role')
       .eq('project_id', parsed.project_id)
       .eq('user_id', parsed.user_id)
       .maybeSingle()
@@ -317,16 +350,20 @@ export async function PATCH(request: NextRequest) {
     const mutationAction = getProjectAccessGrantMutationAction({
       hasExistingGrant: true,
       existingExpiresAt: existingGrant.expires_at || null,
-      nextExpiresAt: expiryResult.expiresAt,
+      nextExpiresAt: hasExpiryInput ? expiryResult.expiresAt : existingGrant.expires_at || null,
     })
+    const roleChanged =
+      targetRole !== null && resolveProjectAccessRole(existingGrant.role) !== targetRole
 
-    if (mutationAction !== 'unchanged') {
+    if (mutationAction !== 'unchanged' || roleChanged) {
+      const updates: Record<string, unknown> = {
+        granted_by_user_id: currentUser.id,
+      }
+      if (hasExpiryInput) updates.expires_at = expiryResult.expiresAt
+      if (targetRole !== null) updates.role = targetRole
       const { error: updateError } = await supabaseAdmin
         .from('project_access_grants')
-        .update({
-          granted_by_user_id: currentUser.id,
-          expires_at: expiryResult.expiresAt,
-        })
+        .update(updates)
         .eq('project_id', parsed.project_id)
         .eq('user_id', parsed.user_id)
       if (updateError) throw updateError
@@ -364,8 +401,9 @@ export async function PATCH(request: NextRequest) {
       success: true,
       project_id: parsed.project_id,
       user_id: parsed.user_id,
-      expires_at: expiryResult.expiresAt,
-      grant_action: mutationAction,
+      expires_at: hasExpiryInput ? expiryResult.expiresAt : existingGrant.expires_at || null,
+      grant_action: mutationAction === 'unchanged' && roleChanged ? 'renew' : mutationAction,
+      role: targetRole ?? resolveProjectAccessRole(existingGrant.role),
       notification: notificationResult,
     })
   } catch (error) {

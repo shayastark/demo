@@ -4,10 +4,13 @@ import {
   canManageProjectAccess,
   getProjectAccessGrantMutationAction,
   getProjectAccessIdentifierType,
+  hasProjectAccessRole,
+  isProjectAccessRole,
   isProjectAccessGrantActive,
   isRedundantProjectAccessGrant,
   parseProjectAccessExpiryInput,
   parseProjectAccessGrantInput,
+  resolveProjectAccessRole,
   resolveProjectAccessIdentifier,
 } from './projectAccess'
 
@@ -36,7 +39,7 @@ test('parseProjectAccessGrantInput validates project_id + identifier payload', (
   assert.equal(parseProjectAccessGrantInput({ project_id: 'bad', identifier: 'bad' }), null)
 })
 
-test('canManageProjectAccess enforces creator-only operations', () => {
+test('canManageProjectAccess enforces creator-only operations (including role updates)', () => {
   assert.equal(canManageProjectAccess('u1', 'u1'), true)
   assert.equal(canManageProjectAccess('u2', 'u1'), false)
   assert.equal(canManageProjectAccess(null, 'u1'), false)
@@ -179,5 +182,22 @@ test('getProjectAccessGrantMutationAction distinguishes create renew unchanged',
     }),
     'renew'
   )
+})
+
+test('project access role validation and defaults', () => {
+  assert.equal(isProjectAccessRole('viewer'), true)
+  assert.equal(isProjectAccessRole('commenter'), true)
+  assert.equal(isProjectAccessRole('contributor'), true)
+  assert.equal(isProjectAccessRole('owner'), false)
+  assert.equal(resolveProjectAccessRole('bad'), 'viewer')
+})
+
+test('hasProjectAccessRole enforces permission matrix with creator override', () => {
+  assert.equal(hasProjectAccessRole({ role: 'viewer', minRole: 'viewer' }), true)
+  assert.equal(hasProjectAccessRole({ role: 'viewer', minRole: 'commenter' }), false)
+  assert.equal(hasProjectAccessRole({ role: 'commenter', minRole: 'commenter' }), true)
+  assert.equal(hasProjectAccessRole({ role: 'commenter', minRole: 'contributor' }), false)
+  assert.equal(hasProjectAccessRole({ role: 'contributor', minRole: 'commenter' }), true)
+  assert.equal(hasProjectAccessRole({ role: 'viewer', minRole: 'contributor', isCreator: true }), true)
 })
 

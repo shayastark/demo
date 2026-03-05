@@ -8,7 +8,7 @@ import {
   summarizeProjectUpdateReactions,
 } from '@/lib/projectUpdateReactions'
 import { notifyCreatorUpdateEngagement } from '@/lib/notifications'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
 
 async function getAuthenticatedUser(request: NextRequest) {
   const authResult = await verifyPrivyToken(request.headers.get('authorization'))
@@ -153,6 +153,17 @@ export async function POST(request: NextRequest) {
     })
     if (!canAccess) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+    if (project.visibility === 'private' && user.id !== project.creator_id) {
+      const canReactAsCollaborator = await hasProjectRole({
+        projectId: project.id,
+        projectCreatorId: project.creator_id,
+        userId: user.id,
+        minRole: 'commenter',
+      })
+      if (!canReactAsCollaborator) {
+        return NextResponse.json({ error: 'Insufficient project role' }, { status: 403 })
+      }
     }
 
     const { data: existingReaction } = await supabaseAdmin

@@ -6,11 +6,10 @@ import {
   sanitizeProjectUpdateContent,
   sanitizeProjectUpdateVersionLabel,
   canManageProjectUpdates,
-  formatProjectUpdatesListResponse,
   type ProjectUpdateRow,
 } from '@/lib/projectUpdates'
 import { notifyFollowersProjectUpdate } from '@/lib/notifications'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -86,12 +85,19 @@ export async function GET(request: NextRequest) {
       }, {})
     }
 
-    const canManage = canManageProjectUpdates(currentUser?.id, project.creator_id)
-    const baseResponse = formatProjectUpdatesListResponse(rows, canManage)
+    const canManageAsCreator = canManageProjectUpdates(currentUser?.id, project.creator_id)
+    const canManageAsContributor = await hasProjectRole({
+      projectId: project.id,
+      projectCreatorId: project.creator_id,
+      userId: currentUser?.id,
+      minRole: 'contributor',
+    })
+    const canManage = canManageAsCreator || canManageAsContributor
     const response = {
-      ...baseResponse,
-      updates: baseResponse.updates.map((update) => ({
+      can_manage: canManage,
+      updates: rows.map((update) => ({
         ...update,
+        can_delete: canManageAsCreator || (canManageAsContributor && update.user_id === currentUser?.id),
         author_name: usersById[update.user_id]?.username || usersById[update.user_id]?.email || 'Unknown',
       })),
     }
@@ -128,7 +134,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    if (!canManageProjectUpdates(currentUser.id, project.creator_id)) {
+    const canCreateAsCreator = canManageProjectUpdates(currentUser.id, project.creator_id)
+    const canCreateAsContributor = await hasProjectRole({
+      projectId: project.id,
+      projectCreatorId: project.creator_id,
+      userId: currentUser.id,
+      minRole: 'contributor',
+    })
+    if (!canCreateAsCreator && !canCreateAsContributor) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -178,7 +191,7 @@ export async function DELETE(request: NextRequest) {
 
     const { data: existingUpdate } = await supabaseAdmin
       .from('project_updates')
-      .select('id, project_id')
+      .select('id, project_id, user_id')
       .eq('id', id)
       .single()
 
@@ -191,7 +204,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    if (!canManageProjectUpdates(currentUser.id, project.creator_id)) {
+    const canDeleteAsCreator = canManageProjectUpdates(currentUser.id, project.creator_id)
+    const canDeleteAsContributor = await hasProjectRole({
+      projectId: project.id,
+      projectCreatorId: project.creator_id,
+      userId: currentUser.id,
+      minRole: 'contributor',
+    })
+    const canDelete = canDeleteAsCreator || (canDeleteAsContributor && existingUpdate.user_id === currentUser.id)
+    if (!canDelete) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 

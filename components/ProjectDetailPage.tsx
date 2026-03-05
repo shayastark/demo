@@ -37,6 +37,7 @@ type ProjectAccessGrant = {
   created_at: string
   expires_at?: string | null
   is_expired?: boolean
+  role?: 'viewer' | 'commenter' | 'contributor'
   username?: string | null
   email?: string | null
 }
@@ -53,6 +54,7 @@ type ProjectAccessRequest = {
 }
 
 type ProjectAccessIdentifierType = 'username' | 'email' | 'user_id'
+type ProjectAccessRole = 'viewer' | 'commenter' | 'contributor'
 
 type ProjectAccessInlineState = {
   tone: 'success' | 'error'
@@ -109,6 +111,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [projectAccessExpiryPreset, setProjectAccessExpiryPreset] = useState<ProjectAccessExpiryPreset>('never')
   const [projectAccessRequests, setProjectAccessRequests] = useState<ProjectAccessRequest[]>([])
   const [projectAccessRequestsLoading, setProjectAccessRequestsLoading] = useState(false)
+  const [projectAccessRoleUpdatingUserId, setProjectAccessRoleUpdatingUserId] = useState<string | null>(null)
+  const roleViewTrackedRef = useRef<string | null>(null)
   const [blockedPrivateAccess, setBlockedPrivateAccess] = useState<{
     projectId: string
     projectTitle: string | null
@@ -321,6 +325,22 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             },
           })
         )
+        if (roleViewTrackedRef.current !== targetProjectId) {
+          roleViewTrackedRef.current = targetProjectId
+          window.dispatchEvent(
+            new CustomEvent('project_access_role_event', {
+              detail: {
+                schema: 'project_access_role.v1',
+                action: 'view_roles',
+                project_id: targetProjectId,
+                target_user_id: null,
+                old_role: null,
+                new_role: null,
+                source: 'project_detail_settings',
+              },
+            })
+          )
+        }
       }
     } catch (error) {
       console.error('Error loading project access grants:', error)
@@ -700,6 +720,91 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       showToast(error instanceof Error ? error.message : 'Failed to revoke access', 'error')
     } finally {
       setProjectAccessSaving(false)
+    }
+  }
+
+  const handleChangeProjectAccessRole = async (
+    grant: ProjectAccessGrant,
+    nextRole: ProjectAccessRole
+  ) => {
+    if (!project?.id || !isCreator) return
+    const oldRole: ProjectAccessRole = grant.role || 'viewer'
+    if (oldRole === nextRole) return
+
+    setProjectAccessRoleUpdatingUserId(grant.user_id)
+    setProjectAccessInlineState(null)
+    setProjectAccessGrants((current) =>
+      current.map((entry) =>
+        entry.user_id === grant.user_id
+          ? {
+              ...entry,
+              role: nextRole,
+            }
+          : entry
+      )
+    )
+
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-access', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: project.id,
+          user_id: grant.user_id,
+          role: nextRole,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update collaborator role')
+
+      setProjectAccessGrants((current) =>
+        current.map((entry) =>
+          entry.user_id === grant.user_id
+            ? {
+                ...entry,
+                role: result.role || nextRole,
+              }
+            : entry
+        )
+      )
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_role_event', {
+            detail: {
+              schema: 'project_access_role.v1',
+              action: 'change_role',
+              project_id: project.id,
+              target_user_id: grant.user_id,
+              old_role: oldRole,
+              new_role: result.role || nextRole,
+              source: 'project_detail_settings',
+            },
+          })
+        )
+      }
+      setProjectAccessInlineState({ tone: 'success', message: 'Collaborator role updated.' })
+    } catch (error) {
+      console.error('Error changing project collaborator role:', error)
+      setProjectAccessGrants((current) =>
+        current.map((entry) =>
+          entry.user_id === grant.user_id
+            ? {
+                ...entry,
+                role: oldRole,
+              }
+            : entry
+        )
+      )
+      setProjectAccessInlineState({ tone: 'error', message: 'Failed to update collaborator role.' })
+      showToast(error instanceof Error ? error.message : 'Failed to update collaborator role', 'error')
+    } finally {
+      setProjectAccessRoleUpdatingUserId(null)
     }
   }
 
@@ -2111,14 +2216,33 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               {grant.username || grant.email || grant.user_id}
                             </p>
                             <p className="text-gray-500 text-xs truncate">
-                              {grant.user_id} • {formatGrantExpiryLabel(grant)}
+                              {grant.user_id} • {(grant.role || 'viewer')} • {formatGrantExpiryLabel(grant)}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
+                            <select
+                              value={grant.role || 'viewer'}
+                              onChange={(event) =>
+                                handleChangeProjectAccessRole(
+                                  grant,
+                                  event.target.value as ProjectAccessRole
+                                )
+                              }
+                              disabled={
+                                projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                              }
+                              className="bg-black border border-gray-700 rounded px-2 py-1 text-xs text-white"
+                            >
+                              <option value="viewer">Viewer</option>
+                              <option value="commenter">Commenter</option>
+                              <option value="contributor">Contributor</option>
+                            </select>
                             <button
                               type="button"
                               onClick={() => handleRenewProjectAccess(grant.user_id, 24)}
-                              disabled={projectAccessSaving}
+                              disabled={
+                                projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                              }
                               className="text-xs text-gray-300 hover:text-white disabled:opacity-50"
                             >
                               +24h
@@ -2126,7 +2250,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             <button
                               type="button"
                               onClick={() => handleRenewProjectAccess(grant.user_id, 168)}
-                              disabled={projectAccessSaving}
+                              disabled={
+                                projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                              }
                               className="text-xs text-gray-300 hover:text-white disabled:opacity-50"
                             >
                               +7d
@@ -2134,7 +2260,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             <button
                               type="button"
                               onClick={() => handleRevokeProjectAccess(grant.user_id)}
-                              disabled={projectAccessSaving}
+                              disabled={
+                                projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                              }
                               className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
                             >
                               Remove

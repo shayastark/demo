@@ -1,4 +1,6 @@
 export type ProjectAccessIdentifierType = 'user_id' | 'email' | 'username'
+export const PROJECT_ACCESS_ROLES = ['viewer', 'commenter', 'contributor'] as const
+export type ProjectAccessRole = (typeof PROJECT_ACCESS_ROLES)[number]
 
 export type ProjectAccessGrantInput = {
   project_id: string
@@ -42,6 +44,33 @@ export function parseProjectAccessGrantInput(value: unknown): ProjectAccessGrant
 
 export function canManageProjectAccess(viewerUserId: string | null | undefined, creatorUserId: string): boolean {
   return !!viewerUserId && viewerUserId === creatorUserId
+}
+
+export function isProjectAccessRole(value: unknown): value is ProjectAccessRole {
+  return (
+    typeof value === 'string' &&
+    (PROJECT_ACCESS_ROLES as readonly string[]).includes(value)
+  )
+}
+
+export function resolveProjectAccessRole(value: unknown): ProjectAccessRole {
+  return isProjectAccessRole(value) ? value : 'viewer'
+}
+
+function getProjectAccessRoleRank(role: ProjectAccessRole): number {
+  if (role === 'viewer') return 0
+  if (role === 'commenter') return 1
+  return 2
+}
+
+export function hasProjectAccessRole(args: {
+  role: ProjectAccessRole | null | undefined
+  minRole: ProjectAccessRole
+  isCreator?: boolean
+}): boolean {
+  if (args.isCreator) return true
+  const role = resolveProjectAccessRole(args.role)
+  return getProjectAccessRoleRank(role) >= getProjectAccessRoleRank(args.minRole)
 }
 
 export function isRedundantProjectAccessGrant(args: {

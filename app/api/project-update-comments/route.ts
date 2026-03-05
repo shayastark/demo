@@ -8,7 +8,7 @@ import {
   type ProjectUpdateCommentRow,
 } from '@/lib/projectUpdateComments'
 import { notifyCreatorUpdateEngagement } from '@/lib/notifications'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -68,6 +68,17 @@ export async function GET(request: NextRequest) {
     })
     if (!canAccess) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
+    }
+    if (resolved.project.visibility === 'private' && currentUser.id !== resolved.project.creator_id) {
+      const canCommentAsCollaborator = await hasProjectRole({
+        projectId: resolved.project.id,
+        projectCreatorId: resolved.project.creator_id,
+        userId: currentUser.id,
+        minRole: 'commenter',
+      })
+      if (!canCommentAsCollaborator) {
+        return NextResponse.json({ error: 'Insufficient project role' }, { status: 403 })
+      }
     }
 
     const { data: comments, error } = await supabaseAdmin

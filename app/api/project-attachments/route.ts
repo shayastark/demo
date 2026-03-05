@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import { parseProjectAttachmentsLimit, validateProjectAttachmentInput } from '@/lib/projectAttachments'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -69,9 +69,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to load attachments' }, { status: 500 })
     }
 
+    const canManageAsCreator = currentUser?.id === project.creator_id
+    const canManageAsContributor = await hasProjectRole({
+      projectId: project.id,
+      projectCreatorId: project.creator_id,
+      userId: currentUser?.id,
+      minRole: 'contributor',
+    })
+
     return NextResponse.json({
-      attachments: attachments || [],
-      can_manage: currentUser?.id === project.creator_id,
+      attachments: (attachments || []).map((attachment) => ({
+        ...attachment,
+        can_delete:
+          canManageAsCreator ||
+          (canManageAsContributor && !!currentUser?.id && attachment.user_id === currentUser.id),
+      })),
+      can_manage: canManageAsCreator || canManageAsContributor,
     })
   } catch (error) {
     console.error('Error in project attachments GET:', error)
@@ -112,7 +125,14 @@ export async function POST(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    if (project.creator_id !== currentUser.id) {
+    const canManageAsCreator = project.creator_id === currentUser.id
+    const canManageAsContributor = await hasProjectRole({
+      projectId: project.id,
+      projectCreatorId: project.creator_id,
+      userId: currentUser.id,
+      minRole: 'contributor',
+    })
+    if (!canManageAsCreator && !canManageAsContributor) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -157,7 +177,7 @@ export async function DELETE(request: NextRequest) {
 
     const { data: attachment } = await supabaseAdmin
       .from('project_attachments')
-      .select('id, project_id')
+      .select('id, project_id, user_id')
       .eq('id', id)
       .single()
 
@@ -174,7 +194,17 @@ export async function DELETE(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    if (project.creator_id !== currentUser.id) {
+    const canDeleteAsCreator = project.creator_id === currentUser.id
+    const canDeleteAsContributor = await hasProjectRole({
+      projectId: project.id,
+      projectCreatorId: project.creator_id,
+      userId: currentUser.id,
+      minRole: 'contributor',
+    })
+    const canDelete =
+      canDeleteAsCreator ||
+      (canDeleteAsContributor && attachment.user_id === currentUser.id)
+    if (!canDelete) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 

@@ -259,18 +259,36 @@ export async function PATCH(request: NextRequest) {
 
     let requestStatus: 'approved' | 'denied' = parsed.action === 'approve' ? 'approved' : 'denied'
     if (shouldUpsertAccessGrantOnReview(parsed.action)) {
-      const { error: grantError } = await supabaseAdmin
+      const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
         .from('project_access_grants')
-        .upsert(
-          {
+        .select('id, role')
+        .eq('project_id', accessRequest.project_id)
+        .eq('user_id', accessRequest.requester_user_id)
+        .maybeSingle()
+      if (existingGrantError) throw existingGrantError
+
+      if (existingGrant) {
+        const { error: updateGrantError } = await supabaseAdmin
+          .from('project_access_grants')
+          .update({
+            granted_by_user_id: currentUser.id,
+            expires_at: null,
+          })
+          .eq('project_id', accessRequest.project_id)
+          .eq('user_id', accessRequest.requester_user_id)
+        if (updateGrantError) throw updateGrantError
+      } else {
+        const { error: createGrantError } = await supabaseAdmin
+          .from('project_access_grants')
+          .insert({
             project_id: accessRequest.project_id,
             user_id: accessRequest.requester_user_id,
             granted_by_user_id: currentUser.id,
             expires_at: null,
-          },
-          { onConflict: 'project_id,user_id' }
-        )
-      if (grantError) throw grantError
+            role: 'viewer',
+          })
+        if (createGrantError) throw createGrantError
+      }
     }
 
     const { data: updatedRequest, error: updateError } = await supabaseAdmin

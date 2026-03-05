@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import { isReactionType, summarizeCommentReactions, getReactionToggleAction } from '@/lib/commentReactions'
+import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
 
 async function getAuthenticatedUser(request: NextRequest) {
   const authResult = await verifyPrivyToken(request.headers.get('authorization'))
@@ -67,12 +68,49 @@ export async function POST(request: NextRequest) {
 
     const { data: comment } = await supabaseAdmin
       .from('comments')
-      .select('id')
+      .select('id, project_id')
       .eq('id', commentId)
       .single()
 
     if (!comment) {
       return NextResponse.json({ error: 'Comment not found' }, { status: 404 })
+    }
+    if (!comment.project_id || !isValidUUID(comment.project_id)) {
+      return NextResponse.json({ error: 'Comment project not found' }, { status: 404 })
+    }
+
+    const { data: project } = await supabaseAdmin
+      .from('projects')
+      .select('id, creator_id, sharing_enabled, visibility')
+      .eq('id', comment.project_id)
+      .single()
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const canAccess = await canUserAccessProjectRow({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: user.id,
+      isDirectAccess: true,
+    })
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+    if (project.visibility === 'private' && user.id !== project.creator_id) {
+      const canReactAsCollaborator = await hasProjectRole({
+        projectId: project.id,
+        projectCreatorId: project.creator_id,
+        userId: user.id,
+        minRole: 'commenter',
+      })
+      if (!canReactAsCollaborator) {
+        return NextResponse.json({ error: 'Insufficient project role' }, { status: 403 })
+      }
     }
 
     const { data: existingReaction } = await supabaseAdmin

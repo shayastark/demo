@@ -17,6 +17,7 @@ interface ProjectAttachment {
   mime_type: string | null
   size_bytes: number | null
   created_at: string
+  can_delete?: boolean
 }
 
 interface ProjectAttachmentsPanelProps {
@@ -134,7 +135,7 @@ export default function ProjectAttachmentsPanel({
       return
     }
     if (!canManage) {
-      showToast('Only the project creator can add attachments', 'error')
+      showToast('You need contributor access to add attachments', 'error')
       return
     }
 
@@ -208,7 +209,7 @@ export default function ProjectAttachmentsPanel({
       onRequireAuth?.()
       return
     }
-    if (!canManage) return
+    if (!attachment.can_delete) return
     setDeletingId(attachment.id)
     try {
       const token = await getAccessToken()
@@ -340,7 +341,7 @@ export default function ProjectAttachmentsPanel({
                     </div>
                   </a>
 
-                  {canManage ? (
+                  {attachment.can_delete ? (
                     <button
                       type="button"
                       onClick={() => deleteAttachment(attachment)}

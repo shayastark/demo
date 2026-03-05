@@ -10,7 +10,7 @@ import {
   sortCommentsPinnedFirst,
   withPinnedFlag,
 } from '@/lib/commentPinning'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
 
 type CommentRecord = {
   id: string
@@ -282,6 +282,17 @@ export async function POST(request: NextRequest) {
 
     if (!canCreateComment) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+    if (project.visibility === 'private' && user.id !== project.creator_id) {
+      const canCommentAsCollaborator = await hasProjectRole({
+        projectId: project.id,
+        projectCreatorId: project.creator_id,
+        userId: user.id,
+        minRole: 'commenter',
+      })
+      if (!canCommentAsCollaborator) {
+        return NextResponse.json({ error: 'Insufficient project role' }, { status: 403 })
+      }
     }
 
     const insertPayload: Record<string, unknown> = {
