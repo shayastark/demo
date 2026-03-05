@@ -14,6 +14,7 @@ import ShareModal from './ShareModal'
 import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
 import FollowingFeedSection from './FollowingFeedSection'
 import SharedWithMeSection from './SharedWithMeSection'
+import WhoToFollowSection from './WhoToFollowSection'
 
 // Extended type for saved projects with additional info
 interface SavedProject extends Project {
@@ -536,6 +537,7 @@ export default function ClientDashboard() {
       <main className="px-4 py-8 max-w-7xl mx-auto relative z-10 overflow-x-hidden">
         <h1 className="text-3xl font-bold mb-8 text-white">Your Projects</h1>
         <FollowingFeedSection authenticated={authenticated} getAccessToken={getAccessToken} />
+        <WhoToFollowSection authenticated={authenticated} getAccessToken={getAccessToken} />
         <SharedWithMeSection authenticated={authenticated} getAccessToken={getAccessToken} />
 
         {loading ? (
