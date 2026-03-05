@@ -1,5 +1,6 @@
 export const MAX_PROJECT_UPDATE_CONTENT_LENGTH = 800
 export const MAX_VERSION_LABEL_LENGTH = 40
+export type ProjectUpdateStatus = 'draft' | 'published'
 
 export type ProjectUpdateRow = {
   id: string
@@ -8,6 +9,8 @@ export type ProjectUpdateRow = {
   content: string
   version_label: string | null
   is_important: boolean
+  status: ProjectUpdateStatus
+  published_at: string | null
   created_at: string
   updated_at: string
 }
@@ -29,6 +32,32 @@ export function sanitizeProjectUpdateImportantFlag(value: unknown): boolean | nu
   if (value === undefined) return false
   if (typeof value !== 'boolean') return null
   return value
+}
+
+export function sanitizeProjectUpdateStatus(
+  value: unknown,
+  defaultStatus: ProjectUpdateStatus = 'published'
+): ProjectUpdateStatus | null {
+  if (value === undefined || value === null) return defaultStatus
+  if (value === 'draft' || value === 'published') return value
+  return null
+}
+
+export function canViewerSeeProjectUpdate(
+  status: ProjectUpdateStatus,
+  canManage: boolean
+): boolean {
+  if (status === 'published') return true
+  return canManage
+}
+
+export function shouldNotifyForProjectUpdateTransition(args: {
+  previousStatus: ProjectUpdateStatus | null
+  nextStatus: ProjectUpdateStatus
+}): boolean {
+  if (args.nextStatus !== 'published') return false
+  if (args.previousStatus === 'published') return false
+  return true
 }
 
 export function canManageProjectUpdates(userId: string | null | undefined, projectCreatorId: string | null | undefined): boolean {

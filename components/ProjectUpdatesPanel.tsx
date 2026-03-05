@@ -59,6 +59,7 @@ export default function ProjectUpdatesPanel({
   const [content, setContent] = useState('')
   const [versionLabel, setVersionLabel] = useState('')
   const [isImportant, setIsImportant] = useState(false)
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [reactionsByUpdate, setReactionsByUpdate] = useState<
@@ -124,6 +125,24 @@ export default function ProjectUpdatesPanel({
     )
   }
 
+  const emitDraftEvent = (
+    action: 'save_draft' | 'edit_draft' | 'publish_draft',
+    updateId: string | null
+  ) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('project_update_draft_event', {
+        detail: {
+          schema: 'project_update_draft.v1',
+          action,
+          project_id: projectId,
+          update_id: updateId,
+          source,
+        },
+      })
+    )
+  }
+
   const withAuthHeaders = async (): Promise<Record<string, string>> => {
     if (!authenticated || !getAccessToken) return {}
     const token = await getAccessToken()
@@ -134,7 +153,10 @@ export default function ProjectUpdatesPanel({
     setLoading(true)
     try {
       const headers = await withAuthHeaders()
-      const response = await fetch(`/api/project-updates?project_id=${projectId}`, { headers })
+      const response = await fetch(
+        `/api/project-updates?project_id=${projectId}&include_drafts=true`,
+        { headers }
+      )
       const result = (await response.json()) as UpdatesResponse & { error?: string }
       if (!response.ok) throw new Error(result.error || 'Failed to load updates')
       setUpdates(result.updates || [])
@@ -146,15 +168,16 @@ export default function ProjectUpdatesPanel({
       }
 
       const nextUpdates = result.updates || []
+      const publishedOnly = nextUpdates.filter((update) => update.status !== 'draft')
       setCommentCountByUpdate((prev) => {
         const next: Record<string, number> = {}
-        for (const update of nextUpdates) {
+        for (const update of publishedOnly) {
           next[update.id] = prev[update.id] || 0
         }
         return next
       })
-      if (nextUpdates.length > 0) {
-        await loadReactions(nextUpdates.map((update) => update.id), headers)
+      if (publishedOnly.length > 0) {
+        await loadReactions(publishedOnly.map((update) => update.id), headers)
       } else {
         setReactionsByUpdate({})
       }
@@ -270,7 +293,7 @@ export default function ProjectUpdatesPanel({
     deeplinkHandledRef.current = true
   }, [loading, updates])
 
-  const createUpdate = async () => {
+  const createUpdate = async (targetStatus: 'draft' | 'published') => {
     const trimmed = content.trim()
     if (!trimmed) return
 
@@ -285,18 +308,30 @@ export default function ProjectUpdatesPanel({
       const token = await getAccessToken()
       if (!token) throw new Error('Not authenticated')
 
+      const isEditingDraft = !!editingDraftId
       const response = await fetch('/api/project-updates', {
-        method: 'POST',
+        method: isEditingDraft ? 'PATCH' : 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          project_id: projectId,
-          content: trimmed,
-          version_label: versionLabel.trim() || null,
-          is_important: isImportant,
-        }),
+        body: JSON.stringify(
+          isEditingDraft
+            ? {
+                id: editingDraftId,
+                content: trimmed,
+                version_label: versionLabel.trim() || null,
+                is_important: isImportant,
+                status: targetStatus,
+              }
+            : {
+                project_id: projectId,
+                content: trimmed,
+                version_label: versionLabel.trim() || null,
+                is_important: isImportant,
+                status: targetStatus,
+              }
+        ),
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to post update')
@@ -304,11 +339,17 @@ export default function ProjectUpdatesPanel({
       setContent('')
       setVersionLabel('')
       setIsImportant(false)
+      setEditingDraftId(null)
       emitEvent({
         action: 'create',
         project_id: projectId,
         update_id: result.update?.id || null,
       })
+      if (targetStatus === 'draft') {
+        emitDraftEvent(isEditingDraft ? 'edit_draft' : 'save_draft', result.update?.id || null)
+      } else if (isEditingDraft) {
+        emitDraftEvent('publish_draft', result.update?.id || null)
+      }
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('project_update_importance_event', {
@@ -321,7 +362,7 @@ export default function ProjectUpdatesPanel({
             },
           })
         )
-        if (isImportant) {
+        if (isImportant && targetStatus === 'published') {
           window.dispatchEvent(
             new CustomEvent('project_update_importance_event', {
               detail: {
@@ -336,10 +377,19 @@ export default function ProjectUpdatesPanel({
         }
       }
       await loadUpdates()
-      showToast('Update posted', 'success')
+      showToast(
+        targetStatus === 'draft'
+          ? isEditingDraft
+            ? 'Draft updated'
+            : 'Draft saved'
+          : isEditingDraft
+            ? 'Draft published'
+            : 'Update posted',
+        'success'
+      )
     } catch (error) {
       console.error('Error creating project update:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to post update', 'error')
+      showToast(error instanceof Error ? error.message : 'Failed to save update', 'error')
     } finally {
       setPosting(false)
     }
@@ -433,11 +483,73 @@ export default function ProjectUpdatesPanel({
     }
   }
 
+  const editDraft = (update: ProjectUpdate) => {
+    setEditingDraftId(update.id)
+    setContent(update.content)
+    setVersionLabel(update.version_label || '')
+    setIsImportant(!!update.is_important)
+  }
+
+  const publishDraft = async (update: ProjectUpdate) => {
+    if (!authenticated) {
+      onRequireAuth?.()
+      return
+    }
+    if (!getAccessToken) return
+    const previous = updates
+    setPosting(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-updates', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: update.id, status: 'published' }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to publish draft')
+      emitDraftEvent('publish_draft', update.id)
+      await loadUpdates()
+      showToast('Draft published', 'success')
+      if (typeof window !== 'undefined' && !!result.update?.is_important) {
+        window.dispatchEvent(
+          new CustomEvent('project_update_importance_event', {
+            detail: {
+              schema: 'project_update_importance.v1',
+              action: 'important_notification_sent',
+              project_id: projectId,
+              update_id: update.id,
+              source,
+            },
+          })
+        )
+      }
+    } catch (error) {
+      setUpdates(previous)
+      console.error('Error publishing draft:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to publish draft', 'error')
+    } finally {
+      setPosting(false)
+    }
+  }
+
+  const publishedUpdates = useMemo(
+    () => updates.filter((update) => update.status !== 'draft'),
+    [updates]
+  )
+  const draftUpdates = useMemo(
+    () => updates.filter((update) => update.status === 'draft'),
+    [updates]
+  )
+
   const latestSummary = useMemo(() => {
-    if (updates.length === 0) return null
-    const latest = updates[0]
+    if (publishedUpdates.length === 0) return null
+    const latest = publishedUpdates[0]
     return latest.version_label ? `${latest.version_label}: ${latest.content}` : latest.content
-  }, [updates])
+  }, [publishedUpdates])
 
   const toggleReaction = async (updateId: string, reactionType: ProjectUpdateReactionType) => {
     if (!authenticated) {
@@ -675,7 +787,7 @@ export default function ProjectUpdatesPanel({
         <div className="flex items-center gap-2">
           <Megaphone className="w-4 h-4 text-neon-green" />
           <h3 className="text-sm text-white font-medium tracking-wide">Project Updates</h3>
-          <span className="text-xs text-gray-400">{updates.length}</span>
+          <span className="text-xs text-gray-400">{publishedUpdates.length}</span>
         </div>
         {latestSummary && <p className="text-[11px] text-gray-500 truncate max-w-[50%]">{latestSummary}</p>}
       </div>
@@ -721,14 +833,21 @@ export default function ProjectUpdatesPanel({
               className="flex-1 bg-black/70 border border-gray-800 rounded-md px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green resize-none"
             />
             <button
-              onClick={createUpdate}
+              onClick={() => createUpdate('published')}
               disabled={posting || !content.trim()}
               className="self-end h-9 px-3 rounded-md bg-neon-green text-black font-medium text-xs disabled:opacity-40"
             >
               <span className="inline-flex items-center gap-1">
                 <Send className="w-3.5 h-3.5" />
-                {posting ? 'Posting...' : 'Post'}
+                {posting ? 'Saving...' : editingDraftId ? 'Publish draft' : 'Post'}
               </span>
+            </button>
+            <button
+              onClick={() => createUpdate('draft')}
+              disabled={posting || !content.trim()}
+              className="self-end h-9 px-3 rounded-md border border-gray-700 text-gray-300 font-medium text-xs disabled:opacity-40"
+            >
+              {posting ? 'Saving...' : editingDraftId ? 'Save draft' : 'Save draft'}
             </button>
           </div>
           <label className="inline-flex items-center gap-2 text-xs text-gray-400">
@@ -743,17 +862,74 @@ export default function ProjectUpdatesPanel({
           <p className="text-[11px] text-gray-500 mt-1">
             Mark important to notify followers who prefer important-only updates.
           </p>
+          {editingDraftId ? (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingDraftId(null)
+                setContent('')
+                setVersionLabel('')
+                setIsImportant(false)
+              }}
+              className="mt-1 text-[11px] text-gray-500 hover:text-gray-400 underline underline-offset-2"
+            >
+              Cancel draft edit
+            </button>
+          ) : null}
         </div>
       )}
 
       <div className="max-h-72 overflow-y-auto">
         {loading ? (
           <p className="px-3 sm:px-4 py-3 text-sm text-gray-500">Loading updates...</p>
-        ) : updates.length === 0 ? (
+        ) : publishedUpdates.length === 0 ? (
           <p className="px-3 sm:px-4 pb-4 text-sm text-gray-500">No project updates yet.</p>
         ) : (
           <ul>
-            {updates.map((update) => (
+            {canManage && draftUpdates.length > 0 ? (
+              <li className="border-t border-gray-900 px-3 sm:px-4 py-3 bg-gray-950/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-gray-300 font-medium">Drafts</span>
+                  <span className="text-[10px] rounded-full border border-gray-700 px-2 py-0.5 text-gray-400">
+                    {draftUpdates.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {draftUpdates.map((update) => (
+                    <div key={`draft-${update.id}`} className="rounded-md border border-gray-800 px-2.5 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-200 truncate">
+                            {update.version_label ? `${update.version_label}: ` : ''}
+                            {update.content}
+                          </p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">
+                            Draft • {new Date(update.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => editDraft(update)}
+                            className="text-[10px] px-2 py-1 rounded-full border border-gray-700 text-gray-300"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => publishDraft(update)}
+                            className="text-[10px] px-2 py-1 rounded-full border border-neon-green text-neon-green"
+                          >
+                            Publish
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </li>
+            ) : null}
+            {publishedUpdates.map((update) => (
               <li key={update.id} className="border-t border-gray-900 px-3 sm:px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div

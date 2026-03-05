@@ -110,6 +110,8 @@ export interface ProjectUpdate {
   content: string
   version_label: string | null
   is_important: boolean
+  status: 'draft' | 'published'
+  published_at: string | null
   created_at: string
   updated_at: string
   author_name?: string

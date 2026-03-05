@@ -3,8 +3,11 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import {
+  canViewerSeeProjectUpdate,
   sanitizeProjectUpdateContent,
   sanitizeProjectUpdateImportantFlag,
+  sanitizeProjectUpdateStatus,
+  shouldNotifyForProjectUpdateTransition,
   sanitizeProjectUpdateVersionLabel,
   type ProjectUpdateRow,
 } from '@/lib/projectUpdates'
@@ -62,16 +65,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const { data: updates, error } = await supabaseAdmin
+    const canManage = await canPostProjectUpdate({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
+      userId: currentUser?.id,
+    })
+
+    const includeDrafts = searchParams.get('include_drafts') === 'true'
+
+    let updatesQuery = supabaseAdmin
       .from('project_updates')
       .select('*')
       .eq('project_id', projectId)
+      .order('published_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
 
+    if (!(canManage && includeDrafts)) {
+      updatesQuery = updatesQuery.eq('status', 'published')
+    }
+
+    const { data: updates, error } = await updatesQuery
     if (error) throw error
 
     const rows = (updates || []) as ProjectUpdateRow[]
-    const userIds = Array.from(new Set(rows.map((row) => row.user_id)))
+    const visibleRows = rows.filter((row) => canViewerSeeProjectUpdate(row.status, canManage))
+    const userIds = Array.from(new Set(visibleRows.map((row) => row.user_id)))
     let usersById: Record<string, { username: string | null; email: string | null }> = {}
     if (userIds.length > 0) {
       const { data: users } = await supabaseAdmin
@@ -85,20 +107,12 @@ export async function GET(request: NextRequest) {
       }, {})
     }
 
-    const canManage = await canPostProjectUpdate({
-      project: {
-        id: project.id,
-        creator_id: project.creator_id,
-        visibility: project.visibility,
-        sharing_enabled: project.sharing_enabled,
-      },
-      userId: currentUser?.id,
-    })
     const response = {
       can_manage: canManage,
-      updates: rows.map((update) => ({
+      updates: visibleRows.map((update) => ({
         ...update,
         can_delete: !!currentUser?.id && (currentUser.id === project.creator_id || (canManage && update.user_id === currentUser.id)),
+        can_edit: !!currentUser?.id && (currentUser.id === project.creator_id || (canManage && update.user_id === currentUser.id)),
         author_name: usersById[update.user_id]?.username || usersById[update.user_id]?.email || 'Unknown',
       })),
     }
@@ -122,6 +136,7 @@ export async function POST(request: NextRequest) {
     const content = sanitizeProjectUpdateContent(body.content)
     const versionLabel = sanitizeProjectUpdateVersionLabel(body.version_label)
     const isImportant = sanitizeProjectUpdateImportantFlag(body.is_important)
+    const status = sanitizeProjectUpdateStatus(body.status, 'published')
 
     if (!projectId || !isValidUUID(projectId)) {
       return NextResponse.json({ error: 'Valid project_id is required' }, { status: 400 })
@@ -132,6 +147,9 @@ export async function POST(request: NextRequest) {
     }
     if (isImportant === null) {
       return NextResponse.json({ error: 'is_important must be boolean when provided' }, { status: 400 })
+    }
+    if (!status) {
+      return NextResponse.json({ error: 'status must be draft or published' }, { status: 400 })
     }
 
     const project = await getProject(projectId)
@@ -160,23 +178,27 @@ export async function POST(request: NextRequest) {
         content,
         version_label: versionLabel,
         is_important: isImportant,
+        status,
+        published_at: status === 'published' ? new Date().toISOString() : null,
       })
       .select('*')
       .single()
 
     if (error) throw error
 
-    notifyFollowersProjectUpdate({
-      creatorId: currentUser.id,
-      projectId,
-      updateId: update.id,
-      projectTitle: project.title,
-      content,
-      versionLabel,
-      isImportant,
-    }).catch((notifyError) => {
-      console.error('Failed to notify followers for project update:', notifyError)
-    })
+    if (shouldNotifyForProjectUpdateTransition({ previousStatus: null, nextStatus: status })) {
+      notifyFollowersProjectUpdate({
+        creatorId: currentUser.id,
+        projectId,
+        updateId: update.id,
+        projectTitle: project.title,
+        content,
+        versionLabel,
+        isImportant,
+      }).catch((notifyError) => {
+        console.error('Failed to notify followers for project update:', notifyError)
+      })
+    }
 
     return NextResponse.json({ update }, { status: 201 })
   } catch (error) {
@@ -194,18 +216,35 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
     const id = typeof body.id === 'string' ? body.id : ''
+    const hasContentField = Object.prototype.hasOwnProperty.call(body, 'content')
+    const hasVersionLabelField = Object.prototype.hasOwnProperty.call(body, 'version_label')
     const hasImportantField = Object.prototype.hasOwnProperty.call(body, 'is_important')
-    const isImportant = sanitizeProjectUpdateImportantFlag(body.is_important)
+    const hasStatusField = Object.prototype.hasOwnProperty.call(body, 'status')
+
+    const content = hasContentField ? sanitizeProjectUpdateContent(body.content) : undefined
+    const versionLabel = hasVersionLabelField ? sanitizeProjectUpdateVersionLabel(body.version_label) : undefined
+    const isImportant = hasImportantField ? sanitizeProjectUpdateImportantFlag(body.is_important) : undefined
+    const status = hasStatusField ? sanitizeProjectUpdateStatus(body.status, 'published') : undefined
+
     if (!id || !isValidUUID(id)) {
       return NextResponse.json({ error: 'Valid id is required' }, { status: 400 })
     }
-    if (!hasImportantField || isImportant === null) {
-      return NextResponse.json({ error: 'is_important must be a required boolean' }, { status: 400 })
+    if (!hasContentField && !hasVersionLabelField && !hasImportantField && !hasStatusField) {
+      return NextResponse.json({ error: 'At least one field is required' }, { status: 400 })
+    }
+    if (hasContentField && !content) {
+      return NextResponse.json({ error: 'content must be a non-empty string' }, { status: 400 })
+    }
+    if (hasImportantField && isImportant === null) {
+      return NextResponse.json({ error: 'is_important must be boolean when provided' }, { status: 400 })
+    }
+    if (hasStatusField && !status) {
+      return NextResponse.json({ error: 'status must be draft or published' }, { status: 400 })
     }
 
     const { data: existingUpdate } = await supabaseAdmin
       .from('project_updates')
-      .select('id, project_id, user_id, is_important')
+      .select('id, project_id, user_id, content, version_label, is_important, status, published_at')
       .eq('id', id)
       .single()
     if (!existingUpdate) {
@@ -231,13 +270,47 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    const nextStatus = status || existingUpdate.status
+    const updatePayload: Record<string, unknown> = {}
+    if (hasContentField) updatePayload.content = content
+    if (hasVersionLabelField) updatePayload.version_label = versionLabel || null
+    if (hasImportantField) updatePayload.is_important = isImportant
+    if (hasStatusField) updatePayload.status = nextStatus
+    if (
+      shouldNotifyForProjectUpdateTransition({
+        previousStatus: existingUpdate.status === 'draft' ? 'draft' : 'published',
+        nextStatus: nextStatus === 'draft' ? 'draft' : 'published',
+      })
+    ) {
+      updatePayload.published_at = new Date().toISOString()
+    }
+
     const { data: updated, error } = await supabaseAdmin
       .from('project_updates')
-      .update({ is_important: isImportant })
+      .update(updatePayload)
       .eq('id', id)
       .select('*')
       .single()
     if (error) throw error
+
+    if (
+      shouldNotifyForProjectUpdateTransition({
+        previousStatus: existingUpdate.status === 'draft' ? 'draft' : 'published',
+        nextStatus: (updated.status || 'published') === 'draft' ? 'draft' : 'published',
+      })
+    ) {
+      notifyFollowersProjectUpdate({
+        creatorId: currentUser.id,
+        projectId: updated.project_id,
+        updateId: updated.id,
+        projectTitle: project.title,
+        content: updated.content,
+        versionLabel: updated.version_label,
+        isImportant: updated.is_important,
+      }).catch((notifyError) => {
+        console.error('Failed to notify followers for published draft update:', notifyError)
+      })
+    }
 
     return NextResponse.json({ update: updated })
   } catch (error) {
