@@ -62,6 +62,11 @@ type ProjectAccessInlineState = {
 }
 
 type ProjectAccessExpiryPreset = 'never' | '24h' | '7d'
+type ProjectAccessSearchResult = {
+  id: string
+  username: string | null
+  avatar_url: string | null
+}
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -106,6 +111,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [projectAccessGrants, setProjectAccessGrants] = useState<ProjectAccessGrant[]>([])
   const [projectAccessLoading, setProjectAccessLoading] = useState(false)
   const [projectAccessIdentifierInput, setProjectAccessIdentifierInput] = useState('')
+  const [projectAccessSelectedUser, setProjectAccessSelectedUser] = useState<ProjectAccessSearchResult | null>(null)
+  const [projectAccessSearchResults, setProjectAccessSearchResults] = useState<ProjectAccessSearchResult[]>([])
+  const [projectAccessSearchLoading, setProjectAccessSearchLoading] = useState(false)
+  const [projectAccessSearchError, setProjectAccessSearchError] = useState<string | null>(null)
   const [projectAccessSaving, setProjectAccessSaving] = useState(false)
   const [projectAccessInlineState, setProjectAccessInlineState] = useState<ProjectAccessInlineState | null>(null)
   const [projectAccessExpiryPreset, setProjectAccessExpiryPreset] = useState<ProjectAccessExpiryPreset>('never')
@@ -399,15 +408,114 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id, project?.visibility, project?.sharing_enabled, isCreator])
 
+  const emitProjectAccessSearchEvent = (detail: {
+    action: 'search' | 'select_result' | 'grant_from_result'
+    query_length: number
+    result_count?: number
+    target_user_id?: string | null
+  }) => {
+    if (!project?.id || typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('project_access_search_event', {
+        detail: {
+          schema: 'project_access_search.v1',
+          action: detail.action,
+          project_id: project.id,
+          query_length: detail.query_length,
+          result_count: detail.result_count ?? null,
+          target_user_id: detail.target_user_id ?? null,
+          source: 'project_detail_settings',
+        },
+      })
+    )
+  }
+
+  useEffect(() => {
+    const visibility = resolveProjectVisibility(project?.visibility, project?.sharing_enabled)
+    if (!isCreator || visibility !== 'private') return
+
+    const query = projectAccessIdentifierInput.trim()
+    if (projectAccessSelectedUser && query === (projectAccessSelectedUser.username || projectAccessSelectedUser.id)) {
+      return
+    }
+    if (query.length < 2) {
+      setProjectAccessSearchResults([])
+      setProjectAccessSearchError(null)
+      setProjectAccessSearchLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const timeoutId = window.setTimeout(async () => {
+      setProjectAccessSearchLoading(true)
+      setProjectAccessSearchError(null)
+      try {
+        const token = await getAccessToken()
+        if (!token) throw new Error('Not authenticated')
+        const response = await fetch(
+          `/api/users/search?q=${encodeURIComponent(query)}&limit=8`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Failed to search users')
+        if (cancelled) return
+        const users = (result.users || []) as ProjectAccessSearchResult[]
+        setProjectAccessSearchResults(users)
+        emitProjectAccessSearchEvent({
+          action: 'search',
+          query_length: query.length,
+          result_count: users.length,
+        })
+      } catch (error) {
+        if (cancelled) return
+        console.error('Error searching users for project access:', error)
+        setProjectAccessSearchResults([])
+        setProjectAccessSearchError(
+          error instanceof Error ? error.message : 'Failed to search users'
+        )
+        emitProjectAccessSearchEvent({
+          action: 'search',
+          query_length: query.length,
+          result_count: 0,
+        })
+      } finally {
+        if (!cancelled) setProjectAccessSearchLoading(false)
+      }
+    }, 300)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+    }
+  }, [
+    isCreator,
+    project?.visibility,
+    project?.sharing_enabled,
+    projectAccessIdentifierInput,
+    projectAccessSelectedUser,
+    getAccessToken,
+  ])
+
   const handleGrantProjectAccess = async () => {
     if (!project?.id || !isCreator) return
     const projectIdForEvent = project.id
     const projectCreatorIdForEvent = project.creator_id
-    const identifier = projectAccessIdentifierInput.trim()
+    const selectedUserId = projectAccessSelectedUser?.id || null
+    const identifier = selectedUserId || projectAccessIdentifierInput.trim()
     if (!identifier) {
       setProjectAccessInlineState({
         tone: 'error',
         message: 'Enter a username, email, or user ID.',
+      })
+      return
+    }
+    if (
+      selectedUserId &&
+      projectAccessGrants.some((grant) => grant.user_id === selectedUserId)
+    ) {
+      setProjectAccessInlineState({
+        tone: 'error',
+        message: 'That user already has access.',
       })
       return
     }
@@ -489,6 +597,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       }
 
       setProjectAccessIdentifierInput('')
+      setProjectAccessSelectedUser(null)
+      setProjectAccessSearchResults([])
+      setProjectAccessSearchError(null)
       await loadProjectAccessGrants(projectIdForEvent)
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
@@ -544,6 +655,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               },
             })
           )
+        }
+        if (selectedUserId) {
+          emitProjectAccessSearchEvent({
+            action: 'grant_from_result',
+            query_length: projectAccessIdentifierInput.trim().length,
+            target_user_id: selectedUserId,
+          })
         }
       }
       if (result.grant_action === 'unchanged') {
@@ -2142,22 +2260,74 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <div className="text-sm text-gray-400" style={{ marginTop: '6px', marginBottom: '12px' }}>
                     Grant view access by username, email, or user ID.
                   </div>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="text"
-                      placeholder="username, email, or user_id"
-                      value={projectAccessIdentifierInput}
-                      onChange={(event) => setProjectAccessIdentifierInput(event.target.value)}
-                      className="flex-1 bg-black border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-neon-green"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleGrantProjectAccess}
-                      disabled={projectAccessSaving || !projectAccessIdentifierInput.trim()}
-                      className="px-3 py-2 rounded bg-neon-green text-black text-sm font-medium disabled:opacity-50"
-                    >
-                      Grant
-                    </button>
+                  <div className="mb-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Search username (or type username/email/user_id)"
+                        value={projectAccessIdentifierInput}
+                        onChange={(event) => {
+                          const value = event.target.value
+                          setProjectAccessIdentifierInput(value)
+                          if (
+                            projectAccessSelectedUser &&
+                            value !== (projectAccessSelectedUser.username || projectAccessSelectedUser.id)
+                          ) {
+                            setProjectAccessSelectedUser(null)
+                          }
+                        }}
+                        className="flex-1 bg-black border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-neon-green"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleGrantProjectAccess}
+                        disabled={projectAccessSaving || !projectAccessIdentifierInput.trim()}
+                        className="px-3 py-2 rounded bg-neon-green text-black text-sm font-medium disabled:opacity-50"
+                      >
+                        Grant
+                      </button>
+                    </div>
+                    {projectAccessSearchLoading ? (
+                      <p className="text-xs text-gray-500 mt-2">Searching users...</p>
+                    ) : projectAccessSearchError ? (
+                      <p className="text-xs text-red-400 mt-2">{projectAccessSearchError}</p>
+                    ) : projectAccessIdentifierInput.trim().length >= 2 &&
+                      !projectAccessSelectedUser &&
+                      projectAccessSearchResults.length === 0 ? (
+                      <p className="text-xs text-gray-500 mt-2">No matching users. You can still grant by manual identifier.</p>
+                    ) : null}
+                    {!projectAccessSelectedUser && projectAccessSearchResults.length > 0 ? (
+                      <ul className="mt-2 border border-gray-800 rounded bg-black/80 max-h-44 overflow-y-auto">
+                        {projectAccessSearchResults.map((candidate) => (
+                          <li key={candidate.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const label = candidate.username || candidate.id
+                                setProjectAccessIdentifierInput(label)
+                                setProjectAccessSelectedUser(candidate)
+                                setProjectAccessSearchResults([])
+                                setProjectAccessSearchError(null)
+                                emitProjectAccessSearchEvent({
+                                  action: 'select_result',
+                                  query_length: projectAccessIdentifierInput.trim().length,
+                                  result_count: projectAccessSearchResults.length,
+                                  target_user_id: candidate.id,
+                                })
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-gray-900 flex items-center gap-2"
+                            >
+                              <span className="w-5 h-5 rounded-full bg-gray-700 inline-flex items-center justify-center text-[10px] text-gray-300">
+                                {(candidate.username || 'U').slice(0, 1).toUpperCase()}
+                              </span>
+                              <span className="text-sm text-white truncate">
+                                {candidate.username || candidate.id}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </div>
                   <div className="flex gap-2 mb-3">
                     <button
