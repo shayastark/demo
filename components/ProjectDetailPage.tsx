@@ -13,6 +13,7 @@ import ProjectUpdatesPanel from './ProjectUpdatesPanel'
 import TipPromptCard from './TipPromptCard'
 import TopSupportersCard from './TopSupportersCard'
 import ProjectAttachmentsPanel from './ProjectAttachmentsPanel'
+import ProjectActivityPanel from './ProjectActivityPanel'
 import ProjectSubscriptionToggle from './ProjectSubscriptionToggle'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
@@ -2858,6 +2859,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             authenticated={!!user}
             getAccessToken={getAccessToken}
             onRequireAuth={() => showToast('Please sign in to post updates.', 'error')}
+            source="project_detail"
+          />
+          <ProjectActivityPanel
+            projectId={project.id}
+            authenticated={!!user}
+            getAccessToken={getAccessToken}
+            onRequireAuth={() => showToast('Please sign in to view project activity.', 'error')}
             source="project_detail"
           />
           <ProjectAttachmentsPanel
