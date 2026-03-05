@@ -32,6 +32,25 @@ test('sortNotificationsForInbox keeps unread first then created_at desc', () => 
   assert.deepEqual(sorted.map((item) => item.id), ['unread-newer', 'unread-older', 'read-newer'])
 })
 
+test('sortNotificationsForInbox prioritizes high-signal types within unread', () => {
+  const notifications: InboxNotification[] = [
+    { ...baseNotification, id: 'plain', type: 'project_saved', is_read: false, created_at: '2026-03-05T12:00:00.000Z' },
+    { ...baseNotification, id: 'follower', type: 'new_follower', is_read: false, created_at: '2026-03-05T11:00:00.000Z' },
+    { ...baseNotification, id: 'tip', type: 'tip_received', is_read: false, created_at: '2026-03-05T10:00:00.000Z' },
+  ]
+  const sorted = sortNotificationsForInbox(notifications)
+  assert.deepEqual(sorted.map((item) => item.id), ['tip', 'follower', 'plain'])
+})
+
+test('sortNotificationsForInbox can disable unread prioritization', () => {
+  const notifications: InboxNotification[] = [
+    { ...baseNotification, id: 'read-tip', type: 'tip_received', is_read: true, created_at: '2026-03-05T09:00:00.000Z' },
+    { ...baseNotification, id: 'unread-plain', type: 'project_saved', is_read: false, created_at: '2026-03-05T12:00:00.000Z' },
+  ]
+  const sorted = sortNotificationsForInbox(notifications, false)
+  assert.deepEqual(sorted.map((item) => item.id), ['read-tip', 'unread-plain'])
+})
+
 test('getNotificationPrimaryText formats new follower copy', () => {
   const notification: InboxNotification = {
     ...baseNotification,

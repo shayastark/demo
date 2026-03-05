@@ -26,10 +26,26 @@ function toTimestamp(iso: string): number {
   return Number.isFinite(value) ? value : 0
 }
 
-export function sortNotificationsForInbox<T extends InboxNotification>(items: T[]): T[] {
+function getHighSignalScore(notification: InboxNotification): number {
+  const normalizedType = normalizeNotificationType(notification.type)
+  if (isProjectAccessInviteNotification(notification)) return 4
+  if (normalizedType === 'tip_received') return 3
+  if (normalizedType === 'new_follower') return 2
+  if (normalizedType === 'new_track') return 1
+  return 0
+}
+
+export function sortNotificationsForInbox<T extends InboxNotification>(
+  items: T[],
+  prioritizeUnread = true
+): T[] {
   return [...items].sort((a, b) => {
-    if (a.is_read !== b.is_read) return a.is_read ? 1 : -1
-    return toTimestamp(b.created_at) - toTimestamp(a.created_at)
+    if (prioritizeUnread && a.is_read !== b.is_read) return a.is_read ? 1 : -1
+    const signalDiff = getHighSignalScore(b) - getHighSignalScore(a)
+    if (signalDiff !== 0) return signalDiff
+    const timeDiff = toTimestamp(b.created_at) - toTimestamp(a.created_at)
+    if (timeDiff !== 0) return timeDiff
+    return b.id.localeCompare(a.id)
   })
 }
 

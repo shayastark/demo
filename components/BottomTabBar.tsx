@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Home, ListMusic, User, X, Play, Pause, Trash2, SkipForward, SkipBack, Bell, Check, DollarSign, Trash, UserPlus, Music2, Share2, Compass } from 'lucide-react'
@@ -17,6 +17,11 @@ import {
   isProjectAccessInviteNotification,
   sortNotificationsForInbox,
 } from '@/lib/notificationInbox'
+import {
+  getNotificationSnoozeScopeKey,
+  splitNotificationsBySnooze,
+  type NotificationSnoozeRow,
+} from '@/lib/notificationSnooze'
 
 // Create a Supabase client for realtime subscriptions
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -80,6 +85,9 @@ export default function BottomTabBar() {
   const [notificationDigestWindow, setNotificationDigestWindow] = useState<NotificationDigestWindow>('daily')
   const [digestGroups, setDigestGroups] = useState<NotificationDigestGroup[]>([])
   const [digestLoading, setDigestLoading] = useState(false)
+  const [snoozes, setSnoozes] = useState<NotificationSnoozeRow[]>([])
+  const [showSnoozed, setShowSnoozed] = useState(false)
+  const [unreadPriorityEnabled, setUnreadPriorityEnabled] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   
   // Queue playback state
@@ -198,6 +206,27 @@ export default function BottomTabBar() {
       )
     },
     [notificationDeliveryMode, notificationDigestWindow]
+  )
+
+  const emitNotificationControlEvent = useCallback(
+    (
+      action: 'snooze' | 'unsnooze' | 'view_snoozed' | 'open_unread_priority',
+      payload?: { scopeKey?: string; snoozeDuration?: '24h' | '7d' | null }
+    ) => {
+      if (typeof window === 'undefined') return
+      window.dispatchEvent(
+        new CustomEvent('notification_control_event', {
+          detail: {
+            schema: 'notification_control.v1',
+            action,
+            scope_key: payload?.scopeKey || null,
+            snooze_duration: payload?.snoozeDuration || null,
+            source: 'bottom_tab_bar',
+          },
+        })
+      )
+    },
+    []
   )
 
   // Detect mobile
@@ -813,6 +842,25 @@ export default function BottomTabBar() {
     }
   }, [authenticated, getAccessToken, notificationDigestWindow, emitNotificationDigestEvent])
 
+  const fetchNotificationSnoozes = useCallback(async () => {
+    if (!authenticated) return
+    try {
+      const token = await getAccessToken()
+      const response = await fetch('/api/notifications/snooze', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) {
+        setSnoozes([])
+        return
+      }
+      const data = await response.json()
+      setSnoozes((data.snoozes || []) as NotificationSnoozeRow[])
+    } catch (error) {
+      console.error('Error loading notification snoozes:', error)
+      setSnoozes([])
+    }
+  }, [authenticated, getAccessToken])
+
   // Fetch user ID for realtime subscription
   useEffect(() => {
     const fetchUserId = async () => {
@@ -843,8 +891,9 @@ export default function BottomTabBar() {
     if (authenticated) {
       fetchNotifications()
       fetchNotificationDeliveryPreferences()
+      fetchNotificationSnoozes()
     }
-  }, [authenticated, fetchNotifications, fetchNotificationDeliveryPreferences])
+  }, [authenticated, fetchNotifications, fetchNotificationDeliveryPreferences, fetchNotificationSnoozes])
 
   useEffect(() => {
     if (!authenticated || notificationDeliveryMode !== 'digest') return
@@ -961,6 +1010,66 @@ export default function BottomTabBar() {
       console.error('Error deleting notification:', error)
     }
   }
+
+  const snoozeNotificationScope = async (
+    notification: Notification,
+    duration: '24h' | '7d'
+  ) => {
+    if (!authenticated) return
+    const scopeKey = getNotificationSnoozeScopeKey(notification)
+    try {
+      const token = await getAccessToken()
+      const response = await fetch('/api/notifications/snooze', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ scope_key: scopeKey, duration }),
+      })
+      if (!response.ok) throw new Error('Failed to snooze')
+      emitNotificationControlEvent('snooze', {
+        scopeKey,
+        snoozeDuration: duration,
+      })
+      await fetchNotificationSnoozes()
+    } catch (error) {
+      console.error('Error snoozing notification scope:', error)
+    }
+  }
+
+  const unsnoozeScope = async (scopeKey: string) => {
+    if (!authenticated) return
+    try {
+      const token = await getAccessToken()
+      const response = await fetch('/api/notifications/snooze', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ scope_key: scopeKey }),
+      })
+      if (!response.ok) throw new Error('Failed to unsnooze')
+      emitNotificationControlEvent('unsnooze', {
+        scopeKey,
+      })
+      await fetchNotificationSnoozes()
+    } catch (error) {
+      console.error('Error unsnoozing notification scope:', error)
+    }
+  }
+
+  const { activeNotifications, snoozedNotifications } = useMemo(() => {
+    const split = splitNotificationsBySnooze({
+      notifications,
+      snoozes,
+    })
+    return {
+      activeNotifications: sortNotificationsForInbox(split.active, unreadPriorityEnabled),
+      snoozedNotifications: sortNotificationsForInbox(split.snoozed, true),
+    }
+  }, [notifications, snoozes, unreadPriorityEnabled])
 
   const updateNotificationDigestMode = async (
     mode: NotificationDeliveryMode,
@@ -1148,11 +1257,12 @@ export default function BottomTabBar() {
       setIsNotificationsOpen(true)
       emitNotificationEvent('open')
       fetchNotificationDeliveryPreferences()
+      fetchNotificationSnoozes()
       if (notificationDeliveryMode === 'digest') {
         fetchDigestGroups()
       }
       // Mark first 5 unread as read when opening
-      const unreadIds = notifications.filter((n) => !n.is_read).slice(0, 5).map((n) => n.id)
+      const unreadIds = activeNotifications.filter((n) => !n.is_read).slice(0, 5).map((n) => n.id)
       if (unreadIds.length > 0) {
         markNotificationsAsRead(unreadIds)
       }
@@ -2132,9 +2242,57 @@ export default function BottomTabBar() {
               </div>
             </div>
 
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 20px',
+                borderBottom: '1px solid #1f2937',
+              }}
+            >
+              <button
+                onClick={() => {
+                  const next = !unreadPriorityEnabled
+                  setUnreadPriorityEnabled(next)
+                  if (next) emitNotificationControlEvent('open_unread_priority')
+                }}
+                style={{
+                  padding: '5px 9px',
+                  borderRadius: '8px',
+                  border: '1px solid',
+                  borderColor: unreadPriorityEnabled ? '#39FF14' : '#374151',
+                  color: unreadPriorityEnabled ? '#39FF14' : '#9ca3af',
+                  backgroundColor: 'transparent',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}
+              >
+                Unread Priority {unreadPriorityEnabled ? 'On' : 'Off'}
+              </button>
+              <button
+                onClick={() => {
+                  const next = !showSnoozed
+                  setShowSnoozed(next)
+                  if (next) emitNotificationControlEvent('view_snoozed')
+                }}
+                style={{
+                  padding: '5px 9px',
+                  borderRadius: '8px',
+                  border: '1px solid #374151',
+                  color: '#9ca3af',
+                  backgroundColor: 'transparent',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}
+              >
+                {showSnoozed ? 'Hide Snoozed' : `Show Snoozed (${snoozedNotifications.length})`}
+              </button>
+            </div>
+
             {/* Notifications Content */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {notificationsLoading && notifications.length === 0 ? (
+              {notificationsLoading && activeNotifications.length === 0 ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 20px' }}>
                   <div style={{ 
                     width: '24px', 
@@ -2145,14 +2303,16 @@ export default function BottomTabBar() {
                     animation: 'spin 1s linear infinite',
                   }} />
                 </div>
-              ) : notifications.length === 0 ? (
+              ) : activeNotifications.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 20px' }}>
                   <Bell style={{ width: '48px', height: '48px', color: '#4b5563', margin: '0 auto 16px' }} />
                   <p style={{ color: '#9ca3af', fontSize: '16px', marginBottom: '8px' }}>
-                    No notifications yet
+                    {snoozedNotifications.length > 0 ? 'All notifications are snoozed' : 'No notifications yet'}
                   </p>
                   <p style={{ color: '#6b7280', fontSize: '14px' }}>
-                    You&apos;ll be notified when you receive tips
+                    {snoozedNotifications.length > 0
+                      ? 'Use "Show Snoozed" to manage hidden items.'
+                      : 'You&apos;ll be notified when you receive tips'}
                   </p>
                 </div>
               ) : (
@@ -2201,7 +2361,7 @@ export default function BottomTabBar() {
                       )}
                     </div>
                   ) : null}
-                  {notifications.map((notification) => (
+                  {activeNotifications.map((notification) => (
                     <div
                       key={notification.id}
                       style={{
@@ -2289,6 +2449,38 @@ export default function BottomTabBar() {
                         
                         {/* Actions */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <button
+                            onClick={() => snoozeNotificationScope(notification, '24h')}
+                            style={{
+                              padding: '6px 8px',
+                              borderRadius: '8px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #374151',
+                              color: '#9ca3af',
+                              cursor: 'pointer',
+                              fontSize: '11px',
+                              lineHeight: 1.2,
+                            }}
+                            title="Snooze this group for 24h"
+                          >
+                            24h
+                          </button>
+                          <button
+                            onClick={() => snoozeNotificationScope(notification, '7d')}
+                            style={{
+                              padding: '6px 8px',
+                              borderRadius: '8px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #374151',
+                              color: '#9ca3af',
+                              cursor: 'pointer',
+                              fontSize: '11px',
+                              lineHeight: 1.2,
+                            }}
+                            title="Snooze this group for 7d"
+                          >
+                            7d
+                          </button>
                           {targetPath && (
                             <button
                               onClick={() => handleNotificationClick(notification)}
@@ -2342,6 +2534,56 @@ export default function BottomTabBar() {
                       </div>
                     </div>
                   ))}
+
+                  {showSnoozed && snoozedNotifications.length > 0 ? (
+                    <div style={{ borderTop: '1px solid #1f2937' }}>
+                      <p
+                        style={{
+                          color: '#9ca3af',
+                          fontSize: '11px',
+                          margin: 0,
+                          padding: '12px 20px 6px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        Snoozed
+                      </p>
+                      {snoozedNotifications.map((notification) => {
+                        const scopeKey = getNotificationSnoozeScopeKey(notification)
+                        return (
+                          <div
+                            key={`snoozed-${notification.id}`}
+                            style={{
+                              padding: '12px 20px',
+                              borderBottom: '1px solid #1f2937',
+                              opacity: 0.85,
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                              <p style={{ color: '#d1d5db', fontSize: '13px', margin: 0 }}>
+                                {getNotificationPrimaryText(notification)}
+                              </p>
+                              <button
+                                onClick={() => unsnoozeScope(scopeKey)}
+                                style={{
+                                  padding: '5px 8px',
+                                  borderRadius: '8px',
+                                  backgroundColor: 'transparent',
+                                  border: '1px solid #374151',
+                                  color: '#9ca3af',
+                                  cursor: 'pointer',
+                                  fontSize: '11px',
+                                }}
+                              >
+                                Unsnooze
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
