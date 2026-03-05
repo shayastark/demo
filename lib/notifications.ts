@@ -528,3 +528,83 @@ export async function notifyPrivateProjectAccessGranted({
     notification_type: notificationType,
   }
 }
+
+export async function notifyPrivateProjectAccessRequestCreated({
+  creatorUserId,
+  requesterUserId,
+  requesterName,
+  projectId,
+  projectTitle,
+  note,
+}: {
+  creatorUserId: string
+  requesterUserId: string
+  requesterName?: string | null
+  projectId: string
+  projectTitle?: string | null
+  note?: string | null
+}): Promise<{ success: boolean; skippedPreference?: boolean }> {
+  const requesterDisplayName = getProjectAccessGrantorName(requesterName)
+  const result = await createNotification({
+    userId: creatorUserId,
+    type: 'new_track',
+    title: `${requesterDisplayName} requested access to "${projectTitle || 'your private project'}"`,
+    message: note?.trim() ? note.trim().slice(0, 160) : 'Review this request in your project settings.',
+    data: {
+      context: 'project_access_request',
+      project_id: projectId,
+      project_title: projectTitle || null,
+      requester_user_id: requesterUserId,
+      requester_name: requesterDisplayName,
+      targetPath: `${buildProjectAccessInviteTargetPath(projectId)}?access_requests=1`,
+      projectId,
+      projectTitle: projectTitle || null,
+      requesterUserId,
+      requesterName: requesterDisplayName,
+    },
+  })
+
+  return { success: result.success, skippedPreference: result.skippedPreference }
+}
+
+export async function notifyPrivateProjectAccessRequestReviewed({
+  requesterUserId,
+  reviewerUserId,
+  reviewerName,
+  projectId,
+  projectTitle,
+  decision,
+}: {
+  requesterUserId: string
+  reviewerUserId: string
+  reviewerName?: string | null
+  projectId: string
+  projectTitle?: string | null
+  decision: 'approved' | 'denied'
+}): Promise<{ success: boolean; skippedPreference?: boolean }> {
+  const reviewerDisplayName = getProjectAccessGrantorName(reviewerName)
+  const isApproved = decision === 'approved'
+  const result = await createNotification({
+    userId: requesterUserId,
+    type: 'new_track',
+    title: isApproved
+      ? `${reviewerDisplayName} approved your access request`
+      : `${reviewerDisplayName} denied your access request`,
+    message: projectTitle ? `Project: "${projectTitle}"` : 'Project access request update',
+    data: {
+      context: 'project_access_request_reviewed',
+      decision,
+      project_id: projectId,
+      project_title: projectTitle || null,
+      reviewer_user_id: reviewerUserId,
+      reviewer_name: reviewerDisplayName,
+      targetPath: buildProjectAccessInviteTargetPath(projectId),
+      projectId,
+      projectTitle: projectTitle || null,
+      reviewerUserId,
+      reviewerName: reviewerDisplayName,
+    },
+  })
+
+  return { success: result.success, skippedPreference: result.skippedPreference }
+}

@@ -71,6 +71,13 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const projectMenuRef = useRef<HTMLDivElement>(null)
   const [isCreatorViewer, setIsCreatorViewer] = useState(false)
   const [tipPromptTrigger, setTipPromptTrigger] = useState<TipPromptTrigger | null>(null)
+  const [blockedPrivateAccess, setBlockedPrivateAccess] = useState<{
+    projectId: string
+    projectTitle: string | null
+    requestStatus: 'pending' | 'approved' | 'denied' | null
+  } | null>(null)
+  const [accessRequestNote, setAccessRequestNote] = useState('')
+  const [requestingAccess, setRequestingAccess] = useState(false)
 
   // Detect mobile vs desktop
   useEffect(() => {
@@ -283,11 +290,28 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       })
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        if (response.status === 403 && errorData?.code === 'private_access_required') {
+          setBlockedPrivateAccess({
+            projectId: typeof errorData.project_id === 'string' ? errorData.project_id : '',
+            projectTitle:
+              typeof errorData.project_title === 'string' ? errorData.project_title : null,
+            requestStatus:
+              errorData.request_status === 'pending' ||
+              errorData.request_status === 'approved' ||
+              errorData.request_status === 'denied'
+                ? errorData.request_status
+                : null,
+          })
+        } else {
+          setBlockedPrivateAccess(null)
+        }
         setProject(null)
         setLoading(false)
         return
       }
       const { project: projectData } = await response.json()
+      setBlockedPrivateAccess(null)
       setProject(projectData)
 
       // Fetch creator's username
@@ -321,6 +345,57 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       console.error('Error loading project:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRequestAccess = async () => {
+    if (!blockedPrivateAccess?.projectId) return
+    if (!authenticated) {
+      login()
+      return
+    }
+    setRequestingAccess(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-access-requests', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: blockedPrivateAccess.projectId,
+          note: accessRequestNote || null,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to request access')
+      setBlockedPrivateAccess({
+        ...blockedPrivateAccess,
+        requestStatus: 'pending',
+      })
+      setAccessRequestNote('')
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_request_event', {
+            detail: {
+              schema: 'project_access_request.v1',
+              action: 'request_create',
+              project_id: blockedPrivateAccess.projectId,
+              requester_user_id: result?.request?.requester_user_id || null,
+              reviewer_user_id: null,
+              source: 'shared_project_blocked',
+            },
+          })
+        )
+      }
+      showToast('Access request sent', 'success')
+    } catch (error) {
+      console.error('Error requesting private project access:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to request access', 'error')
+    } finally {
+      setRequestingAccess(false)
     }
   }
 
@@ -587,6 +662,48 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }
 
   if (!project) {
+    if (blockedPrivateAccess?.projectId) {
+      return (
+        <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h1 className="text-xl font-semibold text-white mb-2">
+              Private project
+            </h1>
+            <p className="text-sm text-gray-400 mb-4">
+              {blockedPrivateAccess.projectTitle
+                ? `You need access to open "${blockedPrivateAccess.projectTitle}".`
+                : 'You need access to open this private project.'}
+            </p>
+            <textarea
+              value={accessRequestNote}
+              onChange={(event) => setAccessRequestNote(event.target.value)}
+              placeholder="Optional note to the creator"
+              rows={3}
+              className="w-full bg-black border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green mb-3"
+            />
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleRequestAccess}
+                disabled={requestingAccess}
+                className="px-4 py-2 rounded bg-neon-green text-black text-sm font-semibold disabled:opacity-50"
+              >
+                {requestingAccess ? 'Requesting...' : 'Request Access'}
+              </button>
+              <span className="text-xs text-gray-500">
+                {blockedPrivateAccess.requestStatus === 'pending'
+                  ? 'Status: Pending'
+                  : blockedPrivateAccess.requestStatus === 'approved'
+                    ? 'Status: Approved'
+                    : blockedPrivateAccess.requestStatus === 'denied'
+                      ? 'Status: Denied'
+                      : 'No request yet'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">

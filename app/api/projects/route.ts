@@ -52,6 +52,31 @@ export async function GET(request: NextRequest) {
         isDirectAccess: !!shareToken,
       })
       if (!canAccess) {
+        if (resolvedVisibility === 'private') {
+          let requestStatus: 'pending' | 'approved' | 'denied' | null = null
+          if (optionalUser && optionalUser.id !== project.creator_id) {
+            const { data: accessRequest } = await supabaseAdmin
+              .from('project_access_requests')
+              .select('status')
+              .eq('project_id', project.id)
+              .eq('requester_user_id', optionalUser.id)
+              .maybeSingle()
+            const rawStatus = accessRequest?.status
+            if (rawStatus === 'pending' || rawStatus === 'approved' || rawStatus === 'denied') {
+              requestStatus = rawStatus
+            }
+          }
+          return NextResponse.json(
+            {
+              error: 'Private project access required',
+              code: 'private_access_required',
+              project_id: project.id,
+              project_title: project.title || null,
+              request_status: requestStatus,
+            },
+            { status: 403 }
+          )
+        }
         return NextResponse.json({ error: 'Project not found' }, { status: 404 })
       }
 

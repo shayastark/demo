@@ -41,6 +41,17 @@ type ProjectAccessGrant = {
   email?: string | null
 }
 
+type ProjectAccessRequest = {
+  id: string
+  project_id: string
+  requester_user_id: string
+  requester_username?: string | null
+  requester_email?: string | null
+  status: 'pending' | 'approved' | 'denied'
+  note: string | null
+  created_at: string
+}
+
 type ProjectAccessIdentifierType = 'username' | 'email' | 'user_id'
 
 type ProjectAccessInlineState = {
@@ -96,6 +107,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [projectAccessSaving, setProjectAccessSaving] = useState(false)
   const [projectAccessInlineState, setProjectAccessInlineState] = useState<ProjectAccessInlineState | null>(null)
   const [projectAccessExpiryPreset, setProjectAccessExpiryPreset] = useState<ProjectAccessExpiryPreset>('never')
+  const [projectAccessRequests, setProjectAccessRequests] = useState<ProjectAccessRequest[]>([])
+  const [projectAccessRequestsLoading, setProjectAccessRequestsLoading] = useState(false)
+  const [blockedPrivateAccess, setBlockedPrivateAccess] = useState<{
+    projectId: string
+    projectTitle: string | null
+    requestStatus: 'pending' | 'approved' | 'denied' | null
+  } | null>(null)
+  const [blockedAccessRequestNote, setBlockedAccessRequestNote] = useState('')
+  const [blockedAccessRequestSaving, setBlockedAccessRequestSaving] = useState(false)
   // Detect mobile vs desktop
   useEffect(() => {
     const checkMobile = () => {
@@ -148,15 +168,32 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        if (response.status === 403 && errorData?.code === 'private_access_required') {
+          setBlockedPrivateAccess({
+            projectId: typeof errorData.project_id === 'string' ? errorData.project_id : projectId,
+            projectTitle:
+              typeof errorData.project_title === 'string' ? errorData.project_title : null,
+            requestStatus:
+              errorData.request_status === 'pending' ||
+              errorData.request_status === 'approved' ||
+              errorData.request_status === 'denied'
+                ? errorData.request_status
+                : null,
+          })
+          setProject(null)
+          setLoading(false)
+          return
+        }
         if (response.status === 404) {
           setProject(null)
           setLoading(false)
           return
         }
-        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || 'Failed to load project')
       }
       const { project: projectData } = await response.json()
+      setBlockedPrivateAccess(null)
       setProject(projectData)
       
       // Set pinned state for creator's own projects
@@ -293,14 +330,52 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
   }
 
+  const loadProjectAccessRequests = async (targetProjectId: string) => {
+    if (!isCreator) return
+    setProjectAccessRequestsLoading(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) return
+      const response = await fetch(
+        `/api/project-access-requests?project_id=${encodeURIComponent(targetProjectId)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to load access requests')
+      setProjectAccessRequests((result.requests || []) as ProjectAccessRequest[])
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_request_event', {
+            detail: {
+              schema: 'project_access_request.v1',
+              action: 'request_view_list',
+              project_id: targetProjectId,
+              requester_user_id: null,
+              reviewer_user_id: project?.creator_id || null,
+              source: 'project_detail_settings',
+            },
+          })
+        )
+      }
+    } catch (error) {
+      console.error('Error loading project access requests:', error)
+    } finally {
+      setProjectAccessRequestsLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (!project?.id || !isCreator) return
     const visibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
     if (visibility !== 'private') {
       setProjectAccessGrants([])
+      setProjectAccessRequests([])
       return
     }
     loadProjectAccessGrants(project.id)
+    loadProjectAccessRequests(project.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id, project?.visibility, project?.sharing_enabled, isCreator])
 
@@ -482,6 +557,53 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
   }
 
+  const handleBlockedAccessRequest = async () => {
+    if (!blockedPrivateAccess?.projectId) return
+    setBlockedAccessRequestSaving(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Please sign in first')
+      const response = await fetch('/api/project-access-requests', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: blockedPrivateAccess.projectId,
+          note: blockedAccessRequestNote || null,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to request access')
+      setBlockedPrivateAccess({
+        ...blockedPrivateAccess,
+        requestStatus: 'pending',
+      })
+      setBlockedAccessRequestNote('')
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_request_event', {
+            detail: {
+              schema: 'project_access_request.v1',
+              action: 'request_create',
+              project_id: blockedPrivateAccess.projectId,
+              requester_user_id: result?.request?.requester_user_id || null,
+              reviewer_user_id: null,
+              source: 'project_detail_blocked',
+            },
+          })
+        )
+      }
+      showToast('Access request sent', 'success')
+    } catch (error) {
+      console.error('Error requesting access to private project:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to request access', 'error')
+    } finally {
+      setBlockedAccessRequestSaving(false)
+    }
+  }
+
   const handleRenewProjectAccess = async (targetUserId: string, hours: 24 | 168) => {
     if (!project?.id || !isCreator) return
     setProjectAccessSaving(true)
@@ -576,6 +698,52 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     } catch (error) {
       console.error('Error revoking project access:', error)
       showToast(error instanceof Error ? error.message : 'Failed to revoke access', 'error')
+    } finally {
+      setProjectAccessSaving(false)
+    }
+  }
+
+  const handleReviewAccessRequest = async (
+    requestId: string,
+    requesterUserId: string,
+    action: 'approve' | 'deny'
+  ) => {
+    if (!project?.id || !isCreator) return
+    setProjectAccessSaving(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-access-requests', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: requestId, action }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update request')
+
+      await Promise.all([loadProjectAccessRequests(project.id), loadProjectAccessGrants(project.id)])
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_request_event', {
+            detail: {
+              schema: 'project_access_request.v1',
+              action: action === 'approve' ? 'request_approve' : 'request_deny',
+              project_id: project.id,
+              requester_user_id: requesterUserId,
+              reviewer_user_id: project.creator_id,
+              source: 'project_detail_settings',
+            },
+          })
+        )
+      }
+      showToast(action === 'approve' ? 'Access request approved' : 'Access request denied', 'success')
+    } catch (error) {
+      console.error('Error reviewing access request:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to update request', 'error')
     } finally {
       setProjectAccessSaving(false)
     }
@@ -1419,6 +1587,46 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   }
 
   if (!project) {
+    if (blockedPrivateAccess?.projectId) {
+      return (
+        <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h1 className="text-xl font-semibold mb-2">Private project</h1>
+            <p className="text-sm text-gray-400 mb-4">
+              {blockedPrivateAccess.projectTitle
+                ? `Request access to "${blockedPrivateAccess.projectTitle}".`
+                : 'Request access to this private project.'}
+            </p>
+            <textarea
+              value={blockedAccessRequestNote}
+              onChange={(event) => setBlockedAccessRequestNote(event.target.value)}
+              placeholder="Optional note to the creator"
+              rows={3}
+              className="w-full bg-black border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green mb-3"
+            />
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleBlockedAccessRequest}
+                disabled={blockedAccessRequestSaving}
+                className="px-4 py-2 rounded bg-neon-green text-black text-sm font-semibold disabled:opacity-50"
+              >
+                {blockedAccessRequestSaving ? 'Requesting...' : 'Request Access'}
+              </button>
+              <span className="text-xs text-gray-500">
+                {blockedPrivateAccess.requestStatus === 'pending'
+                  ? 'Status: Pending'
+                  : blockedPrivateAccess.requestStatus === 'approved'
+                    ? 'Status: Approved'
+                    : blockedPrivateAccess.requestStatus === 'denied'
+                      ? 'Status: Denied'
+                      : 'No request yet'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -1936,6 +2144,59 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       ))}
                     </ul>
                   )}
+                  <div className="mt-4 pt-4 border-t border-gray-800">
+                    <div className="font-medium text-white text-sm mb-2">Access Requests</div>
+                    {projectAccessRequestsLoading ? (
+                      <p className="text-xs text-gray-500">Loading requests...</p>
+                    ) : projectAccessRequests.length === 0 ? (
+                      <p className="text-xs text-gray-500">No access requests yet.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {projectAccessRequests.map((request) => (
+                          <li
+                            key={request.id}
+                            className="flex items-start justify-between gap-3 text-sm"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-white truncate">
+                                {request.requester_username || request.requester_email || request.requester_user_id}
+                              </p>
+                              <p className="text-gray-500 text-xs truncate">
+                                {request.status} • {request.requester_user_id}
+                              </p>
+                              {request.note ? (
+                                <p className="text-gray-400 text-xs mt-1 line-clamp-2">{request.note}</p>
+                              ) : null}
+                            </div>
+                            {request.status === 'pending' ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleReviewAccessRequest(request.id, request.requester_user_id, 'approve')
+                                  }
+                                  disabled={projectAccessSaving}
+                                  className="text-xs text-neon-green hover:opacity-80 disabled:opacity-50"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleReviewAccessRequest(request.id, request.requester_user_id, 'deny')
+                                  }
+                                  disabled={projectAccessSaving}
+                                  className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                                >
+                                  Deny
+                                </button>
+                              </div>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div style={{ borderTop: '1px solid #374151', paddingTop: '24px' }}>
