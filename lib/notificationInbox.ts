@@ -42,7 +42,44 @@ export function getFollowerNotificationName(notification: InboxNotification): st
   return getFollowerDisplayName(rawName)
 }
 
+function getProjectAccessGrantorName(notification: InboxNotification): string {
+  const rawName =
+    (notification.data?.granted_by_name as string | undefined) ||
+    (notification.data?.grantedByName as string | undefined) ||
+    null
+  const trimmed = rawName?.trim()
+  return trimmed || 'A creator'
+}
+
+function getProjectAccessProjectTitle(notification: InboxNotification): string | null {
+  const rawTitle =
+    (notification.data?.project_title as string | undefined) ||
+    (notification.data?.projectTitle as string | undefined) ||
+    null
+  const trimmed = rawTitle?.trim()
+  return trimmed || null
+}
+
+export function isProjectAccessInviteNotification(notification: InboxNotification): boolean {
+  return notification.data?.context === 'project_access_invite'
+}
+
+export function getProjectAccessInviteProjectId(notification: InboxNotification): string | null {
+  const rawProjectId =
+    (notification.data?.project_id as string | undefined) ||
+    (notification.data?.projectId as string | undefined)
+  if (!isUuidLike(rawProjectId)) return null
+  return rawProjectId
+}
+
 export function getNotificationPrimaryText(notification: InboxNotification): string {
+  if (isProjectAccessInviteNotification(notification)) {
+    const grantorName = getProjectAccessGrantorName(notification)
+    const projectTitle = getProjectAccessProjectTitle(notification)
+    if (projectTitle) return `${grantorName} granted you access to ${projectTitle}`
+    return `${grantorName} granted you private project access`
+  }
+
   const normalizedType = normalizeNotificationType(notification.type)
 
   if (normalizedType === 'new_follower') {

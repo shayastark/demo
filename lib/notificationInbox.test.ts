@@ -1,9 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  getProjectAccessInviteProjectId,
   getFollowerIdFromQueryParam,
   getNotificationPrimaryText,
   getNotificationTargetPath,
+  isProjectAccessInviteNotification,
   isUuidLike,
   sortNotificationsForInbox,
   type InboxNotification,
@@ -39,6 +41,23 @@ test('getNotificationPrimaryText formats new follower copy', () => {
   }
 
   assert.equal(getNotificationPrimaryText(notification), 'DemoFan followed you')
+})
+
+test('getNotificationPrimaryText formats private access invite copy', () => {
+  const notification: InboxNotification = {
+    ...baseNotification,
+    type: 'new_track',
+    data: {
+      context: 'project_access_invite',
+      granted_by_name: 'DemoCreator',
+      project_title: 'Night Demo',
+    },
+  }
+
+  assert.equal(
+    getNotificationPrimaryText(notification),
+    'DemoCreator granted you access to Night Demo'
+  )
 })
 
 test('getNotificationTargetPath honors targetPath then fallbacks', () => {
@@ -79,4 +98,25 @@ test('follower deep-link parsing validates uuid format', () => {
   assert.equal(isUuidLike('not-a-uuid'), false)
   assert.equal(getFollowerIdFromQueryParam('not-a-uuid'), null)
   assert.equal(getFollowerIdFromQueryParam(undefined), null)
+})
+
+test('private access invite helpers identify context and project id', () => {
+  const notification: InboxNotification = {
+    ...baseNotification,
+    type: 'new_track',
+    data: {
+      context: 'project_access_invite',
+      project_id: '123e4567-e89b-12d3-a456-426614174000',
+    },
+  }
+
+  assert.equal(isProjectAccessInviteNotification(notification), true)
+  assert.equal(
+    getProjectAccessInviteProjectId(notification),
+    '123e4567-e89b-12d3-a456-426614174000'
+  )
+  assert.equal(
+    getProjectAccessInviteProjectId({ ...notification, data: { context: 'project_access_invite', project_id: 'bad' } }),
+    null
+  )
 })

@@ -12,6 +12,13 @@ import {
   type UpdateEngagementNotificationAction,
 } from './updateEngagementNotifications'
 import { buildProjectUpdateRecipientIds } from './projectSubscriptions'
+import {
+  buildProjectAccessInviteTargetPath,
+  buildProjectAccessInviteTitle,
+  decideProjectAccessNotificationAction,
+  getProjectAccessGrantorName,
+  type ProjectAccessNotificationAction,
+} from './projectAccessNotifications'
 
 export type NotificationType = CreatableNotificationType
 
@@ -447,6 +454,77 @@ export async function notifyCreatorUpdateEngagement({
     actor_user_id: actorUserId,
     project_id: projectId,
     update_id: updateId,
+    notification_type: notificationType,
+  }
+}
+
+export async function notifyPrivateProjectAccessGranted({
+  recipientUserId,
+  grantedByUserId,
+  grantedByName,
+  projectId,
+  projectTitle,
+}: {
+  recipientUserId: string
+  grantedByUserId: string
+  grantedByName?: string | null
+  projectId: string
+  projectTitle?: string | null
+}): Promise<{
+  success: boolean
+  action: ProjectAccessNotificationAction
+  recipient_user_id: string
+  granted_by_user_id: string
+  project_id: string
+  notification_type: NotificationType
+}> {
+  const notificationType: NotificationType = 'new_track'
+  if (recipientUserId === grantedByUserId) {
+    return {
+      success: true,
+      action: 'skipped_self',
+      recipient_user_id: recipientUserId,
+      granted_by_user_id: grantedByUserId,
+      project_id: projectId,
+      notification_type: notificationType,
+    }
+  }
+
+  const grantorDisplayName = getProjectAccessGrantorName(grantedByName)
+  const result = await createNotification({
+    userId: recipientUserId,
+    type: notificationType,
+    title: buildProjectAccessInviteTitle({
+      grantedByName: grantorDisplayName,
+      projectTitle: projectTitle || null,
+    }),
+    message: 'Open the project to view private updates and attachments.',
+    data: {
+      context: 'project_access_invite',
+      project_id: projectId,
+      project_title: projectTitle || null,
+      granted_by_user_id: grantedByUserId,
+      granted_by_name: grantorDisplayName,
+      targetPath: buildProjectAccessInviteTargetPath(projectId),
+      projectId,
+      projectTitle: projectTitle || null,
+      grantedByUserId,
+      grantedByName: grantorDisplayName,
+    },
+  })
+
+  const action = decideProjectAccessNotificationAction({
+    recipientUserId,
+    grantedByUserId,
+    skippedPreference: !!result.skippedPreference,
+  })
+
+  return {
+    success: result.success,
+    action,
+    recipient_user_id: recipientUserId,
+    granted_by_user_id: grantedByUserId,
+    project_id: projectId,
     notification_type: notificationType,
   }
 }

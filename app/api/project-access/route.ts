@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
+import { notifyPrivateProjectAccessGranted } from '@/lib/notifications'
 import {
   canManageProjectAccess,
   getProjectAccessIdentifierType,
@@ -19,7 +20,7 @@ async function getRequiredCurrentUser(request: NextRequest) {
 async function getProject(projectId: string) {
   const { data: project } = await supabaseAdmin
     .from('projects')
-    .select('id, creator_id')
+    .select('id, creator_id, title')
     .eq('id', projectId)
     .single()
   return project
@@ -197,11 +198,38 @@ export async function POST(request: NextRequest) {
       })
     if (error) throw error
 
+    let notificationResult:
+      | {
+          action: 'created' | 'skipped_self' | 'skipped_preference'
+          notification_type: string
+        }
+      | null = null
+    try {
+      const grantedByName =
+        (typeof currentUser.username === 'string' && currentUser.username.trim()) ||
+        (typeof currentUser.email === 'string' && currentUser.email.trim()) ||
+        null
+      const result = await notifyPrivateProjectAccessGranted({
+        recipientUserId: resolvedUserId,
+        grantedByUserId: currentUser.id,
+        grantedByName,
+        projectId: parsed.project_id,
+        projectTitle: typeof project.title === 'string' ? project.title : null,
+      })
+      notificationResult = {
+        action: result.action,
+        notification_type: result.notification_type,
+      }
+    } catch (notificationError) {
+      console.error('Failed to create project access invite notification:', notificationError)
+    }
+
     return NextResponse.json({
       success: true,
       project_id: parsed.project_id,
       user_id: resolvedUserId,
       identifier_type: identifierType,
+      notification: notificationResult,
     })
   } catch (error) {
     console.error('Error in project access POST:', error)

@@ -9,9 +9,11 @@ import { showToast } from './Toast'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeNotificationType, type NotificationType } from '@/lib/notificationTypes'
 import {
+  getProjectAccessInviteProjectId,
   getFollowerNotificationName,
   getNotificationPrimaryText,
   getNotificationTargetPath,
+  isProjectAccessInviteNotification,
   sortNotificationsForInbox,
 } from '@/lib/notificationInbox'
 
@@ -128,6 +130,34 @@ export default function BottomTabBar() {
       )
     },
     [notifications.length, unreadNotificationCount]
+  )
+
+  const emitProjectAccessNotificationEvent = useCallback(
+    (
+      action: 'click' | 'revoked_before_open',
+      payload: {
+        projectId: string | null
+        recipientUserId: string | null
+        grantedByUserId: string | null
+        notificationType: string
+      }
+    ) => {
+      if (typeof window === 'undefined') return
+      window.dispatchEvent(
+        new CustomEvent('project_access_notification_event', {
+          detail: {
+            schema: 'project_access_notification.v1',
+            action,
+            project_id: payload.projectId,
+            recipient_user_id: payload.recipientUserId,
+            granted_by_user_id: payload.grantedByUserId,
+            notification_type: payload.notificationType,
+            source: 'bottom_tab_bar',
+          },
+        })
+      )
+    },
+    []
   )
 
   // Detect mobile
@@ -837,6 +867,14 @@ export default function BottomTabBar() {
 
   const handleNotificationClick = async (notification: Notification) => {
     const target = getNotificationTargetPath(notification)
+    const isAccessInvite = isProjectAccessInviteNotification(notification)
+    const projectId = isAccessInvite ? getProjectAccessInviteProjectId(notification) : null
+    const grantedByUserId =
+      typeof notification.data?.granted_by_user_id === 'string'
+        ? notification.data.granted_by_user_id
+        : typeof notification.data?.grantedByUserId === 'string'
+          ? notification.data.grantedByUserId
+          : null
 
     emitNotificationEvent('click', {
       notificationId: notification.id,
@@ -848,7 +886,39 @@ export default function BottomTabBar() {
       await markNotificationsAsRead([notification.id])
     }
 
+    if (isAccessInvite) {
+      emitProjectAccessNotificationEvent('click', {
+        projectId,
+        recipientUserId: userId,
+        grantedByUserId,
+        notificationType: notification.type,
+      })
+    }
+
     if (target) {
+      if (isAccessInvite && projectId) {
+        try {
+          const token = await getAccessToken()
+          const accessResponse = await fetch(`/api/projects?id=${encodeURIComponent(projectId)}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          })
+          if (!accessResponse.ok) {
+            emitProjectAccessNotificationEvent('revoked_before_open', {
+              projectId,
+              recipientUserId: userId,
+              grantedByUserId,
+              notificationType: notification.type,
+            })
+            showToast('Access to this private project was removed.', 'error')
+            setIsNotificationsOpen(false)
+            router.push('/dashboard')
+            return
+          }
+        } catch (error) {
+          console.error('Error validating project access before open:', error)
+        }
+      }
+
       setIsNotificationsOpen(false)
       router.push(target)
     }
@@ -867,7 +937,10 @@ export default function BottomTabBar() {
     return date.toLocaleDateString()
   }
 
-  const getNotificationIcon = (type: NotificationType) => {
+  const getNotificationIcon = (type: NotificationType, isAccessInvite = false) => {
+    if (isAccessInvite) {
+      return <UserPlus style={{ width: '16px', height: '16px', color: '#39FF14' }} />
+    }
     if (type === 'tip_received') {
       return <DollarSign style={{ width: '16px', height: '16px', color: '#39FF14' }} />
     }
@@ -1861,6 +1934,7 @@ export default function BottomTabBar() {
                           const normalizedType = normalizeNotificationType(notification.type)
                           const targetPath = getNotificationTargetPath(notification)
                           const primaryText = getNotificationPrimaryText(notification)
+                          const isAccessInvite = isProjectAccessInviteNotification(notification)
                           const followerName =
                             normalizedType === 'new_follower'
                               ? getFollowerNotificationName(notification)
@@ -1872,11 +1946,11 @@ export default function BottomTabBar() {
                         <div style={{
                           padding: '8px',
                           borderRadius: '50%',
-                          backgroundColor: normalizedType === 'new_follower' ? 'rgba(57, 255, 20, 0.15)' : '#1f2937',
-                          border: normalizedType === 'new_follower' ? '1px solid rgba(57, 255, 20, 0.35)' : '1px solid transparent',
+                          backgroundColor: normalizedType === 'new_follower' || isAccessInvite ? 'rgba(57, 255, 20, 0.15)' : '#1f2937',
+                          border: normalizedType === 'new_follower' || isAccessInvite ? '1px solid rgba(57, 255, 20, 0.35)' : '1px solid transparent',
                           flexShrink: 0,
                         }}>
-                          {getNotificationIcon(normalizedType)}
+                          {getNotificationIcon(normalizedType, isAccessInvite)}
                         </div>
                         
                         {/* Content */}
@@ -1896,7 +1970,7 @@ export default function BottomTabBar() {
                           }}
                         >
                           <p style={{ color: '#6b7280', fontSize: '11px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {getNotificationTypeLabel(normalizedType)}
+                            {isAccessInvite ? 'Private Access' : getNotificationTypeLabel(normalizedType)}
                           </p>
                           <p style={{ 
                             color: !notification.is_read ? '#fff' : '#d1d5db',

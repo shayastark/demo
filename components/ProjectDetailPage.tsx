@@ -301,6 +301,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
   const handleGrantProjectAccess = async () => {
     if (!project?.id || !isCreator) return
+    const projectIdForEvent = project.id
+    const projectCreatorIdForEvent = project.creator_id
     const identifier = projectAccessIdentifierInput.trim()
     if (!identifier) {
       setProjectAccessInlineState({
@@ -327,7 +329,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             detail: {
               schema: 'project_access.v1',
               action: 'grant_attempt',
-              project_id: project.id,
+              project_id: projectIdForEvent,
               source: 'project_detail_settings',
               identifier_type: identifierType,
             },
@@ -343,7 +345,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          project_id: project.id,
+          project_id: projectIdForEvent,
           identifier,
         }),
       })
@@ -357,7 +359,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               detail: {
                 schema: 'project_access.v1',
                 action: 'grant_failure',
-                project_id: project.id,
+                project_id: projectIdForEvent,
                 source: 'project_detail_settings',
                 identifier_type:
                   result?.identifier_type || identifierType,
@@ -384,20 +386,35 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       }
 
       setProjectAccessIdentifierInput('')
-      await loadProjectAccessGrants(project.id)
+      await loadProjectAccessGrants(projectIdForEvent)
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('project_access_event', {
             detail: {
               schema: 'project_access.v1',
               action: 'grant_success',
-              project_id: project.id,
+              project_id: projectIdForEvent,
               target_user_id: result.user_id,
               source: 'project_detail_settings',
               identifier_type: result.identifier_type || identifierType,
             },
           })
         )
+        if (result?.notification?.action === 'created') {
+          window.dispatchEvent(
+            new CustomEvent('project_access_notification_event', {
+              detail: {
+                schema: 'project_access_notification.v1',
+                action: 'created',
+                project_id: projectIdForEvent,
+                recipient_user_id: result.user_id,
+                granted_by_user_id: projectCreatorIdForEvent,
+                notification_type: result.notification.notification_type || 'new_track',
+                source: 'project_detail_settings',
+              },
+            })
+          )
+        }
       }
       setProjectAccessInlineState({ tone: 'success', message: 'Invite sent successfully.' })
       showToast('Private access granted', 'success')
@@ -409,7 +426,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             detail: {
               schema: 'project_access.v1',
               action: 'grant_failure',
-              project_id: project.id,
+              project_id: projectIdForEvent,
               source: 'project_detail_settings',
               identifier_type: identifierType,
               failure_reason: 'request_failed',
