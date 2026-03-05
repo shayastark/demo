@@ -39,11 +39,14 @@ export function buildCreatorRecommendations(args: {
   activityByCreatorId: Record<string, CreatorRecommendationActivityStats>
   viewerUserId: string
   alreadyFollowingIds: Set<string>
+  hiddenCreatorIds?: Set<string>
   limit: number
 }): CreatorRecommendationItem[] {
+  const hiddenCreatorIds = args.hiddenCreatorIds || new Set<string>()
   const candidates = Object.values(args.activityByCreatorId)
     .filter((row) => row.creator_id !== args.viewerUserId)
     .filter((row) => !args.alreadyFollowingIds.has(row.creator_id))
+    .filter((row) => !hiddenCreatorIds.has(row.creator_id))
     .filter((row) => row.recent_public_projects_count > 0 || row.recent_public_updates_count > 0)
 
   const ranked = [...candidates].sort((a, b) => {
@@ -84,6 +87,19 @@ export function buildCreatorRecommendations(args: {
       }),
     }
   })
+}
+
+export function filterCreatorsByVisiblePublicProjects(args: {
+  projects: Array<{ id: string; creator_id: string }>
+  hiddenProjectIds: Set<string>
+}): Set<string> {
+  const visibleCreatorIds = new Set<string>()
+  for (const project of args.projects) {
+    if (!args.hiddenProjectIds.has(project.id)) {
+      visibleCreatorIds.add(project.creator_id)
+    }
+  }
+  return visibleCreatorIds
 }
 
 function recommendationScore(row: CreatorRecommendationActivityStats): number {

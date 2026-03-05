@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { buildPaginatedItems } from '@/lib/pagination'
+import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
+import { buildHiddenTargetSets } from '@/lib/discoveryPreferences'
 import {
   buildExploreProjectItems,
+  filterExploreRowsByHiddenTargets,
   parseExploreProjectsQuery,
   type ExploreCreatorRow,
   type ExploreProjectRow,
@@ -14,6 +17,18 @@ const RECENT_WINDOW_DAYS = 14
 type TipSupportRow = {
   project_id: string | null
   tipper_user_id: string | null
+}
+
+async function getOptionalCurrentUser(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader) return null
+    const authResult = await verifyPrivyToken(authHeader)
+    if (!authResult.success || !authResult.privyId) return null
+    return await getUserByPrivyId(authResult.privyId)
+  } catch {
+    return null
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -28,6 +43,8 @@ export async function GET(request: NextRequest) {
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
+
+    const currentUser = await getOptionalCurrentUser(request)
 
     const projectQuery = supabaseAdmin
       .from('projects')
@@ -47,6 +64,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(buildPaginatedItems({ rows: [], limit: parsed.limit, offset: parsed.offset }))
     }
 
+    let hiddenProjectIds = new Set<string>()
+    let hiddenCreatorIds = new Set<string>()
+    if (currentUser?.id) {
+      const { data: hiddenRows } = await supabaseAdmin
+        .from('user_discovery_preferences')
+        .select('target_type, target_id, preference')
+        .eq('user_id', currentUser.id)
+        .eq('preference', 'hide')
+      const hiddenTargets = buildHiddenTargetSets(hiddenRows || [])
+      hiddenProjectIds = hiddenTargets.hiddenProjectIds
+      hiddenCreatorIds = hiddenTargets.hiddenCreatorIds
+    }
+
     const creatorIds = Array.from(new Set(rawProjects.map((row) => row.creator_id)))
     const { data: creatorRows, error: creatorError } = await supabaseAdmin
       .from('users')
@@ -64,13 +94,18 @@ export async function GET(request: NextRequest) {
     }, {})
 
     const qLower = parsed.q?.toLowerCase() || null
+    const hiddenFilteredProjects = filterExploreRowsByHiddenTargets({
+      rows: rawProjects,
+      hiddenProjectIds,
+      hiddenCreatorIds,
+    })
     const qFilteredProjects = qLower
-      ? rawProjects.filter((project) => {
+      ? hiddenFilteredProjects.filter((project) => {
           const title = project.title?.toLowerCase() || ''
           const creatorName = creatorsById[project.creator_id]?.username?.toLowerCase() || ''
           return title.includes(qLower) || creatorName.includes(qLower)
         })
-      : rawProjects
+      : hiddenFilteredProjects
 
     const projectIds = qFilteredProjects.map((project) => project.id)
     let supporterCountByProjectId: Record<string, number> = {}

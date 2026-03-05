@@ -78,6 +78,18 @@ export function selectPublicExploreRows(rows: ExploreProjectRow[]): ExploreProje
   )
 }
 
+export function filterExploreRowsByHiddenTargets(args: {
+  rows: ExploreProjectRow[]
+  hiddenProjectIds: Set<string>
+  hiddenCreatorIds: Set<string>
+}): ExploreProjectRow[] {
+  return args.rows.filter(
+    (project) =>
+      !args.hiddenProjectIds.has(project.id) &&
+      !args.hiddenCreatorIds.has(project.creator_id)
+  )
+}
+
 export function buildExploreProjectItems(args: {
   projects: ExploreProjectRow[]
   creatorsById: Record<string, ExploreCreatorRow>

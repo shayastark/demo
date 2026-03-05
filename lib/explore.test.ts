@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildExploreProjectItems,
+  filterExploreRowsByHiddenTargets,
   parseExploreProjectsQuery,
   selectPublicExploreRows,
   type ExploreProjectRow,
@@ -71,6 +72,49 @@ test('selectPublicExploreRows keeps public visibility only', () => {
 
   const visible = selectPublicExploreRows(rows)
   assert.deepEqual(visible.map((row) => row.id), ['public-1'])
+})
+
+test('filterExploreRowsByHiddenTargets excludes hidden projects and creators', () => {
+  const rows: ExploreProjectRow[] = [
+    {
+      id: 'p1',
+      title: 'A',
+      cover_image_url: null,
+      creator_id: 'c1',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'a',
+      created_at: '2026-03-01T00:00:00.000Z',
+    },
+    {
+      id: 'p2',
+      title: 'B',
+      cover_image_url: null,
+      creator_id: 'c2',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'b',
+      created_at: '2026-03-01T00:00:00.000Z',
+    },
+    {
+      id: 'p3',
+      title: 'C',
+      cover_image_url: null,
+      creator_id: 'c3',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'c',
+      created_at: '2026-03-01T00:00:00.000Z',
+    },
+  ]
+
+  const filtered = filterExploreRowsByHiddenTargets({
+    rows,
+    hiddenProjectIds: new Set(['p1']),
+    hiddenCreatorIds: new Set(['c2']),
+  })
+
+  assert.deepEqual(filtered.map((row) => row.id), ['p3'])
 })
 
 test('buildExploreProjectItems sorts newest and most_supported deterministically', () => {

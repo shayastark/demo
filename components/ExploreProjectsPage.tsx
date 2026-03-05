@@ -27,6 +27,13 @@ interface ExploreResponse {
   nextOffset: number | null
 }
 
+interface HiddenSnapshot {
+  item: ExploreItem
+  targetType: 'project' | 'creator'
+  targetId: string
+  positionIndex: number
+}
+
 export default function ExploreProjectsPage() {
   const { ready, authenticated, login, getAccessToken } = usePrivy()
   const [items, setItems] = useState<ExploreItem[]>([])
@@ -39,6 +46,8 @@ export default function ExploreProjectsPage() {
   const [nextOffset, setNextOffset] = useState<number | null>(null)
   const [hasMore, setHasMore] = useState(false)
   const [trackedView, setTrackedView] = useState(false)
+  const [lastHidden, setLastHidden] = useState<HiddenSnapshot | null>(null)
+  const [preferenceLoadingId, setPreferenceLoadingId] = useState<string | null>(null)
 
   const queryLength = useMemo(() => debouncedQuery.trim().length, [debouncedQuery])
 
@@ -73,6 +82,27 @@ export default function ExploreProjectsPage() {
           action,
           source: 'explore',
           sort,
+          ...detail,
+        },
+      })
+    )
+  }
+
+  const emitDiscoveryPreferenceEvent = (
+    action: 'hide_project' | 'hide_creator' | 'undo_hide',
+    detail: {
+      target_type: 'project' | 'creator'
+      target_id: string
+      position_index: number
+    }
+  ) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('discovery_preference_event', {
+        detail: {
+          schema: 'discovery_preference.v1',
+          action,
+          source: 'explore',
           ...detail,
         },
       })
@@ -168,6 +198,96 @@ export default function ExploreProjectsPage() {
     }
   }
 
+  const hideTarget = async (args: {
+    item: ExploreItem
+    targetType: 'project' | 'creator'
+    targetId: string
+    positionIndex: number
+  }) => {
+    if (preferenceLoadingId) return
+    setPreferenceLoadingId(args.targetId)
+    const previousItems = items
+    const nextItems =
+      args.targetType === 'project'
+        ? items.filter((row) => row.project_id !== args.item.project_id)
+        : items.filter((row) => row.creator_id !== args.item.creator_id)
+    setItems(nextItems)
+    setLastHidden({
+      item: args.item,
+      targetType: args.targetType,
+      targetId: args.targetId,
+      positionIndex: args.positionIndex,
+    })
+
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/discovery/preferences', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          target_type: args.targetType,
+          target_id: args.targetId,
+          preference: 'hide',
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to save preference')
+
+      emitDiscoveryPreferenceEvent(args.targetType === 'project' ? 'hide_project' : 'hide_creator', {
+        target_type: args.targetType,
+        target_id: args.targetId,
+        position_index: args.positionIndex,
+      })
+    } catch (error) {
+      console.error('Error hiding discovery target:', error)
+      setItems(previousItems)
+      setLastHidden(null)
+      setError(error instanceof Error ? error.message : 'Failed to save preference')
+    } finally {
+      setPreferenceLoadingId(null)
+    }
+  }
+
+  const undoHide = async () => {
+    if (!lastHidden || preferenceLoadingId) return
+    setPreferenceLoadingId(lastHidden.targetId)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/discovery/preferences', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          target_type: lastHidden.targetType,
+          target_id: lastHidden.targetId,
+          preference: 'hide',
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to undo preference')
+
+      setItems((prev) => [lastHidden.item, ...prev])
+      emitDiscoveryPreferenceEvent('undo_hide', {
+        target_type: lastHidden.targetType,
+        target_id: lastHidden.targetId,
+        position_index: lastHidden.positionIndex,
+      })
+      setLastHidden(null)
+    } catch (error) {
+      console.error('Error undoing discovery preference:', error)
+      setError(error instanceof Error ? error.message : 'Failed to undo preference')
+    } finally {
+      setPreferenceLoadingId(null)
+    }
+  }
+
   if (!ready) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -235,37 +355,86 @@ export default function ExploreProjectsPage() {
           </div>
         ) : (
           <>
+            {lastHidden ? (
+              <div className="mb-4 border border-gray-800 rounded-xl p-3 bg-gray-900 text-xs text-gray-300 flex items-center justify-between gap-3">
+                <span>Hidden from Explore.</span>
+                <button
+                  type="button"
+                  onClick={undoHide}
+                  disabled={preferenceLoadingId === lastHidden.targetId}
+                  className="px-2 py-1 rounded border border-gray-700 hover:border-gray-600 text-gray-200"
+                >
+                  Undo
+                </button>
+              </div>
+            ) : null}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
               {items.map((item, index) => (
-                <Link
+                <div
                   key={item.project_id}
-                  href={item.target_path}
-                  onClick={() => {
-                    emitEvent('project_click', { project_id: item.project_id })
-                    emitRankingEvent('project_click', {
-                      project_id: item.project_id,
-                      position_index: index,
-                    })
-                  }}
                   className="bg-gray-900 rounded-xl p-3 border border-gray-800 hover:border-gray-700 transition"
                 >
-                  <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-800 mb-3">
-                    {item.cover_image_url ? (
-                      <Image
-                        src={item.cover_image_url}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                      />
-                    ) : null}
+                  <Link
+                    href={item.target_path}
+                    onClick={() => {
+                      emitEvent('project_click', { project_id: item.project_id })
+                      emitRankingEvent('project_click', {
+                        project_id: item.project_id,
+                        position_index: index,
+                      })
+                    }}
+                    className="block"
+                  >
+                    <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-800 mb-3">
+                      {item.cover_image_url ? (
+                        <Image
+                          src={item.cover_image_url}
+                          alt={item.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        />
+                      ) : null}
+                    </div>
+                    <p className="text-sm font-semibold text-white line-clamp-2">{item.title}</p>
+                    <p className="text-xs text-gray-400 mt-1">by {item.creator_name}</p>
+                    <p className="text-xs text-neon-green mt-1">
+                      {item.supporter_count} {item.supporter_count === 1 ? 'supporter' : 'supporters'}
+                    </p>
+                  </Link>
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={preferenceLoadingId === item.project_id}
+                      onClick={() =>
+                        hideTarget({
+                          item,
+                          targetType: 'project',
+                          targetId: item.project_id,
+                          positionIndex: index,
+                        })
+                      }
+                      className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
+                    >
+                      Not interested
+                    </button>
+                    <button
+                      type="button"
+                      disabled={preferenceLoadingId === item.creator_id}
+                      onClick={() =>
+                        hideTarget({
+                          item,
+                          targetType: 'creator',
+                          targetId: item.creator_id,
+                          positionIndex: index,
+                        })
+                      }
+                      className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
+                    >
+                      Hide creator
+                    </button>
                   </div>
-                  <p className="text-sm font-semibold text-white line-clamp-2">{item.title}</p>
-                  <p className="text-xs text-gray-400 mt-1">by {item.creator_name}</p>
-                  <p className="text-xs text-neon-green mt-1">
-                    {item.supporter_count} {item.supporter_count === 1 ? 'supporter' : 'supporters'}
-                  </p>
-                </Link>
+                </div>
               ))}
             </div>
 

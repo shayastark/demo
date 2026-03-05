@@ -7,6 +7,7 @@ import {
   type CreatorRecommendationActivityStats,
   type CreatorRecommendationUserRow,
 } from '@/lib/creatorRecommendations'
+import { buildHiddenTargetSets } from '@/lib/discoveryPreferences'
 
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
@@ -86,7 +87,17 @@ export async function GET(request: NextRequest) {
 
     const publicProjectRows =
       (publicProjects || []) as Array<{ id: string; creator_id: string; created_at: string }>
-    const publicProjectIds = publicProjectRows.map((row) => row.id)
+
+    const { data: hiddenRows } = await supabaseAdmin
+      .from('user_discovery_preferences')
+      .select('target_type, target_id, preference')
+      .eq('user_id', currentUser.id)
+      .eq('preference', 'hide')
+    const hiddenTargets = buildHiddenTargetSets(hiddenRows || [])
+    const visibleProjectRows = publicProjectRows.filter(
+      (row) => !hiddenTargets.hiddenProjectIds.has(row.id) && !hiddenTargets.hiddenCreatorIds.has(row.creator_id)
+    )
+    const publicProjectIds = visibleProjectRows.map((row) => row.id)
 
     const { data: updateRows } = publicProjectIds.length
       ? await supabaseAdmin
@@ -99,12 +110,12 @@ export async function GET(request: NextRequest) {
       : { data: [] as Array<{ project_id: string; created_at: string }> }
 
     const creatorActivity: Record<string, CreatorRecommendationActivityStats> = {}
-    const projectCreatorById = publicProjectRows.reduce<Record<string, string>>((acc, row) => {
+    const projectCreatorById = visibleProjectRows.reduce<Record<string, string>>((acc, row) => {
       acc[row.id] = row.creator_id
       return acc
     }, {})
 
-    for (const project of publicProjectRows) {
+    for (const project of visibleProjectRows) {
       const existing = creatorActivity[project.creator_id]
       const recentProject = new Date(project.created_at).getTime() >= new Date(oneWeekAgoIso).getTime() ? 1 : 0
       if (!existing) {
@@ -174,6 +185,7 @@ export async function GET(request: NextRequest) {
       activityByCreatorId: creatorActivity,
       viewerUserId: currentUser.id,
       alreadyFollowingIds,
+      hiddenCreatorIds: hiddenTargets.hiddenCreatorIds,
       limit,
     })
 

@@ -27,6 +27,8 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [followLoadingId, setFollowLoadingId] = useState<string | null>(null)
+  const [preferenceLoadingId, setPreferenceLoadingId] = useState<string | null>(null)
+  const [lastHidden, setLastHidden] = useState<{ item: CreatorRecommendationItem; positionIndex: number } | null>(null)
 
   const emitEvent = (
     action: 'view' | 'follow_click' | 'follow_success' | 'dismiss',
@@ -38,6 +40,23 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
         detail: {
           schema: 'creator_recommendation.v1',
           source: 'dashboard',
+          action,
+          ...detail,
+        },
+      })
+    )
+  }
+
+  const emitDiscoveryPreferenceEvent = (
+    action: 'hide_project' | 'hide_creator' | 'undo_hide',
+    detail: { target_type: 'project' | 'creator'; target_id: string; position_index: number }
+  ) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('discovery_preference_event', {
+        detail: {
+          schema: 'discovery_preference.v1',
+          source: 'who_to_follow',
           action,
           ...detail,
         },
@@ -116,6 +135,84 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
     }
   }
 
+  const hideCreator = async (item: CreatorRecommendationItem, positionIndex: number) => {
+    if (!authenticated || !getAccessToken || preferenceLoadingId) return
+    setPreferenceLoadingId(item.creator_id)
+    const previousItems = items
+    setItems((prev) => prev.filter((row) => row.creator_id !== item.creator_id))
+    setLastHidden({ item, positionIndex })
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/discovery/preferences', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          target_type: 'creator',
+          target_id: item.creator_id,
+          preference: 'hide',
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to save preference')
+      emitDiscoveryPreferenceEvent('hide_creator', {
+        target_type: 'creator',
+        target_id: item.creator_id,
+        position_index: positionIndex,
+      })
+      emitEvent('dismiss', {
+        creator_id: item.creator_id,
+        reason_code: item.reason_code,
+        position_index: positionIndex,
+      })
+    } catch (error) {
+      console.error('Error hiding creator recommendation:', error)
+      setItems(previousItems)
+      setLastHidden(null)
+      showToast(error instanceof Error ? error.message : 'Failed to hide creator', 'error')
+    } finally {
+      setPreferenceLoadingId(null)
+    }
+  }
+
+  const undoHide = async () => {
+    if (!lastHidden || !getAccessToken || preferenceLoadingId) return
+    setPreferenceLoadingId(lastHidden.item.creator_id)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/discovery/preferences', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          target_type: 'creator',
+          target_id: lastHidden.item.creator_id,
+          preference: 'hide',
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to undo preference')
+      setItems((prev) => [lastHidden.item, ...prev])
+      emitDiscoveryPreferenceEvent('undo_hide', {
+        target_type: 'creator',
+        target_id: lastHidden.item.creator_id,
+        position_index: lastHidden.positionIndex,
+      })
+      setLastHidden(null)
+    } catch (error) {
+      console.error('Error undoing hidden creator preference:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to undo hide', 'error')
+    } finally {
+      setPreferenceLoadingId(null)
+    }
+  }
+
   return (
     <section className="mb-8 border border-gray-800/80 rounded-lg bg-gray-950/40 overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-900">
@@ -129,7 +226,16 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
       ) : items.length === 0 ? (
         <p className="px-4 py-4 text-sm text-gray-500">No recommendations right now.</p>
       ) : (
-        <ul>
+        <>
+          {lastHidden ? (
+            <div className="px-4 py-2 border-b border-gray-900 text-xs text-gray-400 flex items-center justify-between gap-2">
+              <span>Recommendation hidden.</span>
+              <button type="button" onClick={undoHide} className="px-2 py-1 rounded border border-gray-700 text-gray-200">
+                Undo
+              </button>
+            </div>
+          ) : null}
+          <ul>
           {items.map((item, index) => (
             <li key={item.creator_id} className="px-4 py-3 border-t border-gray-900 first:border-t-0">
               <div className="flex items-start justify-between gap-3">
@@ -156,23 +262,34 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
                   </div>
                 </Link>
 
-                <button
-                  type="button"
-                  disabled={followLoadingId === item.creator_id}
-                  onClick={() => handleFollow(item, index)}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-neon-green text-neon-green inline-flex items-center gap-1 disabled:opacity-70"
-                >
-                  {followLoadingId === item.creator_id ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <UserPlus className="w-3 h-3" />
-                  )}
-                  Follow
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    type="button"
+                    disabled={followLoadingId === item.creator_id}
+                    onClick={() => handleFollow(item, index)}
+                    className="text-xs px-2.5 py-1.5 rounded-md border border-neon-green text-neon-green inline-flex items-center gap-1 disabled:opacity-70"
+                  >
+                    {followLoadingId === item.creator_id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <UserPlus className="w-3 h-3" />
+                    )}
+                    Follow
+                  </button>
+                  <button
+                    type="button"
+                    disabled={preferenceLoadingId === item.creator_id}
+                    onClick={() => hideCreator(item, index)}
+                    className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
+                  >
+                    Not interested
+                  </button>
+                </div>
               </div>
             </li>
           ))}
-        </ul>
+          </ul>
+        </>
       )}
     </section>
   )

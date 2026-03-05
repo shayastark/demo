@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildCreatorRecommendations,
+  filterCreatorsByVisiblePublicProjects,
   parseCreatorRecommendationsLimit,
   type CreatorRecommendationActivityStats,
 } from './creatorRecommendations'
@@ -48,6 +49,7 @@ test('buildCreatorRecommendations excludes self and already-followed creators', 
     activityByCreatorId: activity,
     viewerUserId: 'self',
     alreadyFollowingIds: new Set(['followed']),
+    hiddenCreatorIds: new Set(),
     limit: 10,
   })
 
@@ -88,6 +90,7 @@ test('buildCreatorRecommendations ranks deterministically and returns shape', ()
     activityByCreatorId: activity,
     viewerUserId: 'viewer',
     alreadyFollowingIds: new Set(),
+    hiddenCreatorIds: new Set(),
     limit: 3,
   })
 
@@ -95,4 +98,51 @@ test('buildCreatorRecommendations ranks deterministically and returns shape', ()
   assert.equal(results[0].reason_code, 'popular_week')
   assert.equal(typeof results[0].profile_path, 'string')
   assert.equal(typeof results[0].display_name, 'string')
+})
+
+test('buildCreatorRecommendations excludes hidden creators', () => {
+  const activity: Record<string, CreatorRecommendationActivityStats> = {
+    a: {
+      creator_id: 'a',
+      recent_public_projects_count: 1,
+      recent_public_updates_count: 0,
+      latest_public_activity_at: '2026-03-05T00:00:00.000Z',
+      follower_count: 10,
+    },
+    b: {
+      creator_id: 'b',
+      recent_public_projects_count: 1,
+      recent_public_updates_count: 0,
+      latest_public_activity_at: '2026-03-05T00:00:00.000Z',
+      follower_count: 10,
+    },
+  }
+
+  const results = buildCreatorRecommendations({
+    usersById: {
+      a: { id: 'a', username: 'alpha', email: null, avatar_url: null },
+      b: { id: 'b', username: 'beta', email: null, avatar_url: null },
+    },
+    activityByCreatorId: activity,
+    viewerUserId: 'viewer',
+    alreadyFollowingIds: new Set(),
+    hiddenCreatorIds: new Set(['b']),
+    limit: 5,
+  })
+
+  assert.deepEqual(results.map((item) => item.creator_id), ['a'])
+})
+
+test('filterCreatorsByVisiblePublicProjects excludes creators with only hidden projects', () => {
+  const creatorIds = filterCreatorsByVisiblePublicProjects({
+    projects: [
+      { id: 'p1', creator_id: 'a' },
+      { id: 'p2', creator_id: 'b' },
+      { id: 'p3', creator_id: 'b' },
+    ],
+    hiddenProjectIds: new Set(['p1', 'p2']),
+  })
+
+  assert.equal(creatorIds.has('a'), false)
+  assert.equal(creatorIds.has('b'), true)
 })
