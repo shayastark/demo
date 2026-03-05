@@ -315,6 +315,12 @@ export async function notifyFollowersProjectUpdate({
   isImportant?: boolean | null
 }): Promise<{ success: boolean; notifiedCount: number; error?: string }> {
   try {
+    const allowFallback = process.env.PROJECT_UPDATE_IMPORTANCE_FALLBACK === 'true'
+    const importantForMode = resolveProjectUpdateImportanceForNotification({
+      isImportant,
+      versionLabel,
+      allowFallback,
+    })
     const followColumn = await resolveFollowColumn()
 
     const { data: followers, error: followersError } = await supabaseAdmin
@@ -338,15 +344,26 @@ export async function notifyFollowersProjectUpdate({
     const followerIds = (followers || [])
       .map((row) => row.follower_id)
       .filter((id): id is string => typeof id === 'string')
+    const subscriberRows = (subscribers || []).map((row) => ({
+      user_id: row.user_id,
+      notification_mode: row.notification_mode,
+    }))
+    const importantOnlySubscriberCount = subscriberRows.filter(
+      (row) => row.notification_mode === 'important'
+    ).length
+    if (!importantForMode && importantOnlySubscriberCount > 0) {
+      console.info('project_update_importance_compat_event', {
+        schema: 'project_update_importance_compat.v1',
+        action: 'fanout_skipped_not_important',
+        project_id: projectId,
+        update_id: updateId,
+        source: 'project_update_fanout',
+        important_only_subscriber_count: importantOnlySubscriberCount,
+      })
+    }
     const subscriberIds = filterProjectUpdateSubscriberIdsByMode({
-      rows: (subscribers || []).map((row) => ({
-        user_id: row.user_id,
-        notification_mode: row.notification_mode,
-      })),
-      isImportant: resolveProjectUpdateImportanceForNotification({
-        isImportant,
-        versionLabel,
-      }),
+      rows: subscriberRows,
+      isImportant: importantForMode,
     })
 
     const recipientIds = buildProjectUpdateRecipientIds({

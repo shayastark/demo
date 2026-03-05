@@ -1,12 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  applyImportantBackfillRows,
   buildProjectUpdateRecipientIds,
   filterProjectUpdateSubscriberIdsByMode,
   isImportantProjectUpdate,
   normalizeProjectSubscriptionNotificationMode,
   parseProjectSubscriptionNotificationModeFromBody,
   resolveProjectUpdateImportanceForNotification,
+  shouldBackfillImportantFromVersionLabel,
   parseProjectSubscriptionProjectIdFromBody,
   parseProjectSubscriptionProjectIdFromDelete,
   parseProjectSubscriptionsLimit,
@@ -67,7 +69,7 @@ test('normalizeProjectSubscriptionNotificationMode defaults safely', () => {
 
 test('isImportantProjectUpdate uses version label keywords', () => {
   assert.equal(isImportantProjectUpdate({ versionLabel: 'Final Mix' }), true)
-  assert.equal(isImportantProjectUpdate({ versionLabel: 'release-candidate' }), true)
+  assert.equal(isImportantProjectUpdate({ versionLabel: 'release-candidate' }), false)
   assert.equal(isImportantProjectUpdate({ versionLabel: 'v2' }), false)
   assert.equal(isImportantProjectUpdate({ versionLabel: null }), false)
 })
@@ -91,9 +93,37 @@ test('resolveProjectUpdateImportanceForNotification uses explicit flag first', (
     resolveProjectUpdateImportanceForNotification({
       isImportant: null,
       versionLabel: 'final release',
+      allowFallback: false,
+    }),
+    false
+  )
+  assert.equal(
+    resolveProjectUpdateImportanceForNotification({
+      isImportant: null,
+      versionLabel: 'final release',
+      allowFallback: true,
     }),
     true
   )
+})
+
+test('shouldBackfillImportantFromVersionLabel is conservative', () => {
+  assert.equal(shouldBackfillImportantFromVersionLabel('final'), true)
+  assert.equal(shouldBackfillImportantFromVersionLabel('release v1'), true)
+  assert.equal(shouldBackfillImportantFromVersionLabel('official release notes'), true)
+  assert.equal(shouldBackfillImportantFromVersionLabel('release-candidate'), false)
+  assert.equal(shouldBackfillImportantFromVersionLabel('beta release'), false)
+})
+
+test('applyImportantBackfillRows is idempotent', () => {
+  const first = applyImportantBackfillRows([
+    { is_important: false, version_label: 'final mix' },
+    { is_important: false, version_label: 'release-candidate' },
+  ])
+  const second = applyImportantBackfillRows(first)
+  assert.deepEqual(second, first)
+  assert.equal(first[0].is_important, true)
+  assert.equal(first[1].is_important, false)
 })
 
 test('filterProjectUpdateSubscriberIdsByMode enforces all/important/mute', () => {

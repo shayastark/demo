@@ -740,6 +740,9 @@ export default function ProjectUpdatesPanel({
             />
             Mark as important
           </label>
+          <p className="text-[11px] text-gray-500 mt-1">
+            Mark important to notify followers who prefer important-only updates.
+          </p>
         </div>
       )}
 

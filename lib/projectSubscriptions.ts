@@ -66,17 +66,41 @@ export function buildProjectUpdateRecipientIds(args: {
 export function isImportantProjectUpdate(args: {
   versionLabel?: string | null
 }): boolean {
-  const label = (args.versionLabel || '').trim().toLowerCase()
-  if (!label) return false
-  return label.includes('final') || label.includes('release')
+  return shouldBackfillImportantFromVersionLabel(args.versionLabel)
 }
 
 export function resolveProjectUpdateImportanceForNotification(args: {
   isImportant?: boolean | null
   versionLabel?: string | null
+  allowFallback?: boolean
 }): boolean {
   if (typeof args.isImportant === 'boolean') return args.isImportant
-  return isImportantProjectUpdate({ versionLabel: args.versionLabel })
+  if (!args.allowFallback) return false
+  return shouldBackfillImportantFromVersionLabel(args.versionLabel)
+}
+
+export function shouldBackfillImportantFromVersionLabel(
+  versionLabel: string | null | undefined
+): boolean {
+  const label = (versionLabel || '').trim().toLowerCase()
+  if (!label) return false
+  if (/(candidate|rc|beta|alpha|draft|wip|preview)/.test(label)) return false
+  if (label === 'final' || label === 'release') return true
+  if (label.startsWith('final ') || label.startsWith('release ')) return true
+  if (label.includes('official release')) return true
+  return false
+}
+
+export function applyImportantBackfillRows<T extends { is_important: boolean; version_label: string | null }>(
+  rows: T[]
+): T[] {
+  return rows.map((row) =>
+    row.is_important
+      ? row
+      : shouldBackfillImportantFromVersionLabel(row.version_label)
+        ? { ...row, is_important: true }
+        : row
+  )
 }
 
 export function filterProjectUpdateSubscriberIdsByMode(args: {
