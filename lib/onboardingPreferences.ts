@@ -1,3 +1,9 @@
+import {
+  DISCOVERY_RAW_PREFERENCE_SCORE_CAP,
+  capCreatorPreferenceBoost,
+  capProjectPreferenceBoost,
+} from '@/lib/discoveryRankingConfig'
+
 export const ONBOARDING_GENRE_OPTIONS = [
   'hip_hop',
   'rnb',
@@ -99,11 +105,12 @@ export function buildProjectPreferenceBoostById(args: {
 }): Record<string, number> {
   const boosts: Record<string, number> = {}
   for (const project of args.projects) {
-    boosts[project.id] = getTextPreferenceScore({
+    const rawScore = getTextPreferenceScore({
       text: `${project.title || ''} ${project.description || ''}`,
       preferred_genres: args.preferences.preferred_genres,
       preferred_vibes: args.preferences.preferred_vibes,
     })
+    boosts[project.id] = capProjectPreferenceBoost(rawScore)
   }
   return boosts
 }
@@ -114,11 +121,12 @@ export function buildCreatorPreferenceBoostById(args: {
 }): Record<string, number> {
   const boosts: Record<string, number> = {}
   for (const project of args.projects) {
-    const score = getTextPreferenceScore({
+    const rawScore = getTextPreferenceScore({
       text: `${project.title || ''} ${project.description || ''}`,
       preferred_genres: args.preferences.preferred_genres,
       preferred_vibes: args.preferences.preferred_vibes,
     })
+    const score = capCreatorPreferenceBoost(rawScore)
     boosts[project.creator_id] = Math.max(boosts[project.creator_id] || 0, score)
   }
   return boosts
@@ -137,7 +145,7 @@ function getTextPreferenceScore(args: {
   for (const vibe of args.preferred_vibes) {
     if (matchesSlugText(text, vibe)) score += 0.8
   }
-  return Math.min(score, 4)
+  return Math.min(score, DISCOVERY_RAW_PREFERENCE_SCORE_CAP)
 }
 
 function matchesSlugText(text: string, slug: string): boolean {

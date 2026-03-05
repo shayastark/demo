@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Loader2, UserPlus } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import { type DiscoveryReasonCode } from '@/lib/discoveryPreferences'
+import { buildDiscoveryImpactEventFields } from '@/lib/discoveryImpactMetrics'
 
 interface CreatorRecommendationItem {
   creator_id: string
@@ -15,6 +16,7 @@ interface CreatorRecommendationItem {
   short_reason: string
   reason_code: 'active_week' | 'popular_week' | 'new_public_project'
   follower_count: number
+  preference_seed_boost?: number
   profile_path: string
 }
 
@@ -36,6 +38,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
   const [followLoadingId, setFollowLoadingId] = useState<string | null>(null)
   const [preferenceLoadingId, setPreferenceLoadingId] = useState<string | null>(null)
   const [lastHidden, setLastHidden] = useState<{ item: CreatorRecommendationItem; positionIndex: number } | null>(null)
+  const trackedImpressionKeysRef = useRef<Set<string>>(new Set())
 
   const emitEvent = (
     action: 'view' | 'follow_click' | 'follow_success' | 'dismiss',
@@ -109,7 +112,6 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
 
         const nextItems = (result.items || []) as CreatorRecommendationItem[]
         setItems(nextItems)
-        emitEvent('view')
       } catch (loadError) {
         console.error('Error loading creator recommendations:', loadError)
         setError(loadError instanceof Error ? loadError.message : 'Failed to load recommendations')
@@ -122,13 +124,36 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated])
 
+  useEffect(() => {
+    items.forEach((item, index) => {
+      const key = `${item.creator_id}:${index}`
+      if (trackedImpressionKeysRef.current.has(key)) return
+      trackedImpressionKeysRef.current.add(key)
+      const impact = buildDiscoveryImpactEventFields({
+        preferenceSeedBoost: item.preference_seed_boost,
+        sortMode: 'recommendation_default',
+        positionIndex: index,
+      })
+      emitEvent('view', {
+        creator_id: item.creator_id,
+        ...impact,
+      })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items])
+
   const handleFollow = async (item: CreatorRecommendationItem, index: number) => {
     if (!authenticated || !getAccessToken || followLoadingId) return
     setFollowLoadingId(item.creator_id)
+    const impact = buildDiscoveryImpactEventFields({
+      preferenceSeedBoost: item.preference_seed_boost,
+      sortMode: 'recommendation_default',
+      positionIndex: index,
+    })
     emitEvent('follow_click', {
       creator_id: item.creator_id,
       reason_code: item.reason_code,
-      position_index: index,
+      ...impact,
     })
 
     const previousItems = items
@@ -152,7 +177,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
       emitEvent('follow_success', {
         creator_id: item.creator_id,
         reason_code: item.reason_code,
-        position_index: index,
+        ...impact,
       })
     } catch (followError) {
       console.error('Error following recommended creator:', followError)

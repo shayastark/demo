@@ -296,6 +296,49 @@ test('buildExploreProjectItems applies onboarding preference boost as lightweigh
   assert.deepEqual(items.map((item) => item.project_id), ['p-a', 'p-b'])
 })
 
+test('guardrail: preference boost cannot override newest baseline ordering', () => {
+  const rows: ExploreProjectRow[] = [
+    {
+      id: 'p-old',
+      title: 'Older high boost',
+      cover_image_url: null,
+      creator_id: 'c1',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'a',
+      created_at: '2026-03-01T00:00:00.000Z',
+    },
+    {
+      id: 'p-new',
+      title: 'Newer no boost',
+      cover_image_url: null,
+      creator_id: 'c2',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'b',
+      created_at: '2026-03-10T00:00:00.000Z',
+    },
+  ]
+
+  const items = buildExploreProjectItems({
+    projects: rows,
+    creatorsById: {
+      c1: { id: 'c1', username: 'alpha', email: null },
+      c2: { id: 'c2', username: 'beta', email: null },
+    },
+    supporterCountByProjectId: { 'p-old': 0, 'p-new': 0 },
+    engagementCountByProjectId: { 'p-old': 0, 'p-new': 0 },
+    recentUpdatesCountByProjectId: { 'p-old': 0, 'p-new': 0 },
+    latestUpdateAtByProjectId: { 'p-old': null, 'p-new': null },
+    creatorReasonPenaltyById: {},
+    projectPreferenceBoostById: { 'p-old': 999 },
+    sort: 'newest',
+  })
+
+  assert.deepEqual(items.map((item) => item.project_id), ['p-new', 'p-old'])
+  assert.equal((items.find((item) => item.project_id === 'p-old')?.preference_seed_boost || 0) <= 3, true)
+})
+
 test('pagination correctness for explore items', () => {
   const rows: ExploreProjectRow[] = Array.from({ length: 6 }, (_, index) => ({
     id: `p-${index}`,

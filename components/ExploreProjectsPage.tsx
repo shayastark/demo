@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePrivy } from '@privy-io/react-auth'
 import { Loader2, Search } from 'lucide-react'
 import { type DiscoveryReasonCode } from '@/lib/discoveryPreferences'
+import { buildDiscoveryImpactEventFields } from '@/lib/discoveryImpactMetrics'
 
 type ExploreSort = 'trending' | 'newest' | 'most_supported'
 
@@ -17,6 +18,7 @@ interface ExploreItem {
   creator_name: string
   created_at: string
   supporter_count: number
+  preference_seed_boost?: number
   target_path: string
 }
 
@@ -52,9 +54,9 @@ export default function ExploreProjectsPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [nextOffset, setNextOffset] = useState<number | null>(null)
   const [hasMore, setHasMore] = useState(false)
-  const [trackedView, setTrackedView] = useState(false)
   const [lastHidden, setLastHidden] = useState<HiddenSnapshot | null>(null)
   const [preferenceLoadingId, setPreferenceLoadingId] = useState<string | null>(null)
+  const trackedImpressionKeysRef = useRef<Set<string>>(new Set())
 
   const queryLength = useMemo(() => debouncedQuery.trim().length, [debouncedQuery])
 
@@ -170,7 +172,6 @@ export default function ExploreProjectsPage() {
         setItems(result.items || [])
         setHasMore(!!result.hasMore)
         setNextOffset(result.nextOffset)
-        emitRankingEvent('view_with_sort')
       } catch (loadError) {
         console.error('Error loading explore projects:', loadError)
         setError(loadError instanceof Error ? loadError.message : 'Failed to load explore projects')
@@ -183,17 +184,33 @@ export default function ExploreProjectsPage() {
   }, [authenticated, debouncedQuery, getAccessToken, ready, sort])
 
   useEffect(() => {
-    if (trackedView || !ready || !authenticated) return
-    emitEvent('view')
-    setTrackedView(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, authenticated, trackedView])
-
-  useEffect(() => {
     if (!ready) return
     emitEvent('search')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery])
+
+  useEffect(() => {
+    if (!authenticated || items.length === 0) return
+    items.forEach((item, index) => {
+      const key = `${sort}:${item.project_id}:${index}`
+      if (trackedImpressionKeysRef.current.has(key)) return
+      trackedImpressionKeysRef.current.add(key)
+      const impact = buildDiscoveryImpactEventFields({
+        preferenceSeedBoost: item.preference_seed_boost,
+        sortMode: sort,
+        positionIndex: index,
+      })
+      emitEvent('view', {
+        project_id: item.project_id,
+        ...impact,
+      })
+      emitRankingEvent('view_with_sort', {
+        project_id: item.project_id,
+        ...impact,
+      })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated, items, sort])
 
   const loadMore = async () => {
     if (loadingMore || !hasMore || nextOffset === null) return
@@ -420,10 +437,18 @@ export default function ExploreProjectsPage() {
                   <Link
                     href={item.target_path}
                     onClick={() => {
-                      emitEvent('project_click', { project_id: item.project_id })
+                      const impact = buildDiscoveryImpactEventFields({
+                        preferenceSeedBoost: item.preference_seed_boost,
+                        sortMode: sort,
+                        positionIndex: index,
+                      })
+                      emitEvent('project_click', {
+                        project_id: item.project_id,
+                        ...impact,
+                      })
                       emitRankingEvent('project_click', {
                         project_id: item.project_id,
-                        position_index: index,
+                        ...impact,
                       })
                     }}
                     className="block"

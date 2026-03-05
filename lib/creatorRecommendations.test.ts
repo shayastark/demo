@@ -168,6 +168,41 @@ test('buildCreatorRecommendations applies lightweight onboarding preference boos
   assert.deepEqual(results.map((item) => item.creator_id), ['b', 'a'])
 })
 
+test('guardrail: creator preference boost cap cannot dominate large baseline gap', () => {
+  const activity: Record<string, CreatorRecommendationActivityStats> = {
+    strong: {
+      creator_id: 'strong',
+      recent_public_projects_count: 2,
+      recent_public_updates_count: 3,
+      latest_public_activity_at: '2026-03-05T00:00:00.000Z',
+      follower_count: 40,
+    },
+    weak: {
+      creator_id: 'weak',
+      recent_public_projects_count: 1,
+      recent_public_updates_count: 0,
+      latest_public_activity_at: '2026-03-05T00:00:00.000Z',
+      follower_count: 0,
+    },
+  }
+
+  const results = buildCreatorRecommendations({
+    usersById: {
+      strong: { id: 'strong', username: 'strong', email: null, avatar_url: null },
+      weak: { id: 'weak', username: 'weak', email: null, avatar_url: null },
+    },
+    activityByCreatorId: activity,
+    viewerUserId: 'viewer',
+    alreadyFollowingIds: new Set(),
+    hiddenCreatorIds: new Set(),
+    creatorPreferenceBoostById: { weak: 999 },
+    limit: 5,
+  })
+
+  assert.deepEqual(results.map((item) => item.creator_id), ['strong', 'weak'])
+  assert.equal((results.find((item) => item.creator_id === 'weak')?.preference_seed_boost || 0) <= 3, true)
+})
+
 test('filterCreatorsByVisiblePublicProjects excludes creators with only hidden projects', () => {
   const creatorIds = filterCreatorsByVisiblePublicProjects({
     projects: [

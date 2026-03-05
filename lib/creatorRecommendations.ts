@@ -1,4 +1,9 @@
 import { getCreatorPublicPath } from '@/lib/publicCreatorProfile'
+import {
+  applyPreferenceBoostWeight,
+  capCreatorPreferenceBoost,
+  shouldLogDiscoveryRankingDiagnostics,
+} from '@/lib/discoveryRankingConfig'
 
 export interface CreatorRecommendationUserRow {
   id: string
@@ -23,6 +28,7 @@ export interface CreatorRecommendationItem {
   short_reason: string
   reason_code: 'active_week' | 'popular_week' | 'new_public_project'
   follower_count: number
+  preference_seed_boost?: number
   profile_path: string
 }
 
@@ -60,6 +66,19 @@ export function buildCreatorRecommendations(args: {
     return a.creator_id.localeCompare(b.creator_id)
   })
 
+  if (shouldLogDiscoveryRankingDiagnostics()) {
+    for (const row of ranked.slice(0, 20)) {
+      const detail = recommendationScoreDetails(row, args.creatorPreferenceBoostById?.[row.creator_id] || 0)
+      // Dev-only ranking diagnostics for recommendation tuning.
+      console.info('[discovery_ranking][recommendations]', {
+        item_id: row.creator_id,
+        baseline_score: Number(detail.baseline.toFixed(4)),
+        boost: Number(detail.boostApplied.toFixed(4)),
+        final_score: Number(detail.final.toFixed(4)),
+      })
+    }
+  }
+
   return ranked.slice(0, args.limit).map((row) => {
     const user = args.usersById[row.creator_id]
     const reason_code: CreatorRecommendationItem['reason_code'] =
@@ -82,6 +101,9 @@ export function buildCreatorRecommendations(args: {
             : 'New public project',
       reason_code,
       follower_count: row.follower_count,
+      preference_seed_boost: capCreatorPreferenceBoost(
+        args.creatorPreferenceBoostById?.[row.creator_id] || 0
+      ),
       profile_path: getCreatorPublicPath({
         id: row.creator_id,
         username: user?.username || null,
@@ -128,7 +150,20 @@ export function collectSuppressedCreatorIdsFromReasonSignals(args: {
 }
 
 function recommendationScore(row: CreatorRecommendationActivityStats, preferenceBoost: number): number {
+  return recommendationScoreDetails(row, preferenceBoost).final
+}
+
+function recommendationScoreDetails(
+  row: CreatorRecommendationActivityStats,
+  preferenceBoost: number
+): { baseline: number; boostApplied: number; final: number } {
   const activityScore = row.recent_public_updates_count * 3 + row.recent_public_projects_count * 2
   const socialScore = Math.min(row.follower_count, 200) / 100
-  return activityScore + socialScore + Math.min(preferenceBoost, 4) * 0.8
+  const boostApplied = applyPreferenceBoostWeight(capCreatorPreferenceBoost(preferenceBoost))
+  const baseline = activityScore + socialScore
+  return {
+    baseline,
+    boostApplied,
+    final: baseline + boostApplied,
+  }
 }

@@ -1,5 +1,10 @@
 import { parseOffsetLimitQuery } from '@/lib/pagination'
 import { resolveProjectVisibility } from '@/lib/projectVisibility'
+import {
+  applyPreferenceBoostWeight,
+  capProjectPreferenceBoost,
+  shouldLogDiscoveryRankingDiagnostics,
+} from '@/lib/discoveryRankingConfig'
 
 export type ExploreSort = 'trending' | 'newest' | 'most_supported'
 
@@ -29,6 +34,7 @@ export interface ExploreProjectItem {
   creator_name: string
   created_at: string
   supporter_count: number
+  preference_seed_boost?: number
   target_path: string
 }
 
@@ -116,9 +122,31 @@ export function buildExploreProjectItems(args: {
       }),
       created_at: project.created_at,
       supporter_count: args.supporterCountByProjectId[project.id] || 0,
+      preference_seed_boost: capProjectPreferenceBoost(args.projectPreferenceBoostById?.[project.id] || 0),
       target_path: `/dashboard/projects/${project.id}`,
     }
   })
+
+  if (shouldLogDiscoveryRankingDiagnostics()) {
+    for (const item of items.slice(0, 20)) {
+      const detail = getTrendingScoreDetails({
+        item,
+        engagementCount: args.engagementCountByProjectId[item.project_id] || 0,
+        recentUpdatesCount: args.recentUpdatesCountByProjectId[item.project_id] || 0,
+        latestUpdateAt: args.latestUpdateAtByProjectId[item.project_id] || null,
+        creatorPenalty: args.creatorReasonPenaltyById?.[item.creator_id] || 0,
+        preferenceBoost: item.preference_seed_boost || 0,
+        nowMs,
+      })
+      // Dev-only ranking diagnostics for safe tuning.
+      console.info('[discovery_ranking][explore]', {
+        item_id: item.project_id,
+        baseline_score: Number(detail.baseline.toFixed(4)),
+        boost: Number(detail.boostApplied.toFixed(4)),
+        final_score: Number(detail.final.toFixed(4)),
+      })
+    }
+  }
 
   return items.sort((a, b) => {
     if (args.sort === 'trending') {
@@ -128,7 +156,7 @@ export function buildExploreProjectItems(args: {
         recentUpdatesCount: args.recentUpdatesCountByProjectId[a.project_id] || 0,
         latestUpdateAt: args.latestUpdateAtByProjectId[a.project_id] || null,
         creatorPenalty: args.creatorReasonPenaltyById?.[a.creator_id] || 0,
-        preferenceBoost: args.projectPreferenceBoostById?.[a.project_id] || 0,
+        preferenceBoost: a.preference_seed_boost || 0,
         nowMs,
       })
       const scoreB = getTrendingScore({
@@ -137,7 +165,7 @@ export function buildExploreProjectItems(args: {
         recentUpdatesCount: args.recentUpdatesCountByProjectId[b.project_id] || 0,
         latestUpdateAt: args.latestUpdateAtByProjectId[b.project_id] || null,
         creatorPenalty: args.creatorReasonPenaltyById?.[b.creator_id] || 0,
-        preferenceBoost: args.projectPreferenceBoostById?.[b.project_id] || 0,
+        preferenceBoost: b.preference_seed_boost || 0,
         nowMs,
       })
       if (scoreB !== scoreA) return scoreB - scoreA
@@ -147,12 +175,16 @@ export function buildExploreProjectItems(args: {
       if (b.supporter_count !== a.supporter_count) {
         return b.supporter_count - a.supporter_count
       }
+      const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      if (timeDiff !== 0) return timeDiff
     }
-    const boostA = args.projectPreferenceBoostById?.[a.project_id] || 0
-    const boostB = args.projectPreferenceBoostById?.[b.project_id] || 0
+    if (args.sort === 'newest') {
+      const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      if (timeDiff !== 0) return timeDiff
+    }
+    const boostA = a.preference_seed_boost || 0
+    const boostB = b.preference_seed_boost || 0
     if (boostB !== boostA) return boostB - boostA
-    const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    if (timeDiff !== 0) return timeDiff
     return b.project_id.localeCompare(a.project_id)
   })
 }
@@ -166,6 +198,18 @@ function getTrendingScore(args: {
   preferenceBoost: number
   nowMs: number
 }): number {
+  return getTrendingScoreDetails(args).final
+}
+
+function getTrendingScoreDetails(args: {
+  item: ExploreProjectItem
+  engagementCount: number
+  recentUpdatesCount: number
+  latestUpdateAt: string | null
+  creatorPenalty: number
+  preferenceBoost: number
+  nowMs: number
+}): { baseline: number; boostApplied: number; final: number } {
   const latestActivityMs = Math.max(
     new Date(args.item.created_at).getTime() || 0,
     new Date(args.latestUpdateAt || '').getTime() || 0
@@ -189,9 +233,12 @@ function getTrendingScore(args: {
   if (args.creatorPenalty > 0) {
     score -= args.creatorPenalty
   }
-  if (args.preferenceBoost > 0) {
-    score += Math.min(args.preferenceBoost, 4) * 0.8
-  }
+  const boostApplied = applyPreferenceBoostWeight(capProjectPreferenceBoost(args.preferenceBoost))
+  if (boostApplied > 0) score += boostApplied
 
-  return score
+  return {
+    baseline: score - boostApplied,
+    boostApplied,
+    final: score,
+  }
 }
