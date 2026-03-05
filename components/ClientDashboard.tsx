@@ -13,6 +13,7 @@ import { showToast } from './Toast'
 import ShareModal from './ShareModal'
 import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
 import FollowingFeedSection from './FollowingFeedSection'
+import SharedWithMeSection from './SharedWithMeSection'
 
 // Extended type for saved projects with additional info
 interface SavedProject extends Project {
@@ -514,6 +515,7 @@ export default function ClientDashboard() {
       <main className="px-4 py-8 max-w-7xl mx-auto relative z-10 overflow-x-hidden">
         <h1 className="text-3xl font-bold mb-8 text-white">Your Projects</h1>
         <FollowingFeedSection authenticated={authenticated} getAccessToken={getAccessToken} />
+        <SharedWithMeSection authenticated={authenticated} getAccessToken={getAccessToken} />
 
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
