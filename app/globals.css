@@ -598,24 +598,42 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* Ensure Privy auth UI always sits above app overlays without flattening all descendants. */
+/* Ensure Privy auth UI stays above app overlays. */
 [data-privy-portal],
 [data-privy-root],
-[id^="privy-dialog"],
-[id^="privy-modal"],
+[id*="privy"],
+[class*="privy"],
 iframe[src*="privy.io"] {
   z-index: 2147483000 !important;
 }
 
-[data-privy-backdrop],
-[id*="privy-backdrop"] {
-  z-index: 2147482999 !important;
+/* Prevent full-screen Privy wrappers/backdrops from intercepting modal input taps. */
+[id*="privy"] > div,
+[class*="privy"] > div {
+  pointer-events: none !important;
 }
 
-[data-privy-dialog],
-[data-privy-modal],
-[id*="privy-dialog"],
-[id*="privy-modal"] {
+[id*="privy"] [role="dialog"],
+[class*="privy"] [role="dialog"],
+[id*="privy"] [aria-modal="true"],
+[class*="privy"] [aria-modal="true"] {
   z-index: 2147483001 !important;
+  pointer-events: auto !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[id*="privy"] [role="dialog"] *,
+[class*="privy"] [role="dialog"] *,
+[id*="privy"] [aria-modal="true"] *,
+[class*="privy"] [aria-modal="true"] * {
+  pointer-events: auto !important;
+}
+
+[id*="privy"] input,
+[class*="privy"] input,
+[id*="privy"] button,
+[class*="privy"] button {
   pointer-events: auto !important;
 }
