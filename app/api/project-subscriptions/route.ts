@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import {
+  normalizeProjectSubscriptionNotificationMode,
+  parseProjectSubscriptionNotificationModeFromBody,
   parseProjectSubscriptionProjectIdFromBody,
   parseProjectSubscriptionProjectIdFromDelete,
 } from '@/lib/projectSubscriptions'
@@ -68,19 +70,22 @@ export async function GET(request: NextRequest) {
     }
 
     let isSubscribed = false
+    let notificationMode: 'all' | 'important' | 'mute' = 'all'
     if (currentUser?.id) {
       const { data: existingSub } = await supabaseAdmin
         .from('project_subscriptions')
-        .select('id')
+        .select('id, notification_mode')
         .eq('project_id', projectId)
         .eq('user_id', currentUser.id)
         .maybeSingle()
       isSubscribed = !!existingSub
+      notificationMode = normalizeProjectSubscriptionNotificationMode(existingSub?.notification_mode)
     }
 
     return NextResponse.json({
       isSubscribed,
       subscriberCount: subscriberCount || 0,
+      notification_mode: notificationMode,
     })
   } catch (error) {
     console.error('Error in project subscriptions GET:', error)
@@ -125,7 +130,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const { error: upsertError } = await supabaseAdmin
+    const { data: createdSub, error: upsertError } = await supabaseAdmin
       .from('project_subscriptions')
       .upsert(
         {
@@ -134,6 +139,8 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: 'user_id,project_id' }
       )
+      .select('notification_mode')
+      .single()
 
     if (upsertError) {
       return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 })
@@ -147,6 +154,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       isSubscribed: true,
       subscriberCount: subscriberCount || 0,
+      notification_mode: normalizeProjectSubscriptionNotificationMode(createdSub?.notification_mode),
     })
   } catch (error) {
     console.error('Error in project subscriptions POST:', error)
@@ -196,9 +204,70 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       isSubscribed: false,
       subscriberCount: subscriberCount || 0,
+      notification_mode: 'all',
     })
   } catch (error) {
     console.error('Error in project subscriptions DELETE:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const currentUser = await getRequiredCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    const projectId = parseProjectSubscriptionProjectIdFromBody(body)
+    if (!projectId || !isValidUUID(projectId)) {
+      return NextResponse.json({ error: 'Valid project_id is required' }, { status: 400 })
+    }
+    const mode = parseProjectSubscriptionNotificationModeFromBody(body)
+    if (!mode) {
+      return NextResponse.json(
+        { error: 'notification_mode must be one of: all, important, mute' },
+        { status: 400 }
+      )
+    }
+
+    const { data: existingSub } = await supabaseAdmin
+      .from('project_subscriptions')
+      .select('id, notification_mode')
+      .eq('user_id', currentUser.id)
+      .eq('project_id', projectId)
+      .maybeSingle()
+    if (!existingSub) {
+      return NextResponse.json({ error: 'Subscribe to project before changing notification mode' }, { status: 404 })
+    }
+
+    const { data: updatedSub, error: updateError } = await supabaseAdmin
+      .from('project_subscriptions')
+      .update({ notification_mode: mode })
+      .eq('user_id', currentUser.id)
+      .eq('project_id', projectId)
+      .select('notification_mode')
+      .single()
+
+    if (updateError) {
+      return NextResponse.json({ error: 'Failed to update notification mode' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      notification_mode: normalizeProjectSubscriptionNotificationMode(updatedSub?.notification_mode),
+      old_mode: normalizeProjectSubscriptionNotificationMode(existingSub.notification_mode),
+      new_mode: normalizeProjectSubscriptionNotificationMode(updatedSub?.notification_mode),
+    })
+  } catch (error) {
+    console.error('Error in project subscriptions PATCH:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

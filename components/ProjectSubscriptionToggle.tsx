@@ -16,6 +16,7 @@ interface ProjectSubscriptionToggleProps {
 interface ProjectSubscriptionState {
   isSubscribed: boolean
   subscriberCount: number
+  notificationMode: 'all' | 'important' | 'mute'
 }
 
 export default function ProjectSubscriptionToggle({
@@ -26,7 +27,11 @@ export default function ProjectSubscriptionToggle({
   onRequireAuth,
   source,
 }: ProjectSubscriptionToggleProps) {
-  const [state, setState] = useState<ProjectSubscriptionState>({ isSubscribed: false, subscriberCount: 0 })
+  const [state, setState] = useState<ProjectSubscriptionState>({
+    isSubscribed: false,
+    subscriberCount: 0,
+    notificationMode: 'all',
+  })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -45,6 +50,20 @@ export default function ProjectSubscriptionToggle({
     )
   }
 
+  const emitModeEvent = (detail: Record<string, unknown>) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('project_notification_mode_event', {
+        detail: {
+          schema: 'project_notification_mode.v1',
+          source,
+          project_id: projectId,
+          ...detail,
+        },
+      })
+    )
+  }
+
   const loadStatus = async () => {
     setLoading(true)
     try {
@@ -57,6 +76,10 @@ export default function ProjectSubscriptionToggle({
       const nextState = {
         isSubscribed: !!result.isSubscribed,
         subscriberCount: result.subscriberCount || 0,
+        notificationMode:
+          result.notification_mode === 'important' || result.notification_mode === 'mute'
+            ? result.notification_mode
+            : 'all',
       }
       setState(nextState)
       emitEvent({
@@ -64,9 +87,16 @@ export default function ProjectSubscriptionToggle({
         subscriber_count: nextState.subscriberCount,
         is_subscribed: nextState.isSubscribed,
       })
+      if (nextState.isSubscribed) {
+        emitModeEvent({
+          action: 'view_mode',
+          old_mode: null,
+          new_mode: nextState.notificationMode,
+        })
+      }
     } catch (error) {
       console.error('Error loading project subscription state:', error)
-      setState({ isSubscribed: false, subscriberCount: 0 })
+      setState({ isSubscribed: false, subscriberCount: 0, notificationMode: 'all' })
     } finally {
       setLoading(false)
     }
@@ -110,6 +140,10 @@ export default function ProjectSubscriptionToggle({
       const nextState = {
         isSubscribed: !!result.isSubscribed,
         subscriberCount: result.subscriberCount || 0,
+        notificationMode:
+          result.notification_mode === 'important' || result.notification_mode === 'mute'
+            ? result.notification_mode
+            : 'all',
       }
       setState(nextState)
       emitEvent({
@@ -124,8 +158,52 @@ export default function ProjectSubscriptionToggle({
     }
   }
 
+  const handleModeChange = async (nextMode: 'all' | 'important' | 'mute') => {
+    if (!authenticated || !state.isSubscribed || submitting) return
+    const oldMode = state.notificationMode
+    if (oldMode === nextMode) return
+    setSubmitting(true)
+    setState((prev) => ({ ...prev, notificationMode: nextMode }))
+    try {
+      const token = await getAccessToken()
+      if (!token) {
+        onRequireAuth()
+        return
+      }
+      const response = await fetch('/api/project-subscriptions', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          notification_mode: nextMode,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update notification mode')
+      const resolvedMode =
+        result.notification_mode === 'important' || result.notification_mode === 'mute'
+          ? result.notification_mode
+          : 'all'
+      setState((prev) => ({ ...prev, notificationMode: resolvedMode }))
+      emitModeEvent({
+        action: 'change_mode',
+        old_mode: oldMode,
+        new_mode: resolvedMode,
+      })
+    } catch (error) {
+      console.error('Error updating project notification mode:', error)
+      setState((prev) => ({ ...prev, notificationMode: oldMode }))
+      showToast('Failed to update notification mode', 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
-    <div className="inline-flex items-center gap-2">
+    <div className="inline-flex flex-wrap items-center gap-2">
       <button
         type="button"
         onClick={handleToggle}
@@ -140,6 +218,31 @@ export default function ProjectSubscriptionToggle({
         {loading ? 'Loading...' : state.isSubscribed ? 'Watching' : 'Watch project'}
       </button>
       <span className="text-xs text-gray-500">{state.subscriberCount} watching</span>
+      {state.isSubscribed ? (
+        <div className="inline-flex items-center gap-1 border border-gray-800 rounded-full px-1 py-1">
+          {(
+            [
+              { id: 'all', label: 'All' },
+              { id: 'important', label: 'Important' },
+              { id: 'mute', label: 'Mute' },
+            ] as const
+          ).map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => handleModeChange(mode.id)}
+              disabled={submitting}
+              className={`text-[11px] px-2 py-1 rounded-full border transition ${
+                state.notificationMode === mode.id
+                  ? 'border-neon-green text-neon-green'
+                  : 'border-gray-800 text-gray-400 hover:border-gray-700'
+              }`}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

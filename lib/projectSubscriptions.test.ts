@@ -2,6 +2,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildProjectUpdateRecipientIds,
+  filterProjectUpdateSubscriberIdsByMode,
+  isImportantProjectUpdate,
+  normalizeProjectSubscriptionNotificationMode,
+  parseProjectSubscriptionNotificationModeFromBody,
   parseProjectSubscriptionProjectIdFromBody,
   parseProjectSubscriptionProjectIdFromDelete,
   parseProjectSubscriptionsLimit,
@@ -43,5 +47,50 @@ test('buildProjectUpdateRecipientIds dedupes overlap and excludes creator', () =
     subscriberIds: ['u3', 'u4'],
   })
   assert.deepEqual(recipients.sort(), ['u2', 'u3', 'u4'])
+})
+
+test('parseProjectSubscriptionNotificationModeFromBody validates strict modes', () => {
+  assert.equal(parseProjectSubscriptionNotificationModeFromBody({ notification_mode: 'all' }), 'all')
+  assert.equal(parseProjectSubscriptionNotificationModeFromBody({ notification_mode: 'important' }), 'important')
+  assert.equal(parseProjectSubscriptionNotificationModeFromBody({ notification_mode: 'mute' }), 'mute')
+  assert.equal(parseProjectSubscriptionNotificationModeFromBody({ notification_mode: 'other' }), null)
+  assert.equal(parseProjectSubscriptionNotificationModeFromBody({}), null)
+})
+
+test('normalizeProjectSubscriptionNotificationMode defaults safely', () => {
+  assert.equal(normalizeProjectSubscriptionNotificationMode('all'), 'all')
+  assert.equal(normalizeProjectSubscriptionNotificationMode('important'), 'important')
+  assert.equal(normalizeProjectSubscriptionNotificationMode('mute'), 'mute')
+  assert.equal(normalizeProjectSubscriptionNotificationMode('unknown'), 'all')
+})
+
+test('isImportantProjectUpdate uses version label keywords', () => {
+  assert.equal(isImportantProjectUpdate({ versionLabel: 'Final Mix' }), true)
+  assert.equal(isImportantProjectUpdate({ versionLabel: 'release-candidate' }), true)
+  assert.equal(isImportantProjectUpdate({ versionLabel: 'v2' }), false)
+  assert.equal(isImportantProjectUpdate({ versionLabel: null }), false)
+})
+
+test('filterProjectUpdateSubscriberIdsByMode enforces all/important/mute', () => {
+  const nonImportant = filterProjectUpdateSubscriberIdsByMode({
+    rows: [
+      { user_id: 'u1', notification_mode: 'all' },
+      { user_id: 'u2', notification_mode: 'important' },
+      { user_id: 'u3', notification_mode: 'mute' },
+      { user_id: 'u4' },
+    ],
+    isImportant: false,
+  })
+  assert.deepEqual(nonImportant.sort(), ['u1', 'u4'])
+
+  const important = filterProjectUpdateSubscriberIdsByMode({
+    rows: [
+      { user_id: 'u1', notification_mode: 'all' },
+      { user_id: 'u2', notification_mode: 'important' },
+      { user_id: 'u3', notification_mode: 'mute' },
+    ],
+    isImportant: true,
+  })
+  assert.deepEqual(important.sort(), ['u1', 'u2'])
 })
 

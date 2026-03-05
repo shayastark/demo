@@ -12,6 +12,7 @@ import {
   type UpdateEngagementNotificationAction,
 } from './updateEngagementNotifications'
 import { buildProjectUpdateRecipientIds } from './projectSubscriptions'
+import { filterProjectUpdateSubscriberIdsByMode, isImportantProjectUpdate } from './projectSubscriptions'
 import {
   buildProjectAccessInviteTargetPath,
   buildProjectAccessInviteTitle,
@@ -322,7 +323,7 @@ export async function notifyFollowersProjectUpdate({
 
     const { data: subscribers, error: subscribersError } = await supabaseAdmin
       .from('project_subscriptions')
-      .select('user_id')
+      .select('user_id, notification_mode')
       .eq('project_id', projectId)
 
     if (subscribersError) {
@@ -332,9 +333,13 @@ export async function notifyFollowersProjectUpdate({
     const followerIds = (followers || [])
       .map((row) => row.follower_id)
       .filter((id): id is string => typeof id === 'string')
-    const subscriberIds = (subscribers || [])
-      .map((row) => row.user_id)
-      .filter((id): id is string => typeof id === 'string')
+    const subscriberIds = filterProjectUpdateSubscriberIdsByMode({
+      rows: (subscribers || []).map((row) => ({
+        user_id: row.user_id,
+        notification_mode: row.notification_mode,
+      })),
+      isImportant: isImportantProjectUpdate({ versionLabel }),
+    })
 
     const recipientIds = buildProjectUpdateRecipientIds({
       creatorId,
