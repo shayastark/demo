@@ -39,6 +39,13 @@ type ProjectAccessGrant = {
   email?: string | null
 }
 
+type ProjectAccessIdentifierType = 'username' | 'email' | 'user_id'
+
+type ProjectAccessInlineState = {
+  tone: 'success' | 'error'
+  message: string
+}
+
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
   const router = useRouter()
@@ -81,8 +88,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const visibilityViewTrackedRef = useRef<string | null>(null)
   const [projectAccessGrants, setProjectAccessGrants] = useState<ProjectAccessGrant[]>([])
   const [projectAccessLoading, setProjectAccessLoading] = useState(false)
-  const [projectAccessUserIdInput, setProjectAccessUserIdInput] = useState('')
+  const [projectAccessIdentifierInput, setProjectAccessIdentifierInput] = useState('')
   const [projectAccessSaving, setProjectAccessSaving] = useState(false)
+  const [projectAccessInlineState, setProjectAccessInlineState] = useState<ProjectAccessInlineState | null>(null)
   // Detect mobile vs desktop
   useEffect(() => {
     const checkMobile = () => {
@@ -293,13 +301,39 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
   const handleGrantProjectAccess = async () => {
     if (!project?.id || !isCreator) return
-    const targetUserId = projectAccessUserIdInput.trim()
-    if (!targetUserId) {
-      showToast('Enter a user_id to grant access', 'error')
+    const identifier = projectAccessIdentifierInput.trim()
+    if (!identifier) {
+      setProjectAccessInlineState({
+        tone: 'error',
+        message: 'Enter a username, email, or user ID.',
+      })
       return
     }
+
+    const identifierType: ProjectAccessIdentifierType = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      identifier
+    )
+      ? 'user_id'
+      : identifier.includes('@')
+        ? 'email'
+        : 'username'
+
     setProjectAccessSaving(true)
+    setProjectAccessInlineState(null)
     try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_event', {
+            detail: {
+              schema: 'project_access.v1',
+              action: 'grant_attempt',
+              project_id: project.id,
+              source: 'project_detail_settings',
+              identifier_type: identifierType,
+            },
+          })
+        )
+      }
       const token = await getAccessToken()
       if (!token) throw new Error('Not authenticated')
       const response = await fetch('/api/project-access', {
@@ -310,29 +344,80 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         },
         body: JSON.stringify({
           project_id: project.id,
-          user_id: targetUserId,
+          identifier,
         }),
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Failed to grant access')
-      setProjectAccessUserIdInput('')
+      if (!response.ok) {
+        const failureReason =
+          typeof result?.code === 'string' ? result.code : 'unknown_error'
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('project_access_event', {
+              detail: {
+                schema: 'project_access.v1',
+                action: 'grant_failure',
+                project_id: project.id,
+                source: 'project_detail_settings',
+                identifier_type:
+                  result?.identifier_type || identifierType,
+                failure_reason: failureReason,
+              },
+            })
+          )
+        }
+        if (failureReason === 'already_granted') {
+          setProjectAccessInlineState({ tone: 'error', message: 'This user already has access.' })
+        } else if (failureReason === 'user_not_found') {
+          setProjectAccessInlineState({ tone: 'error', message: 'No user found for that identifier.' })
+        } else if (failureReason === 'self_grant') {
+          setProjectAccessInlineState({ tone: 'error', message: 'You already have access as the project creator.' })
+        } else if (failureReason === 'ambiguous_match') {
+          setProjectAccessInlineState({ tone: 'error', message: 'That identifier matched multiple users. Use email or user ID.' })
+        } else {
+          setProjectAccessInlineState({
+            tone: 'error',
+            message: result.error || 'Failed to grant access.',
+          })
+        }
+        return
+      }
+
+      setProjectAccessIdentifierInput('')
       await loadProjectAccessGrants(project.id)
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('project_access_event', {
             detail: {
               schema: 'project_access.v1',
-              action: 'grant',
+              action: 'grant_success',
               project_id: project.id,
-              target_user_id: targetUserId,
+              target_user_id: result.user_id,
               source: 'project_detail_settings',
+              identifier_type: result.identifier_type || identifierType,
             },
           })
         )
       }
+      setProjectAccessInlineState({ tone: 'success', message: 'Invite sent successfully.' })
       showToast('Private access granted', 'success')
     } catch (error) {
       console.error('Error granting project access:', error)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('project_access_event', {
+            detail: {
+              schema: 'project_access.v1',
+              action: 'grant_failure',
+              project_id: project.id,
+              source: 'project_detail_settings',
+              identifier_type: identifierType,
+              failure_reason: 'request_failed',
+            },
+          })
+        )
+      }
+      setProjectAccessInlineState({ tone: 'error', message: 'Failed to grant access.' })
       showToast(error instanceof Error ? error.message : 'Failed to grant access', 'error')
     } finally {
       setProjectAccessSaving(false)
@@ -1614,25 +1699,34 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <div style={{ borderTop: '1px solid #374151', paddingTop: '24px' }}>
                   <div className="font-medium text-white text-base">Private Access</div>
                   <div className="text-sm text-gray-400" style={{ marginTop: '6px', marginBottom: '12px' }}>
-                    Grant view access to specific users by user_id.
+                    Grant view access by username, email, or user ID.
                   </div>
                   <div className="flex gap-2 mb-3">
                     <input
                       type="text"
-                      placeholder="user_id (UUID)"
-                      value={projectAccessUserIdInput}
-                      onChange={(event) => setProjectAccessUserIdInput(event.target.value)}
+                      placeholder="username, email, or user_id"
+                      value={projectAccessIdentifierInput}
+                      onChange={(event) => setProjectAccessIdentifierInput(event.target.value)}
                       className="flex-1 bg-black border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-neon-green"
                     />
                     <button
                       type="button"
                       onClick={handleGrantProjectAccess}
-                      disabled={projectAccessSaving || !projectAccessUserIdInput.trim()}
+                      disabled={projectAccessSaving || !projectAccessIdentifierInput.trim()}
                       className="px-3 py-2 rounded bg-neon-green text-black text-sm font-medium disabled:opacity-50"
                     >
                       Grant
                     </button>
                   </div>
+                  {projectAccessInlineState ? (
+                    <p
+                      className={`text-xs mb-2 ${
+                        projectAccessInlineState.tone === 'success' ? 'text-neon-green' : 'text-red-400'
+                      }`}
+                    >
+                      {projectAccessInlineState.message}
+                    </p>
+                  ) : null}
                   {projectAccessLoading ? (
                     <p className="text-xs text-gray-500">Loading access list...</p>
                   ) : projectAccessGrants.length === 0 ? (

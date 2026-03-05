@@ -4,8 +4,10 @@ import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import {
   canManageProjectAccess,
+  getProjectAccessIdentifierType,
   isRedundantProjectAccessGrant,
   parseProjectAccessGrantInput,
+  resolveProjectAccessIdentifier,
 } from '@/lib/projectAccess'
 
 async function getRequiredCurrentUser(request: NextRequest) {
@@ -21,6 +23,53 @@ async function getProject(projectId: string) {
     .eq('id', projectId)
     .single()
   return project
+}
+
+async function resolveTargetUserIdByIdentifier(identifier: string) {
+  const identifierType = getProjectAccessIdentifierType(identifier)
+
+  if (identifierType === 'user_id') {
+    const { data: users, error } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('id', identifier)
+      .limit(2)
+    if (error) throw error
+    const resolution = resolveProjectAccessIdentifier({
+      identifier,
+      identifierType,
+      candidates: users || [],
+    })
+    return { identifierType, resolution }
+  }
+
+  if (identifierType === 'email') {
+    const { data: users, error } = await supabaseAdmin
+      .from('users')
+      .select('id, email')
+      .ilike('email', identifier)
+      .limit(10)
+    if (error) throw error
+    const resolution = resolveProjectAccessIdentifier({
+      identifier,
+      identifierType,
+      candidates: users || [],
+    })
+    return { identifierType, resolution }
+  }
+
+  const { data: users, error } = await supabaseAdmin
+    .from('users')
+    .select('id, username')
+    .ilike('username', identifier)
+    .limit(10)
+  if (error) throw error
+  const resolution = resolveProjectAccessIdentifier({
+    identifier,
+    identifierType,
+    candidates: users || [],
+  })
+  return { identifierType, resolution }
 }
 
 export async function GET(request: NextRequest) {
@@ -91,7 +140,10 @@ export async function POST(request: NextRequest) {
 
     const parsed = parseProjectAccessGrantInput(body)
     if (!parsed) {
-      return NextResponse.json({ error: 'Valid project_id and user_id are required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Valid project_id and identifier are required', code: 'invalid_payload' },
+        { status: 400 }
+      )
     }
 
     const project = await getProject(parsed.project_id)
@@ -99,32 +151,58 @@ export async function POST(request: NextRequest) {
     if (!canManageProjectAccess(currentUser.id, project.creator_id)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
-    if (isRedundantProjectAccessGrant({ creatorUserId: project.creator_id, targetUserId: parsed.user_id })) {
-      return NextResponse.json({ error: 'Cannot grant project creator access to own project' }, { status: 400 })
+    const identifierResult = await resolveTargetUserIdByIdentifier(parsed.identifier)
+    const { identifierType, resolution } = identifierResult
+    if (resolution.status === 'not_found') {
+      return NextResponse.json(
+        { error: 'User not found', code: 'user_not_found', identifier_type: identifierType },
+        { status: 404 }
+      )
+    }
+    if (resolution.status === 'ambiguous') {
+      return NextResponse.json(
+        { error: 'Identifier matches multiple users', code: 'ambiguous_match', identifier_type: identifierType },
+        { status: 409 }
+      )
+    }
+    const resolvedUserId = resolution.userId
+
+    if (isRedundantProjectAccessGrant({ creatorUserId: project.creator_id, targetUserId: resolvedUserId })) {
+      return NextResponse.json(
+        { error: 'Cannot grant project creator access to own project', code: 'self_grant', identifier_type: identifierType },
+        { status: 400 }
+      )
     }
 
-    const { data: targetUser } = await supabaseAdmin
-      .from('users')
+    const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
+      .from('project_access_grants')
       .select('id')
-      .eq('id', parsed.user_id)
-      .single()
-    if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      .eq('project_id', parsed.project_id)
+      .eq('user_id', resolvedUserId)
+      .maybeSingle()
+    if (existingGrantError) throw existingGrantError
+    if (existingGrant) {
+      return NextResponse.json(
+        { error: 'User already has access', code: 'already_granted', identifier_type: identifierType },
+        { status: 409 }
+      )
     }
 
     const { error } = await supabaseAdmin
       .from('project_access_grants')
-      .upsert(
-        {
-          project_id: parsed.project_id,
-          user_id: parsed.user_id,
-          granted_by_user_id: currentUser.id,
-        },
-        { onConflict: 'project_id,user_id' }
-      )
+      .insert({
+        project_id: parsed.project_id,
+        user_id: resolvedUserId,
+        granted_by_user_id: currentUser.id,
+      })
     if (error) throw error
 
-    return NextResponse.json({ success: true, project_id: parsed.project_id, user_id: parsed.user_id })
+    return NextResponse.json({
+      success: true,
+      project_id: parsed.project_id,
+      user_id: resolvedUserId,
+      identifier_type: identifierType,
+    })
   } catch (error) {
     console.error('Error in project access POST:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
