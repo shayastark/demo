@@ -15,6 +15,7 @@ import CreatorProfileModal from '@/components/CreatorProfileModal'
 import CreatorEarningsSnapshot from '@/components/CreatorEarningsSnapshot'
 import CreatorDigestCard from '@/components/CreatorDigestCard'
 import NotificationPreferencesSection from '@/components/NotificationPreferencesSection'
+import HiddenDiscoverySection from '@/components/HiddenDiscoverySection'
 import SocialGraphListModal from '@/components/SocialGraphListModal'
 import type { SocialGraphListType } from '@/lib/socialGraph'
 import { getFollowerIdFromQueryParam } from '@/lib/notificationInbox'
@@ -1059,6 +1060,10 @@ function AccountPageContent() {
         />
 
         <NotificationPreferencesSection
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+        />
+        <HiddenDiscoverySection
           authenticated={authenticated}
           getAccessToken={getAccessToken}
         />
