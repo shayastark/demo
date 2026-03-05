@@ -5,11 +5,10 @@ import { isValidUUID } from '@/lib/validation'
 import {
   sanitizeProjectUpdateContent,
   sanitizeProjectUpdateVersionLabel,
-  canManageProjectUpdates,
   type ProjectUpdateRow,
 } from '@/lib/projectUpdates'
 import { notifyFollowersProjectUpdate } from '@/lib/notifications'
-import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
+import { canPostProjectUpdate, canViewProject } from '@/lib/projectAccessPolicyServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canAccess = await canUserAccessProjectRow({
+    const canAccess = await canViewProject({
       project: {
         id: project.id,
         creator_id: project.creator_id,
@@ -85,19 +84,20 @@ export async function GET(request: NextRequest) {
       }, {})
     }
 
-    const canManageAsCreator = canManageProjectUpdates(currentUser?.id, project.creator_id)
-    const canManageAsContributor = await hasProjectRole({
-      projectId: project.id,
-      projectCreatorId: project.creator_id,
+    const canManage = await canPostProjectUpdate({
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
       userId: currentUser?.id,
-      minRole: 'contributor',
     })
-    const canManage = canManageAsCreator || canManageAsContributor
     const response = {
       can_manage: canManage,
       updates: rows.map((update) => ({
         ...update,
-        can_delete: canManageAsCreator || (canManageAsContributor && update.user_id === currentUser?.id),
+        can_delete: !!currentUser?.id && (currentUser.id === project.creator_id || (canManage && update.user_id === currentUser.id)),
         author_name: usersById[update.user_id]?.username || usersById[update.user_id]?.email || 'Unknown',
       })),
     }
@@ -134,14 +134,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canCreateAsCreator = canManageProjectUpdates(currentUser.id, project.creator_id)
-    const canCreateAsContributor = await hasProjectRole({
-      projectId: project.id,
-      projectCreatorId: project.creator_id,
+    const canCreate = await canPostProjectUpdate({
       userId: currentUser.id,
-      minRole: 'contributor',
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
     })
-    if (!canCreateAsCreator && !canCreateAsContributor) {
+    if (!canCreate) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -204,14 +206,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canDeleteAsCreator = canManageProjectUpdates(currentUser.id, project.creator_id)
-    const canDeleteAsContributor = await hasProjectRole({
-      projectId: project.id,
-      projectCreatorId: project.creator_id,
+    const canDeleteByPolicy = await canPostProjectUpdate({
       userId: currentUser.id,
-      minRole: 'contributor',
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
     })
-    const canDelete = canDeleteAsCreator || (canDeleteAsContributor && existingUpdate.user_id === currentUser.id)
+    const canDelete = currentUser.id === project.creator_id || (canDeleteByPolicy && existingUpdate.user_id === currentUser.id)
     if (!canDelete) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }

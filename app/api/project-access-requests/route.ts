@@ -3,8 +3,8 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import { hasProjectAccessGrant } from '@/lib/projectAccessServer'
+import { canManageProjectAccess } from '@/lib/projectAccessPolicyServer'
 import {
-  canReviewProjectAccessRequest,
   isProjectAccessRequestStatus,
   parseProjectAccessRequestCreateInput,
   parseProjectAccessRequestReviewInput,
@@ -61,7 +61,16 @@ export async function GET(request: NextRequest) {
 
     const project = await getProject(projectId)
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    if (!canReviewProjectAccessRequest({ creatorUserId: project.creator_id, viewerUserId: currentUser.id })) {
+    const canManage = await canManageProjectAccess({
+      userId: currentUser.id,
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: null,
+        sharing_enabled: null,
+      },
+    })
+    if (!canManage) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -253,7 +262,16 @@ export async function PATCH(request: NextRequest) {
 
     const project = await getProject(accessRequest.project_id)
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    if (!canReviewProjectAccessRequest({ creatorUserId: project.creator_id, viewerUserId: currentUser.id })) {
+    const canManage = await canManageProjectAccess({
+      userId: currentUser.id,
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: null,
+        sharing_enabled: null,
+      },
+    })
+    if (!canManage) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 

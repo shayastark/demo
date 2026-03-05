@@ -6,7 +6,7 @@ import {
   parseProjectVisibility,
   resolveProjectVisibility,
 } from '@/lib/projectVisibility'
-import { canUserAccessProjectRow } from '@/lib/projectAccessServer'
+import { canManageProjectAccess, canViewProject } from '@/lib/projectAccessPolicyServer'
 
 async function getOptionalUserFromAuthorizationHeader(value: string | null) {
   const authResult = await verifyPrivyToken(value)
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       }
 
       const resolvedVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
-      const canAccess = await canUserAccessProjectRow({
+      const canAccess = await canViewProject({
         project: {
           id: project.id,
           creator_id: project.creator_id,
@@ -196,11 +196,24 @@ export async function PATCH(request: NextRequest) {
     // Verify ownership
     const { data: existingProject } = await supabaseAdmin
       .from('projects')
-      .select('creator_id')
+      .select('id, creator_id, visibility, sharing_enabled')
       .eq('id', id)
       .single()
 
-    if (!existingProject || existingProject.creator_id !== user.id) {
+    if (!existingProject) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const canManage = await canManageProjectAccess({
+      userId: user.id,
+      project: {
+        id: existingProject.id,
+        creator_id: existingProject.creator_id,
+        visibility: existingProject.visibility,
+        sharing_enabled: existingProject.sharing_enabled,
+      },
+    })
+    if (!canManage) {
       return NextResponse.json({ error: 'Project not found or unauthorized' }, { status: 404 })
     }
 
@@ -258,11 +271,23 @@ export async function DELETE(request: NextRequest) {
     // Verify ownership
     const { data: existingProject } = await supabaseAdmin
       .from('projects')
-      .select('creator_id')
+      .select('id, creator_id, visibility, sharing_enabled')
       .eq('id', id)
       .single()
 
-    if (!existingProject || existingProject.creator_id !== user.id) {
+    if (!existingProject) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+    const canManage = await canManageProjectAccess({
+      userId: user.id,
+      project: {
+        id: existingProject.id,
+        creator_id: existingProject.creator_id,
+        visibility: existingProject.visibility,
+        sharing_enabled: existingProject.sharing_enabled,
+      },
+    })
+    if (!canManage) {
       return NextResponse.json({ error: 'Project not found or unauthorized' }, { status: 404 })
     }
 

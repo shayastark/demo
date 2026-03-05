@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import { parseProjectAttachmentsLimit, validateProjectAttachmentInput } from '@/lib/projectAttachments'
-import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
+import { canPostProjectUpdate, canViewProject } from '@/lib/projectAccessPolicyServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const canAccess = await canUserAccessProjectRow({
+    const canAccess = await canViewProject({
       project: {
         id: project.id,
         creator_id: project.creator_id,
@@ -69,22 +69,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to load attachments' }, { status: 500 })
     }
 
-    const canManageAsCreator = currentUser?.id === project.creator_id
-    const canManageAsContributor = await hasProjectRole({
-      projectId: project.id,
-      projectCreatorId: project.creator_id,
+    const canManage = await canPostProjectUpdate({
       userId: currentUser?.id,
-      minRole: 'contributor',
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: project.visibility,
+        sharing_enabled: project.sharing_enabled,
+      },
     })
 
     return NextResponse.json({
       attachments: (attachments || []).map((attachment) => ({
         ...attachment,
         can_delete:
-          canManageAsCreator ||
-          (canManageAsContributor && !!currentUser?.id && attachment.user_id === currentUser.id),
+          !!currentUser?.id &&
+          (currentUser.id === project.creator_id || (canManage && attachment.user_id === currentUser.id)),
       })),
-      can_manage: canManageAsCreator || canManageAsContributor,
+      can_manage: canManage,
     })
   } catch (error) {
     console.error('Error in project attachments GET:', error)
@@ -125,14 +127,16 @@ export async function POST(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    const canManageAsCreator = project.creator_id === currentUser.id
-    const canManageAsContributor = await hasProjectRole({
-      projectId: project.id,
-      projectCreatorId: project.creator_id,
+    const canManage = await canPostProjectUpdate({
       userId: currentUser.id,
-      minRole: 'contributor',
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: null,
+        sharing_enabled: null,
+      },
     })
-    if (!canManageAsCreator && !canManageAsContributor) {
+    if (!canManage) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -194,16 +198,18 @@ export async function DELETE(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    const canDeleteAsCreator = project.creator_id === currentUser.id
-    const canDeleteAsContributor = await hasProjectRole({
-      projectId: project.id,
-      projectCreatorId: project.creator_id,
+    const canDeleteByPolicy = await canPostProjectUpdate({
       userId: currentUser.id,
-      minRole: 'contributor',
+      project: {
+        id: project.id,
+        creator_id: project.creator_id,
+        visibility: null,
+        sharing_enabled: null,
+      },
     })
     const canDelete =
-      canDeleteAsCreator ||
-      (canDeleteAsContributor && attachment.user_id === currentUser.id)
+      currentUser.id === project.creator_id ||
+      (canDeleteByPolicy && attachment.user_id === currentUser.id)
     if (!canDelete) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }

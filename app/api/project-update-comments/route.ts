@@ -8,7 +8,7 @@ import {
   type ProjectUpdateCommentRow,
 } from '@/lib/projectUpdateComments'
 import { notifyCreatorUpdateEngagement } from '@/lib/notifications'
-import { canUserAccessProjectRow, hasProjectRole } from '@/lib/projectAccessServer'
+import { canCommentProject, canViewProject } from '@/lib/projectAccessPolicyServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
     }
 
-    const canAccess = await canUserAccessProjectRow({
+    const canAccess = await canViewProject({
       project: {
         id: resolved.project.id,
         creator_id: resolved.project.creator_id,
@@ -68,17 +68,6 @@ export async function GET(request: NextRequest) {
     })
     if (!canAccess) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
-    }
-    if (resolved.project.visibility === 'private' && currentUser.id !== resolved.project.creator_id) {
-      const canCommentAsCollaborator = await hasProjectRole({
-        projectId: resolved.project.id,
-        projectCreatorId: resolved.project.creator_id,
-        userId: currentUser.id,
-        minRole: 'commenter',
-      })
-      if (!canCommentAsCollaborator) {
-        return NextResponse.json({ error: 'Insufficient project role' }, { status: 403 })
-      }
     }
 
     const { data: comments, error } = await supabaseAdmin
@@ -156,7 +145,7 @@ export async function POST(request: NextRequest) {
     if (!resolved) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
     }
-    const canAccess = await canUserAccessProjectRow({
+    const canView = await canViewProject({
       project: {
         id: resolved.project.id,
         creator_id: resolved.project.creator_id,
@@ -166,8 +155,21 @@ export async function POST(request: NextRequest) {
       userId: currentUser.id,
       isDirectAccess: true,
     })
-    if (!canAccess) {
+    if (!canView) {
       return NextResponse.json({ error: 'Update not found' }, { status: 404 })
+    }
+    const canComment = await canCommentProject({
+      project: {
+        id: resolved.project.id,
+        creator_id: resolved.project.creator_id,
+        visibility: resolved.project.visibility,
+        sharing_enabled: resolved.project.sharing_enabled,
+      },
+      userId: currentUser.id,
+      isDirectAccess: true,
+    })
+    if (!canComment) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const { data: comment, error } = await supabaseAdmin
