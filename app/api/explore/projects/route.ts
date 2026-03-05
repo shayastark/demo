@@ -9,6 +9,7 @@ import {
 } from '@/lib/explore'
 
 const SEARCH_SCAN_LIMIT = 1000
+const RECENT_WINDOW_DAYS = 14
 
 type TipSupportRow = {
   project_id: string | null
@@ -73,7 +74,12 @@ export async function GET(request: NextRequest) {
 
     const projectIds = qFilteredProjects.map((project) => project.id)
     let supporterCountByProjectId: Record<string, number> = {}
+    let engagementCountByProjectId: Record<string, number> = {}
+    let recentUpdatesCountByProjectId: Record<string, number> = {}
+    let latestUpdateAtByProjectId: Record<string, string | null> = {}
     if (projectIds.length > 0) {
+      const recentIso = new Date(Date.now() - RECENT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+
       const { data: tipRows } = await supabaseAdmin
         .from('tips')
         .select('project_id, tipper_user_id')
@@ -92,12 +98,93 @@ export async function GET(request: NextRequest) {
         acc[projectId] = supporterSets[projectId].size
         return acc
       }, {})
+
+      const { data: updateRows } = await supabaseAdmin
+        .from('project_updates')
+        .select('id, project_id, created_at')
+        .in('project_id', projectIds)
+        .order('created_at', { ascending: false })
+        .limit(3000)
+
+      const updateIds: string[] = []
+      for (const row of updateRows || []) {
+        const projectId = typeof row.project_id === 'string' ? row.project_id : null
+        const updateId = typeof row.id === 'string' ? row.id : null
+        const createdAt = typeof row.created_at === 'string' ? row.created_at : null
+        if (!projectId || !updateId || !createdAt) continue
+        updateIds.push(updateId)
+
+        const latestForProject = latestUpdateAtByProjectId[projectId]
+        if (
+          !latestForProject ||
+          new Date(createdAt).getTime() > new Date(latestForProject).getTime()
+        ) {
+          latestUpdateAtByProjectId[projectId] = createdAt
+        }
+        if (new Date(createdAt).getTime() >= new Date(recentIso).getTime()) {
+          recentUpdatesCountByProjectId[projectId] = (recentUpdatesCountByProjectId[projectId] || 0) + 1
+        }
+      }
+
+      const { data: projectCommentRows } = await supabaseAdmin
+        .from('comments')
+        .select('project_id')
+        .in('project_id', projectIds)
+        .gte('created_at', recentIso)
+        .limit(3000)
+
+      for (const row of projectCommentRows || []) {
+        const projectId = typeof row.project_id === 'string' ? row.project_id : null
+        if (!projectId) continue
+        engagementCountByProjectId[projectId] = (engagementCountByProjectId[projectId] || 0) + 1
+      }
+
+      if (updateIds.length > 0) {
+        const [updateCommentResult, updateReactionResult] = await Promise.all([
+          supabaseAdmin
+            .from('project_update_comments')
+            .select('update_id')
+            .in('update_id', updateIds)
+            .gte('created_at', recentIso)
+            .limit(3000),
+          supabaseAdmin
+            .from('project_update_reactions')
+            .select('update_id')
+            .in('update_id', updateIds)
+            .gte('created_at', recentIso)
+            .limit(3000),
+        ])
+
+        const updateToProject = (updateRows || []).reduce<Record<string, string>>((acc, row) => {
+          if (typeof row.id === 'string' && typeof row.project_id === 'string') {
+            acc[row.id] = row.project_id
+          }
+          return acc
+        }, {})
+
+        for (const row of updateCommentResult.data || []) {
+          const updateId = typeof row.update_id === 'string' ? row.update_id : null
+          const projectId = updateId ? updateToProject[updateId] : null
+          if (!projectId) continue
+          engagementCountByProjectId[projectId] = (engagementCountByProjectId[projectId] || 0) + 1
+        }
+
+        for (const row of updateReactionResult.data || []) {
+          const updateId = typeof row.update_id === 'string' ? row.update_id : null
+          const projectId = updateId ? updateToProject[updateId] : null
+          if (!projectId) continue
+          engagementCountByProjectId[projectId] = (engagementCountByProjectId[projectId] || 0) + 1
+        }
+      }
     }
 
     const items = buildExploreProjectItems({
       projects: qFilteredProjects,
       creatorsById,
       supporterCountByProjectId,
+      engagementCountByProjectId,
+      recentUpdatesCountByProjectId,
+      latestUpdateAtByProjectId,
       sort: parsed.sort,
     })
 

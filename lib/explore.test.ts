@@ -29,7 +29,10 @@ test('parseExploreProjectsQuery validates sort and pagination', () => {
     rawOffset: null,
     rawQ: null,
   })
-  assert.equal(invalidSort.ok, false)
+  assert.equal(invalidSort.ok, true)
+  if (invalidSort.ok) {
+    assert.equal(invalidSort.sort, 'trending')
+  }
 })
 
 test('selectPublicExploreRows keeps public visibility only', () => {
@@ -103,6 +106,9 @@ test('buildExploreProjectItems sorts newest and most_supported deterministically
     projects: rows,
     creatorsById,
     supporterCountByProjectId: { 'p-old': 100, 'p-new': 1 },
+    engagementCountByProjectId: {},
+    recentUpdatesCountByProjectId: {},
+    latestUpdateAtByProjectId: {},
     sort: 'newest',
   })
   assert.deepEqual(byNewest.map((item) => item.project_id), ['p-new', 'p-old'])
@@ -111,9 +117,55 @@ test('buildExploreProjectItems sorts newest and most_supported deterministically
     projects: rows,
     creatorsById,
     supporterCountByProjectId: { 'p-old': 100, 'p-new': 1 },
+    engagementCountByProjectId: {},
+    recentUpdatesCountByProjectId: {},
+    latestUpdateAtByProjectId: {},
     sort: 'most_supported',
   })
   assert.deepEqual(bySupported.map((item) => item.project_id), ['p-old', 'p-new'])
+})
+
+test('buildExploreProjectItems trending prioritizes recent engagement', () => {
+  const rows: ExploreProjectRow[] = [
+    {
+      id: 'p-supported-old',
+      title: 'Supported old',
+      cover_image_url: null,
+      creator_id: 'c1',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'a',
+      created_at: '2025-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'p-trending',
+      title: 'Trending now',
+      cover_image_url: null,
+      creator_id: 'c2',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'b',
+      created_at: '2026-03-02T00:00:00.000Z',
+    },
+  ]
+
+  const items = buildExploreProjectItems({
+    projects: rows,
+    creatorsById: {
+      c1: { id: 'c1', username: 'old', email: null },
+      c2: { id: 'c2', username: 'new', email: null },
+    },
+    supporterCountByProjectId: { 'p-supported-old': 20, 'p-trending': 1 },
+    engagementCountByProjectId: { 'p-supported-old': 0, 'p-trending': 18 },
+    recentUpdatesCountByProjectId: { 'p-supported-old': 0, 'p-trending': 5 },
+    latestUpdateAtByProjectId: {
+      'p-supported-old': '2025-01-03T00:00:00.000Z',
+      'p-trending': '2026-03-06T00:00:00.000Z',
+    },
+    sort: 'trending',
+  })
+
+  assert.deepEqual(items.map((item) => item.project_id), ['p-trending', 'p-supported-old'])
 })
 
 test('pagination correctness for explore items', () => {
@@ -131,6 +183,9 @@ test('pagination correctness for explore items', () => {
     projects: rows,
     creatorsById: { c1: { id: 'c1', username: 'alpha', email: null } },
     supporterCountByProjectId: {},
+    engagementCountByProjectId: {},
+    recentUpdatesCountByProjectId: {},
+    latestUpdateAtByProjectId: {},
     sort: 'newest',
   })
   const pageRows = items.slice(2, 2 + 2 + 1)
@@ -138,4 +193,41 @@ test('pagination correctness for explore items', () => {
   assert.equal(page.items.length, 2)
   assert.equal(page.hasMore, true)
   assert.equal(page.nextOffset, 4)
+})
+
+test('stable ordering keeps pagination deterministic for same-score rows', () => {
+  const rows: ExploreProjectRow[] = [
+    {
+      id: 'p-2',
+      title: 'Project 2',
+      cover_image_url: null,
+      creator_id: 'c1',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 't-2',
+      created_at: '2026-03-01T00:00:00.000Z',
+    },
+    {
+      id: 'p-1',
+      title: 'Project 1',
+      cover_image_url: null,
+      creator_id: 'c1',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 't-1',
+      created_at: '2026-03-01T00:00:00.000Z',
+    },
+  ]
+
+  const items = buildExploreProjectItems({
+    projects: rows,
+    creatorsById: { c1: { id: 'c1', username: 'alpha', email: null } },
+    supporterCountByProjectId: { 'p-1': 0, 'p-2': 0 },
+    engagementCountByProjectId: { 'p-1': 0, 'p-2': 0 },
+    recentUpdatesCountByProjectId: { 'p-1': 0, 'p-2': 0 },
+    latestUpdateAtByProjectId: { 'p-1': null, 'p-2': null },
+    sort: 'trending',
+  })
+
+  assert.deepEqual(items.map((item) => item.project_id), ['p-2', 'p-1'])
 })

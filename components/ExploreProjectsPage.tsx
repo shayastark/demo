@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePrivy } from '@privy-io/react-auth'
 import { Loader2, Search } from 'lucide-react'
 
-type ExploreSort = 'newest' | 'most_supported'
+type ExploreSort = 'trending' | 'newest' | 'most_supported'
 
 interface ExploreItem {
   project_id: string
@@ -33,7 +33,7 @@ export default function ExploreProjectsPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sort, setSort] = useState<ExploreSort>('newest')
+  const [sort, setSort] = useState<ExploreSort>('trending')
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [nextOffset, setNextOffset] = useState<number | null>(null)
@@ -55,6 +55,24 @@ export default function ExploreProjectsPage() {
           source: 'explore_page',
           sort,
           query_length: queryLength,
+          ...detail,
+        },
+      })
+    )
+  }
+
+  const emitRankingEvent = (
+    action: 'view_with_sort' | 'sort_change' | 'project_click',
+    detail?: Record<string, unknown>
+  ) => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('explore_ranking_event', {
+        detail: {
+          schema: 'explore_ranking.v1',
+          action,
+          source: 'explore',
+          sort,
           ...detail,
         },
       })
@@ -94,6 +112,7 @@ export default function ExploreProjectsPage() {
         setItems(result.items || [])
         setHasMore(!!result.hasMore)
         setNextOffset(result.nextOffset)
+        emitRankingEvent('view_with_sort')
       } catch (loadError) {
         console.error('Error loading explore projects:', loadError)
         setError(loadError instanceof Error ? loadError.message : 'Failed to load explore projects')
@@ -192,9 +211,11 @@ export default function ExploreProjectsPage() {
                 const next = event.target.value as ExploreSort
                 setSort(next)
                 emitEvent('sort_change', { sort: next })
+                emitRankingEvent('sort_change', { sort: next })
               }}
               className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white"
             >
+              <option value="trending">Trending</option>
               <option value="newest">Newest</option>
               <option value="most_supported">Most Supported</option>
             </select>
@@ -215,11 +236,17 @@ export default function ExploreProjectsPage() {
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <Link
                   key={item.project_id}
                   href={item.target_path}
-                  onClick={() => emitEvent('project_click', { project_id: item.project_id })}
+                  onClick={() => {
+                    emitEvent('project_click', { project_id: item.project_id })
+                    emitRankingEvent('project_click', {
+                      project_id: item.project_id,
+                      position_index: index,
+                    })
+                  }}
                   className="bg-gray-900 rounded-xl p-3 border border-gray-800 hover:border-gray-700 transition"
                 >
                   <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-800 mb-3">
