@@ -11,6 +11,11 @@ import { applyFollowerCountDelta } from '@/lib/follows'
 import { markTipPromptConvertedInSession, type TipPromptSource, type TipPromptTrigger } from '@/lib/tipPrompt'
 import SocialGraphListModal from '@/components/SocialGraphListModal'
 import type { SocialGraphListType } from '@/lib/socialGraph'
+import {
+  resolveProjectVisibility,
+  shouldShowProjectOnCreatorProfile,
+  type ProjectVisibility,
+} from '@/lib/projectVisibility'
 
 // Dynamically import CryptoTipButton to avoid SSR issues
 const CryptoTipButton = dynamic(() => import('@/components/CryptoTipButton'), {
@@ -63,6 +68,13 @@ interface CreatorProfileModalProps {
   viewerKey?: string | null
 }
 
+interface CreatorProfileProjectPreview {
+  id: string
+  title: string
+  share_token: string
+  visibility: ProjectVisibility
+}
+
 export default function CreatorProfileModal({
   isOpen,
   onClose,
@@ -84,6 +96,7 @@ export default function CreatorProfileModal({
   const [currentDbUserId, setCurrentDbUserId] = useState<string | null>(null)
   const [isSocialGraphOpen, setIsSocialGraphOpen] = useState(false)
   const [socialGraphType, setSocialGraphType] = useState<SocialGraphListType>('followers')
+  const [creatorProjects, setCreatorProjects] = useState<CreatorProfileProjectPreview[]>([])
   
   // Tip state
   const [showTipOptions, setShowTipOptions] = useState(false)
@@ -136,6 +149,23 @@ export default function CreatorProfileModal({
     const loadCreator = async () => {
       setLoading(true)
       try {
+        let viewerDbUserId: string | null = null
+        // Fetch current user's username for tipping and self-view checks
+        if (authenticated && user?.id) {
+          const { data: tipperData } = await supabase
+            .from('users')
+            .select('id, username')
+            .eq('privy_id', user.id)
+            .single()
+
+          viewerDbUserId = tipperData?.id || null
+          setCurrentDbUserId(viewerDbUserId)
+          setTipperUsername(tipperData?.username || null)
+        } else {
+          setCurrentDbUserId(null)
+          setTipperUsername(null)
+        }
+
         // Fetch creator profile including wallet_address
         const { data: userData, error: userError } = await supabase
           .from('users')
@@ -146,30 +176,38 @@ export default function CreatorProfileModal({
         if (userError) throw userError
         setCreator(userData)
 
-        // Fetch project count
-        const { count, error: countError } = await supabase
+        const isOwnProfile = viewerDbUserId === activeCreatorId
+        const { data: creatorProjectRows, error: projectError } = await supabase
           .from('projects')
-          .select('id', { count: 'exact', head: true })
+          .select('id, title, share_token, visibility, sharing_enabled, created_at')
           .eq('creator_id', activeCreatorId)
-          .eq('sharing_enabled', true)
+          .order('created_at', { ascending: false })
+          .limit(25)
 
-        if (!countError) {
-          setProjectCount(count || 0)
+        if (projectError) {
+          console.error('Failed to load creator projects:', projectError)
+          setProjectCount(0)
+          setCreatorProjects([])
+        } else {
+          const visibleProjects = (creatorProjectRows || [])
+            .map((row) => ({
+              id: row.id as string,
+              title: (row.title as string) || 'Untitled project',
+              share_token: row.share_token as string,
+              visibility: resolveProjectVisibility(row.visibility, row.sharing_enabled as boolean | null),
+            }))
+            .filter((row) =>
+              shouldShowProjectOnCreatorProfile({
+                visibility: row.visibility,
+                isCreator: isOwnProfile,
+              })
+            )
+
+          setProjectCount(visibleProjects.length)
+          setCreatorProjects(visibleProjects.slice(0, 6))
         }
 
         await fetchFollowState(activeCreatorId)
-
-        // Fetch current user's username for tipping
-        if (authenticated && user?.id) {
-          const { data: tipperData } = await supabase
-            .from('users')
-            .select('id, username')
-            .eq('privy_id', user.id)
-            .single()
-          
-          setCurrentDbUserId(tipperData?.id || null)
-          setTipperUsername(tipperData?.username || null)
-        }
       } catch (error) {
         console.error('Error loading creator profile:', error)
       } finally {
@@ -521,6 +559,49 @@ export default function CreatorProfileModal({
                   <p style={{ fontSize: '15px', color: '#d1d5db', lineHeight: 1.6, margin: 0 }}>
                     {creator.bio}
                   </p>
+                </div>
+              )}
+
+              {creatorProjects.length > 0 && (
+                <div>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#fff', margin: '0 0 10px' }}>
+                    Projects
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {creatorProjects.map((project) => (
+                      <a
+                        key={project.id}
+                        href={`/share/${project.share_token}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          backgroundColor: '#1f2937',
+                          textDecoration: 'none',
+                        }}
+                        className="hover:bg-gray-700"
+                      >
+                        <span style={{ fontSize: '13px', color: '#e5e7eb', fontWeight: 500 }}>{project.title}</span>
+                        {currentDbUserId === creator.id ? (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              color: '#9ca3af',
+                              border: '1px solid #374151',
+                              borderRadius: '999px',
+                              padding: '2px 8px',
+                              textTransform: 'capitalize',
+                            }}
+                          >
+                            {project.visibility}
+                          </span>
+                        ) : null}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import SharedProjectPage from '@/components/SharedProjectPage'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { resolveProjectVisibility } from '@/lib/projectVisibility'
 
 type SharePageParams = {
   params: Promise<{ token: string }>
@@ -12,9 +13,13 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
   try {
     const { data: project } = await supabaseServer
       .from('projects')
-      .select('title, description, cover_image_url')
+      .select('title, description, cover_image_url, visibility, sharing_enabled')
       .eq('share_token', token)
       .single()
+
+    if (project && resolveProjectVisibility(project.visibility, project.sharing_enabled) === 'private') {
+      throw new Error('Private project metadata hidden')
+    }
 
     const baseTitle = project?.title || 'Demo - Share Music On Your Terms'
     const description =

@@ -6,6 +6,7 @@ export interface Project {
   cover_image_url?: string
   allow_downloads: boolean
   sharing_enabled: boolean
+  visibility?: 'public' | 'unlisted' | 'private'
   share_token: string
   pinned?: boolean
   created_at: string

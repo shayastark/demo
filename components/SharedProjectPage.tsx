@@ -21,6 +21,7 @@ import { addToQueue } from './BottomTabBar'
 import ShareModal from './ShareModal'
 import CreatorProfileModal from './CreatorProfileModal'
 import type { TipPromptTrigger } from '@/lib/tipPrompt'
+import { resolveProjectVisibility } from '@/lib/projectVisibility'
 
 interface SharedProjectPageProps {
   token: string
@@ -83,7 +84,8 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
   useEffect(() => {
     loadProject()
-  }, [token])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, authenticated])
 
   useEffect(() => {
     // Privy pattern: Always check ready first before checking authenticated
@@ -276,13 +278,16 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
   const loadProject = async () => {
     try {
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('share_token', token)
-        .single()
-
-      if (projectError) throw projectError
+      const authToken = authenticated ? await getAccessToken() : null
+      const response = await fetch(`/api/projects?share_token=${encodeURIComponent(token)}`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+      })
+      if (!response.ok) {
+        setProject(null)
+        setLoading(false)
+        return
+      }
+      const { project: projectData } = await response.json()
       setProject(projectData)
 
       // Fetch creator's username
@@ -591,8 +596,11 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     )
   }
 
-  // Check if sharing is disabled
-  if (project.sharing_enabled === false) {
+  // Backward-compatible check for legacy projects where sharing was explicitly disabled.
+  if (
+    resolveProjectVisibility(project.visibility, project.sharing_enabled) !== 'private' &&
+    project.sharing_enabled === false
+  ) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">

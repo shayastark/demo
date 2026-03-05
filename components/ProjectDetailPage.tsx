@@ -23,6 +23,7 @@ import CreatorProfileModal from './CreatorProfileModal'
 import { addToQueue } from './BottomTabBar'
 import { User } from 'lucide-react'
 import type { TipPromptTrigger } from '@/lib/tipPrompt'
+import { resolveProjectVisibility, type ProjectVisibility } from '@/lib/projectVisibility'
 
 interface ProjectDetailPageProps {
   projectId: string
@@ -67,6 +68,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
   const [tipPromptTrigger, setTipPromptTrigger] = useState<TipPromptTrigger | null>(null)
+  const visibilityViewTrackedRef = useRef<string | null>(null)
   // Detect mobile vs desktop
   useEffect(() => {
     const checkMobile = () => {
@@ -114,13 +116,20 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
   const loadProject = async () => {
     try {
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single()
-
-      if (projectError) throw projectError
+      const token = await getAccessToken()
+      const response = await fetch(`/api/projects?id=${encodeURIComponent(projectId)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
+      if (!response.ok) {
+        if (response.status === 404) {
+          setProject(null)
+          setLoading(false)
+          return
+        }
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load project')
+      }
+      const { project: projectData } = await response.json()
       setProject(projectData)
       
       // Set pinned state for creator's own projects
@@ -204,6 +213,25 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!isCreator || !project?.id) return
+    if (visibilityViewTrackedRef.current === project.id) return
+    visibilityViewTrackedRef.current = project.id
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('project_visibility_event', {
+          detail: {
+            schema: 'project_visibility.v1',
+            action: 'view_setting',
+            project_id: project.id,
+            old_visibility: resolveProjectVisibility(project.visibility, project.sharing_enabled),
+            source: 'project_detail_settings',
+          },
+        })
+      )
+    }
+  }, [isCreator, project?.id, project?.visibility, project?.sharing_enabled])
 
   const handleOpenShareModal = () => {
     if (!project) return
@@ -1268,6 +1296,57 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* Sharing Toggle */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '8px 0' }}>
+                <div style={{ flex: 1, marginRight: '24px' }}>
+                  <div className="font-medium text-white text-base">Visibility</div>
+                  <div className="text-sm text-gray-400" style={{ marginTop: '6px' }}>
+                    Public: appears on your profile. Unlisted: hidden from profile, link-only. Private: only you can view.
+                  </div>
+                </div>
+                <select
+                  value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
+                  onChange={async (event) => {
+                    const newVisibility = event.target.value as ProjectVisibility
+                    const oldVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
+                    const { error } = await apiRequest('/api/projects', {
+                      method: 'PATCH',
+                      body: { id: project.id, visibility: newVisibility },
+                      getAccessToken,
+                    })
+                    if (error) {
+                      showToast('Failed to update visibility', 'error')
+                      return
+                    }
+                    setProject({
+                      ...project,
+                      visibility: newVisibility,
+                      sharing_enabled: newVisibility !== 'private',
+                    })
+                    showToast(`Visibility set to ${newVisibility}`, 'success')
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(
+                        new CustomEvent('project_visibility_event', {
+                          detail: {
+                            schema: 'project_visibility.v1',
+                            action: 'change_visibility',
+                            project_id: project.id,
+                            old_visibility: oldVisibility,
+                            new_visibility: newVisibility,
+                            source: 'project_detail_settings',
+                          },
+                        })
+                      )
+                    }
+                  }}
+                  className="bg-black border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-neon-green"
+                >
+                  <option value="public">Public</option>
+                  <option value="unlisted">Unlisted</option>
+                  <option value="private">Private</option>
+                </select>
+              </div>
+
+              {/* Sharing Toggle */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
                 <div style={{ flex: 1, marginRight: '24px' }}>
                   <div className="font-medium text-white text-base">Project Sharing</div>
@@ -1278,15 +1357,21 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <button
                   onClick={async () => {
                     const newValue = !(project.sharing_enabled ?? true)
+                    const currentVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
+                    const nextVisibility: ProjectVisibility = newValue
+                      ? currentVisibility === 'private'
+                        ? 'unlisted'
+                        : currentVisibility
+                      : 'private'
                     const { error } = await apiRequest('/api/projects', {
                       method: 'PATCH',
-                      body: { id: project.id, sharing_enabled: newValue },
+                      body: { id: project.id, sharing_enabled: newValue, visibility: nextVisibility },
                       getAccessToken,
                     })
                     if (error) {
                       showToast('Failed to update sharing setting', 'error')
                     } else {
-                      setProject({ ...project, sharing_enabled: newValue })
+                      setProject({ ...project, sharing_enabled: newValue, visibility: nextVisibility })
                       showToast(`Sharing ${newValue ? 'enabled' : 'disabled'}`, 'success')
                     }
                   }}

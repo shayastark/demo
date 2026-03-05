@@ -2,25 +2,70 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
+import {
+  canViewerAccessProject,
+  parseProjectVisibility,
+  resolveProjectVisibility,
+} from '@/lib/projectVisibility'
+
+async function getOptionalUserFromAuthorizationHeader(value: string | null) {
+  const authResult = await verifyPrivyToken(value)
+  if (!authResult.success || !authResult.privyId) return null
+  return getUserByPrivyId(authResult.privyId)
+}
 
 // GET /api/projects - Get user's projects
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await verifyPrivyToken(request.headers.get('authorization'))
-    
-    if (!authResult.success || !authResult.privyId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    const shareToken = searchParams.get('share_token')
+    const optionalUser = await getOptionalUserFromAuthorizationHeader(request.headers.get('authorization'))
+
+    // Additive read mode: allow fetching a single project by id/share_token with visibility enforcement.
+    if (id || shareToken) {
+      if (id && !isValidUUID(id)) {
+        return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
+      }
+      if (shareToken && typeof shareToken !== 'string') {
+        return NextResponse.json({ error: 'Invalid share token' }, { status: 400 })
+      }
+
+      let query = supabaseAdmin.from('projects').select('*')
+      if (id) query = query.eq('id', id)
+      if (shareToken) query = query.eq('share_token', shareToken)
+
+      const { data: project } = await query.single()
+      if (!project) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+
+      const resolvedVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
+      const canAccess = canViewerAccessProject({
+        visibility: resolvedVisibility,
+        isCreator: optionalUser?.id === project.creator_id,
+        isDirectAccess: !!shareToken,
+      })
+      if (!canAccess) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+
+      return NextResponse.json({
+        project: {
+          ...project,
+          visibility: resolvedVisibility,
+        },
+      })
     }
 
-    const user = await getUserByPrivyId(authResult.privyId)
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!optionalUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: projects, error } = await supabaseAdmin
       .from('projects')
       .select('*, tracks(*)')
-      .eq('creator_id', user.id)
+      .eq('creator_id', optionalUser.id)
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -48,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { cover_image_url, allow_downloads } = body
+    const visibility = body.visibility !== undefined ? parseProjectVisibility(body.visibility) : 'unlisted'
 
     // Validate and sanitize text fields
     const title = sanitizeText(body.title, 200)
@@ -55,6 +101,9 @@ export async function POST(request: NextRequest) {
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+    }
+    if (!visibility) {
+      return NextResponse.json({ error: 'Invalid visibility' }, { status: 400 })
     }
 
     const { data: project, error } = await supabaseAdmin
@@ -65,6 +114,8 @@ export async function POST(request: NextRequest) {
         description: description || null,
         cover_image_url: cover_image_url || null,
         allow_downloads: allow_downloads || false,
+        visibility,
+        sharing_enabled: visibility !== 'private',
       })
       .select()
       .single()
@@ -99,9 +150,13 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
     const { id, cover_image_url, allow_downloads, pinned, sharing_enabled } = body
+    const visibility = body.visibility !== undefined ? parseProjectVisibility(body.visibility) : undefined
 
     if (!id || !isValidUUID(id)) {
       return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
+    }
+    if (body.visibility !== undefined && !visibility) {
+      return NextResponse.json({ error: 'Invalid visibility' }, { status: 400 })
     }
 
     // Sanitize text fields if provided
@@ -127,6 +182,11 @@ export async function PATCH(request: NextRequest) {
     if (allow_downloads !== undefined) updates.allow_downloads = allow_downloads
     if (pinned !== undefined) updates.pinned = pinned
     if (sharing_enabled !== undefined) updates.sharing_enabled = sharing_enabled
+    if (visibility !== undefined) {
+      updates.visibility = visibility
+      // TODO: Remove sharing_enabled once all routes enforce visibility directly.
+      updates.sharing_enabled = visibility !== 'private'
+    }
 
     const { data: project, error } = await supabaseAdmin
       .from('projects')
