@@ -138,8 +138,8 @@ body {
   }
 }
 
-/* Prevent long-press context menu on images and non-interactive elements */
-img, div:not([onclick]):not([role="button"]) {
+/* Prevent long-press context menu on images */
+img {
   -webkit-touch-callout: none;
 }
 
@@ -598,9 +598,24 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* Ensure Privy auth UI always sits above app overlays */
-[id*="privy"],
-[class*="privy"],
+/* Ensure Privy auth UI always sits above app overlays without flattening all descendants. */
+[data-privy-portal],
+[data-privy-root],
+[id^="privy-dialog"],
+[id^="privy-modal"],
 iframe[src*="privy.io"] {
   z-index: 2147483000 !important;
+}
+
+[data-privy-backdrop],
+[id*="privy-backdrop"] {
+  z-index: 2147482999 !important;
+}
+
+[data-privy-dialog],
+[data-privy-modal],
+[id*="privy-dialog"],
+[id*="privy-modal"] {
+  z-index: 2147483001 !important;
+  pointer-events: auto !important;
 }
