@@ -91,7 +91,9 @@ function fallbackTitle(project?: SharedWithMeProjectLookup): string {
 
 function byGrantSort(a: SharedWithMeItem, b: SharedWithMeItem): number {
   if (a.is_expired !== b.is_expired) return a.is_expired ? 1 : -1
-  return new Date(b.granted_at).getTime() - new Date(a.granted_at).getTime()
+  const timeDiff = new Date(b.granted_at).getTime() - new Date(a.granted_at).getTime()
+  if (timeDiff !== 0) return timeDiff
+  return b.project_id.localeCompare(a.project_id)
 }
 
 export function buildSharedWithMeItems(args: {

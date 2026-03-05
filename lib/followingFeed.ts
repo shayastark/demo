@@ -19,13 +19,46 @@ export interface FeedUpdateRow {
   created_at: string
 }
 
+export function parseFollowingFeedQuery(args: {
+  rawLimit: string | null
+  rawOffset: string | null
+}): { ok: true; limit: number; offset: number } | { ok: false; error: string } {
+  let limit = 20
+  if (args.rawLimit !== null && args.rawLimit !== '') {
+    if (!/^\d+$/.test(args.rawLimit)) {
+      return { ok: false, error: 'limit must be an integer between 1 and 50' }
+    }
+    const parsed = Number(args.rawLimit)
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 50) {
+      return { ok: false, error: 'limit must be an integer between 1 and 50' }
+    }
+    limit = parsed
+  }
+
+  let offset = 0
+  if (args.rawOffset !== null && args.rawOffset !== '') {
+    if (!/^\d+$/.test(args.rawOffset)) {
+      return { ok: false, error: 'offset must be a non-negative integer' }
+    }
+    const parsed = Number(args.rawOffset)
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      return { ok: false, error: 'offset must be a non-negative integer' }
+    }
+    offset = parsed
+  }
+
+  return { ok: true, limit, offset }
+}
+
 type ProjectLookup = { id: string; title: string | null; creator_id: string | null }
 type UserLookup = { id: string; username: string | null; email: string | null }
 
 export function sortFeedUpdatesNewestFirst(updates: FeedUpdateRow[]): FeedUpdateRow[] {
-  return [...updates].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
+  return [...updates].sort((a, b) => {
+    const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    if (timeDiff !== 0) return timeDiff
+    return b.id.localeCompare(a.id)
+  })
 }
 
 export function getCreatorName(user?: UserLookup | null): string {

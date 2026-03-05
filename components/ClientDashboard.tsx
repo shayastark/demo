@@ -293,26 +293,40 @@ export default function ClientDashboard() {
           .eq('user_id', existingUser.id)
 
         if (savedData) {
-          // Filter out projects the user created and transform the data
-          const savedProjectsWithInfo: SavedProject[] = []
-          
-          for (const item of savedData) {
-            const project = item.project as unknown as Project
-            if (project && project.creator_id !== existingUser.id) {
-              // Fetch creator username
-              const { data: creatorData } = await supabase
-                .from('users')
-                .select('username, email')
-                .eq('id', project.creator_id)
-                .single()
+          // Filter out projects the user created and hydrate creator metadata in one batch.
+          const savedItems = (savedData || [])
+            .map((item) => ({
+              pinned: !!item.pinned,
+              project: item.project as unknown as Project | null,
+            }))
+            .filter((item): item is { pinned: boolean; project: Project } =>
+              !!item.project && item.project.creator_id !== existingUser.id
+            )
 
-              savedProjectsWithInfo.push({
-                ...project,
-                pinned: item.pinned || false,
-                creator_username: creatorData?.username || creatorData?.email || 'Unknown'
-              })
-            }
-          }
+          const creatorIds = Array.from(new Set(savedItems.map((item) => item.project.creator_id)))
+          const { data: creatorRows } = creatorIds.length
+            ? await supabase
+                .from('users')
+                .select('id, username, email')
+                .in('id', creatorIds)
+            : { data: [] as Array<{ id: string; username: string | null; email: string | null }> }
+
+          const creatorsById = (creatorRows || []).reduce<Record<string, { username: string | null; email: string | null }>>(
+            (acc, creator) => {
+              acc[creator.id] = { username: creator.username, email: creator.email }
+              return acc
+            },
+            {}
+          )
+
+          const savedProjectsWithInfo: SavedProject[] = savedItems.map((item) => ({
+            ...item.project,
+            pinned: item.pinned,
+            creator_username:
+              creatorsById[item.project.creator_id]?.username ||
+              creatorsById[item.project.creator_id]?.email ||
+              'Unknown',
+          }))
 
           // Sort: pinned first, then by created_at
           savedProjectsWithInfo.sort((a, b) => {

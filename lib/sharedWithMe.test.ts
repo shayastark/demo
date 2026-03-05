@@ -132,3 +132,52 @@ test('buildSharedWithMeItems includes expired when requested and sorts active fi
   assert.equal(items[1].project_id, 'p-expired')
   assert.equal(items[1].is_expired, true)
 })
+
+test('buildSharedWithMeItems uses deterministic tie-break ordering', () => {
+  const items = buildSharedWithMeItems({
+    currentUserId: 'u-viewer',
+    includeExpired: true,
+    grants: [
+      {
+        project_id: 'p-a',
+        created_at: '2026-03-10T00:00:00.000Z',
+        expires_at: null,
+        role: 'viewer',
+      },
+      {
+        project_id: 'p-b',
+        created_at: '2026-03-10T00:00:00.000Z',
+        expires_at: null,
+        role: 'viewer',
+      },
+    ],
+    projectsById: {
+      'p-a': {
+        id: 'p-a',
+        title: 'A',
+        cover_image_url: null,
+        creator_id: 'u-creator',
+        visibility: 'private',
+        sharing_enabled: false,
+      },
+      'p-b': {
+        id: 'p-b',
+        title: 'B',
+        cover_image_url: null,
+        creator_id: 'u-creator',
+        visibility: 'private',
+        sharing_enabled: false,
+      },
+    },
+    creatorsById: {
+      'u-creator': {
+        id: 'u-creator',
+        username: 'creatorA',
+        email: null,
+      },
+    },
+  })
+
+  assert.equal(items[0].project_id, 'p-b')
+  assert.equal(items[1].project_id, 'p-a')
+})

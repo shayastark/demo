@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   buildFollowingFeedItems,
   getCreatorName,
+  parseFollowingFeedQuery,
   getProjectTitle,
   sortFeedUpdatesNewestFirst,
 } from './followingFeed'
@@ -67,5 +68,42 @@ test('sortFeedUpdatesNewestFirst returns newest-first order', () => {
 
   assert.equal(sorted[0].id, 'newer')
   assert.equal(sorted[1].id, 'older')
+})
+
+test('sortFeedUpdatesNewestFirst is deterministic when timestamps tie', () => {
+  const sorted = sortFeedUpdatesNewestFirst([
+    {
+      id: 'a-update',
+      project_id: 'p1',
+      user_id: 'u1',
+      content: 'A',
+      version_label: null,
+      created_at: '2026-03-03T00:00:00.000Z',
+    },
+    {
+      id: 'b-update',
+      project_id: 'p1',
+      user_id: 'u1',
+      content: 'B',
+      version_label: null,
+      created_at: '2026-03-03T00:00:00.000Z',
+    },
+  ])
+
+  assert.equal(sorted[0].id, 'b-update')
+  assert.equal(sorted[1].id, 'a-update')
+})
+
+test('parseFollowingFeedQuery validates limit/offset strictly', () => {
+  assert.deepEqual(
+    parseFollowingFeedQuery({ rawLimit: null, rawOffset: null }),
+    { ok: true, limit: 20, offset: 0 }
+  )
+  assert.deepEqual(
+    parseFollowingFeedQuery({ rawLimit: '10', rawOffset: '5' }),
+    { ok: true, limit: 10, offset: 5 }
+  )
+  assert.equal(parseFollowingFeedQuery({ rawLimit: '0', rawOffset: '0' }).ok, false)
+  assert.equal(parseFollowingFeedQuery({ rawLimit: '10', rawOffset: '-1' }).ok, false)
 })
 
