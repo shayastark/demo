@@ -18,6 +18,21 @@ Checklist:
 - [ ] Verify new columns are present (`status`, `published_at`, `scheduled_publish_at`, `notification_mode`).
 - [ ] Verify no migration errors and idempotent rerun behavior.
 
+### Private Access Stack (Required Order)
+
+For reliable private-access grants by username/email, these migrations must be present in this order:
+
+1. `supabase/add_project_access_grants_table.sql`
+2. `supabase/add_project_access_grants_expiry.sql`
+3. `supabase/add_project_access_grant_roles.sql`
+4. `supabase/add_project_access_requests_table.sql` (required for request/review flows)
+
+Local/staging checklist snippet:
+
+1. Apply the four SQL files above in order in Supabase SQL editor or migration runner.
+2. Verify columns on `project_access_grants`: `project_id`, `user_id`, `granted_by_user_id`, `created_at`, `expires_at`, `role`.
+3. Verify `project_access_requests` table exists if access requests are enabled.
+
 ## Smoke Test Checklist (Core Loops)
 
 ### Access + Collaboration

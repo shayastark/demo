@@ -689,7 +689,18 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         } else if (failureReason === 'invalid_expiry') {
           setProjectAccessInlineState({ tone: 'error', message: result.error || 'Invalid expiry value.' })
         } else if (failureReason === 'schema_mismatch') {
-          setProjectAccessInlineState({ tone: 'error', message: 'Private access is not fully configured in this environment. Run latest migrations.' })
+          const suggestedMigrations =
+            Array.isArray(result?.suggested_migrations) &&
+            result.suggested_migrations.every((item: unknown) => typeof item === 'string')
+              ? (result.suggested_migrations as string[])
+              : []
+          const migrationHint = suggestedMigrations.slice(0, 2).join(', ')
+          setProjectAccessInlineState({
+            tone: 'error',
+            message: migrationHint
+              ? `Migration required. Apply: ${migrationHint}`
+              : 'Migration required. Apply latest private-access SQL migrations.',
+          })
         } else {
           setProjectAccessInlineState({
             tone: 'error',
