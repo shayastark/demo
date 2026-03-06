@@ -45,8 +45,9 @@ const PREFERENCE_FIELDS: NotificationToggleField[] = [
 ]
 
 const PREFERENCE_ROW_CLASS = 'rounded-lg border border-gray-800 px-3 py-3.5 text-left'
-const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0 flex-1'
-const PREFERENCE_TOGGLE_GROUP_CLASS = 'ml-3 flex shrink-0 items-center gap-2 self-start pr-1 pt-0.5'
+const PREFERENCE_ROW_GRID_CLASS = 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2'
+const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0'
+const PREFERENCE_TOGGLE_GROUP_CLASS = 'flex items-center gap-2 justify-self-end pr-1 pt-0.5'
 const PREFERENCE_TOGGLE_BUTTON_CLASS =
   'relative inline-flex h-8 w-14 min-w-14 flex-shrink-0 items-center rounded-full border-0 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60'
 const PREFERENCE_STATUS_LABEL_CLASS = 'inline-flex min-w-7 items-center justify-end text-right text-xs font-medium leading-none'
@@ -408,7 +409,7 @@ export default function NotificationPreferencesSection({
           const isSaving = savingField === field
           return (
             <div key={field} className={PREFERENCE_ROW_CLASS}>
-              <div className="flex items-start justify-between gap-3">
+              <div className={PREFERENCE_ROW_GRID_CLASS}>
                 <div className={PREFERENCE_TEXT_BLOCK_CLASS}>
                   <p className="text-sm font-medium leading-5 text-white">{PREFERENCE_LABELS[field]}</p>
                 </div>
@@ -453,10 +454,10 @@ export default function NotificationPreferencesSection({
                     {isSaving ? '...' : enabled ? 'On' : 'Off'}
                   </span>
                 </div>
+                <p className="col-span-2 text-sm leading-relaxed text-gray-400">
+                  {PREFERENCE_DESCRIPTIONS[field]}
+                </p>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-gray-400">
-                {PREFERENCE_DESCRIPTIONS[field]}
-              </p>
             </div>
           )
         })}

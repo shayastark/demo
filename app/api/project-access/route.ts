@@ -785,6 +785,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Valid project_id and user_id are required' }, { status: 400 })
     }
 
+    const schemaDiagnostics = await collectProjectAccessSchemaDiagnostics({})
+    if (schemaDiagnostics.criticalMissing.length > 0) {
+      return buildProjectAccessSchemaMismatchResponse({ diagnostics: schemaDiagnostics })
+    }
+
     const project = await getProject(parsed.project_id)
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     const canManage = await canManageProjectAccess({
@@ -807,9 +812,15 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       )
     }
+    if (rawRole !== undefined && !schemaDiagnostics.support.hasRole) {
+      return buildProjectAccessSchemaMismatchResponse({ diagnostics: schemaDiagnostics })
+    }
     const hasExpiryInput =
       (body as Record<string, unknown>)?.expires_at !== undefined ||
       (body as Record<string, unknown>)?.expires_in_hours !== undefined
+    if (hasExpiryInput && !schemaDiagnostics.support.hasExpiresAt) {
+      return buildProjectAccessSchemaMismatchResponse({ diagnostics: schemaDiagnostics })
+    }
     const expiryResult = parseProjectAccessExpiryInput({ body, requireProvided: false })
     if (!expiryResult.ok) {
       return NextResponse.json({ error: expiryResult.error, code: 'invalid_expiry' }, { status: 400 })
@@ -822,31 +833,45 @@ export async function PATCH(request: NextRequest) {
     }
     const targetRole = rawRole === undefined ? null : resolveProjectAccessRole(rawRole)
 
-    const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
+    const existingGrantSelectFields = ['id']
+    if (schemaDiagnostics.support.hasExpiresAt) existingGrantSelectFields.push('expires_at')
+    if (schemaDiagnostics.support.hasRole) existingGrantSelectFields.push('role')
+
+    const { data: existingGrantRaw, error: existingGrantError } = await supabaseAdmin
       .from('project_access_grants')
-      .select('id, expires_at, role')
+      .select(existingGrantSelectFields.join(', '))
       .eq('project_id', parsed.project_id)
       .eq('user_id', parsed.user_id)
       .maybeSingle()
     if (existingGrantError) throw existingGrantError
-    if (!existingGrant) {
+    if (!existingGrantRaw) {
       return NextResponse.json({ error: 'Grant not found', code: 'grant_not_found' }, { status: 404 })
+    }
+    const existingGrant = existingGrantRaw as unknown as {
+      id: string
+      expires_at?: string | null
+      role?: string | null
     }
 
     const mutationAction = getProjectAccessGrantMutationAction({
       hasExistingGrant: true,
-      existingExpiresAt: existingGrant.expires_at || null,
-      nextExpiresAt: hasExpiryInput ? expiryResult.expiresAt : existingGrant.expires_at || null,
+      existingExpiresAt: schemaDiagnostics.support.hasExpiresAt ? existingGrant.expires_at || null : null,
+      nextExpiresAt: schemaDiagnostics.support.hasExpiresAt
+        ? hasExpiryInput
+          ? expiryResult.expiresAt
+          : existingGrant.expires_at || null
+        : null,
     })
     const roleChanged =
-      targetRole !== null && resolveProjectAccessRole(existingGrant.role) !== targetRole
+      schemaDiagnostics.support.hasRole &&
+      targetRole !== null &&
+      resolveProjectAccessRole(existingGrant.role) !== targetRole
 
     if (mutationAction !== 'unchanged' || roleChanged) {
-      const updates: Record<string, unknown> = {
-        granted_by_user_id: currentUser.id,
-      }
-      if (hasExpiryInput) updates.expires_at = expiryResult.expiresAt
-      if (targetRole !== null) updates.role = targetRole
+      const updates: Record<string, unknown> = {}
+      if (schemaDiagnostics.support.hasGrantedByUserId) updates.granted_by_user_id = currentUser.id
+      if (schemaDiagnostics.support.hasExpiresAt && hasExpiryInput) updates.expires_at = expiryResult.expiresAt
+      if (schemaDiagnostics.support.hasRole && targetRole !== null) updates.role = targetRole
       const { error: updateError } = await supabaseAdmin
         .from('project_access_grants')
         .update(updates)
@@ -887,10 +912,20 @@ export async function PATCH(request: NextRequest) {
       success: true,
       project_id: parsed.project_id,
       user_id: parsed.user_id,
-      expires_at: hasExpiryInput ? expiryResult.expiresAt : existingGrant.expires_at || null,
+      expires_at:
+        schemaDiagnostics.support.hasExpiresAt && hasExpiryInput
+          ? expiryResult.expiresAt
+          : schemaDiagnostics.support.hasExpiresAt
+            ? existingGrant.expires_at || null
+            : null,
       grant_action: mutationAction === 'unchanged' && roleChanged ? 'renew' : mutationAction,
-      role: targetRole ?? resolveProjectAccessRole(existingGrant.role),
+      role: schemaDiagnostics.support.hasRole
+        ? targetRole ?? resolveProjectAccessRole(existingGrant.role)
+        : 'viewer',
       notification: notificationResult,
+      compatibility: {
+        degraded_optional_columns: schemaDiagnostics.optionalMissing,
+      },
     })
   } catch (error) {
     console.error('Error in project access PATCH:', error)

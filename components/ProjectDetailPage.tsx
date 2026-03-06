@@ -101,7 +101,7 @@ const COMPACT_DARK_SELECT_STYLE = {
   colorScheme: 'dark' as const,
 }
 const COMPACT_DANGER_ACTION_BUTTON_CLASS =
-  'ui-pressable inline-flex h-9 min-w-[116px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-red-400/50 bg-red-500/10 px-3 text-sm font-semibold text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
+  'ui-pressable inline-flex h-9 min-w-[116px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-red-400/50 bg-red-500/10 px-4 text-sm font-semibold text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -160,6 +160,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [projectAccessRequests, setProjectAccessRequests] = useState<ProjectAccessRequest[]>([])
   const [projectAccessRequestsLoading, setProjectAccessRequestsLoading] = useState(false)
   const [projectAccessRoleUpdatingUserId, setProjectAccessRoleUpdatingUserId] = useState<string | null>(null)
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(true)
   const [projectAccessExpirySelections, setProjectAccessExpirySelections] = useState<
     Record<string, ProjectAccessExpiryPreset>
   >({})
@@ -2190,6 +2191,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     return 'Invited member'
   }
 
+  const getGrantEmail = (grant: ProjectAccessGrant): string | null => {
+    const email = typeof grant.email === 'string' ? grant.email.trim() : ''
+    if (!email) return null
+    const username = typeof grant.username === 'string' ? grant.username.trim() : ''
+    return username ? email : null
+  }
+
   const getGrantInitial = (grant: ProjectAccessGrant): string => {
     const name = getGrantDisplayName(grant)
     return name.slice(0, 1).toUpperCase() || 'U'
@@ -2389,12 +2397,27 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {/* Settings - Only show for creators */}
           {isCreator && (
             <div className="mb-6 rounded-xl border border-gray-800/70 bg-gray-900/80 p-4 sm:p-6">
-              <h3 className="text-lg font-semibold text-neon-green">Project Settings</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-neon-green">Project Settings</h3>
+                <button
+                  type="button"
+                  onClick={() => setProjectSettingsOpen((prev) => !prev)}
+                  className="ui-pressable inline-flex items-center gap-2 rounded-md border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500 hover:text-white"
+                  aria-expanded={projectSettingsOpen}
+                  aria-label={projectSettingsOpen ? 'Collapse project settings' : 'Expand project settings'}
+                >
+                  {projectSettingsOpen ? 'Collapse' : 'Expand'}
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${projectSettingsOpen ? '' : '-rotate-90'}`}
+                    aria-hidden
+                  />
+                </button>
+              </div>
               <p className="mt-1 text-sm leading-relaxed text-gray-300">
                 Manage visibility, sharing, and collaboration access.
               </p>
 
-              <div className="mt-4 space-y-4">
+              {projectSettingsOpen ? <div className="mt-4 space-y-4">
                 <section className="rounded-lg bg-black/20 p-3 sm:p-4">
                   <h4 className="text-[17px] font-extrabold leading-6 tracking-tight text-white">Visibility &amp; Sharing</h4>
                   <p className="mt-2 text-sm leading-relaxed text-gray-400">
@@ -2410,7 +2433,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         >
                           Visibility
                         </div>
-                        <div className="mt-3.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-5 text-sm text-gray-400 leading-relaxed">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
@@ -2453,7 +2476,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               )
                             }
                           }}
-                          className={`${COMPACT_DARK_SELECT_CLASS} h-11 min-w-[136px] cursor-pointer rounded-xl border-gray-600 bg-gray-900 px-3.5 pr-9 text-sm font-semibold text-white hover:border-gray-500 focus:ring-2 focus:ring-neon-green/40`}
+                          className={`${COMPACT_DARK_SELECT_CLASS} h-11 min-w-[156px] cursor-pointer rounded-lg border border-gray-500 bg-gray-900 px-4 pr-10 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.08)] hover:border-gray-400 focus:ring-2 focus:ring-neon-green/40`}
                           style={COMPACT_DARK_SELECT_STYLE}
                           aria-label="Project visibility"
                         >
@@ -2476,7 +2499,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         >
                           Project Sharing
                         </div>
-                        <div className="mt-3.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-5 text-sm text-gray-400 leading-relaxed">
                           Allow others to view this project via share link.
                         </div>
                       </div>
@@ -2540,7 +2563,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         >
                           Allow Downloads
                         </div>
-                        <div className="mt-3.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-5 text-sm text-gray-400 leading-relaxed">
                           Users can download tracks from this project.
                         </div>
                       </div>
@@ -2776,14 +2799,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   )}
                                 </button>
                                 <div className="min-w-0 flex-1 space-y-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => openGrantCreatorProfile(grant)}
-                                    className="ui-pressable max-w-full truncate text-left text-sm font-semibold text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
-                                    aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
-                                  >
-                                    {getGrantDisplayName(grant)}
-                                  </button>
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => openGrantCreatorProfile(grant)}
+                                      className="ui-pressable max-w-full truncate text-left text-sm font-semibold text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
+                                      aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
+                                    >
+                                      {getGrantDisplayName(grant)}
+                                    </button>
+                                    {getGrantEmail(grant) ? (
+                                      <span className="truncate text-xs text-gray-400">{getGrantEmail(grant)}</span>
+                                    ) : null}
+                                  </div>
                                   <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-sm font-semibold capitalize text-gray-300">
                                       {grant.role || 'viewer'}
@@ -2909,7 +2937,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     </ul>
                   )}
                 </section>
-              </div>
+              </div> : null}
             </div>
           )}
 
