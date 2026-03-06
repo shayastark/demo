@@ -131,3 +131,47 @@ export function parseNotificationPreferencesPatch(body: unknown): {
   return { success: true, updates }
 }
 
+export function isNotificationPreferences(value: unknown): value is NotificationPreferences {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const record = value as Record<string, unknown>
+  return (
+    typeof record.notify_new_follower === 'boolean' &&
+    typeof record.notify_project_updates === 'boolean' &&
+    typeof record.notify_tips === 'boolean' &&
+    typeof record.notify_project_saved === 'boolean' &&
+    (record.delivery_mode === 'instant' || record.delivery_mode === 'digest') &&
+    (record.digest_window === 'daily' || record.digest_window === 'weekly')
+  )
+}
+
+export function parseNotificationPreferencesResponse(body: unknown): {
+  success: boolean
+  preferences?: NotificationPreferences
+  updated_at?: string | null
+  error?: string
+} {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { success: false, error: 'Invalid response payload' }
+  }
+
+  const record = body as Record<string, unknown>
+  if (record.error && typeof record.error === 'string') {
+    return { success: false, error: record.error }
+  }
+
+  if (!isNotificationPreferences(record.preferences)) {
+    return { success: false, error: 'Response missing valid preferences payload' }
+  }
+
+  const updatedAt =
+    typeof record.updated_at === 'string' || record.updated_at === null
+      ? (record.updated_at as string | null)
+      : null
+
+  return {
+    success: true,
+    preferences: record.preferences,
+    updated_at: updatedAt,
+  }
+}
+

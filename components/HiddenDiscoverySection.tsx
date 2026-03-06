@@ -29,7 +29,9 @@ interface HiddenDiscoverySectionProps {
 }
 
 export default function HiddenDiscoverySection({ authenticated, getAccessToken }: HiddenDiscoverySectionProps) {
+  const collapseStorageKey = 'demo.hidden-discovery.expanded.account'
   const [filter, setFilter] = useState<HiddenFilter>('all')
+  const [expanded, setExpanded] = useState(false)
   const [items, setItems] = useState<HiddenDiscoveryItem[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -51,6 +53,19 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
           action,
           target_type: filter === 'all' ? null : filter,
           ...detail,
+        },
+      })
+    )
+  }
+
+  const emitSectionEvent = (state: 'expanded' | 'collapsed') => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('hidden_discovery_section_event', {
+        detail: {
+          schema: 'hidden_discovery_section.v1',
+          source: 'account_settings',
+          action: state,
         },
       })
     )
@@ -99,9 +114,25 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
   }
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem(collapseStorageKey)
+    if (stored === 'true' || stored === 'false') {
+      setExpanded(stored === 'true')
+    }
+  }, [])
+
+  useEffect(() => {
     load(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, filter])
+
+  const setExpandedState = (next: boolean) => {
+    setExpanded(next)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(collapseStorageKey, String(next))
+    }
+    emitSectionEvent(next ? 'expanded' : 'collapsed')
+  }
 
   const handleUnhide = async (item: HiddenDiscoveryItem) => {
     if (!authenticated || !getAccessToken || actionLoadingId) return
@@ -147,65 +178,85 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
   return (
     <div className="bg-gray-900 rounded-xl mb-6 border border-gray-800" style={{ padding: '20px 24px 24px 24px' }}>
       <div className="flex items-center justify-between gap-3" style={{ marginBottom: '12px' }}>
-        <h2 className="font-semibold text-neon-green text-lg">Hidden from discovery</h2>
-        <div className="flex items-center gap-2">
-          {(['all', 'creator', 'project'] as HiddenFilter[]).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setFilter(value)
-                emitManageEvent('filter_change', { target_type: value === 'all' ? null : value })
-              }}
-              className={`text-xs px-2.5 py-1.5 rounded border ${
-                filter === value ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
-              }`}
-            >
-              {value === 'all' ? 'All' : value === 'creator' ? 'Creators' : 'Projects'}
-            </button>
-          ))}
-        </div>
+        <h2 className="font-semibold text-neon-green text-lg">
+          Hidden from discovery ({items.length})
+        </h2>
+        <button
+          type="button"
+          onClick={() => setExpandedState(!expanded)}
+          aria-expanded={expanded}
+          aria-controls="hidden-discovery-content"
+          className="min-h-10 rounded-md border border-gray-700 px-3 py-2 text-xs text-gray-200 hover:border-gray-600 hover:text-white"
+        >
+          {expanded ? 'Collapse' : 'Manage'}
+        </button>
       </div>
 
-      {loading ? (
-        <p className="text-sm text-gray-400">Loading hidden items...</p>
-      ) : error ? (
-        <p className="text-sm text-gray-400">Couldn&apos;t load hidden items right now.</p>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-gray-500">You haven&apos;t hidden anything.</p>
+      {!expanded ? (
+        <p className="text-sm text-gray-500">
+          Hidden creators and projects are kept out of Explore and recommendations.
+        </p>
       ) : (
-        <div className="space-y-2">
-          {items.map((item) => (
-            <div
-              key={`${item.target_type}-${item.target_id}-${item.created_at}`}
-              className="flex items-center justify-between gap-3 border border-gray-800 rounded-lg px-3 py-2"
-            >
-              <div className="min-w-0">
-                <p className="text-sm text-white truncate">{item.label}</p>
-                <p className="text-xs text-gray-500 capitalize">{item.target_type}</p>
-              </div>
+        <div id="hidden-discovery-content">
+          <div className="flex items-center gap-2 mb-3">
+            {(['all', 'creator', 'project'] as HiddenFilter[]).map((value) => (
               <button
+                key={value}
                 type="button"
-                disabled={actionLoadingId === item.target_id}
-                onClick={() => handleUnhide(item)}
-                className="text-xs px-2.5 py-1.5 rounded border border-gray-700 text-gray-200 inline-flex items-center gap-1"
+                onClick={() => {
+                  setFilter(value)
+                  emitManageEvent('filter_change', { target_type: value === 'all' ? null : value })
+                }}
+                className={`min-h-9 text-xs px-2.5 py-1.5 rounded border ${
+                  filter === value ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
+                }`}
               >
-                {actionLoadingId === item.target_id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                Unhide
+                {value === 'all' ? 'All' : value === 'creator' ? 'Creators' : 'Projects'}
               </button>
+            ))}
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-gray-400">Loading hidden items...</p>
+          ) : error ? (
+            <p className="text-sm text-gray-400">Couldn&apos;t load hidden items right now.</p>
+          ) : items.length === 0 ? (
+            <p className="text-sm text-gray-500">You haven&apos;t hidden anything.</p>
+          ) : (
+            <div className="space-y-2">
+              {items.map((item) => (
+                <div
+                  key={`${item.target_type}-${item.target_id}-${item.created_at}`}
+                  className="flex items-center justify-between gap-3 border border-gray-800 rounded-lg px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm text-white truncate">{item.label}</p>
+                    <p className="text-xs text-gray-500 capitalize">{item.target_type}</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={actionLoadingId === item.target_id}
+                    onClick={() => handleUnhide(item)}
+                    className="min-h-9 text-xs px-2.5 py-1.5 rounded border border-gray-700 text-gray-200 inline-flex items-center gap-1"
+                  >
+                    {actionLoadingId === item.target_id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                    Unhide
+                  </button>
+                </div>
+              ))}
+              {hasMore ? (
+                <button
+                  type="button"
+                  onClick={() => load(false)}
+                  disabled={loadingMore}
+                  className="min-h-9 text-xs px-2.5 py-1.5 rounded border border-gray-700 text-gray-200 inline-flex items-center gap-1"
+                >
+                  {loadingMore ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                  {loadingMore ? 'Loading...' : 'Load more'}
+                </button>
+              ) : null}
             </div>
-          ))}
-          {hasMore ? (
-            <button
-              type="button"
-              onClick={() => load(false)}
-              disabled={loadingMore}
-              className="text-xs px-2.5 py-1.5 rounded border border-gray-700 text-gray-200 inline-flex items-center gap-1"
-            >
-              {loadingMore ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-              {loadingMore ? 'Loading...' : 'Load more'}
-            </button>
-          ) : null}
+          )}
         </div>
       )}
     </div>

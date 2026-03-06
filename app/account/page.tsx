@@ -692,46 +692,6 @@ function AccountPageContent() {
         
         <h1 className="text-3xl font-bold mb-6 text-white">{isOnboarding ? 'Set Up Your Profile' : 'Account'}</h1>
 
-        <OnboardingPreferencesSection
-          authenticated={authenticated}
-          getAccessToken={getAccessToken}
-          source={isOnboarding ? 'onboarding' : 'account_settings'}
-          isOnboardingMode={isOnboarding}
-        />
-
-        {profile?.id ? (
-          <div
-            className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
-            style={{ padding: '16px 20px' }}
-          >
-            <h2 className="font-semibold text-neon-green text-base" style={{ marginBottom: '10px' }}>
-              Social Graph
-            </h2>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setSocialGraphType('followers')
-                  setIsSocialGraphOpen(true)
-                }}
-                className="text-sm border border-gray-700 rounded-full px-3 py-1.5 text-gray-200 hover:border-gray-600"
-              >
-                {followerCount} Followers
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSocialGraphType('following')
-                  setIsSocialGraphOpen(true)
-                }}
-                className="text-sm border border-gray-700 rounded-full px-3 py-1.5 text-gray-200 hover:border-gray-600"
-              >
-                {followingCount} Following
-              </button>
-            </div>
-          </div>
-        ) : null}
-
         {/* Basic Info Section */}
         <div 
           className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
@@ -863,6 +823,39 @@ function AccountPageContent() {
             </div>
           </div>
         </div>
+
+        {profile?.id ? (
+          <div
+            className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
+            style={{ padding: '16px 20px' }}
+          >
+            <h2 className="font-semibold text-neon-green text-base" style={{ marginBottom: '10px' }}>
+              Social Graph
+            </h2>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSocialGraphType('followers')
+                  setIsSocialGraphOpen(true)
+                }}
+                className="text-sm border border-gray-700 rounded-full px-3 py-1.5 text-gray-200 hover:border-gray-600"
+              >
+                {followerCount} Followers
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSocialGraphType('following')
+                  setIsSocialGraphOpen(true)
+                }}
+                className="text-sm border border-gray-700 rounded-full px-3 py-1.5 text-gray-200 hover:border-gray-600"
+              >
+                {followingCount} Following
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {/* Creator Profile Section */}
         <div 
@@ -1070,6 +1063,12 @@ function AccountPageContent() {
         <NotificationPreferencesSection
           authenticated={authenticated}
           getAccessToken={getAccessToken}
+        />
+        <OnboardingPreferencesSection
+          authenticated={authenticated}
+          getAccessToken={getAccessToken}
+          source={isOnboarding ? 'onboarding' : 'account_settings'}
+          isOnboardingMode={isOnboarding}
         />
         <HiddenDiscoverySection
           authenticated={authenticated}

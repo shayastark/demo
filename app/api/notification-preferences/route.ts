@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import {
+  parseNotificationPreferencesResponse,
   parseNotificationPreferencesPatch,
   toNotificationPreferences,
 } from '@/lib/notificationPreferences'
@@ -32,9 +33,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to load notification preferences' }, { status: 500 })
     }
 
-    return NextResponse.json({
+    const payload = {
       preferences: toNotificationPreferences(row),
       updated_at: row?.updated_at || null,
+    }
+    const parsed = parseNotificationPreferencesResponse(payload)
+    if (!parsed.success || !parsed.preferences) {
+      return NextResponse.json(
+        { error: parsed.error || 'Failed to shape notification preferences response' },
+        { status: 500 }
+      )
+    }
+    return NextResponse.json({
+      preferences: parsed.preferences,
+      updated_at: parsed.updated_at ?? null,
     })
   } catch (error) {
     console.error('Error in notification preferences GET:', error)
@@ -58,7 +70,13 @@ export async function PATCH(request: NextRequest) {
 
     const parsed = parseNotificationPreferencesPatch(body)
     if (!parsed.success || !parsed.updates) {
-      return NextResponse.json({ error: parsed.error || 'Invalid notification preferences update' }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: parsed.error || 'Invalid notification preferences update',
+          code: 'INVALID_NOTIFICATION_PREFERENCES_PATCH',
+        },
+        { status: 400 }
+      )
     }
 
     const { data: row, error } = await supabaseAdmin
@@ -77,12 +95,34 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('Error updating notification preferences:', error)
-      return NextResponse.json({ error: 'Failed to update notification preferences' }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'Failed to update notification preferences',
+          code: 'NOTIFICATION_PREFERENCES_UPSERT_FAILED',
+          details: error.message || null,
+        },
+        { status: 500 }
+      )
+    }
+
+    const payload = {
+      preferences: toNotificationPreferences(row),
+      updated_at: row?.updated_at || null,
+    }
+    const responseParsed = parseNotificationPreferencesResponse(payload)
+    if (!responseParsed.success || !responseParsed.preferences) {
+      return NextResponse.json(
+        {
+          error: responseParsed.error || 'Invalid response after updating notification preferences',
+          code: 'INVALID_NOTIFICATION_PREFERENCES_RESPONSE',
+        },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
-      preferences: toNotificationPreferences(row),
-      updated_at: row?.updated_at || null,
+      preferences: responseParsed.preferences,
+      updated_at: responseParsed.updated_at ?? null,
     })
   } catch (error) {
     console.error('Error in notification preferences PATCH:', error)

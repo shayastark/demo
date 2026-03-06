@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   getPreferenceFieldForNotificationType,
+  parseNotificationPreferencesResponse,
   parseNotificationPreferencesPatch,
+  isNotificationPreferences,
   toNotificationPreferences,
 } from './notificationPreferences'
 
@@ -59,5 +61,36 @@ test('notification type mapping targets correct preference fields', () => {
   assert.equal(getPreferenceFieldForNotificationType('tip_received'), 'notify_tips')
   assert.equal(getPreferenceFieldForNotificationType('project_saved'), 'notify_project_saved')
   assert.equal(getPreferenceFieldForNotificationType('unknown'), null)
+})
+
+test('isNotificationPreferences validates strict response shape', () => {
+  assert.equal(isNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES), true)
+  assert.equal(isNotificationPreferences({ ...DEFAULT_NOTIFICATION_PREFERENCES, notify_tips: 'yes' }), false)
+  assert.equal(isNotificationPreferences({ delivery_mode: 'instant' }), false)
+})
+
+test('parseNotificationPreferencesResponse validates payload and returns actionable errors', () => {
+  const ok = parseNotificationPreferencesResponse({
+    preferences: {
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      delivery_mode: 'digest',
+      digest_window: 'weekly',
+    },
+    updated_at: '2026-03-06T00:00:00.000Z',
+  })
+  assert.equal(ok.success, true)
+  assert.deepEqual(ok.preferences, {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    delivery_mode: 'digest',
+    digest_window: 'weekly',
+  })
+
+  const missingPreferences = parseNotificationPreferencesResponse({ updated_at: null })
+  assert.equal(missingPreferences.success, false)
+  assert.equal(missingPreferences.error, 'Response missing valid preferences payload')
+
+  const apiError = parseNotificationPreferencesResponse({ error: 'Unauthorized' })
+  assert.equal(apiError.success, false)
+  assert.equal(apiError.error, 'Unauthorized')
 })
 
