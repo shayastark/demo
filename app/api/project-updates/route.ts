@@ -5,18 +5,17 @@ import { isValidUUID } from '@/lib/validation'
 import {
   canScheduleProjectUpdate,
   canViewerSeeProjectUpdate,
-  dedupeProjectUpdateRowsById,
   parseProjectUpdateScheduledPublishAt,
   sanitizeProjectUpdateContent,
   sanitizeProjectUpdateImportantFlag,
   sanitizeProjectUpdateStatus,
-  shouldAutoPublishScheduledUpdate,
   shouldNotifyForProjectUpdateTransition,
   sanitizeProjectUpdateVersionLabel,
   type ProjectUpdateRow,
 } from '@/lib/projectUpdates'
 import { notifyFollowersProjectUpdate } from '@/lib/notifications'
 import { canPostProjectUpdate, canViewProject } from '@/lib/projectAccessPolicyServer'
+import { autoPublishScheduledProjectUpdates } from '@/lib/projectUpdateAutopublish'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -45,76 +44,56 @@ async function autoPublishScheduledUpdates(args: {
   projectId: string
   projectTitle: string
 }): Promise<void> {
-  const nowIso = new Date().toISOString()
-  const { data: dueRows, error: dueError } = await supabaseAdmin
-    .from('project_updates')
-    .select('id, project_id, user_id, content, version_label, is_important, status, scheduled_publish_at')
-    .eq('project_id', args.projectId)
-    .eq('status', 'draft')
-    .lte('scheduled_publish_at', nowIso)
-
-  if (dueError) {
-    console.error('Error fetching scheduled updates for autopublish:', dueError)
-    return
-  }
-
-  const due = ((dueRows || []) as ProjectUpdateRow[]).filter((row) =>
-    shouldAutoPublishScheduledUpdate(
-      {
-        status: row.status,
-        scheduled_publish_at: row.scheduled_publish_at,
-      },
-      Date.parse(nowIso)
-    )
-  )
-  if (due.length === 0) return
-
-  const dueIds = due.map((row) => row.id)
-  const scheduledById = due.reduce<Record<string, string | null>>((acc, row) => {
-    acc[row.id] = row.scheduled_publish_at
-    return acc
-  }, {})
-
-  const { data: transitionedRows, error } = await supabaseAdmin
-    .from('project_updates')
-    .update({
-      status: 'published',
-      published_at: nowIso,
-      scheduled_publish_at: null,
-    })
-    .eq('project_id', args.projectId)
-    .eq('status', 'draft')
-    .in('id', dueIds)
-    .lte('scheduled_publish_at', nowIso)
-    .select('id, project_id, user_id, content, version_label, is_important')
-
-  if (error) {
-    console.error('Error auto-publishing scheduled updates:', error)
-    return
-  }
-
-  const uniqueRows = dedupeProjectUpdateRowsById(transitionedRows || [])
-  for (const row of uniqueRows) {
-    console.info('project_update_schedule_event', {
-      schema: 'project_update_schedule.v1',
-      action: 'schedule_autopublish',
-      project_id: row.project_id,
-      update_id: row.id,
-      scheduled_publish_at: scheduledById[row.id] || null,
-      source: 'project_updates_get',
-    })
-    notifyFollowersProjectUpdate({
-      creatorId: row.user_id,
-      projectId: row.project_id,
-      updateId: row.id,
-      projectTitle: args.projectTitle,
-      content: row.content,
-      versionLabel: row.version_label,
-      isImportant: row.is_important,
-    }).catch((notifyError) => {
-      console.error('Failed notifying for scheduled autopublish:', notifyError)
-    })
-  }
+  const debug = process.env.PROJECT_UPDATE_SCHEDULE_DEBUG === 'true'
+  await autoPublishScheduledProjectUpdates({
+    projectId: args.projectId,
+    projectTitle: args.projectTitle,
+    debug,
+    fetchDueDrafts: async (projectId, nowIso) => {
+      const { data, error } = await supabaseAdmin
+        .from('project_updates')
+        .select('id, project_id, user_id, content, version_label, is_important, status, scheduled_publish_at')
+        .eq('project_id', projectId)
+        .eq('status', 'draft')
+        .lte('scheduled_publish_at', nowIso)
+      if (error) {
+        console.error('Error fetching scheduled updates for autopublish:', error)
+        return []
+      }
+      return (data || []) as ProjectUpdateRow[]
+    },
+    transitionDueDrafts: async (projectId, dueIds, nowIso) => {
+      if (dueIds.length === 0) return []
+      const { data, error } = await supabaseAdmin
+        .from('project_updates')
+        .update({
+          status: 'published',
+          published_at: nowIso,
+          scheduled_publish_at: null,
+        })
+        .eq('project_id', projectId)
+        .eq('status', 'draft')
+        .in('id', dueIds)
+        .lte('scheduled_publish_at', nowIso)
+        .select('id, project_id, user_id, content, version_label, is_important')
+      if (error) {
+        console.error('Error auto-publishing scheduled updates:', error)
+        return []
+      }
+      return data || []
+    },
+    notifyFollowers: async (row, projectTitle) => {
+      await notifyFollowersProjectUpdate({
+        creatorId: row.user_id,
+        projectId: row.project_id,
+        updateId: row.id,
+        projectTitle,
+        content: row.content,
+        versionLabel: row.version_label,
+        isImportant: row.is_important,
+      })
+    },
+  })
 }
 
 export async function GET(request: NextRequest) {
