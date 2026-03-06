@@ -2765,15 +2765,18 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   >
                                     {getGrantDisplayName(grant)}
                                   </button>
-                                  <div className="flex flex-wrap items-center gap-1.5 text-xs leading-relaxed text-gray-300">
-                                    <span className="rounded-full border border-gray-700/80 bg-black/40 px-2 py-0.5 capitalize">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-sm capitalize text-gray-300">
                                       {grant.role || 'viewer'}
                                     </span>
                                   </div>
                                 </div>
                               </div>
-                              <div className="mt-3.5 flex flex-col items-start gap-y-2">
+                              <div className="mt-3.5 flex w-full flex-wrap items-center gap-x-3 gap-y-2">
                                 <div className="relative shrink-0">
+                                  <div className="pointer-events-none inline-flex h-9 min-w-[110px] items-center rounded-md border border-gray-700 bg-gray-900 px-2 pr-7 text-xs text-gray-100">
+                                    Roles
+                                  </div>
                                   <select
                                     value={grant.role || 'viewer'}
                                     onChange={(event) =>
@@ -2785,7 +2788,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     disabled={
                                       projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                     }
-                                    className={COMPACT_DARK_SELECT_CLASS}
+                                    className="absolute inset-0 h-9 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
                                     style={COMPACT_DARK_SELECT_STYLE}
                                     aria-label={`Role for ${getGrantDisplayName(grant)}`}
                                   >
@@ -2798,7 +2801,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     aria-hidden
                                   />
                                 </div>
-                                <div className="pt-0.5">
+                                <div className="ml-auto">
                                   <button
                                     type="button"
                                     onClick={() => handleRevokeProjectAccess(grant.user_id)}
