@@ -90,8 +90,6 @@ type ProjectAccessSearchResult = {
   avatar_url: string | null
 }
 
-const SETTINGS_LABEL_CLASS = 'text-base font-bold text-white leading-6'
-const SETTINGS_HELPER_TEXT_CLASS = 'mt-1.5 text-sm text-gray-400 leading-relaxed'
 const COMPACT_DARK_SELECT_CLASS =
   'h-9 min-w-[110px] w-auto shrink-0 appearance-none rounded-md border border-gray-700 bg-gray-900 px-2 pr-7 text-xs text-gray-100 shadow-none transition focus:border-neon-green focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
 const COMPACT_DARK_SELECT_STYLE = {
@@ -103,7 +101,7 @@ const COMPACT_DARK_SELECT_STYLE = {
   colorScheme: 'dark' as const,
 }
 const COMPACT_DANGER_ACTION_BUTTON_CLASS =
-  'ui-pressable inline-flex h-9 min-w-[96px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-gray-700 bg-gray-900 px-3 text-xs font-medium text-red-300 transition hover:border-red-300/60 hover:text-red-200 disabled:opacity-50'
+  'ui-pressable inline-flex h-9 min-w-[96px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-red-400/50 bg-red-500/10 px-3 text-xs font-medium text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -2406,8 +2404,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className={SETTINGS_LABEL_CLASS}>Visibility</div>
-                        <div className={SETTINGS_HELPER_TEXT_CLASS}>
+                        <div className="text-base font-bold text-white leading-6">Visibility</div>
+                        <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
@@ -2467,8 +2465,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className={SETTINGS_LABEL_CLASS}>Project Sharing</div>
-                        <div className={SETTINGS_HELPER_TEXT_CLASS}>
+                        <div className="text-base font-bold text-white leading-6">Project Sharing</div>
+                        <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
                           Allow others to view this project via share link.
                         </div>
                       </div>
@@ -2524,8 +2522,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className={SETTINGS_LABEL_CLASS}>Allow Downloads</div>
-                        <div className={SETTINGS_HELPER_TEXT_CLASS}>
+                        <div className="text-base font-bold text-white leading-6">Allow Downloads</div>
+                        <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
                           Users can download tracks from this project.
                         </div>
                       </div>
@@ -2774,7 +2772,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   </div>
                                 </div>
                               </div>
-                              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                              <div className="mt-3.5 flex flex-col items-start gap-y-2">
                                 <div className="relative shrink-0">
                                   <select
                                     value={grant.role || 'viewer'}
@@ -2800,17 +2798,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     aria-hidden
                                   />
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRevokeProjectAccess(grant.user_id)}
-                                  disabled={
-                                    projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                                  }
-                                  className={COMPACT_DANGER_ACTION_BUTTON_CLASS}
-                                  aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
-                                >
-                                  Remove
-                                </button>
+                                <div className="pt-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRevokeProjectAccess(grant.user_id)}
+                                    disabled={
+                                      projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                                    }
+                                    className={COMPACT_DANGER_ACTION_BUTTON_CLASS}
+                                    aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
                               </div>
                             </li>
                           ))}
