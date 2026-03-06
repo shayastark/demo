@@ -2402,7 +2402,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <button
                   type="button"
                   onClick={() => setProjectSettingsOpen((prev) => !prev)}
-                  className="ui-pressable inline-flex items-center gap-2 rounded-md border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500 hover:text-white"
+                  className="btn-unstyled ui-pressable inline-flex items-center gap-2 rounded-md border border-gray-700 bg-black px-3 py-1.5 text-xs font-semibold text-neon-green hover:border-gray-500 hover:text-neon-green/80"
+                  style={{ WebkitAppearance: 'none', appearance: 'none' }}
                   aria-expanded={projectSettingsOpen}
                   aria-label={projectSettingsOpen ? 'Collapse project settings' : 'Expand project settings'}
                 >
@@ -2427,7 +2428,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <div className="mt-4 space-y-5">
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="mb-3.5 text-[15px] font-semibold leading-6 tracking-tight text-white">
+                        <div
+                          className="mb-3.5 text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800 }}
+                        >
                           Visibility
                         </div>
                         <div className="text-sm text-gray-400 leading-relaxed">
@@ -2473,8 +2477,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               )
                             }
                           }}
-                          className={`${COMPACT_DARK_SELECT_CLASS} h-12 min-w-[168px] cursor-pointer rounded-lg border-2 border-gray-400 bg-gray-800 px-4 pr-10 text-sm font-semibold text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] hover:border-gray-300 focus:ring-2 focus:ring-neon-green/40`}
-                          style={COMPACT_DARK_SELECT_STYLE}
+                          className="h-12 min-w-[168px] cursor-pointer appearance-none rounded-lg border-2 border-gray-500 bg-gray-800 px-4 pr-10 text-sm font-semibold text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-neon-green/40"
+                          style={{
+                            ...COMPACT_DARK_SELECT_STYLE,
+                            WebkitAppearance: 'none',
+                            appearance: 'none',
+                          }}
                           aria-label="Project visibility"
                         >
                           <option value="public">Public</option>
@@ -2490,7 +2498,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="mb-3.5 text-[15px] font-semibold leading-6 tracking-tight text-white">
+                        <div
+                          className="mb-3.5 text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800 }}
+                        >
                           Project Sharing
                         </div>
                         <div className="text-sm text-gray-400 leading-relaxed">
@@ -2551,7 +2562,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="mb-3.5 text-[15px] font-semibold leading-6 tracking-tight text-white">
+                        <div
+                          className="mb-3.5 text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800 }}
+                        >
                           Allow Downloads
                         </div>
                         <div className="text-sm text-gray-400 leading-relaxed">
@@ -2848,7 +2862,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     disabled={
                                       projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                     }
-                                    className={COMPACT_DANGER_ACTION_BUTTON_CLASS}
+                                    className={`btn-unstyled ${COMPACT_DANGER_ACTION_BUTTON_CLASS}`}
+                                    style={{ WebkitAppearance: 'none', appearance: 'none' }}
                                     aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
                                   >
                                     Remove
