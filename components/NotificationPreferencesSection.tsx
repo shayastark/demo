@@ -43,6 +43,14 @@ const PREFERENCE_FIELDS: NotificationToggleField[] = [
   'notify_project_saved',
 ]
 
+const PREFERENCE_ROW_CLASS =
+  'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-gray-800 px-3 py-3.5 text-left'
+const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0'
+const PREFERENCE_TOGGLE_GROUP_CLASS = 'flex min-w-[5.5rem] items-center justify-end gap-2 self-center'
+const PREFERENCE_TOGGLE_BUTTON_CLASS =
+  'relative inline-flex h-8 w-14 min-w-14 flex-shrink-0 items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60'
+const PREFERENCE_STATUS_LABEL_CLASS = 'min-w-7 text-right text-xs font-medium leading-none'
+
 export default function NotificationPreferencesSection({
   authenticated,
   getAccessToken,
@@ -353,48 +361,42 @@ export default function NotificationPreferencesSection({
           return (
             <div
               key={field}
-              className="w-full flex items-center justify-between border border-gray-800 rounded-lg px-3 py-3 text-left"
+              className={PREFERENCE_ROW_CLASS}
             >
-              <div className="pr-3">
-                <p className="text-sm text-white">{PREFERENCE_LABELS[field]}</p>
+              <div className={PREFERENCE_TEXT_BLOCK_CLASS}>
+                <p className="text-sm font-medium leading-5 text-white">{PREFERENCE_LABELS[field]}</p>
                 <p className="mt-1 text-xs text-gray-500">{PREFERENCE_DESCRIPTIONS[field]}</p>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={enabled}
-                aria-label={`${PREFERENCE_LABELS[field]} notifications`}
-                onClick={() => togglePreference(field)}
-                disabled={loading || !!savingField}
-                className="relative inline-flex items-center justify-start rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60"
-                style={{
-                  width: '52px',
-                  minWidth: '52px',
-                  height: '30px',
-                  borderRadius: '999px',
-                  border: enabled ? '1px solid rgba(57, 255, 20, 0.8)' : '1px solid rgba(75, 85, 99, 0.95)',
-                  backgroundColor: enabled ? 'rgba(57, 255, 20, 0.2)' : 'rgba(31, 41, 55, 0.95)',
-                }}
-              >
-                <span className="sr-only">{PREFERENCE_LABELS[field]}</span>
+              <div className={PREFERENCE_TOGGLE_GROUP_CLASS}>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  aria-label={`${PREFERENCE_LABELS[field]} notifications`}
+                  onClick={() => togglePreference(field)}
+                  disabled={loading || !!savingField}
+                  className={`${PREFERENCE_TOGGLE_BUTTON_CLASS} ${
+                    enabled
+                      ? 'justify-start border-neon-green/80 bg-neon-green/20'
+                      : 'justify-start border-gray-600 bg-gray-800/90'
+                  }`}
+                >
+                  <span className="sr-only">{PREFERENCE_LABELS[field]}</span>
+                  <span
+                    aria-hidden
+                    className={`h-[22px] w-[22px] rounded-full transition-transform duration-200 ${
+                      enabled ? 'translate-x-[30px] bg-neon-green' : 'translate-x-1 bg-gray-300'
+                    }`}
+                  />
+                </button>
                 <span
-                  aria-hidden
-                  style={{
-                    width: '22px',
-                    height: '22px',
-                    borderRadius: '999px',
-                    transform: enabled ? 'translateX(26px)' : 'translateX(3px)',
-                    transition: 'transform 180ms ease',
-                    backgroundColor: enabled ? '#39FF14' : '#d1d5db',
-                  }}
-                />
-              </button>
-              <span
-                className="ml-2 text-xs"
-                style={{ color: enabled ? '#39FF14' : '#9ca3af', minWidth: '28px' }}
-              >
-                {isSaving ? '...' : enabled ? 'On' : 'Off'}
-              </span>
+                  className={`${PREFERENCE_STATUS_LABEL_CLASS} ${
+                    enabled ? 'text-neon-green' : 'text-gray-400'
+                  }`}
+                >
+                  {isSaving ? '...' : enabled ? 'On' : 'Off'}
+                </span>
+              </div>
             </div>
           )
         })}

@@ -14,7 +14,25 @@ import TipPromptCard from './TipPromptCard'
 import TopSupportersCard from './TopSupportersCard'
 import ProjectAttachmentsPanel from './ProjectAttachmentsPanel'
 import ProjectActivityPanel from './ProjectActivityPanel'
-import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
+import {
+  Copy,
+  Share2,
+  Eye,
+  Download,
+  Plus,
+  Edit,
+  ArrowLeft,
+  FileText,
+  Save,
+  X,
+  Upload,
+  Trash2,
+  MoreVertical,
+  Pin,
+  PinOff,
+  ListMusic,
+  ChevronDown,
+} from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
 import { ProjectDetailSkeleton } from './SkeletonLoader'
@@ -71,6 +89,20 @@ type ProjectAccessSearchResult = {
   email: string | null
   avatar_url: string | null
 }
+
+const SETTINGS_LABEL_CLASS = 'text-[13px] font-semibold tracking-[0.01em] text-white sm:text-sm'
+const SETTINGS_HELPER_TEXT_CLASS = 'mt-1.5 text-xs leading-relaxed text-gray-300'
+const COMPACT_DARK_SELECT_CLASS =
+  'h-9 min-h-9 shrink-0 rounded-md border border-gray-700 bg-gray-950 px-3 pr-8 text-xs font-medium text-gray-100 shadow-none transition focus:border-neon-green focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+const COMPACT_DARK_SELECT_STYLE = {
+  WebkitAppearance: 'none' as const,
+  appearance: 'none' as const,
+  backgroundImage: 'none',
+}
+const COMPACT_ACTION_BUTTON_CLASS =
+  'ui-pressable inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-gray-700 bg-gray-950 px-3 text-xs font-medium text-gray-100 transition hover:border-gray-500 hover:text-white disabled:opacity-50'
+const COMPACT_DANGER_ACTION_BUTTON_CLASS =
+  'ui-pressable inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-red-400/40 bg-red-500/10 px-3 text-xs font-medium text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -2373,59 +2405,69 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold tracking-tight text-white">Visibility</div>
-                        <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
+                        <div className={SETTINGS_LABEL_CLASS}>Visibility</div>
+                        <div className={SETTINGS_HELPER_TEXT_CLASS}>
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
-                      <select
-                        value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
-                        onChange={async (event) => {
-                          const newVisibility = event.target.value as ProjectVisibility
-                          const oldVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
-                          const { error } = await apiRequest('/api/projects', {
-                            method: 'PATCH',
-                            body: { id: project.id, visibility: newVisibility },
-                            getAccessToken,
-                          })
-                          if (error) {
-                            showToast('Failed to update visibility', 'error')
-                            return
-                          }
-                          setProject({
-                            ...project,
-                            visibility: newVisibility,
-                            sharing_enabled: newVisibility !== 'private',
-                          })
-                          showToast(`Visibility set to ${newVisibility}`, 'success')
-                          if (typeof window !== 'undefined') {
-                            window.dispatchEvent(
-                              new CustomEvent('project_visibility_event', {
-                                detail: {
-                                  schema: 'project_visibility.v1',
-                                  action: 'change_visibility',
-                                  project_id: project.id,
-                                  old_visibility: oldVisibility,
-                                  new_visibility: newVisibility,
-                                  source: 'project_detail_settings',
-                                },
-                              })
+                      <div className="relative w-full max-w-[8.5rem] flex-shrink-0">
+                        <select
+                          value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
+                          onChange={async (event) => {
+                            const newVisibility = event.target.value as ProjectVisibility
+                            const oldVisibility = resolveProjectVisibility(
+                              project.visibility,
+                              project.sharing_enabled
                             )
-                          }
-                        }}
-                        className="min-h-11 rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
-                        aria-label="Project visibility"
-                      >
-                        <option value="public">Public</option>
-                        <option value="unlisted">Unlisted</option>
-                        <option value="private">Private</option>
-                      </select>
+                            const { error } = await apiRequest('/api/projects', {
+                              method: 'PATCH',
+                              body: { id: project.id, visibility: newVisibility },
+                              getAccessToken,
+                            })
+                            if (error) {
+                              showToast('Failed to update visibility', 'error')
+                              return
+                            }
+                            setProject({
+                              ...project,
+                              visibility: newVisibility,
+                              sharing_enabled: newVisibility !== 'private',
+                            })
+                            showToast(`Visibility set to ${newVisibility}`, 'success')
+                            if (typeof window !== 'undefined') {
+                              window.dispatchEvent(
+                                new CustomEvent('project_visibility_event', {
+                                  detail: {
+                                    schema: 'project_visibility.v1',
+                                    action: 'change_visibility',
+                                    project_id: project.id,
+                                    old_visibility: oldVisibility,
+                                    new_visibility: newVisibility,
+                                    source: 'project_detail_settings',
+                                  },
+                                })
+                              )
+                            }
+                          }}
+                          className={`${COMPACT_DARK_SELECT_CLASS} h-10 min-h-10 w-full rounded-lg bg-black text-sm`}
+                          style={COMPACT_DARK_SELECT_STYLE}
+                          aria-label="Project visibility"
+                        >
+                          <option value="public">Public</option>
+                          <option value="unlisted">Unlisted</option>
+                          <option value="private">Private</option>
+                        </select>
+                        <ChevronDown
+                          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                          aria-hidden
+                        />
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold tracking-tight text-white">Project Sharing</div>
-                        <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
+                        <div className={SETTINGS_LABEL_CLASS}>Project Sharing</div>
+                        <div className={SETTINGS_HELPER_TEXT_CLASS}>
                           Allow others to view this project via share link.
                         </div>
                       </div>
@@ -2481,8 +2523,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold tracking-tight text-white">Allow Downloads</div>
-                        <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
+                        <div className={SETTINGS_LABEL_CLASS}>Allow Downloads</div>
+                        <div className={SETTINGS_HELPER_TEXT_CLASS}>
                           Users can download tracks from this project.
                         </div>
                       </div>
@@ -2770,59 +2812,60 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                 </div>
                               </div>
                               <div className="mt-3.5 flex flex-wrap items-center gap-2">
-                                <select
-                                  value={grant.role || 'viewer'}
-                                  onChange={(event) =>
-                                    handleChangeProjectAccessRole(
-                                      grant,
-                                      event.target.value as ProjectAccessRole
-                                    )
-                                  }
-                                  disabled={
-                                    projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                                  }
-                                  className="min-h-9 rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1.5 pr-6 text-xs text-gray-100 appearance-none"
-                                  style={{
-                                    WebkitAppearance: 'none',
-                                    appearance: 'none',
-                                    backgroundColor: '#111827',
-                                    color: '#f3f4f6',
-                                    borderColor: '#374151',
-                                  }}
-                                  aria-label={`Role for ${getGrantDisplayName(grant)}`}
-                                >
-                                  <option value="viewer">Viewer</option>
-                                  <option value="commenter">Commenter</option>
-                                  <option value="contributor">Contributor</option>
-                                </select>
-                                <select
-                                  value={
-                                    projectAccessExpirySelections[grant.user_id] || deriveGrantExpiryPreset(grant)
-                                  }
-                                  onChange={(event) => {
-                                    const next = event.target.value as ProjectAccessExpiryPreset
-                                    setProjectAccessExpirySelections((current) => ({
-                                      ...current,
-                                      [grant.user_id]: next,
-                                    }))
-                                  }}
-                                  disabled={
-                                    projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                                  }
-                                  className="min-h-9 rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1.5 pr-6 text-xs text-gray-100 appearance-none"
-                                  style={{
-                                    WebkitAppearance: 'none',
-                                    appearance: 'none',
-                                    backgroundColor: '#111827',
-                                    color: '#f3f4f6',
-                                    borderColor: '#374151',
-                                  }}
-                                  aria-label={`Expiry for ${getGrantDisplayName(grant)}`}
-                                >
-                                  <option value="never">No expiry</option>
-                                  <option value="24h">24h</option>
-                                  <option value="7d">7d</option>
-                                </select>
+                                <div className="relative min-w-[6.75rem]">
+                                  <select
+                                    value={grant.role || 'viewer'}
+                                    onChange={(event) =>
+                                      handleChangeProjectAccessRole(
+                                        grant,
+                                        event.target.value as ProjectAccessRole
+                                      )
+                                    }
+                                    disabled={
+                                      projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                                    }
+                                    className={`${COMPACT_DARK_SELECT_CLASS} w-full`}
+                                    style={COMPACT_DARK_SELECT_STYLE}
+                                    aria-label={`Role for ${getGrantDisplayName(grant)}`}
+                                  >
+                                    <option value="viewer">Viewer</option>
+                                    <option value="commenter">Commenter</option>
+                                    <option value="contributor">Contributor</option>
+                                  </select>
+                                  <ChevronDown
+                                    className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+                                    aria-hidden
+                                  />
+                                </div>
+                                <div className="relative min-w-[7rem]">
+                                  <select
+                                    value={
+                                      projectAccessExpirySelections[grant.user_id] ||
+                                      deriveGrantExpiryPreset(grant)
+                                    }
+                                    onChange={(event) => {
+                                      const next = event.target.value as ProjectAccessExpiryPreset
+                                      setProjectAccessExpirySelections((current) => ({
+                                        ...current,
+                                        [grant.user_id]: next,
+                                      }))
+                                    }}
+                                    disabled={
+                                      projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                                    }
+                                    className={`${COMPACT_DARK_SELECT_CLASS} w-full`}
+                                    style={COMPACT_DARK_SELECT_STYLE}
+                                    aria-label={`Expiry for ${getGrantDisplayName(grant)}`}
+                                  >
+                                    <option value="never">No expiry</option>
+                                    <option value="24h">24h</option>
+                                    <option value="7d">7d</option>
+                                  </select>
+                                  <ChevronDown
+                                    className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+                                    aria-hidden
+                                  />
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -2835,7 +2878,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="ui-pressable min-h-9 rounded-md border border-gray-700 bg-gray-900/90 px-2.5 py-1.5 text-xs text-gray-100 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                                  className={COMPACT_ACTION_BUTTON_CLASS}
                                   aria-label={`Set expiry for ${getGrantDisplayName(grant)}`}
                                 >
                                   Set expiry
@@ -2846,7 +2889,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="ui-pressable min-h-9 rounded-md border border-red-400/40 bg-red-500/10 px-2.5 py-1.5 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
+                                  className={COMPACT_DANGER_ACTION_BUTTON_CLASS}
                                   aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
                                 >
                                   Remove
