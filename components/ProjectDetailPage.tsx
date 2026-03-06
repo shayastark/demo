@@ -101,7 +101,7 @@ const COMPACT_DARK_SELECT_STYLE = {
   colorScheme: 'dark' as const,
 }
 const COMPACT_DANGER_ACTION_BUTTON_CLASS =
-  'ui-pressable inline-flex h-9 min-w-[116px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-red-400/50 bg-red-500/10 px-4 text-sm font-semibold text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
+  'ui-pressable inline-flex h-9 min-w-[116px] w-auto shrink-0 appearance-none items-center justify-center whitespace-nowrap rounded-full border border-red-400/50 bg-red-500/10 px-4 text-sm font-semibold text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -2427,17 +2427,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <div className="mt-4 space-y-5">
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div
-                          className="text-[15px] font-semibold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 600 }}
-                        >
+                        <div className="mb-3.5 text-[15px] font-semibold leading-6 tracking-tight text-white">
                           Visibility
                         </div>
-                        <div className="mt-5 text-sm text-gray-400 leading-relaxed">
+                        <div className="text-sm text-gray-400 leading-relaxed">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
-                      <div className="relative shrink-0 pr-1 pt-1">
+                      <div className="relative shrink-0 pr-3 pt-1">
                         <select
                           value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
                           onChange={async (event) => {
@@ -2476,7 +2473,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               )
                             }
                           }}
-                          className={`${COMPACT_DARK_SELECT_CLASS} h-11 min-w-[156px] cursor-pointer rounded-lg border border-gray-500 bg-gray-900 px-4 pr-10 text-sm font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.08)] hover:border-gray-400 focus:ring-2 focus:ring-neon-green/40`}
+                          className={`${COMPACT_DARK_SELECT_CLASS} h-12 min-w-[168px] cursor-pointer rounded-lg border-2 border-gray-400 bg-gray-800 px-4 pr-10 text-sm font-semibold text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] hover:border-gray-300 focus:ring-2 focus:ring-neon-green/40`}
                           style={COMPACT_DARK_SELECT_STYLE}
                           aria-label="Project visibility"
                         >
@@ -2493,17 +2490,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div
-                          className="text-[15px] font-semibold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 600 }}
-                        >
+                        <div className="mb-3.5 text-[15px] font-semibold leading-6 tracking-tight text-white">
                           Project Sharing
                         </div>
-                        <div className="mt-5 text-sm text-gray-400 leading-relaxed">
+                        <div className="text-sm text-gray-400 leading-relaxed">
                           Allow others to view this project via share link.
                         </div>
                       </div>
-                      <div className="shrink-0 pr-1 pt-1">
+                      <div className="shrink-0 pr-3 pt-1">
                         <button
                           onClick={async () => {
                             const newValue = !(project.sharing_enabled ?? true)
@@ -2557,17 +2551,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div
-                          className="text-[15px] font-semibold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 600 }}
-                        >
+                        <div className="mb-3.5 text-[15px] font-semibold leading-6 tracking-tight text-white">
                           Allow Downloads
                         </div>
-                        <div className="mt-5 text-sm text-gray-400 leading-relaxed">
+                        <div className="text-sm text-gray-400 leading-relaxed">
                           Users can download tracks from this project.
                         </div>
                       </div>
-                      <div className="shrink-0 pr-1 pt-1">
+                      <div className="shrink-0 pr-3 pt-1">
                         <button
                           onClick={async () => {
                             const newValue = !project.allow_downloads
@@ -2803,13 +2794,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     <button
                                       type="button"
                                       onClick={() => openGrantCreatorProfile(grant)}
-                                      className="ui-pressable max-w-full truncate text-left text-sm font-semibold text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
+                                      className="ui-pressable max-w-[46%] truncate text-left text-sm font-semibold text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 sm:max-w-full"
                                       aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
                                     >
                                       {getGrantDisplayName(grant)}
                                     </button>
                                     {getGrantEmail(grant) ? (
-                                      <span className="truncate text-xs text-gray-400">{getGrantEmail(grant)}</span>
+                                      <span className="ml-auto max-w-[54%] truncate text-right text-xs text-gray-400">
+                                        {getGrantEmail(grant)}
+                                      </span>
                                     ) : null}
                                   </div>
                                   <div className="flex flex-wrap items-center gap-1.5">
