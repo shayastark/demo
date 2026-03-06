@@ -2429,12 +2429,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="mb-3.5 text-[17px] font-extrabold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 800 }}
+                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800, marginBottom: '14px' }}
                         >
                           Visibility
                         </div>
-                        <div className="text-sm text-gray-400 leading-relaxed">
+                        <div className="text-sm text-gray-400 leading-relaxed" style={{ lineHeight: 1.6 }}>
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
@@ -2477,11 +2477,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               )
                             }
                           }}
-                          className="h-12 min-w-[168px] cursor-pointer appearance-none rounded-lg border-2 border-gray-500 bg-gray-800 px-4 pr-10 text-sm font-semibold text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-neon-green/40"
+                          className="cursor-pointer appearance-none rounded-lg px-4 pr-10 text-sm font-semibold text-white transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-neon-green/40"
                           style={{
                             ...COMPACT_DARK_SELECT_STYLE,
                             WebkitAppearance: 'none',
                             appearance: 'none',
+                            height: '46px',
+                            minWidth: '168px',
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            borderColor: '#6b7280',
+                            borderRadius: '10px',
+                            backgroundColor: '#111827',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
                           }}
                           aria-label="Project visibility"
                         >
@@ -2499,12 +2507,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="mb-3.5 text-[17px] font-extrabold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 800 }}
+                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800, marginBottom: '14px' }}
                         >
                           Project Sharing
                         </div>
-                        <div className="text-sm text-gray-400 leading-relaxed">
+                        <div className="text-sm text-gray-400 leading-relaxed" style={{ lineHeight: 1.6 }}>
                           Allow others to view this project via share link.
                         </div>
                       </div>
@@ -2563,12 +2571,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="mb-3.5 text-[17px] font-extrabold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 800 }}
+                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800, marginBottom: '14px' }}
                         >
                           Allow Downloads
                         </div>
-                        <div className="text-sm text-gray-400 leading-relaxed">
+                        <div className="text-sm text-gray-400 leading-relaxed" style={{ lineHeight: 1.6 }}>
                           Users can download tracks from this project.
                         </div>
                       </div>
@@ -2863,7 +2871,20 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                       projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                     }
                                     className={`btn-unstyled ${COMPACT_DANGER_ACTION_BUTTON_CLASS}`}
-                                    style={{ WebkitAppearance: 'none', appearance: 'none' }}
+                                    style={{
+                                      WebkitAppearance: 'none',
+                                      appearance: 'none',
+                                      borderRadius: '9999px',
+                                      border: '1px solid rgba(248, 113, 113, 0.5)',
+                                      background: 'rgba(239, 68, 68, 0.12)',
+                                      color: '#fca5a5',
+                                      minWidth: '116px',
+                                      height: '36px',
+                                      padding: '0 16px',
+                                      fontSize: '14px',
+                                      fontWeight: 600,
+                                      lineHeight: 1,
+                                    }}
                                     aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
                                   >
                                     Remove
