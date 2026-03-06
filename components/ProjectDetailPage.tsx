@@ -2221,7 +2221,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           </Link>
           <button
             onClick={logout}
-            className="btn-unstyled min-h-10 rounded-md px-2 py-1 text-sm text-gray-400 hover:bg-gray-900 hover:text-white transition"
+            className="btn-unstyled min-h-10 rounded-md px-2 py-1 text-sm font-medium text-neon-green hover:bg-gray-900 hover:text-neon-green/80 transition"
           >
             Sign out
           </button>
@@ -2402,7 +2402,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   </p>
 
                   <div className="mt-4 space-y-5">
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
+                    <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
                           className="text-[15px] font-semibold leading-6 tracking-tight text-white"
@@ -2410,11 +2410,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         >
                           Visibility
                         </div>
-                        <div className="mt-2.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-3.5 text-sm text-gray-400 leading-relaxed">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
-                      <div className="relative shrink-0 pr-1">
+                      <div className="relative shrink-0 pr-1 pt-1">
                         <select
                           value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
                           onChange={async (event) => {
@@ -2468,7 +2468,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
+                    <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
                           className="text-[15px] font-semibold leading-6 tracking-tight text-white"
@@ -2476,11 +2476,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         >
                           Project Sharing
                         </div>
-                        <div className="mt-2.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-3.5 text-sm text-gray-400 leading-relaxed">
                           Allow others to view this project via share link.
                         </div>
                       </div>
-                      <div className="shrink-0 pr-1">
+                      <div className="shrink-0 pr-1 pt-1">
                         <button
                           onClick={async () => {
                             const newValue = !(project.sharing_enabled ?? true)
@@ -2532,7 +2532,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
+                    <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
                           className="text-[15px] font-semibold leading-6 tracking-tight text-white"
@@ -2540,11 +2540,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         >
                           Allow Downloads
                         </div>
-                        <div className="mt-2.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-3.5 text-sm text-gray-400 leading-relaxed">
                           Users can download tracks from this project.
                         </div>
                       </div>
-                      <div className="shrink-0 pr-1">
+                      <div className="shrink-0 pr-1 pt-1">
                         <button
                           onClick={async () => {
                             const newValue = !project.allow_downloads

@@ -92,6 +92,12 @@ export default function NewProjectPage() {
   const canSubmit = !loading && !submitted && !!title.trim() && hasTrack
   const shouldShowAutoFillTip = !dismissedAutoFillTip && tracks.some((t) => t.autoFilledTitle)
 
+  const blurFocusedElement = () => {
+    if (typeof document === 'undefined') return
+    const active = document.activeElement
+    if (active instanceof HTMLElement) active.blur()
+  }
+
   const uploadFile = async (file: File, path: string, fileType: 'audio' | 'image' = 'image'): Promise<string> => {
     // File size limits
     const maxAudioSize = 100 * 1024 * 1024 // 100MB for audio
@@ -293,11 +299,14 @@ export default function NewProjectPage() {
       
       // Use replace to prevent back button issues, and ensure navigation happens
       const projectUrl = `/dashboard/projects/${project.id}`
+      // Prevent iOS focus-zoom persistence when leaving the form.
+      blurFocusedElement()
       router.replace(projectUrl)
       
       // Fallback: if router.replace doesn't work, use window.location
       setTimeout(() => {
         if (!submitted) return // Already navigated
+        blurFocusedElement()
         window.location.href = projectUrl
       }, 500)
       
@@ -459,7 +468,7 @@ export default function NewProjectPage() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Name your project"
               required
-              className="w-full bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 transition"
+              className="w-full bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3.5 text-base sm:text-sm text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 transition"
             />
           </div>
 
@@ -471,7 +480,7 @@ export default function NewProjectPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="Add a description or details"
-              className="w-full bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 transition resize-none"
+              className="w-full bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3.5 text-base sm:text-sm text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 transition resize-none"
             />
           </div>
 
@@ -586,7 +595,7 @@ export default function NewProjectPage() {
                             setTracks(newTracks)
                           }}
                           placeholder="Track title"
-                          className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 text-sm transition"
+                          className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-base sm:text-sm text-white placeholder-gray-600 focus:outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/30 transition"
                         />
                         <p className="text-xs text-gray-500">
                           Auto-filled from filename. Click to edit.

@@ -526,7 +526,7 @@ export default function ClientDashboard() {
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <button
               onClick={logout}
-              className="btn-unstyled min-h-8 rounded-md px-1.5 py-1 text-xs text-gray-400 hover:bg-gray-900 hover:text-white sm:text-sm max-[390px]:text-[10px] whitespace-nowrap"
+              className="btn-unstyled min-h-8 rounded-md px-1.5 py-1 text-xs font-medium text-neon-green hover:bg-gray-900 hover:text-neon-green/80 sm:text-sm max-[390px]:text-[10px] whitespace-nowrap"
             >
               Sign out
             </button>
