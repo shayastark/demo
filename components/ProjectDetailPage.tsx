@@ -2321,248 +2321,231 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {/* Settings - Only show for creators */}
           {isCreator && (
-          <div
-            className="mb-6 rounded-xl border border-gray-800 bg-gray-900/90"
-            style={{ padding: '20px 24px 24px 24px' }}
-          >
-            <h3 
-              className="font-semibold text-neon-green text-lg"
-              style={{ marginBottom: '20px' }}
-            >
-              Project Settings
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {/* Sharing Toggle */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '8px 0' }}>
-                <div style={{ flex: 1, marginRight: '24px' }}>
-                  <div className="font-medium text-white text-base">Visibility</div>
-                  <div className="text-sm text-gray-400" style={{ marginTop: '6px' }}>
-                    Public: appears on your profile. Unlisted: hidden from profile, link-only. Private: only you can view.
-                  </div>
-                </div>
-                <select
-                  value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
-                  onChange={async (event) => {
-                    const newVisibility = event.target.value as ProjectVisibility
-                    const oldVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
-                    const { error } = await apiRequest('/api/projects', {
-                      method: 'PATCH',
-                      body: { id: project.id, visibility: newVisibility },
-                      getAccessToken,
-                    })
-                    if (error) {
-                      showToast('Failed to update visibility', 'error')
-                      return
-                    }
-                    setProject({
-                      ...project,
-                      visibility: newVisibility,
-                      sharing_enabled: newVisibility !== 'private',
-                    })
-                    showToast(`Visibility set to ${newVisibility}`, 'success')
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(
-                        new CustomEvent('project_visibility_event', {
-                          detail: {
-                            schema: 'project_visibility.v1',
-                            action: 'change_visibility',
-                            project_id: project.id,
-                            old_visibility: oldVisibility,
-                            new_visibility: newVisibility,
-                            source: 'project_detail_settings',
-                          },
-                        })
-                      )
-                    }
-                  }}
-                  className="bg-black border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-neon-green"
-                >
-                  <option value="public">Public</option>
-                  <option value="unlisted">Unlisted</option>
-                  <option value="private">Private</option>
-                </select>
-              </div>
+            <div className="mb-6 rounded-xl border border-gray-800 bg-gray-900/90 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-neon-green">Project Settings</h3>
+              <p className="mt-1 text-xs text-gray-400">Manage visibility, sharing, and collaboration access.</p>
 
-              {/* Sharing Toggle */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
-                <div style={{ flex: 1, marginRight: '24px' }}>
-                  <div className="font-medium text-white text-base">Project Sharing</div>
-                  <div className="text-sm text-gray-400" style={{ marginTop: '6px' }}>
-                    Allow others to view this project via share link
-                  </div>
-                </div>
-                <button
-                  onClick={async () => {
-                    const newValue = !(project.sharing_enabled ?? true)
-                    const currentVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
-                    const nextVisibility: ProjectVisibility = newValue
-                      ? currentVisibility === 'private'
-                        ? 'unlisted'
-                        : currentVisibility
-                      : 'private'
-                    const { error } = await apiRequest('/api/projects', {
-                      method: 'PATCH',
-                      body: { id: project.id, sharing_enabled: newValue, visibility: nextVisibility },
-                      getAccessToken,
-                    })
-                    if (error) {
-                      showToast('Failed to update sharing setting', 'error')
-                    } else {
-                      setProject({ ...project, sharing_enabled: newValue, visibility: nextVisibility })
-                      showToast(`Sharing ${newValue ? 'enabled' : 'disabled'}`, 'success')
-                    }
-                  }}
-                  style={{
-                    position: 'relative',
-                    width: '56px',
-                    height: '32px',
-                    borderRadius: '16px',
-                    backgroundColor: (project.sharing_enabled ?? true) ? '#39FF14' : '#4B5563',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s',
-                    flexShrink: 0,
-                  }}
-                >
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '4px',
-                      left: (project.sharing_enabled ?? true) ? '28px' : '4px',
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '12px',
-                      backgroundColor: (project.sharing_enabled ?? true) ? '#000' : '#fff',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                      transition: 'left 0.2s, background-color 0.2s',
-                    }}
-                  />
-                </button>
-              </div>
+              <div className="mt-4 space-y-4">
+                <section className="rounded-lg border border-gray-800/80 bg-black/20 p-3 sm:p-4">
+                  <h4 className="text-sm font-semibold text-white">Visibility &amp; Sharing</h4>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Configure who can discover this project and whether viewers can access shared links or downloads.
+                  </p>
 
-              {/* Downloads Toggle */}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between', 
-                padding: '8px 0',
-                borderTop: '1px solid #374151',
-                paddingTop: '24px'
-              }}>
-                <div style={{ flex: 1, marginRight: '24px' }}>
-                  <div className="font-medium text-white text-base">Allow Downloads</div>
-                  <div className="text-sm text-gray-400" style={{ marginTop: '6px' }}>
-                  Users can download tracks from this project
-                </div>
-              </div>
-                <button
-                  onClick={async () => {
-                    const newValue = !project.allow_downloads
-                    const { error } = await apiRequest('/api/projects', {
-                      method: 'PATCH',
-                      body: { id: project.id, allow_downloads: newValue },
-                      getAccessToken,
-                    })
-                    if (error) {
-                      showToast('Failed to update download setting', 'error')
-                    } else {
-                      setProject({ ...project, allow_downloads: newValue })
-                      showToast(`Downloads ${newValue ? 'enabled' : 'disabled'}`, 'success')
-                    }
-                  }}
-                  style={{
-                    position: 'relative',
-                    width: '56px',
-                    height: '32px',
-                    borderRadius: '16px',
-                    backgroundColor: project.allow_downloads ? '#39FF14' : '#4B5563',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s',
-                    flexShrink: 0,
-                  }}
-                >
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '4px',
-                      left: project.allow_downloads ? '28px' : '4px',
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '12px',
-                      backgroundColor: project.allow_downloads ? '#000' : '#fff',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                      transition: 'left 0.2s, background-color 0.2s',
-                    }}
-                  />
-                </button>
-              </div>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-start justify-between gap-4 rounded-lg border border-gray-800/80 bg-gray-950/60 p-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-white">Visibility</div>
+                        <div className="mt-1 text-xs text-gray-400">
+                          Public: profile listing. Unlisted: link-only. Private: invite-only.
+                        </div>
+                      </div>
+                      <select
+                        value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
+                        onChange={async (event) => {
+                          const newVisibility = event.target.value as ProjectVisibility
+                          const oldVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
+                          const { error } = await apiRequest('/api/projects', {
+                            method: 'PATCH',
+                            body: { id: project.id, visibility: newVisibility },
+                            getAccessToken,
+                          })
+                          if (error) {
+                            showToast('Failed to update visibility', 'error')
+                            return
+                          }
+                          setProject({
+                            ...project,
+                            visibility: newVisibility,
+                            sharing_enabled: newVisibility !== 'private',
+                          })
+                          showToast(`Visibility set to ${newVisibility}`, 'success')
+                          if (typeof window !== 'undefined') {
+                            window.dispatchEvent(
+                              new CustomEvent('project_visibility_event', {
+                                detail: {
+                                  schema: 'project_visibility.v1',
+                                  action: 'change_visibility',
+                                  project_id: project.id,
+                                  old_visibility: oldVisibility,
+                                  new_visibility: newVisibility,
+                                  source: 'project_detail_settings',
+                                },
+                              })
+                            )
+                          }
+                        }}
+                        className="min-h-11 rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                        aria-label="Project visibility"
+                      >
+                        <option value="public">Public</option>
+                        <option value="unlisted">Unlisted</option>
+                        <option value="private">Private</option>
+                      </select>
+                    </div>
 
-              {resolveProjectVisibility(project.visibility, project.sharing_enabled) === 'private' ? (
-                <div style={{ borderTop: '1px solid #374151', paddingTop: '24px' }}>
-                  <div className="font-medium text-white text-base">Private Access</div>
-                  <div className="text-sm text-gray-400" style={{ marginTop: '6px', marginBottom: '12px' }}>
-                    Grant access by username or email.
-                  </div>
-                  <div className="mb-3">
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-                      <div className="relative min-w-0 z-10">
-                        <input
-                          type="text"
-                          placeholder="Search username or type username/email"
-                          value={projectAccessIdentifierInput}
-                          onChange={(event) => {
-                            const value = event.target.value
-                            setProjectAccessIdentifierInput(value)
-                            if (
-                              projectAccessSelectedUser &&
-                            value !== getSearchCandidateInputLabel(projectAccessSelectedUser)
-                            ) {
-                              setProjectAccessSelectedUser(null)
-                            }
+                    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-800/80 bg-gray-950/60 p-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-white">Project Sharing</div>
+                        <div className="mt-1 text-xs text-gray-400">
+                          Allow others to view this project via share link.
+                        </div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const newValue = !(project.sharing_enabled ?? true)
+                          const currentVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
+                          const nextVisibility: ProjectVisibility = newValue
+                            ? currentVisibility === 'private'
+                              ? 'unlisted'
+                              : currentVisibility
+                            : 'private'
+                          const { error } = await apiRequest('/api/projects', {
+                            method: 'PATCH',
+                            body: { id: project.id, sharing_enabled: newValue, visibility: nextVisibility },
+                            getAccessToken,
+                          })
+                          if (error) {
+                            showToast('Failed to update sharing setting', 'error')
+                          } else {
+                            setProject({ ...project, sharing_enabled: newValue, visibility: nextVisibility })
+                            showToast(`Sharing ${newValue ? 'enabled' : 'disabled'}`, 'success')
+                          }
+                        }}
+                        style={{
+                          position: 'relative',
+                          width: '56px',
+                          height: '32px',
+                          borderRadius: '16px',
+                          backgroundColor: (project.sharing_enabled ?? true) ? '#39FF14' : '#4B5563',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s',
+                          flexShrink: 0,
+                        }}
+                        aria-label="Toggle project sharing"
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '4px',
+                            left: (project.sharing_enabled ?? true) ? '28px' : '4px',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '12px',
+                            backgroundColor: (project.sharing_enabled ?? true) ? '#000' : '#fff',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                            transition: 'left 0.2s, background-color 0.2s',
                           }}
-                          className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-green"
-                          aria-label="Grant access by username or email"
                         />
-                        {!projectAccessSelectedUser && projectAccessSearchResults.length > 0 ? (
-                          <ul className="absolute left-0 right-0 top-full z-50 mt-2 max-h-44 overflow-y-auto overflow-x-hidden rounded-lg border border-gray-800 bg-gray-950 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">
-                            {projectAccessSearchResults.map((candidate) => (
-                              <li key={candidate.id}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const label = getSearchCandidateInputLabel(candidate)
-                                    setProjectAccessIdentifierInput(label)
-                                    setProjectAccessSelectedUser(candidate)
-                                    setProjectAccessSearchResults([])
-                                    setProjectAccessSearchError(null)
-                                    emitProjectAccessSearchEvent({
-                                      action: 'select_result',
-                                      query_length: projectAccessIdentifierInput.trim().length,
-                                      result_count: projectAccessSearchResults.length,
-                                      target_user_id: candidate.id,
-                                    })
-                                  }}
-                                  className="ui-pressable appearance-none flex w-full min-w-0 items-center gap-2 rounded-none border-0 border-b border-gray-800/80 bg-gray-950 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-900"
-                                  aria-label={`Select ${getSearchCandidatePrimaryLabel(candidate)}`}
-                                >
-                                  <span
-                                    className="inline-flex flex-shrink-0 items-center justify-center overflow-hidden border border-gray-700 bg-gray-800 text-[10px] text-gray-300"
-                                    style={{
-                                      width: '24px',
-                                      minWidth: '24px',
-                                      maxWidth: '24px',
-                                      height: '24px',
-                                      minHeight: '24px',
-                                      maxHeight: '24px',
-                                      borderRadius: '999px',
-                                      lineHeight: 1,
-                                    }}
-                                  >
-                                    {candidate.avatar_url ? (
-                                      <img
-                                        src={candidate.avatar_url}
-                                        alt={`${getSearchCandidatePrimaryLabel(candidate)} avatar`}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-800/80 bg-gray-950/60 p-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-white">Allow Downloads</div>
+                        <div className="mt-1 text-xs text-gray-400">
+                          Users can download tracks from this project.
+                        </div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const newValue = !project.allow_downloads
+                          const { error } = await apiRequest('/api/projects', {
+                            method: 'PATCH',
+                            body: { id: project.id, allow_downloads: newValue },
+                            getAccessToken,
+                          })
+                          if (error) {
+                            showToast('Failed to update download setting', 'error')
+                          } else {
+                            setProject({ ...project, allow_downloads: newValue })
+                            showToast(`Downloads ${newValue ? 'enabled' : 'disabled'}`, 'success')
+                          }
+                        }}
+                        style={{
+                          position: 'relative',
+                          width: '56px',
+                          height: '32px',
+                          borderRadius: '16px',
+                          backgroundColor: project.allow_downloads ? '#39FF14' : '#4B5563',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s',
+                          flexShrink: 0,
+                        }}
+                        aria-label="Toggle downloads"
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '4px',
+                            left: project.allow_downloads ? '28px' : '4px',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '12px',
+                            backgroundColor: project.allow_downloads ? '#000' : '#fff',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                            transition: 'left 0.2s, background-color 0.2s',
+                          }}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-lg border border-gray-800/80 bg-black/20 p-3 sm:p-4">
+                  <h4 className="text-sm font-semibold text-white">Collaboration Access</h4>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Invite collaborators and manage role + expiry settings.
+                  </p>
+
+                  {resolveProjectVisibility(project.visibility, project.sharing_enabled) === 'private' ? (
+                    <div className="mt-4">
+                      <div className="mb-3">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                          <div className="relative min-w-0 z-10">
+                            <input
+                              type="text"
+                              placeholder="Search username or type username/email"
+                              value={projectAccessIdentifierInput}
+                              onChange={(event) => {
+                                const value = event.target.value
+                                setProjectAccessIdentifierInput(value)
+                                if (
+                                  projectAccessSelectedUser &&
+                                  value !== getSearchCandidateInputLabel(projectAccessSelectedUser)
+                                ) {
+                                  setProjectAccessSelectedUser(null)
+                                }
+                              }}
+                              className="min-h-11 w-full rounded-lg border border-gray-700 bg-black px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-green"
+                              aria-label="Grant access by username or email"
+                            />
+                            {!projectAccessSelectedUser && projectAccessSearchResults.length > 0 ? (
+                              <ul className="absolute left-0 right-0 top-full z-50 mt-2 max-h-44 overflow-y-auto overflow-x-hidden rounded-lg border border-gray-800 bg-gray-950 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">
+                                {projectAccessSearchResults.map((candidate) => (
+                                  <li key={candidate.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const label = getSearchCandidateInputLabel(candidate)
+                                        setProjectAccessIdentifierInput(label)
+                                        setProjectAccessSelectedUser(candidate)
+                                        setProjectAccessSearchResults([])
+                                        setProjectAccessSearchError(null)
+                                        emitProjectAccessSearchEvent({
+                                          action: 'select_result',
+                                          query_length: projectAccessIdentifierInput.trim().length,
+                                          result_count: projectAccessSearchResults.length,
+                                          target_user_id: candidate.id,
+                                        })
+                                      }}
+                                      className="ui-pressable appearance-none flex w-full min-w-0 items-center gap-2 rounded-none border-0 border-b border-gray-800/80 bg-gray-950 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-900"
+                                      aria-label={`Select ${getSearchCandidatePrimaryLabel(candidate)}`}
+                                    >
+                                      <span
+                                        className="inline-flex flex-shrink-0 items-center justify-center overflow-hidden border border-gray-700 bg-gray-800 text-[10px] text-gray-300"
                                         style={{
                                           width: '24px',
                                           minWidth: '24px',
@@ -2571,274 +2554,304 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                           minHeight: '24px',
                                           maxHeight: '24px',
                                           borderRadius: '999px',
-                                          objectFit: 'cover',
-                                          display: 'block',
-                                        }}
-                                      />
-                                    ) : (
-                                      <span
-                                        aria-hidden
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          width: '100%',
-                                          height: '100%',
-                                          fontSize: '10px',
-                                          fontWeight: 600,
-                                          textTransform: 'uppercase',
                                           lineHeight: 1,
                                         }}
                                       >
-                                        {getSearchCandidatePrimaryLabel(candidate).slice(0, 1)}
+                                        {candidate.avatar_url ? (
+                                          <img
+                                            src={candidate.avatar_url}
+                                            alt={`${getSearchCandidatePrimaryLabel(candidate)} avatar`}
+                                            style={{
+                                              width: '24px',
+                                              minWidth: '24px',
+                                              maxWidth: '24px',
+                                              height: '24px',
+                                              minHeight: '24px',
+                                              maxHeight: '24px',
+                                              borderRadius: '999px',
+                                              objectFit: 'cover',
+                                              display: 'block',
+                                            }}
+                                          />
+                                        ) : (
+                                          <span
+                                            aria-hidden
+                                            style={{
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              width: '100%',
+                                              height: '100%',
+                                              fontSize: '10px',
+                                              fontWeight: 600,
+                                              textTransform: 'uppercase',
+                                              lineHeight: 1,
+                                            }}
+                                          >
+                                            {getSearchCandidatePrimaryLabel(candidate).slice(0, 1)}
+                                          </span>
+                                        )}
                                       </span>
-                                    )}
-                                  </span>
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block truncate text-sm font-medium text-gray-100">
-                                      {getSearchCandidatePrimaryLabel(candidate)}
-                                    </span>
-                                    {getSearchCandidateSecondaryLabel(candidate) ? (
-                                      <span className="block truncate text-[11px] text-gray-400">
-                                        {getSearchCandidateSecondaryLabel(candidate)}
+                                      <span className="min-w-0 flex-1">
+                                        <span className="block truncate text-sm font-medium text-gray-100">
+                                          {getSearchCandidatePrimaryLabel(candidate)}
+                                        </span>
+                                        {getSearchCandidateSecondaryLabel(candidate) ? (
+                                          <span className="block truncate text-[11px] text-gray-400">
+                                            {getSearchCandidateSecondaryLabel(candidate)}
+                                          </span>
+                                        ) : null}
                                       </span>
-                                    ) : null}
-                                  </span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleGrantProjectAccess}
+                            disabled={projectAccessSaving || !projectAccessIdentifierInput.trim()}
+                            className="ui-pressable z-20 min-h-11 flex-shrink-0 self-stretch whitespace-nowrap rounded-lg bg-neon-green px-3.5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+                            aria-label="Grant private project access"
+                          >
+                            Grant
+                          </button>
+                        </div>
+                        {projectAccessSearchLoading ? (
+                          <p className="mt-2 text-xs text-gray-500">Searching users...</p>
+                        ) : projectAccessSearchError ? (
+                          <p className="mt-2 text-xs text-red-400">{projectAccessSearchError}</p>
+                        ) : projectAccessIdentifierInput.trim().length >= 2 &&
+                          !projectAccessSelectedUser &&
+                          projectAccessSearchResults.length === 0 ? (
+                          <p className="mt-2 text-xs text-gray-500">
+                            No matching users. You can still grant by manual identifier.
+                          </p>
                         ) : null}
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleGrantProjectAccess}
-                        disabled={projectAccessSaving || !projectAccessIdentifierInput.trim()}
-                        className="ui-pressable z-20 min-h-10 flex-shrink-0 self-stretch whitespace-nowrap rounded-lg bg-neon-green px-3.5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
-                        aria-label="Grant private project access"
-                      >
-                        Grant
-                      </button>
+
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setProjectAccessExpiryPreset('never')}
+                          className={`ui-pressable min-h-10 rounded-md border px-2.5 py-1.5 text-xs ${
+                            projectAccessExpiryPreset === 'never'
+                              ? 'border-neon-green text-neon-green'
+                              : 'border-gray-700 text-gray-300'
+                          }`}
+                        >
+                          Never
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProjectAccessExpiryPreset('24h')}
+                          className={`ui-pressable min-h-10 rounded-md border px-2.5 py-1.5 text-xs ${
+                            projectAccessExpiryPreset === '24h'
+                              ? 'border-neon-green text-neon-green'
+                              : 'border-gray-700 text-gray-300'
+                          }`}
+                        >
+                          24h
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProjectAccessExpiryPreset('7d')}
+                          className={`ui-pressable min-h-10 rounded-md border px-2.5 py-1.5 text-xs ${
+                            projectAccessExpiryPreset === '7d'
+                              ? 'border-neon-green text-neon-green'
+                              : 'border-gray-700 text-gray-300'
+                          }`}
+                        >
+                          7d
+                        </button>
+                      </div>
+
+                      {projectAccessInlineState ? (
+                        <p
+                          className={`mb-2 rounded-md border px-2.5 py-2 text-xs ${
+                            projectAccessInlineState.tone === 'success'
+                              ? 'border-neon-green/30 bg-neon-green/5 text-neon-green'
+                              : 'border-red-400/30 bg-red-500/10 text-red-300'
+                          }`}
+                          role="status"
+                          aria-live="polite"
+                        >
+                          {projectAccessInlineState.message}
+                        </p>
+                      ) : null}
+
+                      {projectAccessLoading ? (
+                        <p className="text-xs text-gray-500">Loading access list...</p>
+                      ) : projectAccessGrants.length === 0 ? (
+                        <p className="text-xs text-gray-500">No invited viewers yet.</p>
+                      ) : (
+                        <ul className="space-y-2.5">
+                          {projectAccessGrants.map((grant) => (
+                            <li key={grant.id} className="rounded-xl border border-gray-800/80 bg-gray-950/70 p-3">
+                              <div className="flex items-start gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => openGrantCreatorProfile(grant)}
+                                  className="ui-pressable mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-sm text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
+                                  aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
+                                >
+                                  {grant.avatar_url ? (
+                                    <Image
+                                      src={grant.avatar_url}
+                                      alt={`${getGrantDisplayName(grant)} avatar`}
+                                      width={40}
+                                      height={40}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <span aria-hidden>{getGrantInitial(grant)}</span>
+                                  )}
+                                </button>
+                                <div className="min-w-0 flex-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => openGrantCreatorProfile(grant)}
+                                    className="ui-pressable max-w-full truncate text-left text-sm font-medium text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
+                                    aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
+                                  >
+                                    {getGrantDisplayName(grant)}
+                                  </button>
+                                  <p className="mt-1 text-xs text-gray-500">
+                                    {(grant.role || 'viewer')} • {formatGrantExpiryLabel(grant)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <select
+                                  value={grant.role || 'viewer'}
+                                  onChange={(event) =>
+                                    handleChangeProjectAccessRole(
+                                      grant,
+                                      event.target.value as ProjectAccessRole
+                                    )
+                                  }
+                                  disabled={
+                                    projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                                  }
+                                  className="min-h-11 rounded-md border border-gray-700 bg-black px-2.5 py-1.5 text-xs text-white"
+                                  aria-label={`Role for ${getGrantDisplayName(grant)}`}
+                                >
+                                  <option value="viewer">Viewer</option>
+                                  <option value="commenter">Commenter</option>
+                                  <option value="contributor">Contributor</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRenewProjectAccess(grant.user_id, 24)}
+                                  disabled={
+                                    projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                                  }
+                                  className="ui-pressable min-h-11 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                                  aria-label={`Extend access for ${getGrantDisplayName(grant)} by 24 hours`}
+                                >
+                                  +24h
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRenewProjectAccess(grant.user_id, 168)}
+                                  disabled={
+                                    projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                                  }
+                                  className="ui-pressable min-h-11 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                                  aria-label={`Extend access for ${getGrantDisplayName(grant)} by 7 days`}
+                                >
+                                  +7d
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevokeProjectAccess(grant.user_id)}
+                                  disabled={
+                                    projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
+                                  }
+                                  className="ui-pressable min-h-11 rounded-md border border-red-400/40 px-2.5 py-1.5 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
+                                  aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                    {projectAccessSearchLoading ? (
-                      <p className="text-xs text-gray-500 mt-2">Searching users...</p>
-                    ) : projectAccessSearchError ? (
-                      <p className="text-xs text-red-400 mt-2">{projectAccessSearchError}</p>
-                    ) : projectAccessIdentifierInput.trim().length >= 2 &&
-                      !projectAccessSelectedUser &&
-                      projectAccessSearchResults.length === 0 ? (
-                      <p className="text-xs text-gray-500 mt-2">No matching users. You can still grant by manual identifier.</p>
-                    ) : null}
-                  </div>
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setProjectAccessExpiryPreset('never')}
-                      className={`ui-pressable min-h-9 rounded-md border px-2.5 py-1.5 text-xs ${
-                        projectAccessExpiryPreset === 'never'
-                          ? 'border-neon-green text-neon-green'
-                          : 'border-gray-700 text-gray-300'
-                      }`}
-                    >
-                      Never
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setProjectAccessExpiryPreset('24h')}
-                      className={`ui-pressable min-h-9 rounded-md border px-2.5 py-1.5 text-xs ${
-                        projectAccessExpiryPreset === '24h'
-                          ? 'border-neon-green text-neon-green'
-                          : 'border-gray-700 text-gray-300'
-                      }`}
-                    >
-                      24h
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setProjectAccessExpiryPreset('7d')}
-                      className={`ui-pressable min-h-9 rounded-md border px-2.5 py-1.5 text-xs ${
-                        projectAccessExpiryPreset === '7d'
-                          ? 'border-neon-green text-neon-green'
-                          : 'border-gray-700 text-gray-300'
-                      }`}
-                    >
-                      7d
-                    </button>
-                  </div>
-                  {projectAccessInlineState ? (
-                    <p
-                      className={`mb-2 rounded-md border px-2.5 py-2 text-xs ${
-                        projectAccessInlineState.tone === 'success'
-                          ? 'border-neon-green/40 bg-neon-green/5 text-neon-green'
-                          : 'border-red-400/40 bg-red-500/10 text-red-300'
-                      }`}
-                      role="status"
-                      aria-live="polite"
-                    >
-                      {projectAccessInlineState.message}
-                    </p>
-                  ) : null}
-                  {projectAccessLoading ? (
-                    <p className="text-xs text-gray-500">Loading access list...</p>
-                  ) : projectAccessGrants.length === 0 ? (
-                    <p className="text-xs text-gray-500">No invited viewers yet.</p>
                   ) : (
-                    <ul className="space-y-2">
-                      {projectAccessGrants.map((grant) => (
-                        <li key={grant.id} className="rounded-xl border border-gray-800/80 bg-gray-950/70 p-3">
-                          <div className="flex items-start gap-3">
-                            <button
-                              type="button"
-                              onClick={() => openGrantCreatorProfile(grant)}
-                              className="ui-pressable mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-sm text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
-                              aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
-                            >
-                              {grant.avatar_url ? (
-                                <Image
-                                  src={grant.avatar_url}
-                                  alt={`${getGrantDisplayName(grant)} avatar`}
-                                  width={40}
-                                  height={40}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <span aria-hidden>{getGrantInitial(grant)}</span>
-                              )}
-                            </button>
-                            <div className="min-w-0 flex-1">
+                    <p className="mt-3 text-xs text-gray-500">
+                      Set visibility to Private to invite collaborators.
+                    </p>
+                  )}
+                </section>
+
+                <section className="rounded-lg border border-gray-800/80 bg-black/20 p-3 sm:p-4">
+                  <h4 className="text-sm font-semibold text-white">Access Requests</h4>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Review pending requests and approve or deny access.
+                  </p>
+
+                  {resolveProjectVisibility(project.visibility, project.sharing_enabled) !== 'private' ? (
+                    <p className="mt-3 text-xs text-gray-500">
+                      Requests are available when project visibility is set to Private.
+                    </p>
+                  ) : projectAccessRequestsLoading ? (
+                    <p className="mt-3 text-xs text-gray-500">Loading requests...</p>
+                  ) : projectAccessRequests.length === 0 ? (
+                    <p className="mt-3 text-xs text-gray-500">No access requests yet.</p>
+                  ) : (
+                    <ul className="mt-3 space-y-2.5">
+                      {projectAccessRequests.map((request) => (
+                        <li
+                          key={request.id}
+                          className="flex flex-col gap-2 rounded-lg border border-gray-800/80 bg-gray-950/70 p-3 text-sm sm:flex-row sm:items-start sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-white">
+                              {request.requester_username || request.requester_email || request.requester_user_id}
+                            </p>
+                            <p className="truncate text-xs text-gray-500">
+                              {request.status}
+                            </p>
+                            {request.note ? (
+                              <p className="mt-1 line-clamp-2 text-xs text-gray-400">{request.note}</p>
+                            ) : null}
+                          </div>
+                          {request.status === 'pending' ? (
+                            <div className="flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => openGrantCreatorProfile(grant)}
-                                className="ui-pressable max-w-full truncate text-left text-sm font-medium text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
-                                aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
+                                onClick={() =>
+                                  handleReviewAccessRequest(request.id, request.requester_user_id, 'approve')
+                                }
+                                disabled={projectAccessSaving}
+                                className="ui-pressable min-h-11 rounded-md border border-neon-green px-2.5 py-1.5 text-xs text-neon-green hover:bg-neon-green/10 disabled:opacity-50"
+                                aria-label={`Approve request from ${request.requester_username || request.requester_user_id}`}
                               >
-                                {getGrantDisplayName(grant)}
+                                Approve
                               </button>
-                              <p className="mt-1 text-xs text-gray-400">
-                                {(grant.role || 'viewer')} • {formatGrantExpiryLabel(grant)}
-                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleReviewAccessRequest(request.id, request.requester_user_id, 'deny')
+                                }
+                                disabled={projectAccessSaving}
+                                className="ui-pressable min-h-11 rounded-md border border-red-400/50 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                                aria-label={`Deny request from ${request.requester_username || request.requester_user_id}`}
+                              >
+                                Deny
+                              </button>
                             </div>
-                          </div>
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <select
-                              value={grant.role || 'viewer'}
-                              onChange={(event) =>
-                                handleChangeProjectAccessRole(
-                                  grant,
-                                  event.target.value as ProjectAccessRole
-                                )
-                              }
-                              disabled={
-                                projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                              }
-                              className="min-h-9 rounded-md border border-gray-700 bg-black px-2.5 py-1.5 text-xs text-white"
-                              aria-label={`Role for ${getGrantDisplayName(grant)}`}
-                            >
-                              <option value="viewer">Viewer</option>
-                              <option value="commenter">Commenter</option>
-                              <option value="contributor">Contributor</option>
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => handleRenewProjectAccess(grant.user_id, 24)}
-                              disabled={
-                                projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                              }
-                              className="ui-pressable min-h-9 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
-                              aria-label={`Extend access for ${getGrantDisplayName(grant)} by 24 hours`}
-                            >
-                              +24h
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRenewProjectAccess(grant.user_id, 168)}
-                              disabled={
-                                projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                              }
-                              className="ui-pressable min-h-9 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
-                              aria-label={`Extend access for ${getGrantDisplayName(grant)} by 7 days`}
-                            >
-                              +7d
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRevokeProjectAccess(grant.user_id)}
-                              disabled={
-                                projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                              }
-                              className="ui-pressable min-h-9 rounded-md border border-red-400/40 px-2.5 py-1.5 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
-                              aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
-                            >
-                              Remove
-                            </button>
-                          </div>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
                   )}
-                  <div className="mt-4 pt-4 border-t border-gray-800">
-                    <div className="font-medium text-white text-sm mb-2">Access Requests</div>
-                    {projectAccessRequestsLoading ? (
-                      <p className="text-xs text-gray-500">Loading requests...</p>
-                    ) : projectAccessRequests.length === 0 ? (
-                      <p className="text-xs text-gray-500">No access requests yet.</p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {projectAccessRequests.map((request) => (
-                          <li key={request.id} className="flex flex-col gap-2 rounded-lg border border-gray-800/80 bg-black/20 p-2.5 text-sm sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0">
-                              <p className="text-white truncate">
-                                {request.requester_username || request.requester_email || request.requester_user_id}
-                              </p>
-                              <p className="text-gray-500 text-xs truncate">
-                                {request.status} • {request.requester_user_id}
-                              </p>
-                              {request.note ? (
-                                <p className="text-gray-400 text-xs mt-1 line-clamp-2">{request.note}</p>
-                              ) : null}
-                            </div>
-                            {request.status === 'pending' ? (
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleReviewAccessRequest(request.id, request.requester_user_id, 'approve')
-                                  }
-                                  disabled={projectAccessSaving}
-                                  className="ui-pressable min-h-9 rounded-md border border-neon-green px-2 py-1 text-xs text-neon-green hover:bg-neon-green/10 disabled:opacity-50"
-                                  aria-label={`Approve request from ${request.requester_username || request.requester_user_id}`}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleReviewAccessRequest(request.id, request.requester_user_id, 'deny')
-                                  }
-                                  disabled={projectAccessSaving}
-                                  className="ui-pressable min-h-9 rounded-md border border-red-400/50 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-                                  aria-label={`Deny request from ${request.requester_username || request.requester_user_id}`}
-                                >
-                                  Deny
-                                </button>
-                              </div>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ borderTop: '1px solid #374151', paddingTop: '24px' }}>
-                  <div className="font-medium text-white text-base">Private Access</div>
-                  <div className="text-sm text-gray-500" style={{ marginTop: '6px' }}>
-                    Set visibility to Private to invite specific viewers.
-                  </div>
-                </div>
-              )}
+                </section>
+              </div>
             </div>
-          </div>
           )}
 
           {/* Project Notes (Private to Creator) - Only show if user is creator */}
