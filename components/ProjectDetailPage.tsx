@@ -2396,16 +2396,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
               <div className="mt-4 space-y-4">
                 <section className="rounded-lg bg-black/20 p-3 sm:p-4">
-                  <h4 className="text-base font-bold leading-6 tracking-tight text-white">Visibility &amp; Sharing</h4>
+                  <h4 className="text-[17px] font-extrabold leading-6 tracking-tight text-white">Visibility &amp; Sharing</h4>
                   <p className="mt-2 text-sm leading-relaxed text-gray-400">
                     Configure who can discover this project and whether viewers can access shared links or downloads.
                   </p>
 
-                  <div className="mt-4 space-y-4">
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
+                  <div className="mt-4 space-y-5">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="text-base font-semibold leading-6 tracking-tight text-white"
+                          className="text-[15px] font-semibold leading-6 tracking-tight text-white"
                           style={{ fontWeight: 600 }}
                         >
                           Visibility
@@ -2468,10 +2468,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="text-base font-semibold leading-6 tracking-tight text-white"
+                          className="text-[15px] font-semibold leading-6 tracking-tight text-white"
                           style={{ fontWeight: 600 }}
                         >
                           Project Sharing
@@ -2532,10 +2532,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-4">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="text-base font-semibold leading-6 tracking-tight text-white"
+                          className="text-[15px] font-semibold leading-6 tracking-tight text-white"
                           style={{ fontWeight: 600 }}
                         >
                           Allow Downloads
@@ -2593,8 +2593,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 </section>
 
                 <section className="rounded-lg bg-black/20 p-3 sm:p-4">
-                  <h4 className="text-sm font-semibold tracking-tight text-white">Collaboration Access</h4>
-                  <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
+                  <h4 className="text-[17px] font-extrabold leading-6 tracking-tight text-white">Collaboration Access</h4>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-400">
                     Invite collaborators and manage role-based access.
                   </p>
 
