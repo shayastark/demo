@@ -2321,19 +2321,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {/* Settings - Only show for creators */}
           {isCreator && (
-            <div className="mb-6 rounded-xl border border-gray-800 bg-gray-900/90 p-4 sm:p-6">
+            <div className="mb-6 rounded-xl border border-gray-800/70 bg-gray-900/80 p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-neon-green">Project Settings</h3>
               <p className="mt-1 text-xs text-gray-400">Manage visibility, sharing, and collaboration access.</p>
 
               <div className="mt-4 space-y-4">
-                <section className="rounded-lg border border-gray-800/80 bg-black/20 p-3 sm:p-4">
+                <section className="rounded-lg bg-black/20 p-3 sm:p-4">
                   <h4 className="text-sm font-semibold text-white">Visibility &amp; Sharing</h4>
                   <p className="mt-1 text-xs text-gray-500">
                     Configure who can discover this project and whether viewers can access shared links or downloads.
                   </p>
 
                   <div className="mt-4 space-y-3">
-                    <div className="flex items-start justify-between gap-4 rounded-lg border border-gray-800/80 bg-gray-950/60 p-3">
+                    <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium text-white">Visibility</div>
                         <div className="mt-1 text-xs text-gray-400">
@@ -2384,7 +2384,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </select>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-800/80 bg-gray-950/60 p-3">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium text-white">Project Sharing</div>
                         <div className="mt-1 text-xs text-gray-400">
@@ -2441,7 +2441,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-800/80 bg-gray-950/60 p-3">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium text-white">Allow Downloads</div>
                         <div className="mt-1 text-xs text-gray-400">
@@ -2494,7 +2494,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   </div>
                 </section>
 
-                <section className="rounded-lg border border-gray-800/80 bg-black/20 p-3 sm:p-4">
+                <section className="rounded-lg bg-black/20 p-3 sm:p-4">
                   <h4 className="text-sm font-semibold text-white">Collaboration Access</h4>
                   <p className="mt-1 text-xs text-gray-500">
                     Invite collaborators and manage role + expiry settings.
@@ -2686,9 +2686,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       ) : projectAccessGrants.length === 0 ? (
                         <p className="text-xs text-gray-500">No invited viewers yet.</p>
                       ) : (
-                        <ul className="space-y-2.5">
+                        <ul className="space-y-2">
                           {projectAccessGrants.map((grant) => (
-                            <li key={grant.id} className="rounded-xl border border-gray-800/80 bg-gray-950/70 p-3">
+                            <li key={grant.id} className="rounded-xl bg-gray-950/55 p-3">
                               <div className="flex items-start gap-3">
                                 <button
                                   type="button"
@@ -2787,7 +2787,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   )}
                 </section>
 
-                <section className="rounded-lg border border-gray-800/80 bg-black/20 p-3 sm:p-4">
+                <section className="rounded-lg bg-black/20 p-3 sm:p-4">
                   <h4 className="text-sm font-semibold text-white">Access Requests</h4>
                   <p className="mt-1 text-xs text-gray-500">
                     Review pending requests and approve or deny access.
@@ -2806,7 +2806,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       {projectAccessRequests.map((request) => (
                         <li
                           key={request.id}
-                          className="flex flex-col gap-2 rounded-lg border border-gray-800/80 bg-gray-950/70 p-3 text-sm sm:flex-row sm:items-start sm:justify-between"
+                          className="flex flex-col gap-2 rounded-lg bg-gray-950/55 p-3 text-sm sm:flex-row sm:items-start sm:justify-between"
                         >
                           <div className="min-w-0">
                             <p className="truncate text-white">
