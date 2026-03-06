@@ -374,7 +374,7 @@ export default function CommentsPanel({
   }
 
   return (
-    <section className="mt-6 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
+    <section className="ui-card mt-6 overflow-hidden">
       <button
         type="button"
         onClick={() => setCommentsOpen((prev) => !prev)}
@@ -412,7 +412,7 @@ export default function CommentsPanel({
                 onClick={submitProjectComment}
                 disabled={submittingProject || !projectInput.trim()}
                 aria-label="Post comment"
-                className="self-end h-9 rounded-lg bg-neon-green px-3.5 text-xs font-semibold text-black disabled:opacity-40"
+                className="ui-pressable self-end h-9 rounded-lg bg-neon-green px-3.5 text-xs font-semibold text-black disabled:opacity-40"
               >
                 <span className="inline-flex items-center gap-1">
                   <Send className="w-3.5 h-3.5" />
@@ -440,13 +440,13 @@ export default function CommentsPanel({
                           <div className="min-w-0 flex items-center gap-2">
                             <span className="truncate text-xs font-medium text-gray-200">{comment.author_name}</span>
                             {comment.is_supporter_for_project && (
-                              <span className="inline-flex items-center rounded-full border border-neon-green/30 bg-neon-green/10 px-2 py-0.5 text-[10px] text-neon-green">
+                              <span className="ui-chip inline-flex items-center border-neon-green/30 bg-neon-green/10 text-neon-green">
                                 Supporter
                               </span>
                             )}
                             <span className="text-[11px] text-gray-500">{formatRelativeTime(comment.created_at)}</span>
                             {comment.is_pinned && (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-300">
+                              <span className="ui-chip inline-flex items-center gap-1 border-amber-400/30 bg-amber-500/10 text-amber-300">
                                 <Pin className="h-2.5 w-2.5" />
                                 Pinned
                               </span>
@@ -457,7 +457,7 @@ export default function CommentsPanel({
                               <button
                                 onClick={() => togglePinComment(comment.id, !!comment.is_pinned)}
                                 disabled={pendingPinCommentId === comment.id}
-                                className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-amber-300 disabled:opacity-50"
+                                className="ui-pressable rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-amber-300 disabled:opacity-50"
                                 aria-label={comment.is_pinned ? 'Unpin comment' : 'Pin comment'}
                               >
                                 <Pin className={`w-3.5 h-3.5 ${comment.is_pinned ? 'fill-current text-amber-300' : ''}`} />
@@ -469,7 +469,7 @@ export default function CommentsPanel({
                                   setEditingCommentId(comment.id)
                                   setEditingContent(comment.content)
                                 }}
-                                className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-white"
+                                className="ui-pressable rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-white"
                                 aria-label="Edit comment"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -478,7 +478,7 @@ export default function CommentsPanel({
                             {comment.can_delete && (
                               <button
                                 onClick={() => deleteComment(comment.id)}
-                                className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400"
+                                className="ui-pressable rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400"
                                 aria-label="Delete comment"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -498,7 +498,7 @@ export default function CommentsPanel({
                             <div className="flex gap-3">
                               <button
                                 onClick={saveEdit}
-                                className="rounded-md bg-neon-green px-2.5 py-1 text-xs font-semibold text-black"
+                                className="ui-pressable rounded-md bg-neon-green px-2.5 py-1 text-xs font-semibold text-black"
                               >
                                 Save
                               </button>
@@ -507,7 +507,7 @@ export default function CommentsPanel({
                                   setEditingCommentId(null)
                                   setEditingContent('')
                                 }}
-                                className="text-xs text-gray-400"
+                                className="ui-pressable text-xs text-gray-300"
                               >
                                 Cancel
                               </button>
@@ -526,7 +526,7 @@ export default function CommentsPanel({
                                     key={reactionType}
                                     onClick={() => toggleCommentReaction(comment.id, reactionType)}
                                     disabled={isPending}
-                                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
+                                    className={`ui-pressable inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
                                       active
                                         ? 'border-neon-green/70 bg-neon-green/10 text-neon-green'
                                         : 'border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'

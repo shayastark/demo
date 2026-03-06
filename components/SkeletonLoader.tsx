@@ -4,9 +4,9 @@
 function Shimmer() {
   return (
     <div 
-      className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite]"
+      className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite]"
       style={{
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)',
       }}
     />
   )
@@ -15,7 +15,7 @@ function Shimmer() {
 // Reusable skeleton block
 function SkeletonBlock({ className }: { className?: string }) {
   return (
-    <div className={`relative overflow-hidden bg-gray-800 rounded ${className || ''}`}>
+    <div className={`relative overflow-hidden rounded bg-gray-800/90 ${className || ''}`}>
       <Shimmer />
     </div>
   )

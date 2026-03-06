@@ -2123,8 +2123,18 @@ export default function BottomTabBar() {
                   Notifications
                 </h2>
                 {unreadNotificationCount > 0 && (
-                  <span style={{ fontSize: '14px', color: '#9ca3af' }}>
-                    ({unreadNotificationCount} unread)
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      color: '#d1d5db',
+                      border: '1px solid rgba(57, 255, 20, 0.45)',
+                      backgroundColor: 'rgba(57, 255, 20, 0.14)',
+                      borderRadius: '999px',
+                      padding: '3px 8px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {unreadNotificationCount} unread
                   </span>
                 )}
               </div>
@@ -2132,6 +2142,7 @@ export default function BottomTabBar() {
                 {unreadNotificationCount > 0 && (
                   <button
                     onClick={() => markNotificationsAsRead()}
+                    aria-label="Mark all notifications as read"
                     style={{
                       padding: '8px 12px',
                       backgroundColor: 'transparent',
@@ -2147,6 +2158,7 @@ export default function BottomTabBar() {
                 )}
                 <button
                   onClick={() => setIsNotificationsOpen(false)}
+                  aria-label="Close notifications panel"
                   style={{
                     width: '36px',
                     height: '36px',
@@ -2177,6 +2189,7 @@ export default function BottomTabBar() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
                   onClick={() => updateNotificationDigestMode('instant')}
+                  aria-label="Set notification delivery to instant"
                   style={{
                     padding: '6px 10px',
                     borderRadius: '9px',
@@ -2192,6 +2205,7 @@ export default function BottomTabBar() {
                 </button>
                 <button
                   onClick={() => updateNotificationDigestMode('digest')}
+                  aria-label="Set notification delivery to digest"
                   style={{
                     padding: '6px 10px',
                     borderRadius: '9px',
@@ -2210,6 +2224,7 @@ export default function BottomTabBar() {
                 <button
                   disabled={notificationDeliveryMode !== 'digest'}
                   onClick={() => updateNotificationDigestMode(notificationDeliveryMode, 'daily')}
+                  aria-label="Set digest schedule to daily"
                   style={{
                     padding: '4px 8px',
                     borderRadius: '9px',
@@ -2227,6 +2242,7 @@ export default function BottomTabBar() {
                 <button
                   disabled={notificationDeliveryMode !== 'digest'}
                   onClick={() => updateNotificationDigestMode(notificationDeliveryMode, 'weekly')}
+                  aria-label="Set digest schedule to weekly"
                   style={{
                     padding: '4px 8px',
                     borderRadius: '9px',
@@ -2259,6 +2275,7 @@ export default function BottomTabBar() {
                   setUnreadPriorityEnabled(next)
                   if (next) emitNotificationControlEvent('open_unread_priority')
                 }}
+                aria-label={unreadPriorityEnabled ? 'Disable unread priority ordering' : 'Enable unread priority ordering'}
                 style={{
                   padding: '5px 9px',
                     borderRadius: '9px',
@@ -2278,6 +2295,7 @@ export default function BottomTabBar() {
                   setShowSnoozed(next)
                   if (next) emitNotificationControlEvent('view_snoozed')
                 }}
+                aria-label={showSnoozed ? 'Hide snoozed notifications' : 'Show snoozed notifications'}
                 style={{
                   padding: '5px 9px',
                   borderRadius: '9px',
@@ -2414,7 +2432,7 @@ export default function BottomTabBar() {
                             cursor: targetPath ? 'pointer' : 'default',
                           }}
                         >
-                          <p style={{ color: '#6b7280', fontSize: '11px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          <p style={{ color: '#9ca3af', fontSize: '11px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             {isAccessInvite ? 'Private Access' : getNotificationTypeLabel(normalizedType)}
                           </p>
                           <p style={{ 
@@ -2427,12 +2445,12 @@ export default function BottomTabBar() {
                             {primaryText}
                           </p>
                           {normalizedType === 'new_follower' ? (
-                            <p style={{ color: '#6b7280', fontSize: '12px', margin: '4px 0 0 0' }}>
+                            <p style={{ color: '#9ca3af', fontSize: '12px', margin: '4px 0 0 0' }}>
                               {followerName ? `From @${followerName.replace(/\s+/g, '').toLowerCase()} ` : 'New follower '}• {formatNotificationTime(notification.created_at)}
                             </p>
                           ) : notification.message && (
                             <p style={{ 
-                              color: '#6b7280',
+                              color: '#9ca3af',
                               fontSize: '13px',
                               margin: '4px 0 0 0',
                               fontStyle: 'italic',
@@ -2442,7 +2460,7 @@ export default function BottomTabBar() {
                           )}
                           {normalizedType !== 'new_follower' && (
                             <p style={{ 
-                              color: '#6b7280',
+                              color: '#9ca3af',
                               fontSize: '12px',
                               margin: '6px 0 0 0',
                             }}>
@@ -2452,9 +2470,10 @@ export default function BottomTabBar() {
                         </button>
                         
                         {/* Actions */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', gap: '6px' }}>
                           <button
                             onClick={() => snoozeNotificationScope(notification, '24h')}
+                            aria-label="Snooze notification for 24 hours"
                             style={{
                                 padding: '6px 9px',
                                 borderRadius: '9px',
@@ -2471,6 +2490,7 @@ export default function BottomTabBar() {
                           </button>
                           <button
                             onClick={() => snoozeNotificationScope(notification, '7d')}
+                            aria-label="Snooze notification for 7 days"
                             style={{
                                 padding: '6px 9px',
                                 borderRadius: '9px',
@@ -2488,6 +2508,7 @@ export default function BottomTabBar() {
                           {targetPath && (
                             <button
                               onClick={() => handleNotificationClick(notification)}
+                              aria-label="Open notification"
                               style={{
                                 padding: '6px 10px',
                                 borderRadius: '9px',
@@ -2506,6 +2527,7 @@ export default function BottomTabBar() {
                           {!notification.is_read && (
                             <button
                               onClick={() => markNotificationsAsRead([notification.id])}
+                              aria-label="Mark this notification as read"
                               style={{
                                 padding: '6px',
                                 borderRadius: '8px',
@@ -2520,6 +2542,7 @@ export default function BottomTabBar() {
                           )}
                           <button
                             onClick={() => deleteNotification(notification.id)}
+                            aria-label="Delete this notification"
                             style={{
                               padding: '6px',
                               borderRadius: '8px',
@@ -2570,6 +2593,7 @@ export default function BottomTabBar() {
                               </p>
                               <button
                                 onClick={() => unsnoozeScope(scopeKey)}
+                                aria-label="Unsnooze this notification group"
                                 style={{
                                   padding: '5px 8px',
                                   borderRadius: '8px',

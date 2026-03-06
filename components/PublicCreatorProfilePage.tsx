@@ -223,7 +223,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
   return (
     <div className="min-h-screen bg-black pb-24 text-white">
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <div className="rounded-2xl border border-gray-800/90 bg-gray-900/90 p-5 shadow-sm shadow-black/30 sm:p-6">
+        <div className="ui-card rounded-2xl bg-gray-900/90 p-5 sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4 min-w-0">
               <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-800 text-xl font-semibold text-neon-green">
@@ -296,7 +296,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
         <section className="mt-6">
           <h2 className="mb-3 text-lg font-semibold text-white">Public projects</h2>
           {data.public_projects.length === 0 ? (
-            <div className="rounded-xl border border-gray-800 bg-gray-900/80 p-5 text-sm text-gray-400">
+            <div className="ui-card rounded-xl bg-gray-900/80 p-5 text-sm text-gray-300">
               No public projects yet.
             </div>
           ) : (
@@ -311,7 +311,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                       project_target: project.target_path,
                     })
                   }
-                  className="rounded-xl border border-gray-800 bg-gray-900/80 p-4 transition hover:border-gray-600"
+                  className="ui-card ui-pressable rounded-xl bg-gray-900/80 p-4 transition hover:border-gray-600"
                 >
                   <p className="text-sm font-semibold text-white">{project.title}</p>
                 </Link>

@@ -827,7 +827,7 @@ export default function ProjectUpdatesPanel({
   return (
     <section
       ref={updatesContainerRef}
-      className="mt-6 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30"
+      className="ui-card mt-6 overflow-hidden"
     >
       <div className="flex w-full items-center justify-between gap-3 px-3 py-3 sm:px-4">
         <div className="flex items-center gap-2">
@@ -881,7 +881,7 @@ export default function ProjectUpdatesPanel({
             <button
               onClick={() => createUpdate('published')}
               disabled={posting || !content.trim()}
-              className="h-9 shrink-0 rounded-lg bg-neon-green px-3 text-xs font-semibold text-black disabled:opacity-40"
+              className="ui-pressable h-9 shrink-0 rounded-lg bg-neon-green px-3 text-xs font-semibold text-black disabled:opacity-40"
             >
               <span className="inline-flex items-center gap-1">
                 <Send className="w-3.5 h-3.5" />
@@ -891,7 +891,7 @@ export default function ProjectUpdatesPanel({
             <button
               onClick={() => createUpdate('draft')}
               disabled={posting || !content.trim()}
-              className="h-9 shrink-0 rounded-lg border border-gray-700 px-3 text-xs font-semibold text-gray-200 disabled:opacity-40"
+              className="ui-pressable h-9 shrink-0 rounded-lg border border-gray-700 px-3 text-xs font-semibold text-gray-200 disabled:opacity-40"
             >
               {posting ? 'Saving...' : editingDraftId ? 'Save draft' : 'Save draft'}
             </button>
@@ -957,7 +957,7 @@ export default function ProjectUpdatesPanel({
               <li className="border-t border-gray-900 px-3 py-3.5 sm:px-4 bg-gray-950/30">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-semibold text-gray-200">Drafts</span>
-                  <span className="rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-300">
+                  <span className="ui-chip border-gray-700 text-gray-300">
                     {draftUpdates.length}
                   </span>
                 </div>
@@ -971,7 +971,7 @@ export default function ProjectUpdatesPanel({
                             {update.content}
                           </p>
                           <p className="mt-0.5 text-[10px] text-gray-400">
-                            <span className="rounded-full border border-gray-700 px-1.5 py-0.5">Draft</span>
+                            <span className="ui-chip border-gray-700 text-gray-300">Draft</span>
                             <span className="ml-1.5">{new Date(update.created_at).toLocaleString()}</span>
                           </p>
                           {update.scheduled_publish_at ? (
@@ -984,14 +984,14 @@ export default function ProjectUpdatesPanel({
                           <button
                             type="button"
                             onClick={() => editDraft(update)}
-                            className="rounded-full border border-gray-700 px-2 py-1 text-[10px] text-gray-200"
+                            className="ui-pressable rounded-full border border-gray-700 px-2 py-1 text-[10px] text-gray-200"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => publishDraft(update)}
-                            className="rounded-full border border-neon-green px-2 py-1 text-[10px] font-medium text-neon-green"
+                            className="ui-pressable rounded-full border border-neon-green px-2 py-1 text-[10px] font-medium text-neon-green"
                           >
                             Publish
                           </button>
@@ -1014,12 +1014,12 @@ export default function ProjectUpdatesPanel({
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">
                       <span className="text-xs font-medium text-gray-200">{update.author_name || 'Creator'}</span>
                       {update.version_label && (
-                        <span className="rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-300">
+                        <span className="ui-chip border-gray-700 text-gray-300">
                           {update.version_label}
                         </span>
                       )}
                       {update.is_important ? (
-                        <span className="rounded-full border border-neon-green/60 bg-neon-green/10 px-2 py-0.5 text-[10px] font-medium text-neon-green">
+                        <span className="ui-chip border-neon-green/60 bg-neon-green/10 font-medium text-neon-green">
                           Important
                         </span>
                       ) : null}
@@ -1040,6 +1040,7 @@ export default function ProjectUpdatesPanel({
                             type="button"
                             onClick={() => toggleReaction(update.id, chip.key)}
                             disabled={isLoading}
+                            aria-label={`${isActive ? 'Remove' : 'Add'} ${chip.label} reaction`}
                             className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
                               isActive
                                 ? 'border-neon-green text-neon-green bg-neon-green/10'
@@ -1056,6 +1057,7 @@ export default function ProjectUpdatesPanel({
                         type="button"
                         onClick={() => toggleThread(update.id)}
                         className="inline-flex items-center gap-1 text-[11px] text-gray-300 hover:text-gray-100"
+                        aria-label={`Toggle comments for update ${update.id}`}
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
                         Comments ({commentCountByUpdate[update.id] || 0})
@@ -1089,6 +1091,7 @@ export default function ProjectUpdatesPanel({
                                         disabled={deletingCommentId === comment.id}
                                         onClick={() => deleteUpdateComment(update.id, comment.id)}
                                         className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400 disabled:opacity-50"
+                                        aria-label="Delete update comment"
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>
@@ -1139,11 +1142,12 @@ export default function ProjectUpdatesPanel({
                     <div className="flex items-center gap-1.5 pt-0.5">
                       <button
                         onClick={() => toggleImportant(update)}
-                        className={`rounded-full border px-2 py-1 text-[10px] font-medium ${
+                        className={`ui-pressable rounded-full border px-2 py-1 text-[10px] font-medium ${
                           update.is_important
                             ? 'border-neon-green bg-neon-green/10 text-neon-green'
                             : 'border-gray-700 text-gray-300'
                         }`}
+                        aria-label={update.is_important ? 'Unmark update as important' : 'Mark update as important'}
                       >
                         {update.is_important ? 'Unmark' : 'Important'}
                       </button>

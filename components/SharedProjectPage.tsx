@@ -871,49 +871,51 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           )}
         </div>
 
-        <CommentsPanel
-          projectId={project.id}
-          authenticated={authenticated}
-          getAccessToken={getAccessToken}
-          onRequireAuth={handleRequireAuthForFeedback}
-        />
-        <TopSupportersCard
-          projectId={project.id}
-          source="shared_project"
-          authenticated={authenticated}
-          getAccessToken={getAccessToken}
-          onOpenSupporter={(supporterUserId) => {
-            setCreatorId(supporterUserId)
-            setShowCreatorModal(true)
-          }}
-        />
-        <TipPromptCard
-          source="shared_project"
-          projectId={project.id}
-          creatorId={project.creator_id}
-          authenticated={authenticated}
-          isCreator={isCreatorViewer}
-          viewerKey={user?.id || null}
-          trackIds={tracks.map((track) => track.id)}
-          onSendTip={(trigger) => {
-            setTipPromptTrigger(trigger)
-            setShowCreatorModal(true)
-          }}
-        />
-        <ProjectUpdatesPanel
-          projectId={project.id}
-          authenticated={authenticated}
-          getAccessToken={getAccessToken}
-          onRequireAuth={handleRequireAuthForFeedback}
-          source="shared_project"
-        />
-        <ProjectAttachmentsPanel
-          projectId={project.id}
-          authenticated={authenticated}
-          getAccessToken={getAccessToken}
-          onRequireAuth={handleRequireAuthForFeedback}
-          source="shared_project"
-        />
+        <div className="mt-6 space-y-1.5">
+          <CommentsPanel
+            projectId={project.id}
+            authenticated={authenticated}
+            getAccessToken={getAccessToken}
+            onRequireAuth={handleRequireAuthForFeedback}
+          />
+          <TopSupportersCard
+            projectId={project.id}
+            source="shared_project"
+            authenticated={authenticated}
+            getAccessToken={getAccessToken}
+            onOpenSupporter={(supporterUserId) => {
+              setCreatorId(supporterUserId)
+              setShowCreatorModal(true)
+            }}
+          />
+          <TipPromptCard
+            source="shared_project"
+            projectId={project.id}
+            creatorId={project.creator_id}
+            authenticated={authenticated}
+            isCreator={isCreatorViewer}
+            viewerKey={user?.id || null}
+            trackIds={tracks.map((track) => track.id)}
+            onSendTip={(trigger) => {
+              setTipPromptTrigger(trigger)
+              setShowCreatorModal(true)
+            }}
+          />
+          <ProjectUpdatesPanel
+            projectId={project.id}
+            authenticated={authenticated}
+            getAccessToken={getAccessToken}
+            onRequireAuth={handleRequireAuthForFeedback}
+            source="shared_project"
+          />
+          <ProjectAttachmentsPanel
+            projectId={project.id}
+            authenticated={authenticated}
+            getAccessToken={getAccessToken}
+            onRequireAuth={handleRequireAuthForFeedback}
+            source="shared_project"
+          />
+        </div>
       </div>
 
       {/* Project Menu Bottom Tray - Full width on mobile like ShareModal */}

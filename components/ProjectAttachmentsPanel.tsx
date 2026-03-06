@@ -237,7 +237,7 @@ export default function ProjectAttachmentsPanel({
   }
 
   return (
-    <section className="mt-6 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
+    <section className="ui-card mt-6 overflow-hidden">
       <div className="flex items-center gap-2 border-b border-gray-900 px-3 py-3 sm:px-4">
         <Paperclip className="w-4 h-4 text-neon-green" />
         <h3 className="text-sm font-semibold text-white tracking-wide">Attachments</h3>
@@ -290,7 +290,7 @@ export default function ProjectAttachmentsPanel({
               type="button"
               onClick={createAttachment}
               disabled={submitting || (type === 'link' ? !url.trim() : !file)}
-              className="inline-flex self-end items-center gap-1.5 rounded-lg bg-neon-green px-3 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
+              className="ui-pressable inline-flex self-end items-center gap-1.5 rounded-lg bg-neon-green px-3 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
             >
               <Upload className="w-3.5 h-3.5" />
               {submitting ? 'Adding...' : 'Add'}
@@ -347,7 +347,7 @@ export default function ProjectAttachmentsPanel({
                       type="button"
                       onClick={() => deleteAttachment(attachment)}
                       disabled={deletingId === attachment.id}
-                      className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400 disabled:opacity-50"
+                      className="ui-pressable rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400 disabled:opacity-50"
                       aria-label="Delete attachment"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

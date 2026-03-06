@@ -96,7 +96,7 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
   }, [authenticated, includeExpired])
 
   return (
-    <section className="mb-8 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
+    <section className="ui-card mb-8 overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-gray-800/90 px-4 py-3.5 sm:px-5">
         <div className="flex items-center gap-2">
           <Inbox className="w-4 h-4 text-neon-green" />
@@ -105,7 +105,7 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
         <button
           type="button"
           onClick={() => setIncludeExpired((value) => !value)}
-          className={`rounded-md border px-2.5 py-1.5 text-[11px] font-medium ${
+          className={`ui-pressable rounded-md border px-2.5 py-1.5 text-[11px] font-medium ${
             includeExpired ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
           }`}
         >
@@ -114,7 +114,14 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
       </div>
 
       {loading ? (
-        <p className="px-4 py-4 text-sm text-gray-500">Loading shared projects...</p>
+        <div className="space-y-2 px-4 py-4 sm:px-5">
+          {[0, 1, 2].map((idx) => (
+            <div key={idx} className="animate-pulse rounded-lg border border-gray-800/80 bg-black/20 p-3">
+              <div className="mb-2 h-3 w-1/2 rounded bg-gray-800/90" />
+              <div className="h-3 w-3/4 rounded bg-gray-800/75" />
+            </div>
+          ))}
+        </div>
       ) : error ? (
         <p className="px-4 py-4 text-sm text-gray-500">Couldn&apos;t load shared projects right now.</p>
       ) : items.length === 0 ? (
@@ -128,10 +135,10 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
                   <p className="truncate text-sm font-medium text-gray-100">{item.title}</p>
                   <p className="mt-1.5 text-xs text-gray-400 leading-relaxed">
                     by <span className="text-gray-200">{item.creator_name}</span>
-                    <span className="ml-2 inline-flex rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-300">
+                    <span className="ui-chip ml-2 border-gray-700 text-gray-300">
                       {item.role}
                     </span>
-                    <span className="ml-2 inline-flex rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-300">
+                    <span className="ui-chip ml-2 border-gray-700 text-gray-300">
                       {formatExpiryLabel(item)}
                     </span>
                   </p>
@@ -147,7 +154,7 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
                     })
                   }
                   aria-label={`Open ${item.title}`}
-                  className="mt-0.5 shrink-0 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500 hover:text-white focus-visible:border-neon-green"
+                  className="ui-pressable mt-0.5 shrink-0 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500 hover:text-white focus-visible:border-neon-green"
                 >
                   Open
                 </Link>

@@ -2278,12 +2278,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           }
                         }}
                         className="flex-1 rounded-lg border border-gray-700 bg-black px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-green"
+                        aria-label="Grant access by username email or user id"
                       />
                       <button
                         type="button"
                         onClick={handleGrantProjectAccess}
                         disabled={projectAccessSaving || !projectAccessIdentifierInput.trim()}
-                        className="rounded-lg bg-neon-green px-3.5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+                        className="ui-pressable min-h-10 rounded-lg bg-neon-green px-3.5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+                        aria-label="Grant private project access"
                       >
                         Grant
                       </button>
@@ -2316,7 +2318,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   target_user_id: candidate.id,
                                 })
                               }}
-                              className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-gray-900"
+                              className="ui-pressable flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-gray-900"
+                              aria-label={`Select ${candidate.username || candidate.id}`}
                             >
                               <span className="w-5 h-5 rounded-full bg-gray-700 inline-flex items-center justify-center text-[10px] text-gray-300">
                                 {(candidate.username || 'U').slice(0, 1).toUpperCase()}
@@ -2334,7 +2337,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <button
                       type="button"
                       onClick={() => setProjectAccessExpiryPreset('never')}
-                      className={`rounded-md border px-2.5 py-1.5 text-xs ${
+                      className={`ui-pressable min-h-9 rounded-md border px-2.5 py-1.5 text-xs ${
                         projectAccessExpiryPreset === 'never'
                           ? 'border-neon-green text-neon-green'
                           : 'border-gray-700 text-gray-300'
@@ -2345,7 +2348,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <button
                       type="button"
                       onClick={() => setProjectAccessExpiryPreset('24h')}
-                      className={`rounded-md border px-2.5 py-1.5 text-xs ${
+                      className={`ui-pressable min-h-9 rounded-md border px-2.5 py-1.5 text-xs ${
                         projectAccessExpiryPreset === '24h'
                           ? 'border-neon-green text-neon-green'
                           : 'border-gray-700 text-gray-300'
@@ -2356,7 +2359,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <button
                       type="button"
                       onClick={() => setProjectAccessExpiryPreset('7d')}
-                      className={`rounded-md border px-2.5 py-1.5 text-xs ${
+                      className={`ui-pressable min-h-9 rounded-md border px-2.5 py-1.5 text-xs ${
                         projectAccessExpiryPreset === '7d'
                           ? 'border-neon-green text-neon-green'
                           : 'border-gray-700 text-gray-300'
@@ -2403,6 +2406,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                 projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                               }
                               className="rounded-md border border-gray-700 bg-black px-2 py-1.5 text-xs text-white"
+                              aria-label={`Role for ${grant.username || grant.email || grant.user_id}`}
                             >
                               <option value="viewer">Viewer</option>
                               <option value="commenter">Commenter</option>
@@ -2414,7 +2418,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               disabled={
                                 projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                               }
-                              className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                              className="ui-pressable min-h-9 rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                              aria-label={`Extend access for ${grant.username || grant.user_id} by 24 hours`}
                             >
                               +24h
                             </button>
@@ -2424,7 +2429,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               disabled={
                                 projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                               }
-                              className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                              className="ui-pressable min-h-9 rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                              aria-label={`Extend access for ${grant.username || grant.user_id} by 7 days`}
                             >
                               +7d
                             </button>
@@ -2434,7 +2440,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               disabled={
                                 projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                               }
-                              className="rounded-md border border-red-400/40 px-2 py-1 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
+                              className="ui-pressable min-h-9 rounded-md border border-red-400/40 px-2 py-1 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
+                              aria-label={`Remove access for ${grant.username || grant.user_id}`}
                             >
                               Remove
                             </button>
@@ -2472,7 +2479,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     handleReviewAccessRequest(request.id, request.requester_user_id, 'approve')
                                   }
                                   disabled={projectAccessSaving}
-                                  className="rounded-md border border-neon-green px-2 py-1 text-xs text-neon-green hover:bg-neon-green/10 disabled:opacity-50"
+                                  className="ui-pressable min-h-9 rounded-md border border-neon-green px-2 py-1 text-xs text-neon-green hover:bg-neon-green/10 disabled:opacity-50"
+                                  aria-label={`Approve request from ${request.requester_username || request.requester_user_id}`}
                                 >
                                   Approve
                                 </button>
@@ -2482,7 +2490,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     handleReviewAccessRequest(request.id, request.requester_user_id, 'deny')
                                   }
                                   disabled={projectAccessSaving}
-                                  className="rounded-md border border-red-400/50 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                                  className="ui-pressable min-h-9 rounded-md border border-red-400/50 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                                  aria-label={`Deny request from ${request.requester_username || request.requester_user_id}`}
                                 >
                                   Deny
                                 </button>
@@ -2822,56 +2831,58 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </div>
           )}
 
-          <CommentsPanel
-            projectId={project.id}
-            authenticated={!!user}
-            getAccessToken={getAccessToken}
-            onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
-          />
-          <TopSupportersCard
-            projectId={project.id}
-            source="project_detail"
-            authenticated={!!user}
-            getAccessToken={getAccessToken}
-            onOpenSupporter={(supporterUserId) => {
-              setCreatorId(supporterUserId)
-              setShowCreatorModal(true)
-            }}
-          />
-          <TipPromptCard
-            source="project_detail"
-            projectId={project.id}
-            creatorId={project.creator_id}
-            authenticated={!!user}
-            isCreator={isCreator}
-            viewerKey={user?.id || null}
-            trackIds={tracks.map((track) => track.id)}
-            onSendTip={(trigger) => {
-              setTipPromptTrigger(trigger)
-              setShowCreatorModal(true)
-            }}
-          />
-          <ProjectUpdatesPanel
-            projectId={project.id}
-            authenticated={!!user}
-            getAccessToken={getAccessToken}
-            onRequireAuth={() => showToast('Please sign in to post updates.', 'error')}
-            source="project_detail"
-          />
-          <ProjectActivityPanel
-            projectId={project.id}
-            authenticated={!!user}
-            getAccessToken={getAccessToken}
-            onRequireAuth={() => showToast('Please sign in to view project activity.', 'error')}
-            source="project_detail"
-          />
-          <ProjectAttachmentsPanel
-            projectId={project.id}
-            authenticated={!!user}
-            getAccessToken={getAccessToken}
-            onRequireAuth={() => showToast('Please sign in to manage attachments.', 'error')}
-            source="project_detail"
-          />
+          <div className="mt-6 space-y-1.5">
+            <CommentsPanel
+              projectId={project.id}
+              authenticated={!!user}
+              getAccessToken={getAccessToken}
+              onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
+            />
+            <TopSupportersCard
+              projectId={project.id}
+              source="project_detail"
+              authenticated={!!user}
+              getAccessToken={getAccessToken}
+              onOpenSupporter={(supporterUserId) => {
+                setCreatorId(supporterUserId)
+                setShowCreatorModal(true)
+              }}
+            />
+            <TipPromptCard
+              source="project_detail"
+              projectId={project.id}
+              creatorId={project.creator_id}
+              authenticated={!!user}
+              isCreator={isCreator}
+              viewerKey={user?.id || null}
+              trackIds={tracks.map((track) => track.id)}
+              onSendTip={(trigger) => {
+                setTipPromptTrigger(trigger)
+                setShowCreatorModal(true)
+              }}
+            />
+            <ProjectUpdatesPanel
+              projectId={project.id}
+              authenticated={!!user}
+              getAccessToken={getAccessToken}
+              onRequireAuth={() => showToast('Please sign in to post updates.', 'error')}
+              source="project_detail"
+            />
+            <ProjectActivityPanel
+              projectId={project.id}
+              authenticated={!!user}
+              getAccessToken={getAccessToken}
+              onRequireAuth={() => showToast('Please sign in to view project activity.', 'error')}
+              source="project_detail"
+            />
+            <ProjectAttachmentsPanel
+              projectId={project.id}
+              authenticated={!!user}
+              getAccessToken={getAccessToken}
+              onRequireAuth={() => showToast('Please sign in to manage attachments.', 'error')}
+              source="project_detail"
+            />
+          </div>
 
         </div>
       </main>

@@ -208,7 +208,8 @@ export default function ProjectSubscriptionToggle({
         type="button"
         onClick={handleToggle}
         disabled={loading || submitting}
-        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
+        aria-label={state.isSubscribed ? 'Unwatch project' : 'Watch project'}
+        className={`ui-pressable inline-flex min-h-9 items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
           state.isSubscribed
             ? 'border-neon-green text-neon-green bg-neon-green/10'
             : 'border-gray-700 text-gray-300 hover:border-gray-600'
@@ -232,7 +233,8 @@ export default function ProjectSubscriptionToggle({
               type="button"
               onClick={() => handleModeChange(mode.id)}
               disabled={submitting}
-              className={`text-[11px] px-2 py-1 rounded-full border transition ${
+              aria-label={`Set project notifications to ${mode.label}`}
+              className={`ui-pressable min-h-8 rounded-full border px-2 py-1 text-[11px] transition ${
                 state.notificationMode === mode.id
                   ? 'border-neon-green text-neon-green'
                   : 'border-gray-800 text-gray-400 hover:border-gray-700'

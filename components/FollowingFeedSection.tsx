@@ -77,14 +77,22 @@ export default function FollowingFeedSection({ authenticated, getAccessToken }: 
   }, [authenticated])
 
   return (
-    <section className="mb-8 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
+    <section className="ui-card mb-8 overflow-hidden">
       <div className="flex items-center gap-2 border-b border-gray-800/90 px-4 py-3.5 sm:px-5">
         <Radio className="w-4 h-4 text-neon-green" />
         <h2 className="text-sm font-semibold text-white tracking-wide">Following Feed</h2>
       </div>
 
       {loading ? (
-        <p className="px-4 py-4 text-sm text-gray-500">Loading feed...</p>
+        <div className="space-y-2 px-4 py-4 sm:px-5">
+          {[0, 1, 2].map((idx) => (
+            <div key={idx} className="animate-pulse rounded-lg border border-gray-800/80 bg-black/20 p-3">
+              <div className="mb-2 h-3 w-1/2 rounded bg-gray-800/90" />
+              <div className="mb-1.5 h-3 w-full rounded bg-gray-800/80" />
+              <div className="h-3 w-2/3 rounded bg-gray-800/70" />
+            </div>
+          ))}
+        </div>
       ) : error ? (
         <p className="px-4 py-4 text-sm text-gray-500">Couldn&apos;t load feed right now.</p>
       ) : items.length === 0 ? (
@@ -118,7 +126,7 @@ export default function FollowingFeedSection({ authenticated, getAccessToken }: 
                     })
                   }
                   aria-label={`Open ${item.project_title} update`}
-                  className="mt-0.5 shrink-0 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500 hover:text-white focus-visible:border-neon-green"
+                  className="ui-pressable mt-0.5 shrink-0 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500 hover:text-white focus-visible:border-neon-green"
                 >
                   Open
                 </Link>

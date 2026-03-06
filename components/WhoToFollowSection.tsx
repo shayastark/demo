@@ -284,7 +284,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
   }
 
   return (
-    <section className="mb-8 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
+    <section className="ui-card mb-8 overflow-hidden">
       <div className="border-b border-gray-800/90 px-4 py-3.5 sm:px-5">
         <h2 className="text-sm font-semibold text-white tracking-wide">Who to follow</h2>
       </div>
@@ -300,7 +300,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
           {lastHidden ? (
             <div className="flex items-center justify-between gap-2 border-b border-gray-800/90 px-4 py-2.5 text-xs text-gray-300 sm:px-5">
               <span>Recommendation hidden.</span>
-              <button type="button" onClick={undoHide} className="rounded-md border border-gray-700 px-2 py-1 font-medium text-gray-100 hover:border-gray-500">
+              <button type="button" onClick={undoHide} className="ui-pressable rounded-md border border-gray-700 px-2 py-1 font-medium text-gray-100 hover:border-gray-500">
                 Undo
               </button>
             </div>
@@ -338,7 +338,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
                     disabled={followLoadingId === item.creator_id}
                     onClick={() => handleFollow(item, index)}
                     aria-label={`Follow ${item.display_name}`}
-                    className="inline-flex items-center gap-1 rounded-md border border-neon-green px-2.5 py-1.5 text-xs font-semibold text-neon-green disabled:opacity-70"
+                    className="ui-pressable inline-flex items-center gap-1 rounded-md border border-neon-green px-2.5 py-1.5 text-xs font-semibold text-neon-green disabled:opacity-70"
                   >
                     {followLoadingId === item.creator_id ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -351,7 +351,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
                     type="button"
                     disabled={preferenceLoadingId === item.creator_id}
                     onClick={() => hideCreator(item, index, null)}
-                    className="rounded-md border border-gray-700 px-2 py-1 text-[11px] text-gray-200 hover:border-gray-500"
+                    className="ui-pressable rounded-md border border-gray-700 px-2 py-1 text-[11px] text-gray-200 hover:border-gray-500"
                   >
                     Not interested
                   </button>
@@ -362,7 +362,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
                         type="button"
                         disabled={preferenceLoadingId === item.creator_id}
                         onClick={() => hideCreator(item, index, reason.code)}
-                        className="rounded border border-gray-800 px-1.5 py-0.5 text-[10px] text-gray-400 hover:border-gray-600"
+                        className="ui-pressable rounded border border-gray-800 px-1.5 py-0.5 text-[10px] text-gray-400 hover:border-gray-600"
                       >
                         {reason.label}
                       </button>
