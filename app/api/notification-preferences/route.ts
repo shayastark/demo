@@ -4,6 +4,7 @@ import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import {
   parseNotificationPreferencesResponse,
   parseNotificationPreferencesPatch,
+  type NotificationPreferences,
   toNotificationPreferences,
 } from '@/lib/notificationPreferences'
 
@@ -13,6 +14,25 @@ async function getCurrentUser(request: NextRequest) {
   return getUserByPrivyId(authResult.privyId)
 }
 
+async function readNotificationPreferencesRow(userId: string) {
+  return supabaseAdmin
+    .from('notification_preferences')
+    .select(
+      'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, delivery_mode, digest_window, updated_at'
+    )
+    .eq('user_id', userId)
+    .maybeSingle()
+}
+
+function buildNotificationPreferencesResponse(row: Record<string, unknown> | null | undefined) {
+  const payload = {
+    success: true,
+    preferences: toNotificationPreferences(row as Partial<NotificationPreferences> | null),
+    updated_at: typeof row?.updated_at === 'string' ? row.updated_at : null,
+  }
+  return parseNotificationPreferencesResponse(payload)
+}
+
 export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser(request)
@@ -20,31 +40,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: row, error } = await supabaseAdmin
-      .from('notification_preferences')
-      .select(
-        'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, delivery_mode, digest_window, updated_at'
-      )
-      .eq('user_id', currentUser.id)
-      .maybeSingle()
+    const { data: row, error } = await readNotificationPreferencesRow(currentUser.id)
 
     if (error) {
       console.error('Error loading notification preferences:', error)
-      return NextResponse.json({ error: 'Failed to load notification preferences' }, { status: 500 })
+      return NextResponse.json(
+        { success: false, error: 'Failed to load notification preferences' },
+        { status: 500 }
+      )
     }
 
-    const payload = {
-      preferences: toNotificationPreferences(row),
-      updated_at: row?.updated_at || null,
-    }
-    const parsed = parseNotificationPreferencesResponse(payload)
+    const parsed = buildNotificationPreferencesResponse(row)
     if (!parsed.success || !parsed.preferences) {
       return NextResponse.json(
-        { error: parsed.error || 'Failed to shape notification preferences response' },
+        { success: false, error: parsed.error || 'Failed to shape notification preferences response' },
         { status: 500 }
       )
     }
     return NextResponse.json({
+      success: true,
       preferences: parsed.preferences,
       updated_at: parsed.updated_at ?? null,
     })
@@ -72,6 +86,7 @@ export async function PATCH(request: NextRequest) {
     if (!parsed.success || !parsed.updates) {
       return NextResponse.json(
         {
+          success: false,
           error: parsed.error || 'Invalid notification preferences update',
           code: 'INVALID_NOTIFICATION_PREFERENCES_PATCH',
         },
@@ -91,6 +106,7 @@ export async function PATCH(request: NextRequest) {
       console.error('Error reading existing notification preferences:', existingError)
       return NextResponse.json(
         {
+          success: false,
           error: 'Failed to update notification preferences',
           code: 'NOTIFICATION_PREFERENCES_READ_FAILED',
           details: existingError.message || null,
@@ -104,7 +120,7 @@ export async function PATCH(request: NextRequest) {
       ...parsed.updates,
     }
 
-    const { data: row, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('notification_preferences')
       .upsert(
         {
@@ -113,15 +129,12 @@ export async function PATCH(request: NextRequest) {
         },
         { onConflict: 'user_id' }
       )
-      .select(
-        'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, delivery_mode, digest_window, updated_at'
-      )
-      .single()
 
     if (error) {
       console.error('Error updating notification preferences:', error)
       return NextResponse.json(
         {
+          success: false,
           error: 'Failed to update notification preferences',
           code: 'NOTIFICATION_PREFERENCES_UPSERT_FAILED',
           details: error.message || null,
@@ -130,14 +143,27 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const payload = {
-      preferences: toNotificationPreferences(row),
-      updated_at: row?.updated_at || null,
+    // Re-read the row after write so the client always receives the
+    // canonical persisted state rather than relying on upsert return shapes.
+    const { data: persistedRow, error: persistedError } = await readNotificationPreferencesRow(currentUser.id)
+    if (persistedError) {
+      console.error('Error reloading notification preferences after update:', persistedError)
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to confirm updated notification preferences',
+          code: 'NOTIFICATION_PREFERENCES_CONFIRM_FAILED',
+          details: persistedError.message || null,
+        },
+        { status: 500 }
+      )
     }
-    const responseParsed = parseNotificationPreferencesResponse(payload)
+
+    const responseParsed = buildNotificationPreferencesResponse(persistedRow)
     if (!responseParsed.success || !responseParsed.preferences) {
       return NextResponse.json(
         {
+          success: false,
           error: responseParsed.error || 'Invalid response after updating notification preferences',
           code: 'INVALID_NOTIFICATION_PREFERENCES_RESPONSE',
         },
@@ -146,6 +172,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({
+      success: true,
       preferences: responseParsed.preferences,
       updated_at: responseParsed.updated_at ?? null,
     })

@@ -112,5 +112,12 @@ test('parseNotificationPreferencesResponse validates payload and returns actiona
   const apiError = parseNotificationPreferencesResponse({ error: 'Unauthorized' })
   assert.equal(apiError.success, false)
   assert.equal(apiError.error, 'Unauthorized')
+
+  const explicitFailure = parseNotificationPreferencesResponse({
+    success: false,
+    error: 'Failed to update notification preferences',
+  })
+  assert.equal(explicitFailure.success, false)
+  assert.equal(explicitFailure.error, 'Failed to update notification preferences')
 })
 

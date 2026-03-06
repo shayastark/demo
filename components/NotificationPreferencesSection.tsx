@@ -8,6 +8,7 @@ import {
   type NotificationDeliveryMode,
   type NotificationDigestWindow,
   type NotificationPreferences,
+  type NotificationPreferencesUpdate,
   parseNotificationPreferencesResponse,
 } from '@/lib/notificationPreferences'
 
@@ -44,12 +45,12 @@ const PREFERENCE_FIELDS: NotificationToggleField[] = [
 ]
 
 const PREFERENCE_ROW_CLASS =
-  'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-gray-800 px-3 py-3.5 text-left'
-const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0'
-const PREFERENCE_TOGGLE_GROUP_CLASS = 'flex min-w-[5.5rem] items-center justify-end gap-2 self-center'
+  'flex items-center justify-between gap-3 rounded-lg border border-gray-800 px-3 py-3.5 text-left'
+const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0 flex-1 pr-3'
+const PREFERENCE_TOGGLE_GROUP_CLASS = 'flex shrink-0 items-center gap-2'
 const PREFERENCE_TOGGLE_BUTTON_CLASS =
   'relative inline-flex h-8 w-14 min-w-14 flex-shrink-0 items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60'
-const PREFERENCE_STATUS_LABEL_CLASS = 'min-w-7 text-right text-xs font-medium leading-none'
+const PREFERENCE_STATUS_LABEL_CLASS = 'inline-flex min-w-7 items-center justify-end text-right text-xs font-medium leading-none'
 
 export default function NotificationPreferencesSection({
   authenticated,
@@ -60,6 +61,7 @@ export default function NotificationPreferencesSection({
   )
   const [loading, setLoading] = useState(false)
   const [savingField, setSavingField] = useState<NotificationToggleField | null>(null)
+  const [savingDelivery, setSavingDelivery] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const hasSentViewRef = useRef(false)
 
@@ -103,6 +105,77 @@ export default function NotificationPreferencesSection({
     return message
   }
 
+  const parseApiPreferences = (
+    response: Response,
+    raw: unknown,
+    fallbackMessage: string
+  ): NotificationPreferences => {
+    const parsed = parseNotificationPreferencesResponse(raw)
+    if (!response.ok || !parsed.success || !parsed.preferences) {
+      throw new Error(parsed.error || fallbackMessage)
+    }
+    return parsed.preferences
+  }
+
+  const getAuthorizedHeaders = async () => {
+    const token = await getAccessToken()
+    if (!token) throw new Error('Not authenticated')
+    return {
+      token,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  }
+
+  const fetchPreferencesFromServer = async () => {
+    const { headers } = await getAuthorizedHeaders()
+    const response = await fetch('/api/notification-preferences', {
+      headers,
+      cache: 'no-store',
+    })
+    const raw = await parseApiJson(response)
+    return parseApiPreferences(response, raw, 'Failed to load notification preferences')
+  }
+
+  const patchPreferences = async (updates: NotificationPreferencesUpdate) => {
+    const { headers } = await getAuthorizedHeaders()
+    const response = await fetch('/api/notification-preferences', {
+      method: 'PATCH',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    })
+    const raw = await parseApiJson(response)
+    return parseApiPreferences(response, raw, 'Failed to save notification preferences')
+  }
+
+  const preferencesMatchUpdates = (
+    candidate: NotificationPreferences,
+    updates: NotificationPreferencesUpdate
+  ) =>
+    Object.entries(updates).every(([key, value]) => {
+      const preferenceKey = key as keyof NotificationPreferences
+      return candidate[preferenceKey] === value
+    })
+
+  const reconcilePreferencesAfterFailure = async (updates: NotificationPreferencesUpdate) => {
+    try {
+      const serverPreferences = await fetchPreferencesFromServer()
+      return {
+        preferences: serverPreferences,
+        reconciled: preferencesMatchUpdates(serverPreferences, updates),
+      }
+    } catch {
+      return {
+        preferences: null,
+        reconciled: false,
+      }
+    }
+  }
+
   useEffect(() => {
     if (!authenticated) return
     let cancelled = false
@@ -111,20 +184,9 @@ export default function NotificationPreferencesSection({
       setLoading(true)
       setError(null)
       try {
-        const token = await getAccessToken()
-        if (!token) throw new Error('Not authenticated')
-        const response = await fetch('/api/notification-preferences', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        const raw = await parseApiJson(response)
-        const parsed = parseNotificationPreferencesResponse(raw)
-        if (!response.ok || !parsed.success || !parsed.preferences) {
-          throw new Error(parsed.error || 'Failed to load notification preferences')
-        }
+        const nextPreferences = await fetchPreferencesFromServer()
         if (!cancelled) {
-          setPreferences(parsed.preferences)
+          setPreferences(nextPreferences)
         }
       } catch (loadError) {
         console.error('Error loading notification preferences:', loadError)
@@ -149,9 +211,10 @@ export default function NotificationPreferencesSection({
   }, [authenticated, loading])
 
   const togglePreference = async (field: NotificationToggleField) => {
-    if (!authenticated || loading || savingField) return
+    if (!authenticated || loading || savingField || savingDelivery) return
 
-    const previousValue = preferences[field]
+    const previousPreferences = preferences
+    const previousValue = previousPreferences[field]
     const nextValue = !previousValue
     setPreferences((prev) => ({ ...prev, [field]: nextValue }))
     setSavingField(field)
@@ -163,46 +226,28 @@ export default function NotificationPreferencesSection({
     })
 
     try {
-      const token = await getAccessToken()
-      if (!token) throw new Error('Not authenticated')
-      const response = await fetch('/api/notification-preferences', {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ [field]: nextValue }),
-      })
-      const raw = await parseApiJson(response)
-      const parsed = parseNotificationPreferencesResponse(raw)
-      if (!response.ok || !parsed.success || !parsed.preferences) {
-        throw new Error(parsed.error || 'Failed to save notification preferences')
-      }
-      setPreferences(parsed.preferences)
+      const nextPreferences = await patchPreferences({ [field]: nextValue })
+      setPreferences(nextPreferences)
+      setError(null)
       emitEvent({
         action: 'save_success',
         changed_fields: [field],
       })
     } catch (saveError) {
       console.error('Error saving notification preferences:', saveError)
-      try {
-        const token = await getAccessToken()
-        if (token) {
-          const fallbackResponse = await fetch('/api/notification-preferences', {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          const fallbackRaw = await parseApiJson(fallbackResponse)
-          const fallbackParsed = parseNotificationPreferencesResponse(fallbackRaw)
-          if (fallbackResponse.ok && fallbackParsed.success && fallbackParsed.preferences) {
-            setPreferences(fallbackParsed.preferences)
-          } else {
-            setPreferences((prev) => ({ ...prev, [field]: previousValue }))
-          }
-        } else {
-          setPreferences((prev) => ({ ...prev, [field]: previousValue }))
-        }
-      } catch {
-        setPreferences((prev) => ({ ...prev, [field]: previousValue }))
+      const reconciliation = await reconcilePreferencesAfterFailure({ [field]: nextValue })
+      if (reconciliation.preferences) {
+        setPreferences(reconciliation.preferences)
+      } else {
+        setPreferences(previousPreferences)
+      }
+      if (reconciliation.reconciled) {
+        setError(null)
+        emitEvent({
+          action: 'save_success',
+          changed_fields: [field],
+        })
+        return
       }
       const actionable = getActionableErrorMessage(
         saveError,
@@ -224,28 +269,15 @@ export default function NotificationPreferencesSection({
     delivery_mode?: NotificationDeliveryMode
     digest_window?: NotificationDigestWindow
   }) => {
-    if (!authenticated || loading || savingField) return
+    if (!authenticated || loading || savingField || savingDelivery) return
     const previous = preferences
     setError(null)
+    setSavingDelivery(true)
     setPreferences((prev) => ({ ...prev, ...updates }))
     try {
-      const token = await getAccessToken()
-      if (!token) throw new Error('Not authenticated')
-      const response = await fetch('/api/notification-preferences', {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      })
-      const raw = await parseApiJson(response)
-      const parsed = parseNotificationPreferencesResponse(raw)
-      if (!response.ok || !parsed.success || !parsed.preferences) {
-        throw new Error(parsed.error || 'Failed to save notification preferences')
-      }
-      const nextPreferences = parsed.preferences
+      const nextPreferences = await patchPreferences(updates)
       setPreferences(nextPreferences)
+      setError(null)
       emitEvent({
         action: 'save_success',
         changed_fields: Object.keys(updates),
@@ -272,7 +304,20 @@ export default function NotificationPreferencesSection({
       }
     } catch (saveError) {
       console.error('Error saving delivery preferences:', saveError)
-      setPreferences(previous)
+      const reconciliation = await reconcilePreferencesAfterFailure(updates)
+      if (reconciliation.preferences) {
+        setPreferences(reconciliation.preferences)
+      } else {
+        setPreferences(previous)
+      }
+      if (reconciliation.reconciled) {
+        setError(null)
+        emitEvent({
+          action: 'save_success',
+          changed_fields: Object.keys(updates),
+        })
+        return
+      }
       const actionable = getActionableErrorMessage(saveError, 'Could not save digest mode.')
       setError(actionable)
       showToast(actionable, 'error')
@@ -281,6 +326,8 @@ export default function NotificationPreferencesSection({
         changed_fields: Object.keys(updates),
         error_message: saveError instanceof Error ? saveError.message : 'unknown_error',
       })
+    } finally {
+      setSavingDelivery(false)
     }
   }
 
@@ -304,22 +351,24 @@ export default function NotificationPreferencesSection({
           <button
             type="button"
             onClick={() => updateDeliveryPreference({ delivery_mode: 'instant' })}
+            disabled={loading || !!savingField || savingDelivery}
             className={`text-xs px-2.5 py-1.5 rounded border ${
               preferences.delivery_mode === 'instant'
                 ? 'border-neon-green text-neon-green'
                 : 'border-gray-700 text-gray-300'
-            }`}
+            } disabled:opacity-60`}
           >
             Instant
           </button>
           <button
             type="button"
             onClick={() => updateDeliveryPreference({ delivery_mode: 'digest' })}
+            disabled={loading || !!savingField || savingDelivery}
             className={`text-xs px-2.5 py-1.5 rounded border ${
               preferences.delivery_mode === 'digest'
                 ? 'border-neon-green text-neon-green'
                 : 'border-gray-700 text-gray-300'
-            }`}
+            } disabled:opacity-60`}
           >
             Digest
           </button>
@@ -365,7 +414,9 @@ export default function NotificationPreferencesSection({
             >
               <div className={PREFERENCE_TEXT_BLOCK_CLASS}>
                 <p className="text-sm font-medium leading-5 text-white">{PREFERENCE_LABELS[field]}</p>
-                <p className="mt-1 text-xs text-gray-500">{PREFERENCE_DESCRIPTIONS[field]}</p>
+                <p className="mt-1 text-sm leading-relaxed text-gray-400">
+                  {PREFERENCE_DESCRIPTIONS[field]}
+                </p>
               </div>
               <div className={PREFERENCE_TOGGLE_GROUP_CLASS}>
                 <button
@@ -374,7 +425,7 @@ export default function NotificationPreferencesSection({
                   aria-checked={enabled}
                   aria-label={`${PREFERENCE_LABELS[field]} notifications`}
                   onClick={() => togglePreference(field)}
-                  disabled={loading || !!savingField}
+                  disabled={loading || !!savingField || savingDelivery}
                   className={`${PREFERENCE_TOGGLE_BUTTON_CLASS} ${
                     enabled
                       ? 'justify-start border-neon-green/80 bg-neon-green/20'

@@ -10,6 +10,7 @@ export interface NotificationPreferences {
 }
 
 export type NotificationPreferenceField = keyof NotificationPreferences
+export type NotificationPreferencesUpdate = Partial<NotificationPreferences>
 export type NotificationDeliveryMode = 'instant' | 'digest'
 export type NotificationDigestWindow = 'daily' | 'weekly'
 
@@ -85,7 +86,7 @@ export function toNotificationPreferences(
 
 export function parseNotificationPreferencesPatch(body: unknown): {
   success: boolean
-  updates?: Partial<NotificationPreferences>
+  updates?: NotificationPreferencesUpdate
   error?: string
 } {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -98,7 +99,7 @@ export function parseNotificationPreferencesPatch(body: unknown): {
     return { success: false, error: 'At least one preference field is required' }
   }
 
-  const updates: Partial<NotificationPreferences> = {}
+  const updates: NotificationPreferencesUpdate = {}
   for (const key of keys) {
     if (!PREFERENCE_FIELDS.includes(key as NotificationPreferenceField)) {
       return { success: false, error: `Unknown preference field: ${key}` }
@@ -155,6 +156,15 @@ export function parseNotificationPreferencesResponse(body: unknown): {
   }
 
   const record = body as Record<string, unknown>
+  if (record.success === false) {
+    return {
+      success: false,
+      error:
+        typeof record.error === 'string'
+          ? record.error
+          : 'Notification preferences request failed',
+    }
+  }
   if (record.error && typeof record.error === 'string') {
     return { success: false, error: record.error }
   }

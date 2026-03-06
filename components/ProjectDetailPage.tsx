@@ -90,19 +90,22 @@ type ProjectAccessSearchResult = {
   avatar_url: string | null
 }
 
-const SETTINGS_LABEL_CLASS = 'text-[13px] font-semibold tracking-[0.01em] text-white sm:text-sm'
-const SETTINGS_HELPER_TEXT_CLASS = 'mt-1.5 text-xs leading-relaxed text-gray-300'
+const SETTINGS_LABEL_CLASS = 'text-sm font-semibold text-white tracking-tight'
+const SETTINGS_HELPER_TEXT_CLASS = 'mt-2 text-sm text-gray-400 leading-relaxed'
 const COMPACT_DARK_SELECT_CLASS =
-  'h-9 min-h-9 shrink-0 rounded-md border border-gray-700 bg-gray-950 px-3 pr-8 text-xs font-medium text-gray-100 shadow-none transition focus:border-neon-green focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+  'h-9 min-w-[110px] w-auto shrink-0 appearance-none rounded-md border border-gray-700 bg-gray-900 px-2 pr-7 text-xs text-gray-100 shadow-none transition focus:border-neon-green focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
 const COMPACT_DARK_SELECT_STYLE = {
   WebkitAppearance: 'none' as const,
   appearance: 'none' as const,
   backgroundImage: 'none',
+  backgroundColor: '#111827',
+  color: '#f3f4f6',
+  colorScheme: 'dark' as const,
 }
 const COMPACT_ACTION_BUTTON_CLASS =
-  'ui-pressable inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-gray-700 bg-gray-950 px-3 text-xs font-medium text-gray-100 transition hover:border-gray-500 hover:text-white disabled:opacity-50'
+  'ui-pressable inline-flex h-9 min-w-[110px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-gray-700 bg-gray-900 px-2 text-xs text-gray-100 transition hover:border-gray-500 hover:text-white disabled:opacity-50'
 const COMPACT_DANGER_ACTION_BUTTON_CLASS =
-  'ui-pressable inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-red-400/40 bg-red-500/10 px-3 text-xs font-medium text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
+  'ui-pressable inline-flex h-9 min-w-[110px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-red-400/40 bg-red-500/10 px-2 text-xs text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -2410,7 +2413,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
-                      <div className="relative w-full max-w-[8.5rem] flex-shrink-0">
+                      <div className="relative shrink-0">
                         <select
                           value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
                           onChange={async (event) => {
@@ -2449,7 +2452,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               )
                             }
                           }}
-                          className={`${COMPACT_DARK_SELECT_CLASS} h-10 min-h-10 w-full rounded-lg bg-black text-sm`}
+                          className={`${COMPACT_DARK_SELECT_CLASS} h-10 min-w-[120px] rounded-lg px-3 pr-8 text-sm`}
                           style={COMPACT_DARK_SELECT_STYLE}
                           aria-label="Project visibility"
                         >
@@ -2812,7 +2815,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                 </div>
                               </div>
                               <div className="mt-3.5 flex flex-wrap items-center gap-2">
-                                <div className="relative min-w-[6.75rem]">
+                                <div className="relative shrink-0">
                                   <select
                                     value={grant.role || 'viewer'}
                                     onChange={(event) =>
@@ -2824,7 +2827,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     disabled={
                                       projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                     }
-                                    className={`${COMPACT_DARK_SELECT_CLASS} w-full`}
+                                    className={COMPACT_DARK_SELECT_CLASS}
                                     style={COMPACT_DARK_SELECT_STYLE}
                                     aria-label={`Role for ${getGrantDisplayName(grant)}`}
                                   >
@@ -2837,7 +2840,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     aria-hidden
                                   />
                                 </div>
-                                <div className="relative min-w-[7rem]">
+                                <div className="relative shrink-0">
                                   <select
                                     value={
                                       projectAccessExpirySelections[grant.user_id] ||
@@ -2853,7 +2856,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     disabled={
                                       projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                     }
-                                    className={`${COMPACT_DARK_SELECT_CLASS} w-full`}
+                                    className={COMPACT_DARK_SELECT_CLASS}
                                     style={COMPACT_DARK_SELECT_STYLE}
                                     aria-label={`Expiry for ${getGrantDisplayName(grant)}`}
                                   >
