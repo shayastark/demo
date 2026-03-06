@@ -36,6 +36,11 @@ export default function CommentsPanel({
     fire: 'fire',
     agree: 'agree',
   }
+  const reactionIcons: Record<ReactionType, string> = {
+    helpful: '💡',
+    fire: '🔥',
+    agree: '✓',
+  }
 
   const withAuthHeaders = async (): Promise<Record<string, string>> => {
     if (!authenticated || !getAccessToken) return {}
@@ -378,41 +383,40 @@ export default function CommentsPanel({
       <button
         type="button"
         onClick={() => setCommentsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-3 px-3 py-3 sm:px-4 hover:bg-white/[0.02] transition-colors"
+        className="flex w-full items-center justify-between gap-3 border-b border-gray-900/80 bg-gray-950/70 px-3 py-3 sm:px-4 hover:bg-gray-900/50 transition-colors"
       >
         <div className="flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-neon-green" />
           <h3 className="text-sm font-semibold text-white tracking-wide">Discussion</h3>
-          <span className="text-xs text-gray-400">{projectComments.length}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span>{commentsOpen ? 'Hide' : 'Show'}</span>
+          <span>{commentsOpen ? 'Hide' : 'Show'}{projectComments.length > 0 ? ` (${projectComments.length})` : ''}</span>
           <ChevronDown className={`w-4 h-4 transition-transform ${commentsOpen ? 'rotate-180' : ''}`} />
         </div>
       </button>
 
       {!commentsOpen && latestPreview && (
-        <div className="px-3 sm:px-4 pb-3 text-xs text-gray-400 truncate">
+        <div className="px-3 sm:px-4 py-2.5 text-xs text-gray-400 truncate bg-black/20">
           Latest from {latestPreview.author_name}: {latestPreview.content}
         </div>
       )}
 
       {commentsOpen && (
         <>
-          <div className="px-3 pb-3 sm:px-4">
-            <div className="flex gap-2.5">
+          <div className="px-3 pt-3 pb-3 sm:px-4">
+            <div className="flex items-end gap-2.5">
               <textarea
                 value={projectInput}
                 onChange={(e) => setProjectInput(e.target.value)}
                 placeholder={authenticated ? 'Add a comment...' : 'Sign in to add a comment...'}
                 rows={2}
-                className="flex-1 resize-none rounded-lg border border-gray-800 bg-black/70 px-3 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green"
+                className="flex-1 resize-none rounded-xl border border-gray-800 bg-black/80 px-3 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green"
               />
               <button
                 onClick={submitProjectComment}
                 disabled={submittingProject || !projectInput.trim()}
                 aria-label="Post comment"
-                className="ui-pressable self-end h-9 rounded-lg bg-neon-green px-3.5 text-xs font-semibold text-black disabled:opacity-40"
+                className="ui-pressable min-h-10 min-w-[86px] rounded-xl bg-neon-green px-3.5 text-xs font-semibold text-black disabled:opacity-40"
               >
                 <span className="inline-flex items-center gap-1">
                   <Send className="w-3.5 h-3.5" />
@@ -432,27 +436,29 @@ export default function CommentsPanel({
                 {projectComments.map((comment) => (
                   <li key={comment.id} className="group border-t border-gray-900/90 px-3 py-3.5 sm:px-4">
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-[11px] text-gray-300">
+                      <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gray-800 text-[11px] text-gray-300">
                         {getInitial(comment.author_name)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="mb-1.5 flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex items-center gap-2">
-                            <span className="truncate text-xs font-medium text-gray-200">{comment.author_name}</span>
-                            {comment.is_supporter_for_project && (
-                              <span className="ui-chip inline-flex items-center border-neon-green/30 bg-neon-green/10 text-neon-green">
-                                Supporter
-                              </span>
-                            )}
-                            <span className="text-[11px] text-gray-500">{formatRelativeTime(comment.created_at)}</span>
-                            {comment.is_pinned && (
-                              <span className="ui-chip inline-flex items-center gap-1 border-amber-400/30 bg-amber-500/10 text-amber-300">
-                                <Pin className="h-2.5 w-2.5" />
-                                Pinned
-                              </span>
-                            )}
+                        <div className="mb-2 flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="truncate text-sm font-medium text-gray-100">{comment.author_name}</span>
+                              {comment.is_supporter_for_project && (
+                                <span className="ui-chip inline-flex items-center border-neon-green/30 bg-neon-green/10 text-neon-green">
+                                  Supporter
+                                </span>
+                              )}
+                              {comment.is_pinned && (
+                                <span className="ui-chip inline-flex items-center gap-1 border-amber-400/30 bg-amber-500/10 text-amber-300">
+                                  <Pin className="h-2.5 w-2.5" />
+                                  Pinned
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-[11px] text-gray-500">{formatRelativeTime(comment.created_at)}</p>
                           </div>
-                          <div className={`flex items-center gap-1.5 ${editingCommentId === comment.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                          <div className={`flex items-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity`}>
                             {comment.can_pin && (
                               <button
                                 onClick={() => togglePinComment(comment.id, !!comment.is_pinned)}
@@ -493,7 +499,7 @@ export default function CommentsPanel({
                               value={editingContent}
                               onChange={(e) => setEditingContent(e.target.value)}
                               rows={2}
-                              className="w-full resize-none rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                              className="w-full resize-none rounded-xl border border-gray-700 bg-black px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
                             />
                             <div className="flex gap-3">
                               <button
@@ -515,8 +521,8 @@ export default function CommentsPanel({
                           </div>
                         ) : (
                           <>
-                            <p className="whitespace-pre-wrap break-words text-sm text-gray-100">{comment.content}</p>
-                            <div className="mt-2.5 flex items-center gap-2.5">
+                            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-100">{comment.content}</p>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
                               {COMMENT_REACTION_TYPES.map((reactionType) => {
                                 const active = !!comment.viewer_reactions?.[reactionType]
                                 const key = `${comment.id}:${reactionType}`
@@ -526,14 +532,15 @@ export default function CommentsPanel({
                                     key={reactionType}
                                     onClick={() => toggleCommentReaction(comment.id, reactionType)}
                                     disabled={isPending}
-                                    className={`ui-pressable inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
+                                    className={`ui-pressable inline-flex min-h-7 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                                       active
-                                        ? 'border-neon-green/70 bg-neon-green/10 text-neon-green'
-                                        : 'border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
+                                        ? 'border-neon-green/70 bg-neon-green/15 text-neon-green'
+                                        : 'border-gray-800 bg-black/50 text-gray-400 hover:text-gray-200 hover:border-gray-700'
                                     } ${isPending ? 'opacity-60' : ''}`}
                                     aria-label={`${active ? 'Remove' : 'Add'} ${reactionLabels[reactionType]} reaction`}
                                   >
-                                    <span>{reactionLabels[reactionType]}</span>
+                                    <span aria-hidden>{reactionIcons[reactionType]}</span>
+                                    <span className="capitalize">{reactionLabels[reactionType]}</span>
                                     <span>{comment.reactions?.[reactionType] || 0}</span>
                                   </button>
                                 )
