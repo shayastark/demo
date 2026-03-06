@@ -89,6 +89,26 @@ test('parseNotificationPreferencesResponse validates payload and returns actiona
   assert.equal(missingPreferences.success, false)
   assert.equal(missingPreferences.error, 'Response missing valid preferences payload')
 
+  const partialPreferences = parseNotificationPreferencesResponse({
+    preferences: { notify_tips: false },
+  })
+  assert.equal(partialPreferences.success, true)
+  assert.deepEqual(partialPreferences.preferences, {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    notify_tips: false,
+  })
+
+  const topLevelLegacyShape = parseNotificationPreferencesResponse({
+    notify_new_follower: false,
+    digest_window: 'weekly',
+  })
+  assert.equal(topLevelLegacyShape.success, true)
+  assert.deepEqual(topLevelLegacyShape.preferences, {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    notify_new_follower: false,
+    digest_window: 'weekly',
+  })
+
   const apiError = parseNotificationPreferencesResponse({ error: 'Unauthorized' })
   assert.equal(apiError.success, false)
   assert.equal(apiError.error, 'Unauthorized')

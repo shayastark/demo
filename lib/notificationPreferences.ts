@@ -159,7 +159,27 @@ export function parseNotificationPreferencesResponse(body: unknown): {
     return { success: false, error: record.error }
   }
 
-  if (!isNotificationPreferences(record.preferences)) {
+  const rawPreferences =
+    record.preferences && typeof record.preferences === 'object' && !Array.isArray(record.preferences)
+      ? (record.preferences as Partial<NotificationPreferences>)
+      : null
+
+  const hasTopLevelPreferenceFields = [
+    'notify_new_follower',
+    'notify_project_updates',
+    'notify_tips',
+    'notify_project_saved',
+    'delivery_mode',
+    'digest_window',
+  ].some((key) => key in record)
+
+  const normalized = rawPreferences
+    ? toNotificationPreferences(rawPreferences)
+    : hasTopLevelPreferenceFields
+      ? toNotificationPreferences(record as Partial<NotificationPreferences>)
+      : null
+
+  if (!normalized) {
     return { success: false, error: 'Response missing valid preferences payload' }
   }
 
@@ -170,7 +190,7 @@ export function parseNotificationPreferencesResponse(body: unknown): {
 
   return {
     success: true,
-    preferences: record.preferences,
+    preferences: normalized,
     updated_at: updatedAt,
   }
 }

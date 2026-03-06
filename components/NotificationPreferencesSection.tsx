@@ -86,6 +86,9 @@ export default function NotificationPreferencesSection({
     if (/unauthorized|not authenticated/i.test(message)) {
       return 'Session expired. Sign in again to update notification settings.'
     }
+    if (/failed to update notification preferences/i.test(message)) {
+      return 'Could not save notification settings right now. Please try again in a moment.'
+    }
     if (/invalid/i.test(message)) {
       return 'Invalid notification settings payload. Refresh and try again.'
     }
@@ -363,20 +366,35 @@ export default function NotificationPreferencesSection({
                 aria-label={`${PREFERENCE_LABELS[field]} notifications`}
                 onClick={() => togglePreference(field)}
                 disabled={loading || !!savingField}
-                className={`relative inline-flex h-7 w-12 min-w-12 items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60 ${
-                  enabled
-                    ? 'border-neon-green bg-neon-green/25'
-                    : 'border-gray-700 bg-gray-800'
-                }`}
+                className="relative inline-flex items-center justify-start rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60"
+                style={{
+                  width: '52px',
+                  minWidth: '52px',
+                  height: '30px',
+                  borderRadius: '999px',
+                  border: enabled ? '1px solid rgba(57, 255, 20, 0.8)' : '1px solid rgba(75, 85, 99, 0.95)',
+                  backgroundColor: enabled ? 'rgba(57, 255, 20, 0.2)' : 'rgba(31, 41, 55, 0.95)',
+                }}
               >
                 <span className="sr-only">{PREFERENCE_LABELS[field]}</span>
                 <span
-                  className={`inline-block h-5 w-5 transform rounded-full transition ${
-                    enabled ? 'translate-x-6 bg-neon-green' : 'translate-x-1 bg-gray-300'
-                  }`}
+                  aria-hidden
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '999px',
+                    transform: enabled ? 'translateX(26px)' : 'translateX(3px)',
+                    transition: 'transform 180ms ease',
+                    backgroundColor: enabled ? '#39FF14' : '#d1d5db',
+                  }}
                 />
               </button>
-              {isSaving ? <span className="ml-2 text-xs text-gray-500">Saving...</span> : null}
+              <span
+                className="ml-2 text-xs"
+                style={{ color: enabled ? '#39FF14' : '#9ca3af', minWidth: '28px' }}
+              >
+                {isSaving ? '...' : enabled ? 'On' : 'Off'}
+              </span>
             </div>
           )
         })}

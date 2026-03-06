@@ -79,12 +79,37 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    const { data: existingRow, error: existingError } = await supabaseAdmin
+      .from('notification_preferences')
+      .select(
+        'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, delivery_mode, digest_window'
+      )
+      .eq('user_id', currentUser.id)
+      .maybeSingle()
+
+    if (existingError) {
+      console.error('Error reading existing notification preferences:', existingError)
+      return NextResponse.json(
+        {
+          error: 'Failed to update notification preferences',
+          code: 'NOTIFICATION_PREFERENCES_READ_FAILED',
+          details: existingError.message || null,
+        },
+        { status: 500 }
+      )
+    }
+
+    const mergedUpdates = {
+      ...toNotificationPreferences(existingRow || null),
+      ...parsed.updates,
+    }
+
     const { data: row, error } = await supabaseAdmin
       .from('notification_preferences')
       .upsert(
         {
           user_id: currentUser.id,
-          ...parsed.updates,
+          ...mergedUpdates,
         },
         { onConflict: 'user_id' }
       )
