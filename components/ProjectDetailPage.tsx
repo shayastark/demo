@@ -90,8 +90,8 @@ type ProjectAccessSearchResult = {
   avatar_url: string | null
 }
 
-const SETTINGS_LABEL_CLASS = 'text-sm font-semibold text-white tracking-tight'
-const SETTINGS_HELPER_TEXT_CLASS = 'mt-2 text-sm text-gray-400 leading-relaxed'
+const SETTINGS_LABEL_CLASS = 'text-base font-bold text-white leading-6'
+const SETTINGS_HELPER_TEXT_CLASS = 'mt-1.5 text-sm text-gray-400 leading-relaxed'
 const COMPACT_DARK_SELECT_CLASS =
   'h-9 min-w-[110px] w-auto shrink-0 appearance-none rounded-md border border-gray-700 bg-gray-900 px-2 pr-7 text-xs text-gray-100 shadow-none transition focus:border-neon-green focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
 const COMPACT_DARK_SELECT_STYLE = {
@@ -102,10 +102,8 @@ const COMPACT_DARK_SELECT_STYLE = {
   color: '#f3f4f6',
   colorScheme: 'dark' as const,
 }
-const COMPACT_ACTION_BUTTON_CLASS =
-  'ui-pressable inline-flex h-9 min-w-[110px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-gray-700 bg-gray-900 px-2 text-xs text-gray-100 transition hover:border-gray-500 hover:text-white disabled:opacity-50'
 const COMPACT_DANGER_ACTION_BUTTON_CLASS =
-  'ui-pressable inline-flex h-9 min-w-[110px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-red-400/40 bg-red-500/10 px-2 text-xs text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
+  'ui-pressable inline-flex h-9 min-w-[96px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-gray-700 bg-gray-900 px-3 text-xs font-medium text-red-300 transition hover:border-red-300/60 hover:text-red-200 disabled:opacity-50'
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -2580,7 +2578,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <section className="rounded-lg bg-black/20 p-3 sm:p-4">
                   <h4 className="text-sm font-semibold tracking-tight text-white">Collaboration Access</h4>
                   <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
-                    Invite collaborators and manage compact role-based access.
+                    Invite collaborators and manage role-based access.
                   </p>
 
                   {resolveProjectVisibility(project.visibility, project.sharing_enabled) === 'private' ? (
@@ -2712,42 +2710,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             No matching users. You can still grant by manual identifier.
                           </p>
                         ) : null}
-                      </div>
-
-                      <div className="mb-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setProjectAccessExpiryPreset('never')}
-                          className={`ui-pressable min-h-10 rounded-md border px-2.5 py-1.5 text-xs ${
-                            projectAccessExpiryPreset === 'never'
-                              ? 'border-neon-green text-neon-green'
-                              : 'border-gray-700 text-gray-300'
-                          }`}
-                        >
-                          Never
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setProjectAccessExpiryPreset('24h')}
-                          className={`ui-pressable min-h-10 rounded-md border px-2.5 py-1.5 text-xs ${
-                            projectAccessExpiryPreset === '24h'
-                              ? 'border-neon-green text-neon-green'
-                              : 'border-gray-700 text-gray-300'
-                          }`}
-                        >
-                          24h
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setProjectAccessExpiryPreset('7d')}
-                          className={`ui-pressable min-h-10 rounded-md border px-2.5 py-1.5 text-xs ${
-                            projectAccessExpiryPreset === '7d'
-                              ? 'border-neon-green text-neon-green'
-                              : 'border-gray-700 text-gray-300'
-                          }`}
-                        >
-                          7d
-                        </button>
                       </div>
 
                       {projectAccessInlineState ? (
