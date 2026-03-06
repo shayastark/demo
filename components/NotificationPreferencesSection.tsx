@@ -46,10 +46,10 @@ const PREFERENCE_FIELDS: NotificationToggleField[] = [
 
 const PREFERENCE_ROW_CLASS =
   'flex items-center justify-between gap-3 rounded-lg border border-gray-800 px-3 py-3.5 text-left'
-const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0 flex-1 pr-3'
-const PREFERENCE_TOGGLE_GROUP_CLASS = 'flex shrink-0 items-center gap-2'
+const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0 flex-1'
+const PREFERENCE_TOGGLE_GROUP_CLASS = 'flex shrink-0 items-center gap-2 self-start pt-0.5'
 const PREFERENCE_TOGGLE_BUTTON_CLASS =
-  'relative inline-flex h-8 w-14 min-w-14 flex-shrink-0 items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60'
+  'relative inline-flex h-8 w-14 min-w-14 flex-shrink-0 items-center rounded-full border-0 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60'
 const PREFERENCE_STATUS_LABEL_CLASS = 'inline-flex min-w-7 items-center justify-end text-right text-xs font-medium leading-none'
 
 export default function NotificationPreferencesSection({
@@ -408,46 +408,56 @@ export default function NotificationPreferencesSection({
           const enabled = preferences[field]
           const isSaving = savingField === field
           return (
-            <div
-              key={field}
-              className={PREFERENCE_ROW_CLASS}
-            >
-              <div className={PREFERENCE_TEXT_BLOCK_CLASS}>
-                <p className="text-sm font-medium leading-5 text-white">{PREFERENCE_LABELS[field]}</p>
-                <p className="mt-1 text-sm leading-relaxed text-gray-400">
-                  {PREFERENCE_DESCRIPTIONS[field]}
-                </p>
-              </div>
-              <div className={PREFERENCE_TOGGLE_GROUP_CLASS}>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={enabled}
-                  aria-label={`${PREFERENCE_LABELS[field]} notifications`}
-                  onClick={() => togglePreference(field)}
-                  disabled={loading || !!savingField || savingDelivery}
-                  className={`${PREFERENCE_TOGGLE_BUTTON_CLASS} ${
-                    enabled
-                      ? 'justify-start border-neon-green/80 bg-neon-green/20'
-                      : 'justify-start border-gray-600 bg-gray-800/90'
-                  }`}
-                >
-                  <span className="sr-only">{PREFERENCE_LABELS[field]}</span>
+            <div key={field} className={PREFERENCE_ROW_CLASS}>
+              <div className="flex w-full items-start justify-between gap-3">
+                <div className={PREFERENCE_TEXT_BLOCK_CLASS}>
+                  <p className="text-sm font-medium leading-5 text-white">{PREFERENCE_LABELS[field]}</p>
+                </div>
+                <div className={PREFERENCE_TOGGLE_GROUP_CLASS}>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={enabled}
+                    aria-label={`${PREFERENCE_LABELS[field]} notifications`}
+                    onClick={() => togglePreference(field)}
+                    disabled={loading || !!savingField || savingDelivery}
+                    className={PREFERENCE_TOGGLE_BUTTON_CLASS}
+                    style={{
+                      width: '56px',
+                      height: '32px',
+                      borderRadius: '16px',
+                      backgroundColor: enabled ? '#39FF14' : '#4B5563',
+                      transition: 'background-color 0.2s',
+                    }}
+                  >
+                    <span className="sr-only">{PREFERENCE_LABELS[field]}</span>
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        left: enabled ? '28px' : '4px',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '12px',
+                        backgroundColor: enabled ? '#000000' : '#ffffff',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        transition: 'left 0.2s, background-color 0.2s',
+                      }}
+                    />
+                  </button>
                   <span
-                    aria-hidden
-                    className={`h-[22px] w-[22px] rounded-full transition-transform duration-200 ${
-                      enabled ? 'translate-x-[30px] bg-neon-green' : 'translate-x-1 bg-gray-300'
+                    className={`${PREFERENCE_STATUS_LABEL_CLASS} ${
+                      enabled ? 'text-neon-green' : 'text-gray-400'
                     }`}
-                  />
-                </button>
-                <span
-                  className={`${PREFERENCE_STATUS_LABEL_CLASS} ${
-                    enabled ? 'text-neon-green' : 'text-gray-400'
-                  }`}
-                >
-                  {isSaving ? '...' : enabled ? 'On' : 'Off'}
-                </span>
+                  >
+                    {isSaving ? '...' : enabled ? 'On' : 'Off'}
+                  </span>
+                </div>
               </div>
+              <p className="mt-1 text-sm leading-relaxed text-gray-400">
+                {PREFERENCE_DESCRIPTIONS[field]}
+              </p>
             </div>
           )
         })}
