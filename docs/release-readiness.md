@@ -149,3 +149,55 @@ Focused regression suite for this release hardening:
 ### Go / No-Go recommendation
 
 - **Go**, with one caveat: treat lint-tooling cleanup as post-LC follow-up unless release policy requires lint gate in CI.
+
+## RC Finalization Pass (2026-03-06)
+
+### Verification executed
+
+- Full unit suite: `npm run test:unit` -> pass (`184/184`)
+- Focused release matrix: `npm run test:unit -- lib/releaseReadinessRegression.test.ts lib/projectUpdateAutopublish.test.ts lib/projectAccessPolicyServer.test.ts` -> pass
+- Production build: `npm run build` -> pass
+- Lint diagnostics on touched files: pass (no linter errors)
+
+### Screenshot capture
+
+Saved under `docs/release-screenshots/rc-final/`:
+
+- `rc-final-home-desktop-1440x900.png`
+- `rc-final-dashboard-desktop-1440x900.png`
+- `rc-final-project-detail-desktop-1440x900.png`
+- `rc-final-creator-profile-desktop-1440x900.png`
+- `rc-final-dashboard-mobile-390x844.png`
+- `rc-final-project-detail-mobile-390x844.png`
+- `rc-final-notifications-blocked-desktop-1440x900.png`
+- `rc-final-notifications-blocked-mobile-390x844.png`
+
+Notes:
+
+- Required desktop/mobile viewport sizes were applied for captured images.
+- Notifications panel capture is blocked in this environment without an authenticated dashboard session; blocker evidence was captured via sign-in modal screenshots above.
+
+### Final smoke checklist status
+
+- Auth/onboarding: **Partial** (automated/auth route checks pass in regression suite; full manual authenticated flow blocked by credentials in this environment).
+- Visibility/access matrix: **Pass** (policy + access regression suite).
+- Updates draft/important/scheduled publish: **Pass** (unit + release regression + autopublish concurrency coverage).
+- Notifications (instant/digest/snooze/project modes): **Pass** in automated regression; **manual panel screenshot blocked** by unauthenticated session.
+- Explore/recommendations/personalization: **Pass** (explore/recommendation/discovery preference regression suite).
+
+### Defects from RC finalization
+
+- `P0`: None
+- `P1`: None
+- `P2`:
+  - Manual screenshot evidence for authenticated notifications panel remains blocked by unavailable authenticated test session in this environment.
+  - Existing non-blocking warnings remain (`metadataBase`, `baseline-browser-mapping` staleness).
+
+### Defects fixed in RC finalization
+
+- None (verification + documentation pass only; no feature or behavior changes).
+
+### Final Go / No-Go recommendation
+
+- **Conditional Go**.
+- Runtime quality and regression coverage are release-ready; complete one final authenticated manual screenshot pass for dashboard project detail notifications panel before external signoff if strict visual-evidence gate is required.
