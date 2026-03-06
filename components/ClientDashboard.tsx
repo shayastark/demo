@@ -559,7 +559,7 @@ export default function ClientDashboard() {
           </div>
         ) : (
           // Grid View with proper spacing - using inline styles for guaranteed spacing
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 md:gap-6 lg:grid-cols-5">
             {projects.map((project) => (
               <div
                 key={project.id}
@@ -569,7 +569,7 @@ export default function ClientDashboard() {
                   padding: '12px',
                   position: 'relative',
                 }}
-                className="hover:bg-gray-800 transition group w-full md:max-w-[190px] md:mx-auto"
+                className="box-border hover:bg-gray-800 transition group w-full md:max-w-[190px] md:mx-auto"
               >
                 {/* Pinned badge */}
                 {project.pinned && (
@@ -672,7 +672,7 @@ export default function ClientDashboard() {
         {!loading && savedProjects.length > 0 && (
           <div style={{ marginTop: '48px' }}>
             <h2 className="mb-6 text-2xl font-bold text-white">Saved Projects</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 md:gap-6 lg:grid-cols-5">
               {savedProjects.map((project) => (
                 <div
                   key={`saved-${project.id}`}
@@ -682,7 +682,7 @@ export default function ClientDashboard() {
                     padding: '12px',
                     position: 'relative',
                   }}
-                  className="hover:bg-gray-800 transition group w-full md:max-w-[190px] md:mx-auto"
+                  className="box-border hover:bg-gray-800 transition group w-full md:max-w-[190px] md:mx-auto"
                 >
                   {/* Pinned badge */}
                   {project.pinned && (
