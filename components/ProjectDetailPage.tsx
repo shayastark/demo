@@ -2477,24 +2477,69 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     Grant access by username or email.
                   </div>
                   <div className="mb-3">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Search username or type username/email"
-                        value={projectAccessIdentifierInput}
-                        onChange={(event) => {
-                          const value = event.target.value
-                          setProjectAccessIdentifierInput(value)
-                          if (
-                            projectAccessSelectedUser &&
-                            value !== (projectAccessSelectedUser.username || projectAccessSelectedUser.id)
-                          ) {
-                            setProjectAccessSelectedUser(null)
-                          }
-                        }}
-                        className="flex-1 rounded-lg border border-gray-700 bg-black px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-green"
-                        aria-label="Grant access by username or email"
-                      />
+                    <div className="flex items-start gap-2">
+                      <div className="relative min-w-0 flex-1">
+                        <input
+                          type="text"
+                          placeholder="Search username or type username/email"
+                          value={projectAccessIdentifierInput}
+                          onChange={(event) => {
+                            const value = event.target.value
+                            setProjectAccessIdentifierInput(value)
+                            if (
+                              projectAccessSelectedUser &&
+                              value !== (projectAccessSelectedUser.username || projectAccessSelectedUser.id)
+                            ) {
+                              setProjectAccessSelectedUser(null)
+                            }
+                          }}
+                          className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-green"
+                          aria-label="Grant access by username or email"
+                        />
+                        {!projectAccessSelectedUser && projectAccessSearchResults.length > 0 ? (
+                          <ul className="absolute left-0 right-0 top-full z-20 mt-2 max-h-44 overflow-y-auto overflow-x-hidden rounded-lg border border-gray-800 bg-gray-950 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">
+                            {projectAccessSearchResults.map((candidate) => (
+                              <li key={candidate.id}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const label = candidate.username || candidate.id
+                                    setProjectAccessIdentifierInput(label)
+                                    setProjectAccessSelectedUser(candidate)
+                                    setProjectAccessSearchResults([])
+                                    setProjectAccessSearchError(null)
+                                    emitProjectAccessSearchEvent({
+                                      action: 'select_result',
+                                      query_length: projectAccessIdentifierInput.trim().length,
+                                      result_count: projectAccessSearchResults.length,
+                                      target_user_id: candidate.id,
+                                    })
+                                  }}
+                                  className="ui-pressable flex w-full min-w-0 items-center gap-2 border-b border-gray-800/80 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-900"
+                                  aria-label={`Select ${candidate.username || candidate.id}`}
+                                >
+                                  <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-[10px] text-gray-300">
+                                    {candidate.avatar_url ? (
+                                      <Image
+                                        src={candidate.avatar_url}
+                                        alt={`${candidate.username || 'User'} avatar`}
+                                        width={24}
+                                        height={24}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <span aria-hidden>{(candidate.username || 'U').slice(0, 1).toUpperCase()}</span>
+                                    )}
+                                  </span>
+                                  <span className="min-w-0 truncate text-sm text-white">
+                                    {candidate.username || candidate.id}
+                                  </span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
                       <button
                         type="button"
                         onClick={handleGrantProjectAccess}
@@ -2513,39 +2558,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       !projectAccessSelectedUser &&
                       projectAccessSearchResults.length === 0 ? (
                       <p className="text-xs text-gray-500 mt-2">No matching users. You can still grant by manual identifier.</p>
-                    ) : null}
-                    {!projectAccessSelectedUser && projectAccessSearchResults.length > 0 ? (
-                      <ul className="mt-2 max-h-44 overflow-y-auto rounded-lg border border-gray-800 bg-black/80">
-                        {projectAccessSearchResults.map((candidate) => (
-                          <li key={candidate.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const label = candidate.username || candidate.id
-                                setProjectAccessIdentifierInput(label)
-                                setProjectAccessSelectedUser(candidate)
-                                setProjectAccessSearchResults([])
-                                setProjectAccessSearchError(null)
-                                emitProjectAccessSearchEvent({
-                                  action: 'select_result',
-                                  query_length: projectAccessIdentifierInput.trim().length,
-                                  result_count: projectAccessSearchResults.length,
-                                  target_user_id: candidate.id,
-                                })
-                              }}
-                              className="ui-pressable flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-gray-900"
-                              aria-label={`Select ${candidate.username || candidate.id}`}
-                            >
-                              <span className="w-5 h-5 rounded-full bg-gray-700 inline-flex items-center justify-center text-[10px] text-gray-300">
-                                {(candidate.username || 'U').slice(0, 1).toUpperCase()}
-                              </span>
-                              <span className="text-sm text-white truncate">
-                                {candidate.username || candidate.id}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
                     ) : null}
                   </div>
                   <div className="mb-3 flex flex-wrap gap-2">
