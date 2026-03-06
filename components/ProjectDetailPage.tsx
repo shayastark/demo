@@ -14,7 +14,6 @@ import TipPromptCard from './TipPromptCard'
 import TopSupportersCard from './TopSupportersCard'
 import ProjectAttachmentsPanel from './ProjectAttachmentsPanel'
 import ProjectActivityPanel from './ProjectActivityPanel'
-import ProjectSubscriptionToggle from './ProjectSubscriptionToggle'
 import { Copy, Share2, Eye, Download, Plus, Edit, ArrowLeft, FileText, Save, X, Upload, Trash2, MoreVertical, Pin, PinOff, ListMusic } from 'lucide-react'
 import { showToast } from './Toast'
 import Image from 'next/image'
@@ -29,6 +28,8 @@ import { resolveProjectVisibility, type ProjectVisibility } from '@/lib/projectV
 interface ProjectDetailPageProps {
   projectId: string
 }
+
+type ProjectNotificationMode = 'all' | 'important' | 'mute'
 
 type ProjectAccessGrant = {
   id: string
@@ -91,6 +92,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [showAddTrackForm, setShowAddTrackForm] = useState(false)
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false)
   const [isPinned, setIsPinned] = useState(false)
+  const [savedToLibrary, setSavedToLibrary] = useState(false)
+  const [viewerSubscriptionMode, setViewerSubscriptionMode] = useState<ProjectNotificationMode>('all')
+  const [viewerIsSubscribed, setViewerIsSubscribed] = useState(false)
+  const [updatingNotificationMode, setUpdatingNotificationMode] = useState(false)
   const [showNotesModal, setShowNotesModal] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const projectMenuRef = useRef<HTMLDivElement>(null)
@@ -174,6 +179,90 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       document.removeEventListener('mousedown', handleClickOutside, true)
     }
   }, [isProjectMenuOpen])
+
+  const emitLibrarySaveEvent = (detail: {
+    action: 'save' | 'remove'
+    subscription_seeded: boolean
+  }) => {
+    if (typeof window === 'undefined' || !project) return
+    window.dispatchEvent(
+      new CustomEvent('library_save_event', {
+        detail: {
+          schema: 'library_save.v1',
+          source: 'project_detail',
+          action: detail.action,
+          project_id: project.id,
+          subscription_seeded: detail.subscription_seeded,
+        },
+      })
+    )
+  }
+
+  const emitProjectModeEvent = (detail: {
+    old_mode: ProjectNotificationMode
+    new_mode: ProjectNotificationMode
+  }) => {
+    if (typeof window === 'undefined' || !project) return
+    window.dispatchEvent(
+      new CustomEvent('project_notification_mode_event', {
+        detail: {
+          schema: 'project_notification_mode.v1',
+          source: 'project_detail',
+          action: 'change_mode',
+          project_id: project.id,
+          old_mode: detail.old_mode,
+          new_mode: detail.new_mode,
+        },
+      })
+    )
+  }
+
+  const loadViewerSaveAndSubscriptionState = async (targetProjectId: string) => {
+    if (!user) {
+      setSavedToLibrary(false)
+      setViewerIsSubscribed(false)
+      setViewerSubscriptionMode('all')
+      return
+    }
+    try {
+      const privyId = user.id
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', privyId)
+        .single()
+      if (!dbUser?.id) {
+        setSavedToLibrary(false)
+      } else {
+        const { data: savedRow } = await supabase
+          .from('user_projects')
+          .select('id')
+          .eq('user_id', dbUser.id)
+          .eq('project_id', targetProjectId)
+          .maybeSingle()
+        setSavedToLibrary(!!savedRow)
+      }
+
+      const token = await getAccessToken()
+      const response = await fetch(
+        `/api/project-subscriptions?project_id=${encodeURIComponent(targetProjectId)}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        }
+      )
+      const result = await response.json()
+      if (response.ok) {
+        setViewerIsSubscribed(!!result.isSubscribed)
+        setViewerSubscriptionMode(
+          result.notification_mode === 'important' || result.notification_mode === 'mute'
+            ? result.notification_mode
+            : 'all'
+        )
+      }
+    } catch (error) {
+      console.error('Error loading save/subscription state:', error)
+    }
+  }
 
   const loadProject = async () => {
     try {
@@ -284,7 +373,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           } catch (notesError) {
             console.error('Error loading notes:', notesError)
           }
+        } else {
+          setIsCreator(false)
         }
+
+        await loadViewerSaveAndSubscriptionState(projectData.id)
+      } else {
+        setIsCreator(false)
+        setSavedToLibrary(false)
+        setViewerIsSubscribed(false)
+        setViewerSubscriptionMode('all')
       }
     } catch (error) {
       console.error('Error loading project:', error)
@@ -1173,6 +1271,101 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
   }
 
+  const handleSaveToLibrary = async () => {
+    if (!project || !user) return
+    const { data, error } = await apiRequest<{
+      message?: string
+      notification_mode?: ProjectNotificationMode
+      subscription_seeded?: boolean
+    }>('/api/library', {
+      method: 'POST',
+      body: { project_id: project.id },
+      getAccessToken,
+    })
+    if (error) {
+      showToast(error, 'error')
+      return
+    }
+    setSavedToLibrary(true)
+    setViewerIsSubscribed(true)
+    setViewerSubscriptionMode(
+      data?.notification_mode === 'important' || data?.notification_mode === 'mute'
+        ? data.notification_mode
+        : 'all'
+    )
+    emitLibrarySaveEvent({
+      action: 'save',
+      subscription_seeded: !!data?.subscription_seeded,
+    })
+    setIsProjectMenuOpen(false)
+    showToast(data?.message === 'Already in library' ? 'Project already saved!' : 'Project saved to your library!', 'success')
+  }
+
+  const handleRemoveFromLibrary = async () => {
+    if (!project || !user) return
+    const { data, error } = await apiRequest<{ warning?: string | null }>(
+      `/api/library?project_id=${project.id}`,
+      {
+        method: 'DELETE',
+        getAccessToken,
+      }
+    )
+    if (error) {
+      showToast(error, 'error')
+      return
+    }
+    setSavedToLibrary(false)
+    setViewerIsSubscribed(false)
+    setViewerSubscriptionMode('all')
+    emitLibrarySaveEvent({ action: 'remove', subscription_seeded: false })
+    setIsProjectMenuOpen(false)
+    if (data?.warning) {
+      showToast(data.warning, 'error')
+      return
+    }
+    showToast('Project removed from library', 'success')
+  }
+
+  const handleViewerNotificationModeChange = async (nextMode: ProjectNotificationMode) => {
+    if (!project || !user || !viewerIsSubscribed || updatingNotificationMode) return
+    const oldMode = viewerSubscriptionMode
+    if (oldMode === nextMode) return
+    setUpdatingNotificationMode(true)
+    setViewerSubscriptionMode(nextMode)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/project-subscriptions', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: project.id,
+          notification_mode: nextMode,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update notification mode')
+      const resolvedMode: ProjectNotificationMode =
+        result.notification_mode === 'important' || result.notification_mode === 'mute'
+          ? result.notification_mode
+          : 'all'
+      setViewerSubscriptionMode(resolvedMode)
+      emitProjectModeEvent({
+        old_mode: oldMode,
+        new_mode: resolvedMode,
+      })
+    } catch (error) {
+      console.error('Error updating project notification mode:', error)
+      setViewerSubscriptionMode(oldMode)
+      showToast(error instanceof Error ? error.message : 'Failed to update notification mode', 'error')
+    } finally {
+      setUpdatingNotificationMode(false)
+    }
+  }
+
   const startEditingProject = () => {
     if (!project) return
     setEditTitle(project.title)
@@ -2039,18 +2232,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               </div>
               {project.description && (
                 <p className="text-gray-400 text-base mb-6 leading-relaxed">{project.description}</p>
-              )}
-              {creatorId && (
-                <div className="mb-6">
-                  <ProjectSubscriptionToggle
-                    projectId={project.id}
-                    creatorId={creatorId}
-                    authenticated={!!user}
-                    getAccessToken={getAccessToken}
-                    onRequireAuth={() => showToast('Please sign in to watch projects.', 'error')}
-                    source="project_detail"
-                  />
-                </div>
               )}
             </>
           )}
@@ -3152,6 +3333,142 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     </div>
                   </div>
                 </button>
+              )}
+
+              {user && !isCreator && (
+                <>
+                  {savedToLibrary ? (
+                    <button
+                      onClick={() => handleRemoveFromLibrary()}
+                      style={{
+                        width: '100%',
+                        padding: '16px 20px',
+                        backgroundColor: '#1f2937',
+                        color: '#fff',
+                        border: '1px solid #374151',
+                        borderRadius: '12px',
+                        fontSize: '16px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '14px',
+                        textAlign: 'left',
+                      }}
+                      className="hover:bg-gray-700 transition"
+                    >
+                      <div style={{
+                        width: '44px',
+                        height: '44px',
+                        backgroundColor: '#374151',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        <X style={{ width: '22px', height: '22px', color: '#ef4444' }} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Remove from Library</div>
+                        <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                          Remove and unsubscribe project notifications
+                        </div>
+                      </div>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSaveToLibrary()}
+                      style={{
+                        width: '100%',
+                        padding: '16px 20px',
+                        backgroundColor: '#1f2937',
+                        color: '#fff',
+                        border: '1px solid #374151',
+                        borderRadius: '12px',
+                        fontSize: '16px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '14px',
+                        textAlign: 'left',
+                      }}
+                      className="hover:bg-gray-700 transition"
+                    >
+                      <div style={{
+                        width: '44px',
+                        height: '44px',
+                        backgroundColor: '#39FF14',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        <Plus style={{ width: '22px', height: '22px', color: '#000' }} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Save to Library</div>
+                        <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                          Save project and enable important updates
+                        </div>
+                      </div>
+                    </button>
+                  )}
+                </>
+              )}
+
+              {user && !isCreator && viewerIsSubscribed && (
+                <div
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    backgroundColor: '#111827',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                  }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px' }}>Notifications</div>
+                  <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '10px' }}>
+                    Set update alerts for this saved project.
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {(
+                      [
+                        { id: 'all', label: 'All' },
+                        { id: 'important', label: 'Important' },
+                        { id: 'mute', label: 'Mute' },
+                      ] as const
+                    ).map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => handleViewerNotificationModeChange(mode.id)}
+                        disabled={updatingNotificationMode}
+                        style={{
+                          minHeight: '36px',
+                          borderRadius: '999px',
+                          border:
+                            viewerSubscriptionMode === mode.id
+                              ? '1px solid #39FF14'
+                              : '1px solid #374151',
+                          color: viewerSubscriptionMode === mode.id ? '#39FF14' : '#d1d5db',
+                          backgroundColor:
+                            viewerSubscriptionMode === mode.id
+                              ? 'rgba(57, 255, 20, 0.08)'
+                              : 'transparent',
+                          padding: '6px 10px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
               
               {user && (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
+import { normalizeProjectSubscriptionNotificationMode } from '@/lib/projectSubscriptions'
 
 // POST /api/library - Add a project to user's library
 export async function POST(request: NextRequest) {
@@ -30,10 +31,59 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('user_id', user.id)
       .eq('project_id', project_id)
-      .single()
+      .maybeSingle()
+
+    // Ensure save action always seeds/maintains project subscription.
+    const { data: existingSubscription, error: existingSubscriptionError } = await supabaseAdmin
+      .from('project_subscriptions')
+      .select('id, notification_mode')
+      .eq('user_id', user.id)
+      .eq('project_id', project_id)
+      .maybeSingle()
+
+    if (existingSubscriptionError) {
+      console.error('Error loading project subscription state:', existingSubscriptionError)
+      return NextResponse.json({ error: 'Failed to seed project notifications' }, { status: 500 })
+    }
+
+    let subscriptionSeeded = false
+    let resolvedNotificationMode = normalizeProjectSubscriptionNotificationMode(
+      existingSubscription?.notification_mode
+    )
+
+    if (!existingSubscription) {
+      const { data: createdSubscription, error: subscriptionInsertError } = await supabaseAdmin
+        .from('project_subscriptions')
+        .upsert(
+          {
+            user_id: user.id,
+            project_id,
+            notification_mode: 'important',
+          },
+          { onConflict: 'user_id,project_id' }
+        )
+        .select('notification_mode')
+        .single()
+
+      if (subscriptionInsertError) {
+        console.error('Error seeding project subscription from library save:', subscriptionInsertError)
+        return NextResponse.json({ error: 'Failed to seed project notifications' }, { status: 500 })
+      }
+
+      subscriptionSeeded = true
+      resolvedNotificationMode = normalizeProjectSubscriptionNotificationMode(
+        createdSubscription?.notification_mode
+      )
+    }
 
     if (existing) {
-      return NextResponse.json({ message: 'Already in library' })
+      return NextResponse.json({
+        message: 'Already in library',
+        alreadySaved: true,
+        isSubscribed: true,
+        notification_mode: resolvedNotificationMode,
+        subscription_seeded: subscriptionSeeded,
+      })
     }
 
     // Add to library
@@ -53,7 +103,16 @@ export async function POST(request: NextRequest) {
       console.error('Error incrementing adds metric:', rpcError)
     }
 
-    return NextResponse.json({ userProject }, { status: 201 })
+    return NextResponse.json(
+      {
+        userProject,
+        alreadySaved: false,
+        isSubscribed: true,
+        notification_mode: resolvedNotificationMode,
+        subscription_seeded: subscriptionSeeded,
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('Error adding to library:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -89,7 +148,24 @@ export async function DELETE(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json({ success: true })
+    // Unified behavior: removing from library also unsubscribes project notifications.
+    const { error: subscriptionDeleteError } = await supabaseAdmin
+      .from('project_subscriptions')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('project_id', projectId)
+
+    if (subscriptionDeleteError) {
+      console.error('Error unsubscribing project notifications on library remove:', subscriptionDeleteError)
+    }
+
+    return NextResponse.json({
+      success: true,
+      unsubscribed: !subscriptionDeleteError,
+      isSubscribed: false,
+      notification_mode: 'all',
+      warning: subscriptionDeleteError ? 'Removed from library, but failed to unsubscribe notifications' : null,
+    })
   } catch (error) {
     console.error('Error removing from library:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
