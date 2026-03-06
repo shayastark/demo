@@ -2401,8 +2401,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     Configure who can discover this project and whether viewers can access shared links or downloads.
                   </p>
 
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
+                  <div className="mt-4 space-y-4">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
                           className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
@@ -2453,7 +2453,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               )
                             }
                           }}
-                          className={`${COMPACT_DARK_SELECT_CLASS} h-10 min-w-[120px] rounded-lg px-3 pr-8 text-sm`}
+                          className={`${COMPACT_DARK_SELECT_CLASS} h-11 min-w-[136px] cursor-pointer rounded-xl border-gray-600 bg-gray-900 px-3.5 pr-9 text-sm font-semibold text-white hover:border-gray-500 focus:ring-2 focus:ring-neon-green/40`}
                           style={COMPACT_DARK_SELECT_STYLE}
                           aria-label="Project visibility"
                         >
@@ -2462,13 +2462,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           <option value="private">Private</option>
                         </select>
                         <ChevronDown
-                          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                          className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-300"
                           aria-hidden
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
                           className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
@@ -2530,7 +2530,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
                           className="text-[17px] font-extrabold leading-6 tracking-tight text-white"

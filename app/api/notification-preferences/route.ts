@@ -5,6 +5,7 @@ import {
   parseNotificationPreferencesResponse,
   parseNotificationPreferencesPatch,
   type NotificationPreferences,
+  type NotificationPreferencesUpdate,
   toNotificationPreferences,
 } from '@/lib/notificationPreferences'
 
@@ -15,13 +16,53 @@ async function getCurrentUser(request: NextRequest) {
 }
 
 async function readNotificationPreferencesRow(userId: string) {
-  return supabaseAdmin
+  const fullSelect = await supabaseAdmin
     .from('notification_preferences')
     .select(
       'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, delivery_mode, digest_window, updated_at'
     )
     .eq('user_id', userId)
     .maybeSingle()
+
+  if (!fullSelect.error) {
+    return {
+      data: fullSelect.data as Record<string, unknown> | null,
+      error: null,
+      supportsDigestColumns: true,
+    }
+  }
+
+  const isMissingColumn =
+    fullSelect.error.code === '42703' ||
+    /column .* does not exist/i.test(fullSelect.error.message || '')
+
+  if (!isMissingColumn) {
+    return {
+      data: null,
+      error: fullSelect.error,
+      supportsDigestColumns: true,
+    }
+  }
+
+  const legacySelect = await supabaseAdmin
+    .from('notification_preferences')
+    .select('notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, updated_at')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (legacySelect.error) {
+    return {
+      data: null,
+      error: legacySelect.error,
+      supportsDigestColumns: false,
+    }
+  }
+
+  return {
+    data: legacySelect.data as Record<string, unknown> | null,
+    error: null,
+    supportsDigestColumns: false,
+  }
 }
 
 function buildNotificationPreferencesResponse(row: Record<string, unknown> | null | undefined) {
@@ -31,6 +72,10 @@ function buildNotificationPreferencesResponse(row: Record<string, unknown> | nul
     updated_at: typeof row?.updated_at === 'string' ? row.updated_at : null,
   }
   return parseNotificationPreferencesResponse(payload)
+}
+
+function hasDigestPreferenceUpdates(updates: NotificationPreferencesUpdate): boolean {
+  return 'delivery_mode' in updates || 'digest_window' in updates
 }
 
 export async function GET(request: NextRequest) {
@@ -94,13 +139,11 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const { data: existingRow, error: existingError } = await supabaseAdmin
-      .from('notification_preferences')
-      .select(
-        'notify_new_follower, notify_project_updates, notify_tips, notify_project_saved, delivery_mode, digest_window'
-      )
-      .eq('user_id', currentUser.id)
-      .maybeSingle()
+    const {
+      data: existingRow,
+      error: existingError,
+      supportsDigestColumns,
+    } = await readNotificationPreferencesRow(currentUser.id)
 
     if (existingError) {
       console.error('Error reading existing notification preferences:', existingError)
@@ -115,20 +158,44 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const mergedUpdates = {
+    if (!supportsDigestColumns && hasDigestPreferenceUpdates(parsed.updates)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Digest notification settings require a database migration in this environment',
+          code: 'NOTIFICATION_PREFERENCES_SCHEMA_MISMATCH',
+          suggested_migrations: ['supabase/add_notification_digest_preferences.sql'],
+        },
+        { status: 409 }
+      )
+    }
+
+    const mergedUpdates: NotificationPreferences = {
       ...toNotificationPreferences(existingRow || null),
       ...parsed.updates,
     }
 
-    const { error } = await supabaseAdmin
-      .from('notification_preferences')
-      .upsert(
-        {
+    const persistedPayload = supportsDigestColumns
+      ? {
           user_id: currentUser.id,
           ...mergedUpdates,
-        },
-        { onConflict: 'user_id' }
-      )
+        }
+      : {
+          user_id: currentUser.id,
+          notify_new_follower: mergedUpdates.notify_new_follower,
+          notify_project_updates: mergedUpdates.notify_project_updates,
+          notify_tips: mergedUpdates.notify_tips,
+          notify_project_saved: mergedUpdates.notify_project_saved,
+        }
+
+    const writeQuery = existingRow
+      ? supabaseAdmin
+          .from('notification_preferences')
+          .update(persistedPayload)
+          .eq('user_id', currentUser.id)
+      : supabaseAdmin.from('notification_preferences').insert(persistedPayload)
+
+    const { error } = await writeQuery
 
     if (error) {
       console.error('Error updating notification preferences:', error)
