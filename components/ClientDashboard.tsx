@@ -620,8 +620,8 @@ export default function ClientDashboard() {
                     ref={(el) => { menuRefs.current[project.id] = el }}
                     style={{
                       position: 'absolute',
-                      top: '8px',
-                      right: '8px',
+                      top: '6px',
+                      right: '6px',
                       zIndex: 10,
                     }}
                   >
@@ -632,8 +632,8 @@ export default function ClientDashboard() {
                         setOpenMenuId(openMenuId === project.id ? null : project.id)
                       }}
                       style={{
-                        width: '32px',
-                        height: '32px',
+                        width: '28px',
+                        height: '28px',
                         backgroundColor: 'rgba(0, 0, 0, 0.7)',
                         borderRadius: '50%',
                         display: 'flex',
@@ -642,11 +642,11 @@ export default function ClientDashboard() {
                         border: 'none',
                         cursor: 'pointer',
                       }}
-                      className="hover:bg-black text-white transition shadow-lg"
+                      className="text-white transition shadow-lg hover:bg-black sm:h-8 sm:w-8"
                       title="More options"
                       type="button"
                     >
-                      <MoreVertical style={{ width: '16px', height: '16px' }} />
+                      <MoreVertical style={{ width: '14px', height: '14px' }} />
                     </button>
                   </div>
                 </div>
@@ -654,12 +654,12 @@ export default function ClientDashboard() {
                 {/* Title and date - BELOW the image */}
                 <Link
                   href={`/dashboard/projects/${project.id}`}
-                  style={{ display: 'block' }}
+                  className="block space-y-1"
                 >
-                  <h3 className="text-sm sm:text-base font-semibold text-neon-green line-clamp-2" style={{ marginBottom: '4px' }}>
+                  <h3 className="min-h-[2.5rem] text-sm font-semibold leading-tight text-neon-green line-clamp-2 sm:min-h-[2.75rem] sm:text-base">
                     {project.title}
                   </h3>
-                  <p className="text-xs text-neon-green opacity-70">
+                  <p className="text-xs leading-tight text-neon-green opacity-70">
                     {new Date(project.created_at).toLocaleDateString()}
                   </p>
                 </Link>
@@ -733,8 +733,8 @@ export default function ClientDashboard() {
                       ref={(el) => { menuRefs.current[`saved-${project.id}`] = el }}
                       style={{
                         position: 'absolute',
-                        top: '8px',
-                        right: '8px',
+                        top: '6px',
+                        right: '6px',
                         zIndex: 10,
                       }}
                     >
@@ -745,8 +745,8 @@ export default function ClientDashboard() {
                           setOpenMenuId(openMenuId === `saved-${project.id}` ? null : `saved-${project.id}`)
                         }}
                         style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '28px',
+                          height: '28px',
                           backgroundColor: 'rgba(0, 0, 0, 0.7)',
                           borderRadius: '50%',
                           display: 'flex',
@@ -755,11 +755,11 @@ export default function ClientDashboard() {
                           border: 'none',
                           cursor: 'pointer',
                         }}
-                        className="hover:bg-black text-white transition shadow-lg"
+                        className="text-white transition shadow-lg hover:bg-black sm:h-8 sm:w-8"
                         title="More options"
                         type="button"
                       >
-                        <MoreVertical style={{ width: '16px', height: '16px' }} />
+                        <MoreVertical style={{ width: '14px', height: '14px' }} />
                       </button>
                     </div>
                   </div>
@@ -767,12 +767,12 @@ export default function ClientDashboard() {
                   {/* Title and creator */}
                   <Link
                     href={`/share/${project.share_token}`}
-                    style={{ display: 'block' }}
+                    className="block space-y-1"
                   >
-                    <h3 className="text-sm sm:text-base font-semibold text-white line-clamp-2" style={{ marginBottom: '4px' }}>
+                    <h3 className="min-h-[2.5rem] text-sm font-semibold leading-tight text-white line-clamp-2 sm:min-h-[2.75rem] sm:text-base">
                       {project.title}
                     </h3>
-                    <p className="text-xs text-gray-400">
+                    <p className="truncate text-xs leading-tight text-gray-400">
                       by {project.creator_username}
                     </p>
                   </Link>
