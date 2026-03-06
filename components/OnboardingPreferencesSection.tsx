@@ -55,6 +55,9 @@ export default function OnboardingPreferencesSection({
 }: OnboardingPreferencesSectionProps) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null)
+  const [isEditorExpanded, setIsEditorExpanded] = useState<boolean | null>(null)
   const [prefs, setPrefs] = useState<OnboardingPreferences>({
     preferred_genres: [],
     preferred_vibes: [],
@@ -66,6 +69,9 @@ export default function OnboardingPreferencesSection({
     () => prefs.preferred_genres.length + prefs.preferred_vibes.length,
     [prefs.preferred_genres.length, prefs.preferred_vibes.length]
   )
+  const hasSelections = selectedCount > 0
+  const isCompleted = !!prefs.onboarding_completed_at
+  const collapsePreferenceKey = `demo.onboarding-preferences.editor-expanded.${source}`
 
   const emitEvent = (
     action: 'view' | 'save' | 'skip' | 'edit',
@@ -87,7 +93,10 @@ export default function OnboardingPreferencesSection({
   }
 
   const load = async () => {
-    if (!authenticated || !getAccessToken) return
+    if (!authenticated || !getAccessToken) {
+      setPrefsLoaded(true)
+      return
+    }
     setLoading(true)
     try {
       const token = await getAccessToken()
@@ -104,11 +113,13 @@ export default function OnboardingPreferencesSection({
           onboarding_completed_at: null,
         }
       )
+      setUpdatedAt(typeof result.updated_at === 'string' ? result.updated_at : null)
       emitEvent('view')
     } catch (error) {
       console.error('Error loading onboarding preferences:', error)
     } finally {
       setLoading(false)
+      setPrefsLoaded(true)
     }
   }
 
@@ -116,6 +127,30 @@ export default function OnboardingPreferencesSection({
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated])
+
+  useEffect(() => {
+    if (!prefsLoaded || isEditorExpanded !== null) return
+    const shouldDefaultExpanded = isOnboardingMode && !isCompleted && !hasSelections
+    if (typeof window === 'undefined') {
+      setIsEditorExpanded(shouldDefaultExpanded)
+      return
+    }
+
+    const stored = window.localStorage.getItem(collapsePreferenceKey)
+    if (stored === 'true' || stored === 'false') {
+      setIsEditorExpanded(stored === 'true')
+      return
+    }
+
+    setIsEditorExpanded(shouldDefaultExpanded)
+  }, [
+    collapsePreferenceKey,
+    hasSelections,
+    isCompleted,
+    isEditorExpanded,
+    isOnboardingMode,
+    prefsLoaded,
+  ])
 
   const toggleGenre = (genre: OnboardingGenre) => {
     setEdited(true)
@@ -160,7 +195,14 @@ export default function OnboardingPreferencesSection({
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to save preferences')
       setPrefs(result.preferences || prefs)
+      setUpdatedAt(typeof result.updated_at === 'string' ? result.updated_at : null)
       setEdited(false)
+      if (!isOnboardingMode) {
+        setIsEditorExpanded(false)
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(collapsePreferenceKey, 'false')
+        }
+      }
       emitEvent(completed ? 'save' : 'skip')
       showToast(completed ? 'Taste preferences saved' : 'Skipped for now', 'success')
     } catch (error) {
@@ -171,6 +213,21 @@ export default function OnboardingPreferencesSection({
     }
   }
 
+  const setEditorExpanded = (next: boolean) => {
+    setIsEditorExpanded(next)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(collapsePreferenceKey, String(next))
+    }
+  }
+
+  const genrePreview = prefs.preferred_genres.slice(0, 2).map((genre) => GENRE_LABELS[genre])
+  const vibePreview = prefs.preferred_vibes.slice(0, 2).map((vibe) => VIBE_LABELS[vibe])
+  const shouldShowCompactOnly = !loading && !isEditorExpanded
+  const summaryLastUpdated =
+    updatedAt && !Number.isNaN(new Date(updatedAt).getTime())
+      ? new Date(updatedAt).toLocaleDateString()
+      : null
+
   return (
     <div className="bg-gray-900 rounded-xl mb-6 border border-gray-800" style={{ padding: '20px 24px 24px 24px' }}>
       <div className="flex items-center justify-between gap-3" style={{ marginBottom: '12px' }}>
@@ -179,17 +236,63 @@ export default function OnboardingPreferencesSection({
         </h2>
         <span className="text-xs text-gray-400">{selectedCount} selected</span>
       </div>
-      <p className="text-sm text-gray-500 mb-4">
-        Pick 3-5 options for better Explore and recommendation ordering.
-      </p>
+      {shouldShowCompactOnly ? null : (
+        <p className="text-sm text-gray-500 mb-4">
+          Pick 3-5 options for better Explore and recommendation ordering.
+        </p>
+      )}
 
       {loading ? (
         <p className="text-sm text-gray-400 inline-flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" />
           Loading preferences...
         </p>
+      ) : shouldShowCompactOnly ? (
+        <div className="rounded-lg border border-gray-800 bg-black/20 px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-gray-300">
+                {hasSelections ? `${selectedCount} preferences selected` : 'No preferences selected yet'}
+              </p>
+              {genrePreview.length || vibePreview.length ? (
+                <p className="mt-1 text-xs text-gray-500">
+                  {genrePreview.length ? `Genres: ${genrePreview.join(', ')}` : ''}
+                  {genrePreview.length && vibePreview.length ? ' • ' : ''}
+                  {vibePreview.length ? `Vibes: ${vibePreview.join(', ')}` : ''}
+                </p>
+              ) : null}
+              {summaryLastUpdated ? (
+                <p className="mt-1 text-xs text-gray-500">Updated {summaryLastUpdated}</p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditorExpanded(true)}
+              aria-expanded={false}
+              aria-controls="onboarding-preferences-editor"
+              className="min-h-10 rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:border-gray-600 hover:text-white"
+            >
+              Edit preferences
+            </button>
+          </div>
+        </div>
       ) : (
         <>
+          {!isOnboardingMode ? (
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => setEditorExpanded(false)}
+                aria-expanded
+                aria-controls="onboarding-preferences-editor"
+                className="min-h-10 rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:border-gray-600 hover:text-white"
+              >
+                Collapse editor
+              </button>
+            </div>
+          ) : null}
+
+          <div id="onboarding-preferences-editor">
           <div className="mb-4">
             <p className="text-xs text-gray-400 mb-2">Genres</p>
             <div className="flex items-center gap-2 flex-wrap">
@@ -200,7 +303,7 @@ export default function OnboardingPreferencesSection({
                     key={genre}
                     type="button"
                     onClick={() => toggleGenre(genre)}
-                    className={`text-xs px-2.5 py-1.5 rounded border ${
+                    className={`min-h-9 text-xs px-2.5 py-1.5 rounded border ${
                       active ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
                     }`}
                   >
@@ -221,7 +324,7 @@ export default function OnboardingPreferencesSection({
                     key={vibe}
                     type="button"
                     onClick={() => toggleVibe(vibe)}
-                    className={`text-xs px-2.5 py-1.5 rounded border ${
+                    className={`min-h-9 text-xs px-2.5 py-1.5 rounded border ${
                       active ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
                     }`}
                   >
@@ -237,7 +340,7 @@ export default function OnboardingPreferencesSection({
               type="button"
               onClick={() => save(true)}
               disabled={saving || (!edited && !!prefs.onboarding_completed_at)}
-              className="text-xs px-3 py-1.5 rounded border border-neon-green text-neon-green disabled:opacity-70"
+              className="min-h-10 text-xs px-3 py-1.5 rounded border border-neon-green text-neon-green disabled:opacity-70"
             >
               {saving ? 'Saving...' : isOnboardingMode ? 'Save & continue' : 'Save preferences'}
             </button>
@@ -246,11 +349,12 @@ export default function OnboardingPreferencesSection({
                 type="button"
                 onClick={() => save(false)}
                 disabled={saving}
-                className="text-xs px-3 py-1.5 rounded border border-gray-700 text-gray-300"
+                className="min-h-10 text-xs px-3 py-1.5 rounded border border-gray-700 text-gray-300"
               >
                 Skip for now
               </button>
             ) : null}
+          </div>
           </div>
         </>
       )}
