@@ -91,7 +91,7 @@ type ProjectAccessSearchResult = {
 }
 
 const COMPACT_DARK_SELECT_CLASS =
-  'h-9 min-w-[110px] w-auto shrink-0 appearance-none rounded-md border border-gray-700 bg-gray-900 px-2 pr-7 text-xs text-gray-100 shadow-none transition focus:border-neon-green focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+  'h-9 min-w-[116px] w-auto shrink-0 appearance-none rounded-md border border-gray-700 bg-gray-900 px-2.5 pr-8 text-sm text-gray-100 shadow-none transition focus:border-neon-green focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
 const COMPACT_DARK_SELECT_STYLE = {
   WebkitAppearance: 'none' as const,
   appearance: 'none' as const,
@@ -101,7 +101,7 @@ const COMPACT_DARK_SELECT_STYLE = {
   colorScheme: 'dark' as const,
 }
 const COMPACT_DANGER_ACTION_BUTTON_CLASS =
-  'ui-pressable inline-flex h-9 min-w-[96px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-red-400/50 bg-red-500/10 px-3 text-xs font-medium text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
+  'ui-pressable inline-flex h-9 min-w-[116px] w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-red-400/50 bg-red-500/10 px-3 text-sm font-semibold text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -2404,7 +2404,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-base font-bold text-white leading-6">Visibility</div>
+                        <div
+                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800 }}
+                        >
+                          Visibility
+                        </div>
                         <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
@@ -2465,7 +2470,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-base font-bold text-white leading-6">Project Sharing</div>
+                        <div
+                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800 }}
+                        >
+                          Project Sharing
+                        </div>
                         <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
                           Allow others to view this project via share link.
                         </div>
@@ -2522,7 +2532,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-base font-bold text-white leading-6">Allow Downloads</div>
+                        <div
+                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 800 }}
+                        >
+                          Allow Downloads
+                        </div>
                         <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
                           Users can download tracks from this project.
                         </div>
@@ -2766,15 +2781,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     {getGrantDisplayName(grant)}
                                   </button>
                                   <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-sm capitalize text-gray-300">
+                                    <span className="text-sm font-semibold capitalize text-gray-300">
                                       {grant.role || 'viewer'}
                                     </span>
                                   </div>
                                 </div>
                               </div>
-                              <div className="mt-3.5 flex w-full flex-wrap items-center gap-x-3 gap-y-2">
+                              <div className="mt-3.5 flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-3">
                                 <div className="relative shrink-0">
-                                  <div className="pointer-events-none inline-flex h-9 min-w-[110px] items-center rounded-md border border-gray-700 bg-gray-900 px-2 pr-7 text-xs text-gray-100">
+                                  <div className="pointer-events-none inline-flex h-9 min-w-[116px] items-center rounded-md border border-gray-700 bg-gray-900 px-2.5 pr-8 text-sm text-gray-100">
                                     Roles
                                   </div>
                                   <select
@@ -2797,11 +2812,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     <option value="contributor">Contributor</option>
                                   </select>
                                   <ChevronDown
-                                    className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+                                    className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
                                     aria-hidden
                                   />
                                 </div>
-                                <div className="ml-auto">
+                                <div className="flex justify-end sm:ml-auto">
                                   <button
                                     type="button"
                                     onClick={() => handleRevokeProjectAccess(grant.user_id)}
