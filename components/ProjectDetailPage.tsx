@@ -129,6 +129,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [projectAccessRequests, setProjectAccessRequests] = useState<ProjectAccessRequest[]>([])
   const [projectAccessRequestsLoading, setProjectAccessRequestsLoading] = useState(false)
   const [projectAccessRoleUpdatingUserId, setProjectAccessRoleUpdatingUserId] = useState<string | null>(null)
+  const [projectAccessExpirySelections, setProjectAccessExpirySelections] = useState<
+    Record<string, ProjectAccessExpiryPreset>
+  >({})
   const roleViewTrackedRef = useRef<string | null>(null)
   const [blockedPrivateAccess, setBlockedPrivateAccess] = useState<{
     projectId: string
@@ -424,6 +427,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to load private access list')
       setProjectAccessGrants(result.grants || [])
+      setProjectAccessExpirySelections((current) => {
+        const next: Record<string, ProjectAccessExpiryPreset> = {}
+        const grants = Array.isArray(result.grants) ? (result.grants as ProjectAccessGrant[]) : []
+        for (const grant of grants) {
+          const existingChoice = current[grant.user_id]
+          if (existingChoice) next[grant.user_id] = existingChoice
+        }
+        return next
+      })
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('project_access_event', {
@@ -885,26 +897,34 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     }
   }
 
-  const handleRenewProjectAccess = async (targetUserId: string, hours: 24 | 168) => {
+  const handleSetProjectAccessExpiry = async (
+    targetUserId: string,
+    expiryPreset: ProjectAccessExpiryPreset
+  ) => {
     if (!project?.id || !isCreator) return
     setProjectAccessSaving(true)
     try {
       const token = await getAccessToken()
       if (!token) throw new Error('Not authenticated')
+      const body: Record<string, unknown> = {
+        project_id: project.id,
+        user_id: targetUserId,
+      }
+      if (expiryPreset === 'never') {
+        body.expires_at = null
+      } else {
+        body.expires_in_hours = expiryPreset === '24h' ? 24 : 24 * 7
+      }
       const response = await fetch('/api/project-access', {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          project_id: project.id,
-          user_id: targetUserId,
-          expires_in_hours: hours,
-        }),
+        body: JSON.stringify(body),
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Failed to renew access')
+      if (!response.ok) throw new Error(result.error || 'Failed to update access expiry')
       await loadProjectAccessGrants(project.id)
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
@@ -920,11 +940,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           })
         )
       }
-      setProjectAccessInlineState({ tone: 'success', message: `Access renewed for ${hours === 24 ? '24h' : '7d'}.` })
+      setProjectAccessInlineState({
+        tone: 'success',
+        message:
+          expiryPreset === 'never'
+            ? 'Access expiry updated to no expiry.'
+            : `Access expiry updated to ${expiryPreset}.`,
+      })
     } catch (error) {
-      console.error('Error renewing project access:', error)
-      setProjectAccessInlineState({ tone: 'error', message: 'Failed to renew access.' })
-      showToast(error instanceof Error ? error.message : 'Failed to renew access', 'error')
+      console.error('Error updating project access expiry:', error)
+      setProjectAccessInlineState({ tone: 'error', message: 'Failed to update access expiry.' })
+      showToast(error instanceof Error ? error.message : 'Failed to update access expiry', 'error')
     } finally {
       setProjectAccessSaving(false)
     }
@@ -2115,6 +2141,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     return `Expires in ${remainingDays}d`
   }
 
+  const deriveGrantExpiryPreset = (grant: ProjectAccessGrant): ProjectAccessExpiryPreset => {
+    if (!grant.expires_at) return 'never'
+    const expiresAtMs = new Date(grant.expires_at).getTime()
+    if (!Number.isFinite(expiresAtMs)) return 'never'
+    const remainingMs = expiresAtMs - Date.now()
+    if (remainingMs <= 0) return '24h'
+    const remainingHours = Math.round(remainingMs / (60 * 60 * 1000))
+    return remainingHours <= 36 ? '24h' : '7d'
+  }
+
   const getGrantDisplayName = (grant: ProjectAccessGrant): string => {
     const username = typeof grant.username === 'string' ? grant.username.trim() : ''
     if (username) return username
@@ -2337,7 +2373,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold leading-tight text-white">Visibility</div>
+                        <div className="text-sm font-semibold tracking-tight leading-tight text-white">Visibility</div>
                         <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
@@ -2388,7 +2424,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold leading-tight text-white">Project Sharing</div>
+                        <div className="text-sm font-semibold tracking-tight leading-tight text-white">Project Sharing</div>
                         <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Allow others to view this project via share link.
                         </div>
@@ -2445,7 +2481,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold leading-tight text-white">Allow Downloads</div>
+                        <div className="text-sm font-semibold tracking-tight leading-tight text-white">Allow Downloads</div>
                         <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Users can download tracks from this project.
                         </div>
@@ -2745,34 +2781,50 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="col-span-2 min-h-11 rounded-md border border-gray-700 bg-black px-2.5 py-1.5 text-xs text-white sm:col-span-1"
+                                  className="col-span-2 min-h-11 rounded-md border border-gray-700 bg-black/80 px-2.5 py-1.5 text-xs text-white sm:col-span-1"
                                   aria-label={`Role for ${getGrantDisplayName(grant)}`}
                                 >
                                   <option value="viewer">Viewer</option>
                                   <option value="commenter">Commenter</option>
                                   <option value="contributor">Contributor</option>
                                 </select>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRenewProjectAccess(grant.user_id, 24)}
+                                <select
+                                  value={
+                                    projectAccessExpirySelections[grant.user_id] || deriveGrantExpiryPreset(grant)
+                                  }
+                                  onChange={(event) => {
+                                    const next = event.target.value as ProjectAccessExpiryPreset
+                                    setProjectAccessExpirySelections((current) => ({
+                                      ...current,
+                                      [grant.user_id]: next,
+                                    }))
+                                  }}
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="ui-pressable min-h-11 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
-                                  aria-label={`Extend access for ${getGrantDisplayName(grant)} by 24 hours`}
+                                  className="min-h-11 rounded-md border border-gray-700 bg-black/80 px-2.5 py-1.5 text-xs text-white"
+                                  aria-label={`Expiry for ${getGrantDisplayName(grant)}`}
                                 >
-                                  +24h
-                                </button>
+                                  <option value="never">No expiry</option>
+                                  <option value="24h">24h</option>
+                                  <option value="7d">7d</option>
+                                </select>
                                 <button
                                   type="button"
-                                  onClick={() => handleRenewProjectAccess(grant.user_id, 168)}
+                                  onClick={() =>
+                                    handleSetProjectAccessExpiry(
+                                      grant.user_id,
+                                      projectAccessExpirySelections[grant.user_id] ||
+                                        deriveGrantExpiryPreset(grant)
+                                    )
+                                  }
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="ui-pressable min-h-11 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
-                                  aria-label={`Extend access for ${getGrantDisplayName(grant)} by 7 days`}
+                                  className="ui-pressable min-h-11 rounded-md border border-gray-700 bg-black/70 px-2.5 py-1.5 text-xs text-gray-100 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                                  aria-label={`Set expiry for ${getGrantDisplayName(grant)}`}
                                 >
-                                  +7d
+                                  Set expiry
                                 </button>
                                 <button
                                   type="button"
@@ -2780,7 +2832,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="ui-pressable min-h-11 rounded-md border border-red-400/40 px-2.5 py-1.5 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
+                                  className="ui-pressable min-h-11 rounded-md border border-red-400/40 bg-red-500/5 px-2.5 py-1.5 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
                                   aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
                                 >
                                   Remove
