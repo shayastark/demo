@@ -2396,8 +2396,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
               <div className="mt-4 space-y-4">
                 <section className="rounded-lg bg-black/20 p-3 sm:p-4">
-                  <h4 className="text-sm font-semibold tracking-tight text-white">Visibility &amp; Sharing</h4>
-                  <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
+                  <h4 className="text-base font-bold leading-6 tracking-tight text-white">Visibility &amp; Sharing</h4>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-400">
                     Configure who can discover this project and whether viewers can access shared links or downloads.
                   </p>
 
@@ -2405,16 +2405,16 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 800 }}
+                          className="text-base font-semibold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 600 }}
                         >
                           Visibility
                         </div>
-                        <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-2.5 text-sm text-gray-400 leading-relaxed">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
-                      <div className="relative shrink-0">
+                      <div className="relative shrink-0 pr-1">
                         <select
                           value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
                           onChange={async (event) => {
@@ -2471,119 +2471,123 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 800 }}
+                          className="text-base font-semibold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 600 }}
                         >
                           Project Sharing
                         </div>
-                        <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-2.5 text-sm text-gray-400 leading-relaxed">
                           Allow others to view this project via share link.
                         </div>
                       </div>
-                      <button
-                        onClick={async () => {
-                          const newValue = !(project.sharing_enabled ?? true)
-                          const currentVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
-                          const nextVisibility: ProjectVisibility = newValue
-                            ? currentVisibility === 'private'
-                              ? 'unlisted'
-                              : currentVisibility
-                            : 'private'
-                          const { error } = await apiRequest('/api/projects', {
-                            method: 'PATCH',
-                            body: { id: project.id, sharing_enabled: newValue, visibility: nextVisibility },
-                            getAccessToken,
-                          })
-                          if (error) {
-                            showToast('Failed to update sharing setting', 'error')
-                          } else {
-                            setProject({ ...project, sharing_enabled: newValue, visibility: nextVisibility })
-                            showToast(`Sharing ${newValue ? 'enabled' : 'disabled'}`, 'success')
-                          }
-                        }}
-                        style={{
-                          position: 'relative',
-                          width: '56px',
-                          height: '32px',
-                          borderRadius: '16px',
-                          backgroundColor: (project.sharing_enabled ?? true) ? '#39FF14' : '#4B5563',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s',
-                          flexShrink: 0,
-                        }}
-                        aria-label="Toggle project sharing"
-                      >
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '4px',
-                            left: (project.sharing_enabled ?? true) ? '28px' : '4px',
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '12px',
-                            backgroundColor: (project.sharing_enabled ?? true) ? '#000' : '#fff',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                            transition: 'left 0.2s, background-color 0.2s',
+                      <div className="shrink-0 pr-1">
+                        <button
+                          onClick={async () => {
+                            const newValue = !(project.sharing_enabled ?? true)
+                            const currentVisibility = resolveProjectVisibility(project.visibility, project.sharing_enabled)
+                            const nextVisibility: ProjectVisibility = newValue
+                              ? currentVisibility === 'private'
+                                ? 'unlisted'
+                                : currentVisibility
+                              : 'private'
+                            const { error } = await apiRequest('/api/projects', {
+                              method: 'PATCH',
+                              body: { id: project.id, sharing_enabled: newValue, visibility: nextVisibility },
+                              getAccessToken,
+                            })
+                            if (error) {
+                              showToast('Failed to update sharing setting', 'error')
+                            } else {
+                              setProject({ ...project, sharing_enabled: newValue, visibility: nextVisibility })
+                              showToast(`Sharing ${newValue ? 'enabled' : 'disabled'}`, 'success')
+                            }
                           }}
-                        />
-                      </button>
+                          style={{
+                            position: 'relative',
+                            width: '56px',
+                            height: '32px',
+                            borderRadius: '16px',
+                            backgroundColor: (project.sharing_enabled ?? true) ? '#39FF14' : '#4B5563',
+                            border: 'none',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s',
+                            flexShrink: 0,
+                          }}
+                          aria-label="Toggle project sharing"
+                        >
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              left: (project.sharing_enabled ?? true) ? '28px' : '4px',
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '12px',
+                              backgroundColor: (project.sharing_enabled ?? true) ? '#000' : '#fff',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                              transition: 'left 0.2s, background-color 0.2s',
+                            }}
+                          />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3.5">
                       <div className="min-w-0 flex-1 pr-1">
                         <div
-                          className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
-                          style={{ fontWeight: 800 }}
+                          className="text-base font-semibold leading-6 tracking-tight text-white"
+                          style={{ fontWeight: 600 }}
                         >
                           Allow Downloads
                         </div>
-                        <div className="mt-1.5 text-sm text-gray-400 leading-relaxed">
+                        <div className="mt-2.5 text-sm text-gray-400 leading-relaxed">
                           Users can download tracks from this project.
                         </div>
                       </div>
-                      <button
-                        onClick={async () => {
-                          const newValue = !project.allow_downloads
-                          const { error } = await apiRequest('/api/projects', {
-                            method: 'PATCH',
-                            body: { id: project.id, allow_downloads: newValue },
-                            getAccessToken,
-                          })
-                          if (error) {
-                            showToast('Failed to update download setting', 'error')
-                          } else {
-                            setProject({ ...project, allow_downloads: newValue })
-                            showToast(`Downloads ${newValue ? 'enabled' : 'disabled'}`, 'success')
-                          }
-                        }}
-                        style={{
-                          position: 'relative',
-                          width: '56px',
-                          height: '32px',
-                          borderRadius: '16px',
-                          backgroundColor: project.allow_downloads ? '#39FF14' : '#4B5563',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s',
-                          flexShrink: 0,
-                        }}
-                        aria-label="Toggle downloads"
-                      >
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '4px',
-                            left: project.allow_downloads ? '28px' : '4px',
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '12px',
-                            backgroundColor: project.allow_downloads ? '#000' : '#fff',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                            transition: 'left 0.2s, background-color 0.2s',
+                      <div className="shrink-0 pr-1">
+                        <button
+                          onClick={async () => {
+                            const newValue = !project.allow_downloads
+                            const { error } = await apiRequest('/api/projects', {
+                              method: 'PATCH',
+                              body: { id: project.id, allow_downloads: newValue },
+                              getAccessToken,
+                            })
+                            if (error) {
+                              showToast('Failed to update download setting', 'error')
+                            } else {
+                              setProject({ ...project, allow_downloads: newValue })
+                              showToast(`Downloads ${newValue ? 'enabled' : 'disabled'}`, 'success')
+                            }
                           }}
-                        />
-                      </button>
+                          style={{
+                            position: 'relative',
+                            width: '56px',
+                            height: '32px',
+                            borderRadius: '16px',
+                            backgroundColor: project.allow_downloads ? '#39FF14' : '#4B5563',
+                            border: 'none',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s',
+                            flexShrink: 0,
+                          }}
+                          aria-label="Toggle downloads"
+                        >
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              left: project.allow_downloads ? '28px' : '4px',
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '12px',
+                              backgroundColor: project.allow_downloads ? '#000' : '#fff',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                              transition: 'left 0.2s, background-color 0.2s',
+                            }}
+                          />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </section>
