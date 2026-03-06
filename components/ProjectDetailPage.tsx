@@ -604,7 +604,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     if (!identifier) {
       setProjectAccessInlineState({
         tone: 'error',
-        message: 'Enter a username, email, or user ID.',
+        message: 'Enter a username or email.',
       })
       return
     }
@@ -683,9 +683,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         } else if (failureReason === 'self_grant') {
           setProjectAccessInlineState({ tone: 'error', message: 'You already have access as the project creator.' })
         } else if (failureReason === 'ambiguous_match') {
-          setProjectAccessInlineState({ tone: 'error', message: 'That identifier matched multiple users. Use email or user ID.' })
+          setProjectAccessInlineState({ tone: 'error', message: 'That identifier matched multiple users. Use a unique username or email.' })
+        } else if (failureReason === 'already_granted') {
+          setProjectAccessInlineState({ tone: 'error', message: 'That user already has access.' })
         } else if (failureReason === 'invalid_expiry') {
           setProjectAccessInlineState({ tone: 'error', message: result.error || 'Invalid expiry value.' })
+        } else if (failureReason === 'schema_mismatch') {
+          setProjectAccessInlineState({ tone: 'error', message: 'Private access is not fully configured in this environment. Run latest migrations.' })
         } else {
           setProjectAccessInlineState({
             tone: 'error',
@@ -2440,13 +2444,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <div style={{ borderTop: '1px solid #374151', paddingTop: '24px' }}>
                   <div className="font-medium text-white text-base">Private Access</div>
                   <div className="text-sm text-gray-400" style={{ marginTop: '6px', marginBottom: '12px' }}>
-                    Grant view access by username, email, or user ID.
+                    Grant access by username or email.
                   </div>
                   <div className="mb-3">
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Search username (or type username/email/user_id)"
+                        placeholder="Search username or type username/email"
                         value={projectAccessIdentifierInput}
                         onChange={(event) => {
                           const value = event.target.value
@@ -2459,7 +2463,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           }
                         }}
                         className="flex-1 rounded-lg border border-gray-700 bg-black px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-green"
-                        aria-label="Grant access by username email or user id"
+                        aria-label="Grant access by username or email"
                       />
                       <button
                         type="button"

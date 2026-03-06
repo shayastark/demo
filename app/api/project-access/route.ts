@@ -78,6 +78,62 @@ async function resolveTargetUserIdByIdentifier(identifier: string) {
   return { identifierType, resolution }
 }
 
+function mapProjectAccessKnownError(
+  error: unknown,
+  context: { identifierType?: string } = {}
+): { status: number; body: Record<string, unknown> } | null {
+  const code = typeof (error as { code?: unknown })?.code === 'string' ? (error as { code: string }).code : null
+  const message =
+    typeof (error as { message?: unknown })?.message === 'string'
+      ? (error as { message: string }).message
+      : null
+
+  if (code === '23505') {
+    return {
+      status: 409,
+      body: {
+        error: 'User already has project access',
+        code: 'already_granted',
+        identifier_type: context.identifierType || null,
+      },
+    }
+  }
+
+  if (code === '22P02') {
+    return {
+      status: 400,
+      body: {
+        error: 'Identifier is invalid',
+        code: 'invalid_identifier',
+        identifier_type: context.identifierType || null,
+      },
+    }
+  }
+
+  if (code === '42703') {
+    return {
+      status: 500,
+      body: {
+        error: 'Project access schema is out of date. Run the latest migrations and retry.',
+        code: 'schema_mismatch',
+      },
+    }
+  }
+
+  if (message && /multiple/i.test(message) && /row/i.test(message)) {
+    return {
+      status: 409,
+      body: {
+        error: 'Identifier matches multiple users',
+        code: 'ambiguous_match',
+        identifier_type: context.identifierType || null,
+      },
+    }
+  }
+
+  return null
+}
+
 function parseGrantUpdateInput(value: unknown): { project_id: string; user_id: string } | null {
   if (!value || typeof value !== 'object') return null
   const projectId = (value as Record<string, unknown>).project_id
@@ -153,6 +209,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let identifierTypeForError: string | undefined
   try {
     const currentUser = await getRequiredCurrentUser(request)
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -188,6 +245,7 @@ export async function POST(request: NextRequest) {
     }
     const identifierResult = await resolveTargetUserIdByIdentifier(parsed.identifier)
     const { identifierType, resolution } = identifierResult
+    identifierTypeForError = identifierType
     if (resolution.status === 'not_found') {
       return NextResponse.json(
         { error: 'User not found', code: 'user_not_found', identifier_type: identifierType },
@@ -225,13 +283,22 @@ export async function POST(request: NextRequest) {
     }
     const targetRole = resolveProjectAccessRole(rawRole)
 
-    const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
+    const { data: existingGrantRows, error: existingGrantError } = await supabaseAdmin
       .from('project_access_grants')
       .select('id, expires_at, role')
       .eq('project_id', parsed.project_id)
       .eq('user_id', resolvedUserId)
-      .maybeSingle()
+      .order('created_at', { ascending: false })
+      .limit(2)
     if (existingGrantError) throw existingGrantError
+    const existingGrant = Array.isArray(existingGrantRows) && existingGrantRows.length > 0 ? existingGrantRows[0] : null
+    if (Array.isArray(existingGrantRows) && existingGrantRows.length > 1) {
+      console.warn('Multiple project access grants found for same project/user pair', {
+        project_id: parsed.project_id,
+        user_id: resolvedUserId,
+        duplicate_count: existingGrantRows.length,
+      })
+    }
 
     const mutationAction = getProjectAccessGrantMutationAction({
       hasExistingGrant: !!existingGrant,
@@ -240,6 +307,17 @@ export async function POST(request: NextRequest) {
     })
     const roleChanged =
       !!existingGrant && resolveProjectAccessRole(existingGrant.role) !== targetRole
+
+    if (mutationAction === 'unchanged' && !roleChanged) {
+      return NextResponse.json(
+        {
+          error: 'User already has project access',
+          code: 'already_granted',
+          identifier_type: identifierType,
+        },
+        { status: 409 }
+      )
+    }
 
     if (mutationAction === 'create') {
       const { error } = await supabaseAdmin
@@ -305,6 +383,10 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in project access POST:', error)
+    const mapped = mapProjectAccessKnownError(error, { identifierType: identifierTypeForError })
+    if (mapped) {
+      return NextResponse.json(mapped.body, { status: mapped.status })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
