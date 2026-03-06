@@ -2373,7 +2373,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold tracking-tight leading-tight text-white">Visibility</div>
+                        <div className="text-sm font-semibold tracking-tight text-white">Visibility</div>
                         <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
@@ -2424,7 +2424,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold tracking-tight leading-tight text-white">Project Sharing</div>
+                        <div className="text-sm font-semibold tracking-tight text-white">Project Sharing</div>
                         <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Allow others to view this project via share link.
                         </div>
@@ -2481,7 +2481,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
                       <div className="min-w-0 flex-1 pr-1">
-                        <div className="text-sm font-semibold tracking-tight leading-tight text-white">Allow Downloads</div>
+                        <div className="text-sm font-semibold tracking-tight text-white">Allow Downloads</div>
                         <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Users can download tracks from this project.
                         </div>
@@ -2769,7 +2769,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   </div>
                                 </div>
                               </div>
-                              <div className="mt-3.5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                              <div className="mt-3.5 flex flex-wrap items-center gap-2">
                                 <select
                                   value={grant.role || 'viewer'}
                                   onChange={(event) =>
@@ -2781,7 +2781,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="col-span-2 min-h-11 rounded-md border border-gray-700 bg-black/80 px-2.5 py-1.5 text-xs text-white sm:col-span-1"
+                                  className="min-h-9 rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1.5 pr-6 text-xs text-gray-100 appearance-none"
+                                  style={{
+                                    WebkitAppearance: 'none',
+                                    appearance: 'none',
+                                    backgroundColor: '#111827',
+                                    color: '#f3f4f6',
+                                    borderColor: '#374151',
+                                  }}
                                   aria-label={`Role for ${getGrantDisplayName(grant)}`}
                                 >
                                   <option value="viewer">Viewer</option>
@@ -2802,7 +2809,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="min-h-11 rounded-md border border-gray-700 bg-black/80 px-2.5 py-1.5 text-xs text-white"
+                                  className="min-h-9 rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1.5 pr-6 text-xs text-gray-100 appearance-none"
+                                  style={{
+                                    WebkitAppearance: 'none',
+                                    appearance: 'none',
+                                    backgroundColor: '#111827',
+                                    color: '#f3f4f6',
+                                    borderColor: '#374151',
+                                  }}
                                   aria-label={`Expiry for ${getGrantDisplayName(grant)}`}
                                 >
                                   <option value="never">No expiry</option>
@@ -2821,7 +2835,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="ui-pressable min-h-11 rounded-md border border-gray-700 bg-black/70 px-2.5 py-1.5 text-xs text-gray-100 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                                  className="ui-pressable min-h-9 rounded-md border border-gray-700 bg-gray-900/90 px-2.5 py-1.5 text-xs text-gray-100 hover:border-gray-500 hover:text-white disabled:opacity-50"
                                   aria-label={`Set expiry for ${getGrantDisplayName(grant)}`}
                                 >
                                   Set expiry
@@ -2832,7 +2846,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="ui-pressable min-h-11 rounded-md border border-red-400/40 bg-red-500/5 px-2.5 py-1.5 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
+                                  className="ui-pressable min-h-9 rounded-md border border-red-400/40 bg-red-500/10 px-2.5 py-1.5 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
                                   aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
                                 >
                                   Remove
