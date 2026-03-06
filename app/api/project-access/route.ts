@@ -244,18 +244,41 @@ async function getProject(projectId: string) {
 
 async function loadUsersForProjectAccess(userIds: string[]) {
   if (!userIds.length) {
-    return [] as Array<{ id: string; username: string | null; email: string | null }>
+    return [] as Array<{ id: string; username: string | null; email: string | null; avatar_url: string | null }>
   }
 
   const full = await supabaseAdmin
     .from('users')
-    .select('id, username, email')
+    .select('id, username, email, avatar_url')
     .in('id', userIds)
   if (!full.error) {
-    return (full.data || []) as Array<{ id: string; username: string | null; email: string | null }>
+    return (full.data || []) as Array<{
+      id: string
+      username: string | null
+      email: string | null
+      avatar_url: string | null
+    }>
   }
 
   if (!isMissingColumnError(full.error)) throw full.error
+
+  const usernameEmail = await supabaseAdmin
+    .from('users')
+    .select('id, username, email')
+    .in('id', userIds)
+  if (!usernameEmail.error) {
+    return ((usernameEmail.data || []) as Array<{
+      id: string
+      username: string | null
+      email: string | null
+    }>).map((user) => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatar_url: null,
+    }))
+  }
+  if (!isMissingColumnError(usernameEmail.error)) throw usernameEmail.error
 
   const usernameOnly = await supabaseAdmin
     .from('users')
@@ -266,6 +289,7 @@ async function loadUsersForProjectAccess(userIds: string[]) {
       id: user.id,
       username: user.username,
       email: null,
+      avatar_url: null,
     }))
   }
   if (!isMissingColumnError(usernameOnly.error)) throw usernameOnly.error
@@ -279,6 +303,7 @@ async function loadUsersForProjectAccess(userIds: string[]) {
       id: user.id,
       username: null,
       email: user.email,
+      avatar_url: null,
     }))
   }
   if (!isMissingColumnError(emailOnly.error)) throw emailOnly.error
@@ -289,6 +314,7 @@ async function loadUsersForProjectAccess(userIds: string[]) {
     id: user.id,
     username: null,
     email: null,
+    avatar_url: null,
   }))
 }
 
@@ -460,9 +486,14 @@ export async function GET(request: NextRequest) {
     const userIds = Array.from(new Set(grants.map((grant) => grant.user_id)))
     const users = await loadUsersForProjectAccess(userIds)
 
-    const usersById = (users || []).reduce<Record<string, { username: string | null; email: string | null }>>(
-      (acc, user) => {
-        acc[user.id] = { username: user.username, email: user.email }
+    const usersById = (users || []).reduce<
+      Record<string, { username: string | null; email: string | null; avatar_url: string | null }>
+    >((acc, user) => {
+        acc[user.id] = {
+          username: user.username,
+          email: user.email,
+          avatar_url: user.avatar_url,
+        }
         return acc
       },
       {}
@@ -473,6 +504,7 @@ export async function GET(request: NextRequest) {
         ...grant,
         username: usersById[grant.user_id]?.username || null,
         email: usersById[grant.user_id]?.email || null,
+        avatar_url: usersById[grant.user_id]?.avatar_url || null,
         is_expired: schemaDiagnostics.support.hasExpiresAt
           ? !isProjectAccessGrantActive((grant as { expires_at?: string | null }).expires_at || null)
           : false,

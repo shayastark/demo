@@ -42,6 +42,7 @@ type ProjectAccessGrant = {
   role?: 'viewer' | 'commenter' | 'contributor'
   username?: string | null
   email?: string | null
+  avatar_url?: string | null
 }
 
 type ProjectAccessRequest = {
@@ -2086,6 +2087,24 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     return `Expires in ${remainingDays}d`
   }
 
+  const getGrantDisplayName = (grant: ProjectAccessGrant): string => {
+    const username = typeof grant.username === 'string' ? grant.username.trim() : ''
+    if (username) return username
+    const email = typeof grant.email === 'string' ? grant.email.trim() : ''
+    if (email) return email
+    return 'Invited member'
+  }
+
+  const getGrantInitial = (grant: ProjectAccessGrant): string => {
+    const name = getGrantDisplayName(grant)
+    return name.slice(0, 1).toUpperCase() || 'U'
+  }
+
+  const openGrantCreatorProfile = (grant: ProjectAccessGrant) => {
+    setCreatorId(grant.user_id)
+    setShowCreatorModal(true)
+  }
+
   return (
     <div className="min-h-screen bg-black text-white relative">
       {/* Subtle background gradient */}
@@ -2566,9 +2585,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   </div>
                   {projectAccessInlineState ? (
                     <p
-                      className={`text-xs mb-2 ${
-                        projectAccessInlineState.tone === 'success' ? 'text-neon-green' : 'text-red-400'
+                      className={`mb-2 rounded-md border px-2.5 py-2 text-xs ${
+                        projectAccessInlineState.tone === 'success'
+                          ? 'border-neon-green/40 bg-neon-green/5 text-neon-green'
+                          : 'border-red-400/40 bg-red-500/10 text-red-300'
                       }`}
+                      role="status"
+                      aria-live="polite"
                     >
                       {projectAccessInlineState.message}
                     </p>
@@ -2580,16 +2603,41 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   ) : (
                     <ul className="space-y-2">
                       {projectAccessGrants.map((grant) => (
-                        <li key={grant.id} className="flex flex-col gap-2 rounded-lg border border-gray-800/80 bg-black/20 p-2.5 text-sm sm:flex-row sm:items-center sm:justify-between">
-                          <div className="min-w-0">
-                            <p className="text-white truncate">
-                              {grant.username || grant.email || grant.user_id}
-                            </p>
-                            <p className="text-gray-500 text-xs truncate">
-                              {grant.user_id} • {(grant.role || 'viewer')} • {formatGrantExpiryLabel(grant)}
-                            </p>
+                        <li key={grant.id} className="rounded-xl border border-gray-800/80 bg-gray-950/70 p-3">
+                          <div className="flex items-start gap-3">
+                            <button
+                              type="button"
+                              onClick={() => openGrantCreatorProfile(grant)}
+                              className="ui-pressable mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-sm text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
+                              aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
+                            >
+                              {grant.avatar_url ? (
+                                <Image
+                                  src={grant.avatar_url}
+                                  alt={`${getGrantDisplayName(grant)} avatar`}
+                                  width={40}
+                                  height={40}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span aria-hidden>{getGrantInitial(grant)}</span>
+                              )}
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <button
+                                type="button"
+                                onClick={() => openGrantCreatorProfile(grant)}
+                                className="ui-pressable max-w-full truncate text-left text-sm font-medium text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
+                                aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
+                              >
+                                {getGrantDisplayName(grant)}
+                              </button>
+                              <p className="mt-1 text-xs text-gray-400">
+                                {(grant.role || 'viewer')} • {formatGrantExpiryLabel(grant)}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
                             <select
                               value={grant.role || 'viewer'}
                               onChange={(event) =>
@@ -2601,8 +2649,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               disabled={
                                 projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                               }
-                              className="rounded-md border border-gray-700 bg-black px-2 py-1.5 text-xs text-white"
-                              aria-label={`Role for ${grant.username || grant.email || grant.user_id}`}
+                              className="min-h-9 rounded-md border border-gray-700 bg-black px-2.5 py-1.5 text-xs text-white"
+                              aria-label={`Role for ${getGrantDisplayName(grant)}`}
                             >
                               <option value="viewer">Viewer</option>
                               <option value="commenter">Commenter</option>
@@ -2614,8 +2662,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               disabled={
                                 projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                               }
-                              className="ui-pressable min-h-9 rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
-                              aria-label={`Extend access for ${grant.username || grant.user_id} by 24 hours`}
+                              className="ui-pressable min-h-9 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                              aria-label={`Extend access for ${getGrantDisplayName(grant)} by 24 hours`}
                             >
                               +24h
                             </button>
@@ -2625,8 +2673,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               disabled={
                                 projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                               }
-                              className="ui-pressable min-h-9 rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
-                              aria-label={`Extend access for ${grant.username || grant.user_id} by 7 days`}
+                              className="ui-pressable min-h-9 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-50"
+                              aria-label={`Extend access for ${getGrantDisplayName(grant)} by 7 days`}
                             >
                               +7d
                             </button>
@@ -2636,8 +2684,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               disabled={
                                 projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                               }
-                              className="ui-pressable min-h-9 rounded-md border border-red-400/40 px-2 py-1 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
-                              aria-label={`Remove access for ${grant.username || grant.user_id}`}
+                              className="ui-pressable min-h-9 rounded-md border border-red-400/40 px-2.5 py-1.5 text-xs text-red-300 hover:border-red-300/70 hover:text-red-200 disabled:opacity-50"
+                              aria-label={`Remove access for ${getGrantDisplayName(grant)}`}
                             >
                               Remove
                             </button>
