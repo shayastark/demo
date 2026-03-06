@@ -2505,8 +2505,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     Grant access by username or email.
                   </div>
                   <div className="mb-3">
-                    <div className="flex items-start gap-2">
-                      <div className="relative min-w-0 flex-1">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                      <div className="relative min-w-0 z-10">
                         <input
                           type="text"
                           placeholder="Search username or type username/email"
@@ -2546,7 +2546,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   className="ui-pressable appearance-none flex w-full min-w-0 items-center gap-2 rounded-none border-0 border-b border-gray-800/80 bg-gray-950 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-900"
                                   aria-label={`Select ${getSearchCandidatePrimaryLabel(candidate)}`}
                                 >
-                                  <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-[10px] text-gray-300">
+                                  <span
+                                    className="inline-flex flex-shrink-0 items-center justify-center overflow-hidden border border-gray-700 bg-gray-800 text-[10px] text-gray-300"
+                                    style={{
+                                      width: '24px',
+                                      minWidth: '24px',
+                                      maxWidth: '24px',
+                                      height: '24px',
+                                      minHeight: '24px',
+                                      maxHeight: '24px',
+                                      borderRadius: '999px',
+                                      lineHeight: 1,
+                                    }}
+                                  >
                                     {candidate.avatar_url ? (
                                       <img
                                         src={candidate.avatar_url}
@@ -2564,7 +2576,22 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                         }}
                                       />
                                     ) : (
-                                      <span aria-hidden>{getSearchCandidatePrimaryLabel(candidate).slice(0, 1).toUpperCase()}</span>
+                                      <span
+                                        aria-hidden
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          width: '100%',
+                                          height: '100%',
+                                          fontSize: '10px',
+                                          fontWeight: 600,
+                                          textTransform: 'uppercase',
+                                          lineHeight: 1,
+                                        }}
+                                      >
+                                        {getSearchCandidatePrimaryLabel(candidate).slice(0, 1)}
+                                      </span>
                                     )}
                                   </span>
                                   <span className="min-w-0 flex-1">
@@ -2587,7 +2614,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         type="button"
                         onClick={handleGrantProjectAccess}
                         disabled={projectAccessSaving || !projectAccessIdentifierInput.trim()}
-                        className="ui-pressable min-h-10 rounded-lg bg-neon-green px-3.5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+                        className="ui-pressable z-20 min-h-10 flex-shrink-0 self-stretch whitespace-nowrap rounded-lg bg-neon-green px-3.5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
                         aria-label="Grant private project access"
                       >
                         Grant
