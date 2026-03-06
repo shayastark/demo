@@ -539,12 +539,23 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     return candidate.id
   }
 
-  const getSearchCandidateDisplayName = (candidate: ProjectAccessSearchResult): string => {
+  const getSearchCandidatePrimaryLabel = (candidate: ProjectAccessSearchResult): string => {
     const username = typeof candidate.username === 'string' ? candidate.username.trim() : ''
     if (username) return username
     const email = typeof candidate.email === 'string' ? candidate.email.trim() : ''
+    if (email.includes('@')) {
+      const local = email.split('@')[0]?.trim()
+      if (local) return local
+    }
     if (email) return email
     return `User ${candidate.id.slice(0, 8)}`
+  }
+
+  const getSearchCandidateSecondaryLabel = (candidate: ProjectAccessSearchResult): string | null => {
+    const username = typeof candidate.username === 'string' ? candidate.username.trim() : ''
+    const email = typeof candidate.email === 'string' ? candidate.email.trim() : ''
+    if (username && email) return email
+    return null
   }
 
   useEffect(() => {
@@ -2514,7 +2525,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           aria-label="Grant access by username or email"
                         />
                         {!projectAccessSelectedUser && projectAccessSearchResults.length > 0 ? (
-                          <ul className="absolute left-0 right-0 top-full z-20 mt-2 max-h-44 overflow-y-auto overflow-x-hidden rounded-lg border border-gray-800 bg-gray-950 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">
+                          <ul className="absolute left-0 right-0 top-full z-50 mt-2 max-h-44 overflow-y-auto overflow-x-hidden rounded-lg border border-gray-800 bg-gray-950 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">
                             {projectAccessSearchResults.map((candidate) => (
                               <li key={candidate.id}>
                                 <button
@@ -2532,22 +2543,39 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                       target_user_id: candidate.id,
                                     })
                                   }}
-                                  className="ui-pressable appearance-none flex w-full min-w-0 items-center gap-2 rounded-none border-0 border-b border-gray-800/80 bg-transparent px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-900"
-                                  aria-label={`Select ${getSearchCandidateDisplayName(candidate)}`}
+                                  className="ui-pressable appearance-none flex w-full min-w-0 items-center gap-2 rounded-none border-0 border-b border-gray-800/80 bg-gray-950 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-900"
+                                  aria-label={`Select ${getSearchCandidatePrimaryLabel(candidate)}`}
                                 >
                                   <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-[10px] text-gray-300">
                                     {candidate.avatar_url ? (
                                       <img
                                         src={candidate.avatar_url}
-                                        alt={`${getSearchCandidateDisplayName(candidate)} avatar`}
-                                        className="h-6 w-6 rounded-full object-cover"
+                                        alt={`${getSearchCandidatePrimaryLabel(candidate)} avatar`}
+                                        style={{
+                                          width: '24px',
+                                          minWidth: '24px',
+                                          maxWidth: '24px',
+                                          height: '24px',
+                                          minHeight: '24px',
+                                          maxHeight: '24px',
+                                          borderRadius: '999px',
+                                          objectFit: 'cover',
+                                          display: 'block',
+                                        }}
                                       />
                                     ) : (
-                                      <span aria-hidden>{getSearchCandidateDisplayName(candidate).slice(0, 1).toUpperCase()}</span>
+                                      <span aria-hidden>{getSearchCandidatePrimaryLabel(candidate).slice(0, 1).toUpperCase()}</span>
                                     )}
                                   </span>
-                                  <span className="min-w-0 truncate text-sm text-white">
-                                    {getSearchCandidateDisplayName(candidate)}
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-medium text-gray-100">
+                                      {getSearchCandidatePrimaryLabel(candidate)}
+                                    </span>
+                                    {getSearchCandidateSecondaryLabel(candidate) ? (
+                                      <span className="block truncate text-[11px] text-gray-400">
+                                        {getSearchCandidateSecondaryLabel(candidate)}
+                                      </span>
+                                    ) : null}
                                   </span>
                                 </button>
                               </li>
