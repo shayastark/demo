@@ -203,14 +203,14 @@ export default function ClientHomePage() {
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/account"
-              className="text-xs max-[390px]:text-[10px] sm:text-sm text-gray-300 hover:text-white transition truncate max-w-[72px] sm:max-w-[220px]"
+              className="min-h-8 rounded-md px-1 py-1 text-xs max-[390px]:text-[10px] sm:text-sm text-gray-300 hover:bg-gray-900 hover:text-white transition truncate max-w-[72px] sm:max-w-[220px]"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <button
               onClick={logout}
-              className="btn-unstyled text-xs max-[390px]:text-[10px] sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap flex-shrink-0"
+              className="btn-unstyled min-h-8 rounded-md px-1 py-1 text-xs max-[390px]:text-[10px] sm:text-sm text-gray-400 hover:bg-gray-900 hover:text-white transition whitespace-nowrap flex-shrink-0"
             >
               Sign out
             </button>

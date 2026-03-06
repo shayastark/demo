@@ -376,13 +376,13 @@ export default function ExploreProjectsPage() {
           <h1 className="text-3xl font-bold">Explore</h1>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search title or creator"
-                className="bg-gray-900 border border-gray-800 rounded-lg pl-9 pr-3 py-2 text-sm text-white w-64 max-w-[70vw]"
+                className="min-h-10 w-64 max-w-[70vw] rounded-lg border border-gray-800 bg-gray-900 pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
               />
             </div>
             <select
@@ -393,7 +393,7 @@ export default function ExploreProjectsPage() {
                 emitEvent('sort_change', { sort: next })
                 emitRankingEvent('sort_change', { sort: next })
               }}
-              className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white"
+              className="min-h-10 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
             >
               <option value="trending">Trending</option>
               <option value="newest">Newest</option>
@@ -416,13 +416,13 @@ export default function ExploreProjectsPage() {
         ) : (
           <>
             {lastHidden ? (
-              <div className="mb-4 border border-gray-800 rounded-xl p-3 bg-gray-900 text-xs text-gray-300 flex items-center justify-between gap-3">
+              <div className="ui-card mb-4 flex items-center justify-between gap-3 rounded-xl bg-gray-900 p-3 text-xs text-gray-200">
                 <span>Hidden from Explore.</span>
                 <button
                   type="button"
                   onClick={undoHide}
                   disabled={preferenceLoadingId === lastHidden.targetId}
-                  className="px-2 py-1 rounded border border-gray-700 hover:border-gray-600 text-gray-200"
+                  className="ui-pressable min-h-8 rounded border border-gray-700 px-2 py-1 text-gray-100 hover:border-gray-500"
                 >
                   Undo
                 </button>
@@ -432,7 +432,7 @@ export default function ExploreProjectsPage() {
               {items.map((item, index) => (
                 <div
                   key={item.project_id}
-                  className="bg-gray-900 rounded-xl p-3 border border-gray-800 hover:border-gray-700 transition"
+                  className="ui-card rounded-xl border border-gray-800 bg-gray-900 p-3 transition hover:border-gray-700"
                 >
                   <Link
                     href={item.target_path}
@@ -451,7 +451,7 @@ export default function ExploreProjectsPage() {
                         ...impact,
                       })
                     }}
-                    className="block"
+                    className="block space-y-1"
                   >
                     <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-800 mb-3">
                       {item.cover_image_url ? (
@@ -464,9 +464,9 @@ export default function ExploreProjectsPage() {
                         />
                       ) : null}
                     </div>
-                    <p className="text-sm font-semibold text-white line-clamp-2">{item.title}</p>
-                    <p className="text-xs text-gray-400 mt-1">by {item.creator_name}</p>
-                    <p className="text-xs text-neon-green mt-1">
+                    <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-white">{item.title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-300">by {item.creator_name}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-neon-green">
                       {item.supporter_count} {item.supporter_count === 1 ? 'supporter' : 'supporters'}
                     </p>
                   </Link>
@@ -483,7 +483,7 @@ export default function ExploreProjectsPage() {
                           reasonCode: null,
                         })
                       }
-                      className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
+                      className="ui-pressable min-h-8 rounded border border-gray-700 px-2 py-1 text-[11px] text-gray-200 hover:border-gray-500"
                     >
                       Not interested
                     </button>
@@ -499,7 +499,7 @@ export default function ExploreProjectsPage() {
                           reasonCode: null,
                         })
                       }
-                      className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
+                      className="ui-pressable min-h-8 rounded border border-gray-700 px-2 py-1 text-[11px] text-gray-200 hover:border-gray-500"
                     >
                       Hide creator
                     </button>
@@ -519,7 +519,7 @@ export default function ExploreProjectsPage() {
                             reasonCode: reason.code,
                           })
                         }
-                        className="text-[10px] px-1.5 py-0.5 rounded border border-gray-800 text-gray-400"
+                        className="ui-chip ui-pressable text-[10px] text-gray-300"
                       >
                         {reason.label}
                       </button>
@@ -534,7 +534,7 @@ export default function ExploreProjectsPage() {
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-200 hover:border-gray-600 disabled:opacity-70 inline-flex items-center gap-2"
+                  className="ui-pressable inline-flex min-h-10 items-center gap-2 rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-200 hover:border-gray-600 disabled:opacity-70"
                 >
                   {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   {loadingMore ? 'Loading...' : 'Load more'}

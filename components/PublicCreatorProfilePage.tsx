@@ -228,14 +228,20 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
             <div className="flex items-center gap-4 min-w-0">
               <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-800 text-xl font-semibold text-neon-green">
                 {data.creator.avatar_url ? (
-                  <Image src={data.creator.avatar_url} alt={data.creator.display_name} width={64} height={64} />
+                  <Image
+                    src={data.creator.avatar_url}
+                    alt={data.creator.display_name}
+                    width={64}
+                    height={64}
+                    className="h-16 w-16 rounded-full object-cover object-center"
+                  />
                 ) : (
                   data.creator.display_name.charAt(0).toUpperCase()
                 )}
               </div>
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold truncate">{data.creator.display_name}</h1>
-                <div className="mt-1 flex items-center gap-3 text-sm text-gray-300">
+                <div className="mt-1 flex flex-wrap items-center gap-2.5 text-sm leading-relaxed text-gray-200">
                   <span>{data.social.followers_count} followers</span>
                   <span>{data.social.following_count} following</span>
                   <span>{data.public_projects.length} public projects</span>
