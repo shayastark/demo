@@ -2323,20 +2323,22 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {isCreator && (
             <div className="mb-6 rounded-xl border border-gray-800/70 bg-gray-900/80 p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-neon-green">Project Settings</h3>
-              <p className="mt-1 text-xs text-gray-400">Manage visibility, sharing, and collaboration access.</p>
+              <p className="mt-1 text-sm leading-relaxed text-gray-300">
+                Manage visibility, sharing, and collaboration access.
+              </p>
 
               <div className="mt-4 space-y-4">
                 <section className="rounded-lg bg-black/20 p-3 sm:p-4">
-                  <h4 className="text-sm font-semibold text-white">Visibility &amp; Sharing</h4>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <h4 className="text-sm font-semibold tracking-tight text-white">Visibility &amp; Sharing</h4>
+                  <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
                     Configure who can discover this project and whether viewers can access shared links or downloads.
                   </p>
 
                   <div className="mt-4 space-y-3">
-                    <div className="flex items-start justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-white">Visibility</div>
-                        <div className="mt-1 text-xs text-gray-400">
+                    <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
+                      <div className="min-w-0 flex-1 pr-1">
+                        <div className="text-sm font-semibold leading-tight text-white">Visibility</div>
+                        <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
@@ -2385,9 +2387,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     </div>
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-white">Project Sharing</div>
-                        <div className="mt-1 text-xs text-gray-400">
+                      <div className="min-w-0 flex-1 pr-1">
+                        <div className="text-sm font-semibold leading-tight text-white">Project Sharing</div>
+                        <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Allow others to view this project via share link.
                         </div>
                       </div>
@@ -2442,9 +2444,9 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     </div>
 
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-950/40 p-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-white">Allow Downloads</div>
-                        <div className="mt-1 text-xs text-gray-400">
+                      <div className="min-w-0 flex-1 pr-1">
+                        <div className="text-sm font-semibold leading-tight text-white">Allow Downloads</div>
+                        <div className="mt-1.5 text-xs leading-relaxed text-gray-300">
                           Users can download tracks from this project.
                         </div>
                       </div>
@@ -2495,8 +2497,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 </section>
 
                 <section className="rounded-lg bg-black/20 p-3 sm:p-4">
-                  <h4 className="text-sm font-semibold text-white">Collaboration Access</h4>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <h4 className="text-sm font-semibold tracking-tight text-white">Collaboration Access</h4>
+                  <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
                     Invite collaborators and manage role + expiry settings.
                   </p>
 
@@ -2686,43 +2688,52 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       ) : projectAccessGrants.length === 0 ? (
                         <p className="text-xs text-gray-500">No invited viewers yet.</p>
                       ) : (
-                        <ul className="space-y-2">
+                        <ul className="space-y-3">
                           {projectAccessGrants.map((grant) => (
-                            <li key={grant.id} className="rounded-xl bg-gray-950/55 p-3">
+                            <li key={grant.id} className="rounded-xl border border-gray-800/70 bg-gray-950/55 p-3.5">
                               <div className="flex items-start gap-3">
                                 <button
                                   type="button"
                                   onClick={() => openGrantCreatorProfile(grant)}
-                                  className="ui-pressable mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-sm text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
+                                  className="ui-pressable mt-0.5 inline-flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-sm text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
                                   aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
                                 >
                                   {grant.avatar_url ? (
                                     <Image
                                       src={grant.avatar_url}
                                       alt={`${getGrantDisplayName(grant)} avatar`}
-                                      width={40}
-                                      height={40}
-                                      className="h-full w-full object-cover"
+                                      width={44}
+                                      height={44}
+                                      className="h-11 w-11 rounded-full object-cover object-center"
                                     />
                                   ) : (
-                                    <span aria-hidden>{getGrantInitial(grant)}</span>
+                                    <span
+                                      aria-hidden
+                                      className="inline-flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold uppercase leading-none"
+                                    >
+                                      {getGrantInitial(grant)}
+                                    </span>
                                   )}
                                 </button>
-                                <div className="min-w-0 flex-1">
+                                <div className="min-w-0 flex-1 space-y-1">
                                   <button
                                     type="button"
                                     onClick={() => openGrantCreatorProfile(grant)}
-                                    className="ui-pressable max-w-full truncate text-left text-sm font-medium text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
+                                    className="ui-pressable max-w-full truncate text-left text-sm font-semibold text-white hover:text-neon-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70"
                                     aria-label={`Open profile for ${getGrantDisplayName(grant)}`}
                                   >
                                     {getGrantDisplayName(grant)}
                                   </button>
-                                  <p className="mt-1 text-xs text-gray-500">
-                                    {(grant.role || 'viewer')} • {formatGrantExpiryLabel(grant)}
-                                  </p>
+                                  <div className="flex flex-wrap items-center gap-1.5 text-xs leading-relaxed text-gray-300">
+                                    <span className="rounded-full border border-gray-700/80 bg-black/40 px-2 py-0.5 capitalize">
+                                      {grant.role || 'viewer'}
+                                    </span>
+                                    <span className="text-gray-500">•</span>
+                                    <span>{formatGrantExpiryLabel(grant)}</span>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <div className="mt-3.5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
                                 <select
                                   value={grant.role || 'viewer'}
                                   onChange={(event) =>
@@ -2734,7 +2745,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                   disabled={
                                     projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
                                   }
-                                  className="min-h-11 rounded-md border border-gray-700 bg-black px-2.5 py-1.5 text-xs text-white"
+                                  className="col-span-2 min-h-11 rounded-md border border-gray-700 bg-black px-2.5 py-1.5 text-xs text-white sm:col-span-1"
                                   aria-label={`Role for ${getGrantDisplayName(grant)}`}
                                 >
                                   <option value="viewer">Viewer</option>
