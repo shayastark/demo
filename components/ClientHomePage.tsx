@@ -118,26 +118,27 @@ export default function ClientHomePage() {
         />
         
         {/* Header with FAQ + sign in */}
-        <header className="relative z-10 px-4 py-4">
+        <header className="relative z-10 px-4 py-4 sm:py-5">
           <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
             <button
               onClick={() => setShowFAQ(true)}
-              className="btn-unstyled text-sm text-sky-400 hover:text-sky-300 transition"
+              className="rounded-full border border-gray-700 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-500 hover:text-white"
             >
               FAQ
             </button>
             <button
               onClick={login}
-              className="btn-unstyled text-sm text-sky-400 hover:text-sky-300 transition"
+              className="rounded-full border border-neon-green px-3.5 py-1.5 text-sm font-semibold text-neon-green hover:bg-neon-green/10"
+              aria-label="Sign in"
             >
               Sign in
             </button>
           </div>
         </header>
         
-        <div className="flex-1 flex flex-col items-center justify-center pb-24 relative z-10">
-          <h1 className="text-5xl sm:text-6xl font-bold mb-3 text-white tracking-tight text-center">Demo</h1>
-          <p className="text-lg sm:text-xl mb-12 text-gray-400 text-center max-w-md">
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center pb-24">
+          <h1 className="mb-3 text-center text-5xl font-bold tracking-tight text-white sm:text-6xl">Demo</h1>
+          <p className="mb-12 max-w-md text-center text-lg text-gray-300 sm:text-xl">
             From rough cuts to real support.
           </p>
           
@@ -155,7 +156,8 @@ export default function ClientHomePage() {
           
           <button
             onClick={login}
-            className="bg-sky-500 text-white px-10 py-4 rounded-full font-semibold text-lg hover:bg-sky-400 hover:shadow-lg hover:shadow-sky-500/30 transition-all hover:scale-105 active:scale-100"
+            className="min-h-12 rounded-full bg-neon-green px-10 py-3.5 text-lg font-semibold text-black transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/30 active:scale-100"
+            aria-label="Get started"
           >
             Get Started
           </button>
@@ -183,7 +185,7 @@ export default function ClientHomePage() {
         }}
       />
       
-      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-20 overflow-x-hidden">
+      <nav className="sticky top-0 z-20 overflow-x-hidden border-b border-gray-800/50 bg-black/80 px-4 py-3 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
           <Link
             href="/dashboard"
@@ -215,10 +217,10 @@ export default function ClientHomePage() {
           </div>
         </div>
       </nav>
-      <main className="px-4 py-16 max-w-7xl mx-auto relative z-10">
+      <main className="relative z-10 mx-auto max-w-7xl px-4 py-16">
         <div className="text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-white tracking-tight">Welcome to Demo</h2>
-          <p className="text-lg text-gray-400 mb-12 max-w-md mx-auto">
+          <h2 className="mb-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">Welcome to Demo</h2>
+          <p className="mx-auto mb-12 max-w-md text-lg text-gray-300">
             From rough cuts to real support.
           </p>
           
@@ -236,7 +238,7 @@ export default function ClientHomePage() {
           
           <Link
             href="/dashboard"
-            className="inline-block bg-neon-green text-black px-10 py-4 rounded-full font-semibold text-lg hover:shadow-lg hover:shadow-neon-green/30 transition-all hover:scale-105 active:scale-100"
+            className="inline-block min-h-12 rounded-full bg-neon-green px-10 py-3.5 text-lg font-semibold text-black transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/30 active:scale-100"
           >
             Go to Your Dashboard
           </Link>

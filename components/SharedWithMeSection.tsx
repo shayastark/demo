@@ -96,17 +96,17 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
   }, [authenticated, includeExpired])
 
   return (
-    <section className="mb-8 border border-gray-800/80 rounded-lg bg-gray-950/40 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-900 flex items-center justify-between gap-3">
+    <section className="mb-8 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
+      <div className="flex items-center justify-between gap-3 border-b border-gray-800/90 px-4 py-3.5 sm:px-5">
         <div className="flex items-center gap-2">
           <Inbox className="w-4 h-4 text-neon-green" />
-          <h2 className="text-sm font-medium text-white tracking-wide">Shared with Me</h2>
+          <h2 className="text-sm font-semibold text-white tracking-wide">Shared with Me</h2>
         </div>
         <button
           type="button"
           onClick={() => setIncludeExpired((value) => !value)}
-          className={`text-[11px] px-2 py-1 rounded border ${
-            includeExpired ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-400'
+          className={`rounded-md border px-2.5 py-1.5 text-[11px] font-medium ${
+            includeExpired ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
           }`}
         >
           {includeExpired ? 'Hide expired' : 'Show expired'}
@@ -120,18 +120,18 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
       ) : items.length === 0 ? (
         <p className="px-4 py-4 text-sm text-gray-500">No shared projects yet.</p>
       ) : (
-        <ul>
+        <ul className="divide-y divide-gray-900/90">
           {items.map((item) => (
-            <li key={`${item.project_id}-${item.granted_at}`} className="px-4 py-3 border-t border-gray-900 first:border-t-0">
+            <li key={`${item.project_id}-${item.granted_at}`} className="px-4 py-3.5 sm:px-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-100 truncate">{item.title}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    by <span className="text-gray-300">{item.creator_name}</span>
-                    <span className="ml-2 inline-flex rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-400">
+                  <p className="truncate text-sm font-medium text-gray-100">{item.title}</p>
+                  <p className="mt-1.5 text-xs text-gray-400 leading-relaxed">
+                    by <span className="text-gray-200">{item.creator_name}</span>
+                    <span className="ml-2 inline-flex rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-300">
                       {item.role}
                     </span>
-                    <span className="ml-2 inline-flex rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-400">
+                    <span className="ml-2 inline-flex rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-300">
                       {formatExpiryLabel(item)}
                     </span>
                   </p>
@@ -146,7 +146,8 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
                       is_expired: item.is_expired,
                     })
                   }
-                  className="text-xs px-2.5 py-1 rounded-md border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600"
+                  aria-label={`Open ${item.title}`}
+                  className="mt-0.5 shrink-0 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500 hover:text-white focus-visible:border-neon-green"
                 >
                   Open
                 </Link>

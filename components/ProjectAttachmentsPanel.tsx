@@ -237,24 +237,25 @@ export default function ProjectAttachmentsPanel({
   }
 
   return (
-    <section className="mt-6 border border-gray-800/80 rounded-lg bg-gray-950/40 overflow-hidden">
-      <div className="px-3 sm:px-4 py-2.5 flex items-center gap-2 border-b border-gray-900">
+    <section className="mt-6 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
+      <div className="flex items-center gap-2 border-b border-gray-900 px-3 py-3 sm:px-4">
         <Paperclip className="w-4 h-4 text-neon-green" />
-        <h3 className="text-sm text-white font-medium tracking-wide">Attachments</h3>
+        <h3 className="text-sm font-semibold text-white tracking-wide">Attachments</h3>
         <span className="text-xs text-gray-400">{attachments.length}</span>
       </div>
 
       {canManage && (
-        <div className="px-3 sm:px-4 py-3 border-b border-gray-900">
+        <div className="border-b border-gray-900 px-3 py-3 sm:px-4">
           <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <select
                 value={type}
                 onChange={(event) => {
                   setType(event.target.value as ProjectAttachmentType)
                   setFile(null)
                 }}
-                className="bg-black border border-gray-800 rounded-md px-2 py-2 text-xs text-white"
+                aria-label="Attachment type"
+                className="rounded-lg border border-gray-800 bg-black px-2 py-2 text-xs text-white"
               >
                 <option value="link">Link</option>
                 <option value="image">Image</option>
@@ -265,7 +266,7 @@ export default function ProjectAttachmentsPanel({
                 onChange={(event) => setTitle(event.target.value)}
                 maxLength={120}
                 placeholder="Title (optional)"
-                className="flex-1 bg-black border border-gray-800 rounded-md px-2.5 py-2 text-xs text-white placeholder:text-gray-500"
+                className="flex-1 rounded-lg border border-gray-800 bg-black px-2.5 py-2 text-xs text-white placeholder:text-gray-500"
               />
             </div>
 
@@ -274,7 +275,7 @@ export default function ProjectAttachmentsPanel({
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
                 placeholder="https://..."
-                className="w-full bg-black border border-gray-800 rounded-md px-2.5 py-2 text-xs text-white placeholder:text-gray-500"
+                className="w-full rounded-lg border border-gray-800 bg-black px-2.5 py-2 text-xs text-white placeholder:text-gray-500"
               />
             ) : (
               <input
@@ -289,7 +290,7 @@ export default function ProjectAttachmentsPanel({
               type="button"
               onClick={createAttachment}
               disabled={submitting || (type === 'link' ? !url.trim() : !file)}
-              className="self-end inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-neon-green text-black text-xs font-medium disabled:opacity-50"
+              className="inline-flex self-end items-center gap-1.5 rounded-lg bg-neon-green px-3 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
             >
               <Upload className="w-3.5 h-3.5" />
               {submitting ? 'Adding...' : 'Add'}
@@ -308,7 +309,7 @@ export default function ProjectAttachmentsPanel({
         ) : (
           <ul>
             {attachments.map((attachment) => (
-              <li key={attachment.id} className="border-t border-gray-900 px-3 sm:px-4 py-3">
+              <li key={attachment.id} className="border-t border-gray-900 px-3 py-3.5 sm:px-4">
                 <div className="flex items-center justify-between gap-3">
                   <a
                     href={attachment.url}
@@ -321,7 +322,7 @@ export default function ProjectAttachmentsPanel({
                         attachment_type: attachment.type,
                       })
                     }
-                    className="min-w-0 flex items-center gap-2 hover:opacity-90"
+                    className="min-w-0 flex items-center gap-2.5 hover:opacity-90"
                   >
                     {attachment.type === 'image' ? (
                       <ImageIcon className="w-4 h-4 text-neon-green" />
@@ -331,7 +332,7 @@ export default function ProjectAttachmentsPanel({
                       <LinkIcon className="w-4 h-4 text-neon-green" />
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm text-white truncate">
+                      <p className="truncate text-sm font-medium text-white">
                         {attachment.title || attachment.url.replace(/^https?:\/\//, '')}
                       </p>
                       <p className="text-[11px] text-gray-500">
@@ -346,7 +347,8 @@ export default function ProjectAttachmentsPanel({
                       type="button"
                       onClick={() => deleteAttachment(attachment)}
                       disabled={deletingId === attachment.id}
-                      className="text-gray-500 hover:text-red-400 disabled:opacity-50"
+                      className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400 disabled:opacity-50"
+                      aria-label="Delete attachment"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

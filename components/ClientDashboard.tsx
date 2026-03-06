@@ -496,29 +496,29 @@ export default function ClientDashboard() {
         }}
       />
       
-      <nav className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-20 overflow-x-hidden">
+      <nav className="sticky top-0 z-20 overflow-x-hidden border-b border-gray-800/50 bg-black/80 px-4 py-3 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
-          <Link href="/" className="text-lg sm:text-xl font-bold text-white flex-shrink-0">
+          <Link href="/" className="flex-shrink-0 text-lg font-bold text-white sm:text-xl">
             Demo
           </Link>
           <div className="flex items-center min-w-0 gap-3 max-[390px]:gap-1.5 sm:gap-4 pr-0.5">
             <Link
               href="/account"
-              className="text-xs max-[390px]:text-[10px] sm:text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
+              className="min-h-8 rounded-md px-1.5 py-1 text-xs text-gray-300 hover:bg-gray-900 hover:text-white sm:text-sm max-[390px]:text-[10px] whitespace-nowrap"
             >
               Account
             </Link>
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/explore"
-              className="text-xs max-[390px]:text-[10px] sm:text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
+              className="min-h-8 rounded-md px-1.5 py-1 text-xs text-gray-300 hover:bg-gray-900 hover:text-white sm:text-sm max-[390px]:text-[10px] whitespace-nowrap"
             >
               Explore
             </Link>
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/dashboard/projects/new"
-              className="flex items-center gap-1 max-[390px]:gap-0.5 text-neon-green hover:text-white transition whitespace-nowrap text-xs max-[390px]:text-[10px] sm:text-sm font-medium"
+              className="flex min-h-8 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-semibold text-neon-green transition hover:bg-gray-900 hover:text-white sm:text-sm max-[390px]:gap-0.5 max-[390px]:text-[10px] whitespace-nowrap"
             >
               <Plus className="w-3 h-3 max-[390px]:w-2.5 max-[390px]:h-2.5 sm:w-4 sm:h-4" />
               New Project
@@ -526,7 +526,7 @@ export default function ClientDashboard() {
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <button
               onClick={logout}
-              className="btn-unstyled text-xs max-[390px]:text-[10px] sm:text-sm text-gray-500 hover:text-gray-300 transition whitespace-nowrap"
+              className="btn-unstyled min-h-8 rounded-md px-1.5 py-1 text-xs text-gray-400 hover:bg-gray-900 hover:text-white sm:text-sm max-[390px]:text-[10px] whitespace-nowrap"
             >
               Sign out
             </button>
@@ -534,8 +534,8 @@ export default function ClientDashboard() {
         </div>
       </nav>
 
-      <main className="px-4 py-8 max-w-7xl mx-auto relative z-10 overflow-x-hidden">
-        <h1 className="text-3xl font-bold mb-8 text-white">Your Projects</h1>
+      <main className="relative z-10 mx-auto max-w-7xl overflow-x-hidden px-4 py-8">
+        <h1 className="mb-6 text-3xl font-bold text-white">Your Projects</h1>
         <FollowingFeedSection authenticated={authenticated} getAccessToken={getAccessToken} />
         <WhoToFollowSection authenticated={authenticated} getAccessToken={getAccessToken} />
         <SharedWithMeSection authenticated={authenticated} getAccessToken={getAccessToken} />
@@ -671,7 +671,7 @@ export default function ClientDashboard() {
         {/* Saved Projects Section */}
         {!loading && savedProjects.length > 0 && (
           <div style={{ marginTop: '48px' }}>
-            <h2 className="text-2xl font-bold mb-6 text-white">Saved Projects</h2>
+            <h2 className="mb-6 text-2xl font-bold text-white">Saved Projects</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" style={{ gap: '24px' }}>
               {savedProjects.map((project) => (
                 <div

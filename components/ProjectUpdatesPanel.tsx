@@ -827,12 +827,12 @@ export default function ProjectUpdatesPanel({
   return (
     <section
       ref={updatesContainerRef}
-      className="mt-6 border border-gray-800/80 rounded-lg bg-gray-950/40 overflow-hidden"
+      className="mt-6 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30"
     >
-      <div className="w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5">
+      <div className="flex w-full items-center justify-between gap-3 px-3 py-3 sm:px-4">
         <div className="flex items-center gap-2">
           <Megaphone className="w-4 h-4 text-neon-green" />
-          <h3 className="text-sm text-white font-medium tracking-wide">Project Updates</h3>
+          <h3 className="text-sm font-semibold text-white tracking-wide">Project Updates</h3>
           <span className="text-xs text-gray-400">{publishedUpdates.length}</span>
         </div>
         {latestSummary && <p className="text-[11px] text-gray-500 truncate max-w-[50%]">{latestSummary}</p>}
@@ -861,14 +861,14 @@ export default function ProjectUpdatesPanel({
       )}
 
       {canManage && (
-        <div className="px-3 sm:px-4 pb-3">
-          <div className="flex gap-2 mb-2">
+        <div className="px-3 pb-3 sm:px-4">
+          <div className="mb-2.5 flex flex-col gap-2 sm:flex-row">
             <input
               value={versionLabel}
               onChange={(event) => setVersionLabel(event.target.value)}
               maxLength={40}
               placeholder="Version (optional)"
-              className="w-36 bg-black/70 border border-gray-800 rounded-md px-2.5 py-2 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green"
+              className="w-full rounded-lg border border-gray-800 bg-black/70 px-2.5 py-2 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green sm:w-36"
             />
             <textarea
               value={content}
@@ -876,12 +876,12 @@ export default function ProjectUpdatesPanel({
               maxLength={800}
               rows={2}
               placeholder="Share a quick update..."
-              className="flex-1 bg-black/70 border border-gray-800 rounded-md px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green resize-none"
+              className="flex-1 resize-none rounded-lg border border-gray-800 bg-black/70 px-3 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green"
             />
             <button
               onClick={() => createUpdate('published')}
               disabled={posting || !content.trim()}
-              className="self-end h-9 px-3 rounded-md bg-neon-green text-black font-medium text-xs disabled:opacity-40"
+              className="h-9 shrink-0 rounded-lg bg-neon-green px-3 text-xs font-semibold text-black disabled:opacity-40"
             >
               <span className="inline-flex items-center gap-1">
                 <Send className="w-3.5 h-3.5" />
@@ -891,12 +891,12 @@ export default function ProjectUpdatesPanel({
             <button
               onClick={() => createUpdate('draft')}
               disabled={posting || !content.trim()}
-              className="self-end h-9 px-3 rounded-md border border-gray-700 text-gray-300 font-medium text-xs disabled:opacity-40"
+              className="h-9 shrink-0 rounded-lg border border-gray-700 px-3 text-xs font-semibold text-gray-200 disabled:opacity-40"
             >
               {posting ? 'Saving...' : editingDraftId ? 'Save draft' : 'Save draft'}
             </button>
           </div>
-          <label className="inline-flex items-center gap-2 text-xs text-gray-400">
+          <label className="inline-flex items-center gap-2 text-xs text-gray-300">
             <input
               type="checkbox"
               checked={isImportant}
@@ -905,12 +905,12 @@ export default function ProjectUpdatesPanel({
             />
             Mark as important
           </label>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
               type="datetime-local"
               value={scheduledPublishAt}
               onChange={(event) => setScheduledPublishAt(event.target.value)}
-              className="bg-black/70 border border-gray-800 rounded-md px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-green"
+              className="rounded-md border border-gray-800 bg-black/70 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-green"
             />
             <button
               type="button"
@@ -920,7 +920,7 @@ export default function ProjectUpdatesPanel({
                   emitScheduleEvent('schedule_cleared', editingDraftId, null)
                 }
               }}
-              className="text-[11px] px-2 py-1 rounded border border-gray-800 text-gray-400 hover:border-gray-700"
+              className="rounded-md border border-gray-800 px-2 py-1 text-[11px] text-gray-300 hover:border-gray-700"
             >
               Clear schedule
             </button>
@@ -938,7 +938,7 @@ export default function ProjectUpdatesPanel({
                 setIsImportant(false)
                 setScheduledPublishAt('')
               }}
-              className="mt-1 text-[11px] text-gray-500 hover:text-gray-400 underline underline-offset-2"
+              className="mt-1 text-[11px] text-gray-400 hover:text-gray-200 underline underline-offset-2"
             >
               Cancel draft edit
             </button>
@@ -954,43 +954,44 @@ export default function ProjectUpdatesPanel({
         ) : (
           <ul>
             {canManage && draftUpdates.length > 0 ? (
-              <li className="border-t border-gray-900 px-3 sm:px-4 py-3 bg-gray-950/30">
+              <li className="border-t border-gray-900 px-3 py-3.5 sm:px-4 bg-gray-950/30">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs text-gray-300 font-medium">Drafts</span>
-                  <span className="text-[10px] rounded-full border border-gray-700 px-2 py-0.5 text-gray-400">
+                  <span className="text-xs font-semibold text-gray-200">Drafts</span>
+                  <span className="rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-300">
                     {draftUpdates.length}
                   </span>
                 </div>
                 <div className="space-y-2">
                   {draftUpdates.map((update) => (
-                    <div key={`draft-${update.id}`} className="rounded-md border border-gray-800 px-2.5 py-2">
+                    <div key={`draft-${update.id}`} className="rounded-lg border border-gray-800 bg-black/20 px-2.5 py-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-xs text-gray-200 truncate">
+                          <p className="text-xs text-gray-100 truncate">
                             {update.version_label ? `${update.version_label}: ` : ''}
                             {update.content}
                           </p>
-                          <p className="text-[10px] text-gray-500 mt-0.5">
-                            Draft • {new Date(update.created_at).toLocaleString()}
+                          <p className="mt-0.5 text-[10px] text-gray-400">
+                            <span className="rounded-full border border-gray-700 px-1.5 py-0.5">Draft</span>
+                            <span className="ml-1.5">{new Date(update.created_at).toLocaleString()}</span>
                           </p>
                           {update.scheduled_publish_at ? (
-                            <p className="text-[10px] text-neon-green/90 mt-0.5">
+                            <p className="mt-1 text-[10px] text-neon-green">
                               Scheduled for {new Date(update.scheduled_publish_at).toLocaleString()}
                             </p>
                           ) : null}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => editDraft(update)}
-                            className="text-[10px] px-2 py-1 rounded-full border border-gray-700 text-gray-300"
+                            className="rounded-full border border-gray-700 px-2 py-1 text-[10px] text-gray-200"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => publishDraft(update)}
-                            className="text-[10px] px-2 py-1 rounded-full border border-neon-green text-neon-green"
+                            className="rounded-full border border-neon-green px-2 py-1 text-[10px] font-medium text-neon-green"
                           >
                             Publish
                           </button>
@@ -1002,7 +1003,7 @@ export default function ProjectUpdatesPanel({
               </li>
             ) : null}
             {publishedUpdates.map((update) => (
-              <li key={update.id} className="border-t border-gray-900 px-3 sm:px-4 py-3">
+              <li key={update.id} className="border-t border-gray-900 px-3 py-3.5 sm:px-4">
                 <div className="flex items-start justify-between gap-3">
                   <div
                     id={`project-update-${update.id}`}
@@ -1010,22 +1011,22 @@ export default function ProjectUpdatesPanel({
                       highlightedUpdateId === update.id ? 'bg-neon-green/10 border border-neon-green/20' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-gray-300">{update.author_name || 'Creator'}</span>
+                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium text-gray-200">{update.author_name || 'Creator'}</span>
                       {update.version_label && (
-                        <span className="text-[10px] rounded-full border border-gray-700 px-2 py-0.5 text-gray-400">
+                        <span className="rounded-full border border-gray-700 px-2 py-0.5 text-[10px] text-gray-300">
                           {update.version_label}
                         </span>
                       )}
                       {update.is_important ? (
-                        <span className="text-[10px] rounded-full border border-neon-green/60 px-2 py-0.5 text-neon-green">
+                        <span className="rounded-full border border-neon-green/60 bg-neon-green/10 px-2 py-0.5 text-[10px] font-medium text-neon-green">
                           Important
                         </span>
                       ) : null}
                       <span className="text-[11px] text-gray-500">{new Date(update.created_at).toLocaleString()}</span>
                     </div>
                     <p className="text-sm text-gray-100 whitespace-pre-wrap break-words">{update.content}</p>
-                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
                       {UPDATE_REACTION_CHIPS.map((chip) => {
                         const reactionState =
                           reactionsByUpdate[update.id] || buildEmptyProjectUpdateReactionSummary()
@@ -1039,10 +1040,10 @@ export default function ProjectUpdatesPanel({
                             type="button"
                             onClick={() => toggleReaction(update.id, chip.key)}
                             disabled={isLoading}
-                            className={`text-[11px] px-2.5 py-1 rounded-full border transition ${
+                            className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
                               isActive
                                 ? 'border-neon-green text-neon-green bg-neon-green/10'
-                                : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                                : 'border-gray-700 text-gray-300 hover:border-gray-600'
                             }`}
                           >
                             {chip.label} {count}
@@ -1054,14 +1055,14 @@ export default function ProjectUpdatesPanel({
                       <button
                         type="button"
                         onClick={() => toggleThread(update.id)}
-                        className="text-[11px] text-gray-400 hover:text-gray-300 inline-flex items-center gap-1"
+                        className="inline-flex items-center gap-1 text-[11px] text-gray-300 hover:text-gray-100"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
                         Comments ({commentCountByUpdate[update.id] || 0})
                       </button>
 
                       {threadOpenByUpdate[update.id] ? (
-                        <div className="mt-2 border border-gray-800 rounded-md bg-black/30 p-2.5 space-y-2">
+                        <div className="mt-2 rounded-lg border border-gray-800 bg-black/30 p-2.5 space-y-2">
                           {threadLoadingByUpdate[update.id] ? (
                             <p className="text-[11px] text-gray-500">Loading comments...</p>
                           ) : threadErrorByUpdate[update.id] ? (
@@ -1071,7 +1072,7 @@ export default function ProjectUpdatesPanel({
                           ) : (
                             <ul className="space-y-1.5">
                               {(commentsByUpdate[update.id] || []).map((comment) => (
-                                <li key={comment.id} className="rounded border border-gray-800 px-2 py-1.5">
+                                <li key={comment.id} className="rounded-md border border-gray-800 px-2 py-1.5">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                       <p className="text-[11px] text-gray-300">
@@ -1087,7 +1088,7 @@ export default function ProjectUpdatesPanel({
                                         type="button"
                                         disabled={deletingCommentId === comment.id}
                                         onClick={() => deleteUpdateComment(update.id, comment.id)}
-                                        className="text-gray-500 hover:text-red-400 disabled:opacity-50"
+                                        className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400 disabled:opacity-50"
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>
@@ -1116,7 +1117,7 @@ export default function ProjectUpdatesPanel({
                               }}
                               maxLength={2000}
                               placeholder="Add a comment..."
-                              className="flex-1 bg-black/70 border border-gray-800 rounded-md px-2 py-1.5 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green resize-none"
+                              className="flex-1 resize-none rounded-md border border-gray-800 bg-black/70 px-2 py-1.5 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green"
                             />
                             <button
                               type="button"
@@ -1125,7 +1126,7 @@ export default function ProjectUpdatesPanel({
                                 !!postingCommentByUpdate[update.id] ||
                                 !(commentDraftByUpdate[update.id] || '').trim()
                               }
-                              className="h-7 px-2 rounded-md bg-neon-green text-black text-[11px] font-medium disabled:opacity-40"
+                              className="h-7 rounded-md bg-neon-green px-2.5 text-[11px] font-semibold text-black disabled:opacity-40"
                             >
                               {postingCommentByUpdate[update.id] ? '...' : 'Send'}
                             </button>
@@ -1135,13 +1136,13 @@ export default function ProjectUpdatesPanel({
                     </div>
                   </div>
                   {(canManage || update.can_delete) && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 pt-0.5">
                       <button
                         onClick={() => toggleImportant(update)}
-                        className={`text-[10px] px-2 py-1 rounded-full border ${
+                        className={`rounded-full border px-2 py-1 text-[10px] font-medium ${
                           update.is_important
-                            ? 'border-neon-green text-neon-green'
-                            : 'border-gray-700 text-gray-400'
+                            ? 'border-neon-green bg-neon-green/10 text-neon-green'
+                            : 'border-gray-700 text-gray-300'
                         }`}
                       >
                         {update.is_important ? 'Unmark' : 'Important'}
@@ -1149,7 +1150,7 @@ export default function ProjectUpdatesPanel({
                       <button
                         onClick={() => deleteUpdate(update.id)}
                         disabled={deletingId === update.id}
-                        className="text-gray-500 hover:text-red-400 disabled:opacity-50"
+                        className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400 disabled:opacity-50"
                         aria-label="Delete project update"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

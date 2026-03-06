@@ -374,15 +374,15 @@ export default function CommentsPanel({
   }
 
   return (
-    <section className="mt-6 border border-gray-800/80 rounded-lg bg-gray-950/40 overflow-hidden">
+    <section className="mt-6 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
       <button
         type="button"
         onClick={() => setCommentsOpen((prev) => !prev)}
-        className="w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5 hover:bg-white/[0.02] transition-colors"
+        className="flex w-full items-center justify-between gap-3 px-3 py-3 sm:px-4 hover:bg-white/[0.02] transition-colors"
       >
         <div className="flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-neon-green" />
-          <h3 className="text-sm text-white font-medium tracking-wide">Discussion</h3>
+          <h3 className="text-sm font-semibold text-white tracking-wide">Discussion</h3>
           <span className="text-xs text-gray-400">{projectComments.length}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -399,19 +399,20 @@ export default function CommentsPanel({
 
       {commentsOpen && (
         <>
-          <div className="px-3 sm:px-4 pb-3">
-            <div className="flex gap-2">
+          <div className="px-3 pb-3 sm:px-4">
+            <div className="flex gap-2.5">
               <textarea
                 value={projectInput}
                 onChange={(e) => setProjectInput(e.target.value)}
                 placeholder={authenticated ? 'Add a comment...' : 'Sign in to add a comment...'}
                 rows={2}
-                className="flex-1 bg-black/70 border border-gray-800 rounded-md px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green resize-none"
+                className="flex-1 resize-none rounded-lg border border-gray-800 bg-black/70 px-3 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green"
               />
               <button
                 onClick={submitProjectComment}
                 disabled={submittingProject || !projectInput.trim()}
-                className="self-end h-9 px-3 rounded-md bg-neon-green text-black font-medium text-xs disabled:opacity-40"
+                aria-label="Post comment"
+                className="self-end h-9 rounded-lg bg-neon-green px-3.5 text-xs font-semibold text-black disabled:opacity-40"
               >
                 <span className="inline-flex items-center gap-1">
                   <Send className="w-3.5 h-3.5" />
@@ -429,18 +430,15 @@ export default function CommentsPanel({
             ) : (
               <ul>
                 {projectComments.map((comment) => (
-                  <li
-                    key={comment.id}
-                    className="group border-t border-gray-900 px-3 sm:px-4 py-3"
-                  >
+                  <li key={comment.id} className="group border-t border-gray-900/90 px-3 py-3.5 sm:px-4">
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 h-6 w-6 rounded-full bg-gray-800 text-gray-300 text-[11px] flex items-center justify-center">
+                      <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-[11px] text-gray-300">
                         {getInitial(comment.author_name)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-3 mb-1">
+                        <div className="mb-1.5 flex items-start justify-between gap-3">
                           <div className="min-w-0 flex items-center gap-2">
-                            <span className="text-xs text-gray-300 truncate">{comment.author_name}</span>
+                            <span className="truncate text-xs font-medium text-gray-200">{comment.author_name}</span>
                             {comment.is_supporter_for_project && (
                               <span className="inline-flex items-center rounded-full border border-neon-green/30 bg-neon-green/10 px-2 py-0.5 text-[10px] text-neon-green">
                                 Supporter
@@ -454,12 +452,12 @@ export default function CommentsPanel({
                               </span>
                             )}
                           </div>
-                          <div className={`flex items-center gap-2 ${editingCommentId === comment.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                          <div className={`flex items-center gap-1.5 ${editingCommentId === comment.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
                             {comment.can_pin && (
                               <button
                                 onClick={() => togglePinComment(comment.id, !!comment.is_pinned)}
                                 disabled={pendingPinCommentId === comment.id}
-                                className="text-gray-500 hover:text-amber-300 disabled:opacity-50"
+                                className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-amber-300 disabled:opacity-50"
                                 aria-label={comment.is_pinned ? 'Unpin comment' : 'Pin comment'}
                               >
                                 <Pin className={`w-3.5 h-3.5 ${comment.is_pinned ? 'fill-current text-amber-300' : ''}`} />
@@ -471,7 +469,7 @@ export default function CommentsPanel({
                                   setEditingCommentId(comment.id)
                                   setEditingContent(comment.content)
                                 }}
-                                className="text-gray-500 hover:text-white"
+                                className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-white"
                                 aria-label="Edit comment"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -480,7 +478,7 @@ export default function CommentsPanel({
                             {comment.can_delete && (
                               <button
                                 onClick={() => deleteComment(comment.id)}
-                                className="text-gray-500 hover:text-red-400"
+                                className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400"
                                 aria-label="Delete comment"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -495,12 +493,12 @@ export default function CommentsPanel({
                               value={editingContent}
                               onChange={(e) => setEditingContent(e.target.value)}
                               rows={2}
-                              className="w-full bg-black border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green resize-none"
+                              className="w-full resize-none rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
                             />
                             <div className="flex gap-3">
                               <button
                                 onClick={saveEdit}
-                                className="text-xs bg-neon-green text-black px-2.5 py-1 rounded"
+                                className="rounded-md bg-neon-green px-2.5 py-1 text-xs font-semibold text-black"
                               >
                                 Save
                               </button>
@@ -517,8 +515,8 @@ export default function CommentsPanel({
                           </div>
                         ) : (
                           <>
-                            <p className="text-sm text-gray-100 whitespace-pre-wrap break-words">{comment.content}</p>
-                            <div className="mt-2 flex items-center gap-3">
+                            <p className="whitespace-pre-wrap break-words text-sm text-gray-100">{comment.content}</p>
+                            <div className="mt-2.5 flex items-center gap-2.5">
                               {COMMENT_REACTION_TYPES.map((reactionType) => {
                                 const active = !!comment.viewer_reactions?.[reactionType]
                                 const key = `${comment.id}:${reactionType}`
@@ -528,10 +526,10 @@ export default function CommentsPanel({
                                     key={reactionType}
                                     onClick={() => toggleCommentReaction(comment.id, reactionType)}
                                     disabled={isPending}
-                                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
+                                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
                                       active
-                                        ? 'border-neon-green/70 text-neon-green'
-                                        : 'border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700'
+                                        ? 'border-neon-green/70 bg-neon-green/10 text-neon-green'
+                                        : 'border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
                                     } ${isPending ? 'opacity-60' : ''}`}
                                     aria-label={`${active ? 'Remove' : 'Add'} ${reactionLabels[reactionType]} reaction`}
                                   >

@@ -284,9 +284,9 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
   }
 
   return (
-    <section className="mb-8 border border-gray-800/80 rounded-lg bg-gray-950/40 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-900">
-        <h2 className="text-sm font-medium text-white tracking-wide">Who to follow</h2>
+    <section className="mb-8 overflow-hidden rounded-xl border border-gray-800/80 bg-gray-950/50 shadow-sm shadow-black/30">
+      <div className="border-b border-gray-800/90 px-4 py-3.5 sm:px-5">
+        <h2 className="text-sm font-semibold text-white tracking-wide">Who to follow</h2>
       </div>
 
       {loading ? (
@@ -298,19 +298,19 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
       ) : (
         <>
           {lastHidden ? (
-            <div className="px-4 py-2 border-b border-gray-900 text-xs text-gray-400 flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 border-b border-gray-800/90 px-4 py-2.5 text-xs text-gray-300 sm:px-5">
               <span>Recommendation hidden.</span>
-              <button type="button" onClick={undoHide} className="px-2 py-1 rounded border border-gray-700 text-gray-200">
+              <button type="button" onClick={undoHide} className="rounded-md border border-gray-700 px-2 py-1 font-medium text-gray-100 hover:border-gray-500">
                 Undo
               </button>
             </div>
           ) : null}
-          <ul>
+          <ul className="divide-y divide-gray-900/90">
           {items.map((item, index) => (
-            <li key={item.creator_id} className="px-4 py-3 border-t border-gray-900 first:border-t-0">
+            <li key={item.creator_id} className="px-4 py-3.5 sm:px-5">
               <div className="flex items-start justify-between gap-3">
                 <Link href={item.profile_path} className="min-w-0 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center text-neon-green font-semibold">
+                  <div className="h-9 w-9 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center text-neon-green font-semibold">
                     {item.avatar_url ? (
                       <Image
                         src={item.avatar_url}
@@ -324,20 +324,21 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm text-white truncate">{item.display_name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="truncate text-sm font-medium text-white">{item.display_name}</p>
+                    <p className="text-xs text-gray-400">
                       {item.short_reason}
                       {item.follower_count > 0 ? ` • ${item.follower_count} followers` : ''}
                     </p>
                   </div>
                 </Link>
 
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-end gap-1.5">
                   <button
                     type="button"
                     disabled={followLoadingId === item.creator_id}
                     onClick={() => handleFollow(item, index)}
-                    className="text-xs px-2.5 py-1.5 rounded-md border border-neon-green text-neon-green inline-flex items-center gap-1 disabled:opacity-70"
+                    aria-label={`Follow ${item.display_name}`}
+                    className="inline-flex items-center gap-1 rounded-md border border-neon-green px-2.5 py-1.5 text-xs font-semibold text-neon-green disabled:opacity-70"
                   >
                     {followLoadingId === item.creator_id ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -350,7 +351,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
                     type="button"
                     disabled={preferenceLoadingId === item.creator_id}
                     onClick={() => hideCreator(item, index, null)}
-                    className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-300"
+                    className="rounded-md border border-gray-700 px-2 py-1 text-[11px] text-gray-200 hover:border-gray-500"
                   >
                     Not interested
                   </button>
@@ -361,7 +362,7 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
                         type="button"
                         disabled={preferenceLoadingId === item.creator_id}
                         onClick={() => hideCreator(item, index, reason.code)}
-                        className="text-[10px] px-1.5 py-0.5 rounded border border-gray-800 text-gray-400"
+                        className="rounded border border-gray-800 px-1.5 py-0.5 text-[10px] text-gray-400 hover:border-gray-600"
                       >
                         {reason.label}
                       </button>

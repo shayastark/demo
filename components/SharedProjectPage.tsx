@@ -746,7 +746,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       />
       
       {/* Simple app header so users can discover Demo from shared links */}
-      <header className="border-b border-gray-800/50 bg-black/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-10">
+      <header className="sticky top-0 z-10 border-b border-gray-800/50 bg-black/80 px-4 py-3 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <Link href="/" className="text-lg font-semibold tracking-tight text-white">
             Demo
@@ -765,7 +765,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   }
                   login()
                 }}
-                className="px-4 py-2 rounded-full bg-neon-green text-black text-sm font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all flex items-center gap-2"
+                className="flex min-h-10 items-center gap-2 rounded-full bg-neon-green px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/20"
                 title="Sign in to access your dashboard"
               >
                 <LayoutDashboard className="w-4 h-4" />
@@ -774,7 +774,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             ) : (
               <Link
                 href="/dashboard"
-                className="px-4 py-2 rounded-full bg-neon-green text-black text-sm font-semibold hover:shadow-lg hover:shadow-neon-green/20 transition-all flex items-center gap-2"
+                className="flex min-h-10 items-center gap-2 rounded-full bg-neon-green px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/20"
               >
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
@@ -790,10 +790,10 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         {/* Project Info */}
         <div className="mb-8 mt-8">
           {/* Title and Options button on the SAME ROW */}
-          <div className="flex flex-row justify-between items-center gap-4 mb-4">
+          <div className="mb-4 flex flex-row items-center justify-between gap-4">
             {/* Left: Title and creator info */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-2">{project.title}</h1>
+              <h1 className="mb-2 text-3xl font-bold leading-tight text-white sm:text-4xl">{project.title}</h1>
               <div className="flex items-center text-sm text-gray-400 flex-wrap gap-y-1">
                 {creatorUsername && creatorId && (
                   <span
@@ -823,8 +823,9 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   }
                   setIsProjectMenuOpen(!isProjectMenuOpen)
                 }}
-                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors"
+                className="flex min-h-10 flex-shrink-0 items-center gap-2 rounded-full border border-gray-700 bg-gray-900 px-4 py-2 text-white transition-colors hover:border-gray-500 hover:bg-gray-800"
                 title="Options"
+                aria-label="Project options"
               >
                 <MoreVertical className="w-5 h-5" />
                 <span className="text-sm font-medium">Options</span>

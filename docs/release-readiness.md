@@ -109,3 +109,43 @@ Run before release:
 Focused regression suite for this release hardening:
 
 - `npm run test:unit -- lib/releaseReadinessRegression.test.ts lib/projectUpdateAutopublish.test.ts lib/projectAccessPolicyServer.test.ts`
+
+## LC1 Results (2026-03-06)
+
+### Verification executed
+
+- Full regression suite: `npm run test:unit` -> pass (`184/184`)
+- Production build: `npm run build` -> pass
+- Targeted LC smoke regression matrix (local): access, updates, notifications, discovery -> pass (`89/89`)
+
+### Smoke checklist status (local)
+
+- Auth + onboarding: covered by existing auth/onboarding unit flows, no failures observed.
+- Visibility (public/unlisted/private): pass in policy + explore/profile checks.
+- Access grants/expiry/requests/roles: pass in access/request/policy matrix checks.
+- Updates (draft/important/scheduled publish): pass in updates + autopublish + mode checks.
+- Notifications (instant/digest/snooze/project modes): pass in digest/snooze/subscription regression checks.
+- Explore/recommendations/personalization: pass in explore/recommendation/discovery preference checks.
+
+### Defects from LC1 verification
+
+- `P0`: None
+- `P1`: None
+- `P2`:
+  - `npm run lint` command remains misconfigured with Next.js 16 command semantics (`next lint` path resolution issue). This does not impact runtime correctness but should be addressed in a dedicated lint-remediation PR because enabling ESLint currently reveals broad pre-existing repo warnings/errors.
+
+### Fixed in LC1
+
+- Added release-level cross-system regression coverage to prevent drift across access, update scheduling, notification fanout, and visibility boundaries.
+- Added launch runbook/checklist guidance and rollback playbook for access, notifications, and updates.
+
+### Remaining known issues
+
+- Lint command/tooling migration deferred (see `P2` above).
+- Existing non-blocking build warnings:
+  - `metadataBase` not configured.
+  - `baseline-browser-mapping` staleness notice.
+
+### Go / No-Go recommendation
+
+- **Go**, with one caveat: treat lint-tooling cleanup as post-LC follow-up unless release policy requires lint gate in CI.

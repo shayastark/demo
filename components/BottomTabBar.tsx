@@ -2094,15 +2094,17 @@ export default function BottomTabBar() {
               left: isMobile ? 0 : '50%',
               right: isMobile ? 0 : 'auto',
               transform: isMobile ? 'none' : 'translate(-50%, 50%)',
-              width: isMobile ? '100%' : '400px',
+              width: isMobile ? '100%' : '420px',
               maxWidth: '100%',
               maxHeight: isMobile ? 'calc(100vh - 140px)' : '600px',
-              backgroundColor: '#111827',
+              backgroundColor: '#0f172a',
               borderRadius: isMobile ? '16px 16px 0 0' : '16px',
               zIndex: 101,
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
+              border: '1px solid #1f2937',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.45)',
             }}
           >
             {/* Header */}
@@ -2111,7 +2113,7 @@ export default function BottomTabBar() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '16px 20px',
+                padding: '16px 18px',
                 borderBottom: '1px solid #374151',
               }}
             >
@@ -2148,8 +2150,8 @@ export default function BottomTabBar() {
                   style={{
                     width: '36px',
                     height: '36px',
-                    borderRadius: '50%',
-                    backgroundColor: '#374151',
+                    borderRadius: '10px',
+                    backgroundColor: '#1f2937',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
@@ -2167,7 +2169,7 @@ export default function BottomTabBar() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '10px 20px',
+                padding: '10px 16px',
                 borderBottom: '1px solid #1f2937',
                 gap: '8px',
               }}
@@ -2177,7 +2179,7 @@ export default function BottomTabBar() {
                   onClick={() => updateNotificationDigestMode('instant')}
                   style={{
                     padding: '6px 10px',
-                    borderRadius: '8px',
+                    borderRadius: '9px',
                     border: '1px solid',
                     borderColor: notificationDeliveryMode === 'instant' ? '#39FF14' : '#374151',
                     color: notificationDeliveryMode === 'instant' ? '#39FF14' : '#9ca3af',
@@ -2192,7 +2194,7 @@ export default function BottomTabBar() {
                   onClick={() => updateNotificationDigestMode('digest')}
                   style={{
                     padding: '6px 10px',
-                    borderRadius: '8px',
+                    borderRadius: '9px',
                     border: '1px solid',
                     borderColor: notificationDeliveryMode === 'digest' ? '#39FF14' : '#374151',
                     color: notificationDeliveryMode === 'digest' ? '#39FF14' : '#9ca3af',
@@ -2210,7 +2212,7 @@ export default function BottomTabBar() {
                   onClick={() => updateNotificationDigestMode(notificationDeliveryMode, 'daily')}
                   style={{
                     padding: '4px 8px',
-                    borderRadius: '8px',
+                    borderRadius: '9px',
                     border: '1px solid',
                     borderColor: notificationDigestWindow === 'daily' ? '#39FF14' : '#374151',
                     color: notificationDigestWindow === 'daily' ? '#39FF14' : '#9ca3af',
@@ -2227,7 +2229,7 @@ export default function BottomTabBar() {
                   onClick={() => updateNotificationDigestMode(notificationDeliveryMode, 'weekly')}
                   style={{
                     padding: '4px 8px',
-                    borderRadius: '8px',
+                    borderRadius: '9px',
                     border: '1px solid',
                     borderColor: notificationDigestWindow === 'weekly' ? '#39FF14' : '#374151',
                     color: notificationDigestWindow === 'weekly' ? '#39FF14' : '#9ca3af',
@@ -2247,7 +2249,7 @@ export default function BottomTabBar() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '8px 20px',
+                padding: '8px 16px',
                 borderBottom: '1px solid #1f2937',
               }}
             >
@@ -2259,7 +2261,7 @@ export default function BottomTabBar() {
                 }}
                 style={{
                   padding: '5px 9px',
-                  borderRadius: '8px',
+                    borderRadius: '9px',
                   border: '1px solid',
                   borderColor: unreadPriorityEnabled ? '#39FF14' : '#374151',
                   color: unreadPriorityEnabled ? '#39FF14' : '#9ca3af',
@@ -2278,7 +2280,7 @@ export default function BottomTabBar() {
                 }}
                 style={{
                   padding: '5px 9px',
-                  borderRadius: '8px',
+                  borderRadius: '9px',
                   border: '1px solid #374151',
                   color: '#9ca3af',
                   backgroundColor: 'transparent',
@@ -2318,7 +2320,7 @@ export default function BottomTabBar() {
               ) : (
                 <div>
                   {notificationDeliveryMode === 'digest' ? (
-                    <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid #1f2937' }}>
+                    <div style={{ padding: '12px 12px 10px', borderBottom: '1px solid #1f2937' }}>
                       <p style={{ color: '#9ca3af', fontSize: '11px', margin: '0 0 8px 4px', textTransform: 'uppercase' }}>
                         Digest summary
                       </p>
@@ -2343,8 +2345,8 @@ export default function BottomTabBar() {
                               }}
                               style={{
                                 border: '1px solid #374151',
-                                borderRadius: '10px',
-                                backgroundColor: '#1f2937',
+                                borderRadius: '12px',
+                                backgroundColor: '#111827',
                                 padding: '10px 12px',
                                 color: '#e5e7eb',
                                 textAlign: 'left',
@@ -2365,9 +2367,10 @@ export default function BottomTabBar() {
                     <div
                       key={notification.id}
                       style={{
-                        padding: '16px 20px',
+                        padding: '14px 16px',
                         borderBottom: '1px solid #1f2937',
-                        backgroundColor: !notification.is_read ? 'rgba(57, 255, 20, 0.05)' : 'transparent',
+                        backgroundColor: !notification.is_read ? 'rgba(57, 255, 20, 0.06)' : 'transparent',
+                        borderLeft: !notification.is_read ? '2px solid rgba(57, 255, 20, 0.45)' : '2px solid transparent',
                         transition: 'background-color 0.2s',
                       }}
                     >
@@ -2419,6 +2422,7 @@ export default function BottomTabBar() {
                             fontSize: '14px',
                             fontWeight: !notification.is_read ? 500 : 400,
                             margin: 0,
+                            lineHeight: 1.4,
                           }}>
                             {primaryText}
                           </p>
@@ -2448,15 +2452,15 @@ export default function BottomTabBar() {
                         </button>
                         
                         {/* Actions */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <button
                             onClick={() => snoozeNotificationScope(notification, '24h')}
                             style={{
-                              padding: '6px 8px',
-                              borderRadius: '8px',
+                                padding: '6px 9px',
+                                borderRadius: '9px',
                               backgroundColor: 'transparent',
                               border: '1px solid #374151',
-                              color: '#9ca3af',
+                                color: '#d1d5db',
                               cursor: 'pointer',
                               fontSize: '11px',
                               lineHeight: 1.2,
@@ -2468,11 +2472,11 @@ export default function BottomTabBar() {
                           <button
                             onClick={() => snoozeNotificationScope(notification, '7d')}
                             style={{
-                              padding: '6px 8px',
-                              borderRadius: '8px',
+                                padding: '6px 9px',
+                                borderRadius: '9px',
                               backgroundColor: 'transparent',
                               border: '1px solid #374151',
-                              color: '#9ca3af',
+                                color: '#d1d5db',
                               cursor: 'pointer',
                               fontSize: '11px',
                               lineHeight: 1.2,
@@ -2485,11 +2489,11 @@ export default function BottomTabBar() {
                             <button
                               onClick={() => handleNotificationClick(notification)}
                               style={{
-                                padding: '6px 8px',
-                                borderRadius: '8px',
-                                backgroundColor: 'transparent',
-                                border: '1px solid #374151',
-                                color: '#9ca3af',
+                                padding: '6px 10px',
+                                borderRadius: '9px',
+                                backgroundColor: '#162032',
+                                border: '1px solid #2b3646',
+                                color: '#e5e7eb',
                                 cursor: 'pointer',
                                 fontSize: '11px',
                                 lineHeight: 1.2,
@@ -2504,7 +2508,7 @@ export default function BottomTabBar() {
                               onClick={() => markNotificationsAsRead([notification.id])}
                               style={{
                                 padding: '6px',
-                                borderRadius: '50%',
+                                borderRadius: '8px',
                                 backgroundColor: 'transparent',
                                 border: 'none',
                                 cursor: 'pointer',
@@ -2518,7 +2522,7 @@ export default function BottomTabBar() {
                             onClick={() => deleteNotification(notification.id)}
                             style={{
                               padding: '6px',
-                              borderRadius: '50%',
+                              borderRadius: '8px',
                               backgroundColor: 'transparent',
                               border: 'none',
                               cursor: 'pointer',
@@ -2555,7 +2559,7 @@ export default function BottomTabBar() {
                           <div
                             key={`snoozed-${notification.id}`}
                             style={{
-                              padding: '12px 20px',
+                              padding: '12px 16px',
                               borderBottom: '1px solid #1f2937',
                               opacity: 0.85,
                             }}

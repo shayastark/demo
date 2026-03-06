@@ -221,12 +221,12 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="border border-gray-800 bg-gray-900 rounded-2xl p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+    <div className="min-h-screen bg-black pb-24 text-white">
+      <main className="mx-auto max-w-4xl px-4 py-8">
+        <div className="rounded-2xl border border-gray-800/90 bg-gray-900/90 p-5 shadow-sm shadow-black/30 sm:p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4 min-w-0">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center text-neon-green font-semibold text-xl">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-800 text-xl font-semibold text-neon-green">
                 {data.creator.avatar_url ? (
                   <Image src={data.creator.avatar_url} alt={data.creator.display_name} width={64} height={64} />
                 ) : (
@@ -235,7 +235,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
               </div>
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold truncate">{data.creator.display_name}</h1>
-                <div className="text-sm text-gray-400 mt-1 flex items-center gap-3">
+                <div className="mt-1 flex items-center gap-3 text-sm text-gray-300">
                   <span>{data.social.followers_count} followers</span>
                   <span>{data.social.following_count} following</span>
                   <span>{data.public_projects.length} public projects</span>
@@ -247,10 +247,11 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
               <button
                 onClick={handleToggleFollow}
                 disabled={followLoading}
-                className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${
+                aria-label={data.social.is_following ? 'Unfollow creator' : 'Follow creator'}
+                className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   data.social.is_following
-                    ? 'bg-gray-800 border border-gray-700 text-gray-100'
-                    : 'bg-neon-green text-black'
+                    ? 'border border-gray-700 bg-gray-800 text-gray-100 hover:border-gray-500'
+                    : 'bg-neon-green text-black hover:bg-[#4cff2e]'
                 }`}
               >
                 {followLoading ? (
@@ -265,14 +266,14 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
             ) : null}
           </div>
 
-          {data.creator.bio ? <p className="mt-5 text-sm text-gray-200">{data.creator.bio}</p> : null}
+          {data.creator.bio ? <p className="mt-5 text-sm leading-relaxed text-gray-200">{data.creator.bio}</p> : null}
 
           {(creatorLinks.length > 0 || data.creator.contact_email) ? (
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2.5">
               {data.creator.contact_email ? (
                 <a
                   href={`mailto:${data.creator.contact_email}`}
-                  className="text-xs px-2.5 py-1.5 rounded-full border border-gray-700 text-gray-300"
+                  className="rounded-full border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500"
                 >
                   Contact
                 </a>
@@ -283,7 +284,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs px-2.5 py-1.5 rounded-full border border-gray-700 text-gray-300"
+                  className="rounded-full border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500"
                 >
                   {item.label}
                 </a>
@@ -293,13 +294,13 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
         </div>
 
         <section className="mt-6">
-          <h2 className="text-lg font-semibold text-white mb-3">Public projects</h2>
+          <h2 className="mb-3 text-lg font-semibold text-white">Public projects</h2>
           {data.public_projects.length === 0 ? (
-            <div className="border border-gray-800 bg-gray-900 rounded-xl p-5 text-sm text-gray-400">
+            <div className="rounded-xl border border-gray-800 bg-gray-900/80 p-5 text-sm text-gray-400">
               No public projects yet.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {data.public_projects.map((project) => (
                 <Link
                   key={project.id}
@@ -310,7 +311,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                       project_target: project.target_path,
                     })
                   }
-                  className="border border-gray-800 bg-gray-900 rounded-xl p-4 hover:border-gray-700 transition"
+                  className="rounded-xl border border-gray-800 bg-gray-900/80 p-4 transition hover:border-gray-600"
                 >
                   <p className="text-sm font-semibold text-white">{project.title}</p>
                 </Link>
