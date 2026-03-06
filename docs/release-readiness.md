@@ -1,0 +1,111 @@
+# Release Readiness Runbook
+
+This runbook covers release verification for collaboration, discovery, notifications, and update scheduling flows.
+
+## Migration Order Checklist
+
+Apply SQL migrations in chronological order already committed in `supabase/`. For the most recent collaboration and updates work, confirm these exist and are applied:
+
+1. `supabase/add_project_updates_is_important.sql`
+2. `supabase/add_project_updates_draft_status.sql`
+3. `supabase/add_project_updates_scheduled_publish_at.sql`
+4. `supabase/add_project_subscription_notification_mode.sql`
+5. `supabase/backfill_project_updates_is_important.sql` (optional compatibility backfill; safe/idempotent)
+
+Checklist:
+
+- [ ] Run all pending migrations in staging first.
+- [ ] Verify new columns are present (`status`, `published_at`, `scheduled_publish_at`, `notification_mode`).
+- [ ] Verify no migration errors and idempotent rerun behavior.
+
+## Smoke Test Checklist (Core Loops)
+
+### Access + Collaboration
+
+- [ ] Private project: non-granted user is blocked.
+- [ ] Access request can be created from blocked state.
+- [ ] Creator approves request and requester can access project.
+- [ ] Creator changes role viewer -> commenter -> contributor and permissions update accordingly.
+- [ ] Expired grant blocks access until renewed.
+
+### Updates + Scheduling
+
+- [ ] Creator saves a draft.
+- [ ] Creator schedules draft in the future.
+- [ ] At/after schedule time, first read auto-publishes draft.
+- [ ] Repeated reads do not republish or duplicate notifications.
+- [ ] Non-manager cannot see drafts.
+
+### Notifications
+
+- [ ] Important update fanout respects subscription mode (`all`, `important`, `mute`).
+- [ ] Snooze hides scoped notifications but does not hide unrelated types.
+- [ ] Digest still groups active notifications correctly.
+- [ ] Invite notification deep link opens project when grant is active.
+- [ ] Invite deep link fails safely (no crash) after revoke.
+
+### Discovery + Visibility
+
+- [ ] Creator public profile lists only public projects.
+- [ ] Explore lists only public projects.
+- [ ] Unlisted projects are direct-link accessible but not discoverable.
+
+## Rollback Playbook
+
+Use additive rollback safely and avoid destructive data operations unless required.
+
+### 1) Access System (grants/roles/requests/expiry)
+
+If behavior regresses:
+
+1. Disable newly introduced access paths at route level (return creator-only behavior temporarily).
+2. Keep existing grant rows intact; do not mass-delete.
+3. Revert API route changes and redeploy.
+4. Re-run policy regression tests before re-enabling.
+
+Verification commands:
+
+- `npm run test:unit -- lib/projectAccess.test.ts lib/projectAccessPolicyServer.test.ts lib/projectAccessRequests.test.ts`
+
+### 2) Notifications (digest/snooze/modes/invites)
+
+If notification fanout or routing regresses:
+
+1. Temporarily force instant delivery mode usage in UI/API responses.
+2. Keep stored preferences and snoozes; avoid dropping tables.
+3. Revert fanout logic changes while preserving payload compatibility.
+
+Verification commands:
+
+- `npm run test:unit -- lib/notificationPreferences.test.ts lib/notificationDigest.test.ts lib/notificationSnooze.test.ts lib/projectSubscriptions.test.ts`
+
+### 3) Updates (drafts/scheduling/autopublish)
+
+If autopublish/notification races regress:
+
+1. Disable autopublish invocation in `GET /api/project-updates` (temporary).
+2. Keep explicit publish path enabled.
+3. Revert autopublish helper or gate by env flag if needed.
+
+Verification commands:
+
+- `npm run test:unit -- lib/projectUpdates.test.ts lib/projectUpdateAutopublish.test.ts`
+
+## Known Risk Flags
+
+- Concurrency spikes around scheduled publish boundaries.
+- Preference/filter interaction edges (`snooze` + `digest` + subscription mode).
+- Private access revoke timing with stale notification deep links.
+- Fallback compatibility paths for important update heuristics.
+
+## Verification Commands
+
+Run before release:
+
+1. `npm run test:unit`
+2. `npm run lint`
+3. `npm run build`
+
+Focused regression suite for this release hardening:
+
+- `npm run test:unit -- lib/releaseReadinessRegression.test.ts lib/projectUpdateAutopublish.test.ts lib/projectAccessPolicyServer.test.ts`
