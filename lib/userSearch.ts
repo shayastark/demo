@@ -5,6 +5,7 @@ export const USER_SEARCH_MAX_LIMIT = 10
 export type UserSearchRow = {
   id: string
   username: string | null
+  email: string | null
   avatar_url: string | null
 }
 
@@ -32,10 +33,13 @@ export function parseUserSearchQuery(args: {
   return { ok: true, query, limit }
 }
 
-export function mapUserSearchRows(rows: Array<{ id: string; username: string | null; avatar_url: string | null }>): UserSearchRow[] {
+export function mapUserSearchRows(
+  rows: Array<{ id: string; username: string | null; email: string | null; avatar_url: string | null }>
+): UserSearchRow[] {
   return rows.map((row) => ({
     id: row.id,
     username: typeof row.username === 'string' && row.username.trim() ? row.username : null,
+    email: typeof row.email === 'string' && row.email.trim() ? row.email : null,
     avatar_url: typeof row.avatar_url === 'string' && row.avatar_url.trim() ? row.avatar_url : null,
   }))
 }

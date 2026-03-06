@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('users')
-      .select('id, username, avatar_url')
+      .select('id, username, email, avatar_url')
       .neq('id', currentUser.id)
       .ilike('username', `%${parsed.query}%`)
       .limit(parsed.limit)
@@ -35,7 +35,14 @@ export async function GET(request: NextRequest) {
     if (error) throw error
 
     return NextResponse.json({
-      users: mapUserSearchRows((data || []) as Array<{ id: string; username: string | null; avatar_url: string | null }>),
+      users: mapUserSearchRows(
+        (data || []) as Array<{
+          id: string
+          username: string | null
+          email: string | null
+          avatar_url: string | null
+        }>
+      ),
     })
   } catch (error) {
     console.error('Error in user search GET:', error)

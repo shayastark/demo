@@ -23,12 +23,12 @@ test('parseUserSearchQuery validates limit bounds', () => {
 test('mapUserSearchRows normalizes nullable username/avatar fields', () => {
   assert.deepEqual(
     mapUserSearchRows([
-      { id: 'u1', username: 'demo', avatar_url: 'https://example.com/a.png' },
-      { id: 'u2', username: '   ', avatar_url: '   ' },
+      { id: 'u1', username: 'demo', email: 'demo@example.com', avatar_url: 'https://example.com/a.png' },
+      { id: 'u2', username: '   ', email: '   ', avatar_url: '   ' },
     ]),
     [
-      { id: 'u1', username: 'demo', avatar_url: 'https://example.com/a.png' },
-      { id: 'u2', username: null, avatar_url: null },
+      { id: 'u1', username: 'demo', email: 'demo@example.com', avatar_url: 'https://example.com/a.png' },
+      { id: 'u2', username: null, email: null, avatar_url: null },
     ]
   )
 })

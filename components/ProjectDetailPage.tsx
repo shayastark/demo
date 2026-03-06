@@ -68,6 +68,7 @@ type ProjectAccessExpiryPreset = 'never' | '24h' | '7d'
 type ProjectAccessSearchResult = {
   id: string
   username: string | null
+  email: string | null
   avatar_url: string | null
 }
 
@@ -530,12 +531,28 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     )
   }
 
+  const getSearchCandidateInputLabel = (candidate: ProjectAccessSearchResult): string => {
+    const username = typeof candidate.username === 'string' ? candidate.username.trim() : ''
+    if (username) return username
+    const email = typeof candidate.email === 'string' ? candidate.email.trim() : ''
+    if (email) return email
+    return candidate.id
+  }
+
+  const getSearchCandidateDisplayName = (candidate: ProjectAccessSearchResult): string => {
+    const username = typeof candidate.username === 'string' ? candidate.username.trim() : ''
+    if (username) return username
+    const email = typeof candidate.email === 'string' ? candidate.email.trim() : ''
+    if (email) return email
+    return `User ${candidate.id.slice(0, 8)}`
+  }
+
   useEffect(() => {
     const visibility = resolveProjectVisibility(project?.visibility, project?.sharing_enabled)
     if (!isCreator || visibility !== 'private') return
 
     const query = projectAccessIdentifierInput.trim()
-    if (projectAccessSelectedUser && query === (projectAccessSelectedUser.username || projectAccessSelectedUser.id)) {
+    if (projectAccessSelectedUser && query === getSearchCandidateInputLabel(projectAccessSelectedUser)) {
       return
     }
     if (query.length < 2) {
@@ -2488,7 +2505,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             setProjectAccessIdentifierInput(value)
                             if (
                               projectAccessSelectedUser &&
-                              value !== (projectAccessSelectedUser.username || projectAccessSelectedUser.id)
+                            value !== getSearchCandidateInputLabel(projectAccessSelectedUser)
                             ) {
                               setProjectAccessSelectedUser(null)
                             }
@@ -2503,7 +2520,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const label = candidate.username || candidate.id
+                                    const label = getSearchCandidateInputLabel(candidate)
                                     setProjectAccessIdentifierInput(label)
                                     setProjectAccessSelectedUser(candidate)
                                     setProjectAccessSearchResults([])
@@ -2515,24 +2532,22 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                       target_user_id: candidate.id,
                                     })
                                   }}
-                                  className="ui-pressable flex w-full min-w-0 items-center gap-2 border-b border-gray-800/80 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-900"
-                                  aria-label={`Select ${candidate.username || candidate.id}`}
+                                  className="ui-pressable appearance-none flex w-full min-w-0 items-center gap-2 rounded-none border-0 border-b border-gray-800/80 bg-transparent px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-900"
+                                  aria-label={`Select ${getSearchCandidateDisplayName(candidate)}`}
                                 >
                                   <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-700 bg-gray-800 text-[10px] text-gray-300">
                                     {candidate.avatar_url ? (
-                                      <Image
+                                      <img
                                         src={candidate.avatar_url}
-                                        alt={`${candidate.username || 'User'} avatar`}
-                                        width={24}
-                                        height={24}
-                                        className="h-full w-full object-cover"
+                                        alt={`${getSearchCandidateDisplayName(candidate)} avatar`}
+                                        className="h-6 w-6 rounded-full object-cover"
                                       />
                                     ) : (
-                                      <span aria-hidden>{(candidate.username || 'U').slice(0, 1).toUpperCase()}</span>
+                                      <span aria-hidden>{getSearchCandidateDisplayName(candidate).slice(0, 1).toUpperCase()}</span>
                                     )}
                                   </span>
                                   <span className="min-w-0 truncate text-sm text-white">
-                                    {candidate.username || candidate.id}
+                                    {getSearchCandidateDisplayName(candidate)}
                                   </span>
                                 </button>
                               </li>
