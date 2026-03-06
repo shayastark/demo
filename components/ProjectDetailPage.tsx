@@ -2580,7 +2580,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <section className="rounded-lg bg-black/20 p-3 sm:p-4">
                   <h4 className="text-sm font-semibold tracking-tight text-white">Collaboration Access</h4>
                   <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
-                    Invite collaborators and manage role + expiry settings.
+                    Invite collaborators and manage compact role-based access.
                   </p>
 
                   {resolveProjectVisibility(project.visibility, project.sharing_enabled) === 'private' ? (
@@ -2809,8 +2809,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     <span className="rounded-full border border-gray-700/80 bg-black/40 px-2 py-0.5 capitalize">
                                       {grant.role || 'viewer'}
                                     </span>
-                                    <span className="text-gray-500">•</span>
-                                    <span>{formatGrantExpiryLabel(grant)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -2840,52 +2838,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                     aria-hidden
                                   />
                                 </div>
-                                <div className="relative shrink-0">
-                                  <select
-                                    value={
-                                      projectAccessExpirySelections[grant.user_id] ||
-                                      deriveGrantExpiryPreset(grant)
-                                    }
-                                    onChange={(event) => {
-                                      const next = event.target.value as ProjectAccessExpiryPreset
-                                      setProjectAccessExpirySelections((current) => ({
-                                        ...current,
-                                        [grant.user_id]: next,
-                                      }))
-                                    }}
-                                    disabled={
-                                      projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                                    }
-                                    className={COMPACT_DARK_SELECT_CLASS}
-                                    style={COMPACT_DARK_SELECT_STYLE}
-                                    aria-label={`Expiry for ${getGrantDisplayName(grant)}`}
-                                  >
-                                    <option value="never">No expiry</option>
-                                    <option value="24h">24h</option>
-                                    <option value="7d">7d</option>
-                                  </select>
-                                  <ChevronDown
-                                    className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
-                                    aria-hidden
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleSetProjectAccessExpiry(
-                                      grant.user_id,
-                                      projectAccessExpirySelections[grant.user_id] ||
-                                        deriveGrantExpiryPreset(grant)
-                                    )
-                                  }
-                                  disabled={
-                                    projectAccessSaving || projectAccessRoleUpdatingUserId === grant.user_id
-                                  }
-                                  className={COMPACT_ACTION_BUTTON_CLASS}
-                                  aria-label={`Set expiry for ${getGrantDisplayName(grant)}`}
-                                >
-                                  Set expiry
-                                </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRevokeProjectAccess(grant.user_id)}
