@@ -445,7 +445,7 @@ export default function CommentsPanel({
             </div>
           </div>
 
-          <div className="max-h-[28rem] overflow-y-auto px-4 pb-4 sm:px-5">
+          <div className="max-h-[28rem] overflow-y-auto px-4 pb-4 pt-1 sm:px-5 sm:pt-2">
             {loadingProjectComments ? (
               <p className="py-3 text-sm text-gray-500">Loading comments...</p>
             ) : projectComments.length === 0 ? (
@@ -460,15 +460,20 @@ export default function CommentsPanel({
                     className="group rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(10,12,18,0.96),rgba(7,8,12,0.96))] px-4 py-4 shadow-[0_14px_34px_rgba(0,0,0,0.18)]"
                   >
                     <div className="flex items-start gap-3.5">
-                      <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/8 bg-gray-900 text-xs font-semibold text-gray-200">
+                      <div className="relative mt-0.5 h-10 w-10 min-h-10 min-w-10 max-h-10 max-w-10 flex-shrink-0 self-start overflow-hidden rounded-full border border-white/8 bg-gray-900 text-xs font-semibold text-gray-200">
                         {comment.avatar_url ? (
                           <img
                             src={comment.avatar_url}
                             alt={getDisplayName(comment.author_name)}
-                            className="h-full w-full object-cover"
+                            className="absolute inset-0 block h-full w-full object-cover"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            loading="lazy"
+                            draggable={false}
                           />
                         ) : (
-                          getInitials(comment.author_name)
+                          <span className="flex h-full w-full items-center justify-center">
+                            {getInitials(comment.author_name)}
+                          </span>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
