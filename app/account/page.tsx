@@ -757,8 +757,16 @@ function AccountPageContent() {
                 <button
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="btn-unstyled inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-200 hover:border-gray-500 hover:text-white transition disabled:opacity-50"
-                  style={{ WebkitAppearance: 'none', appearance: 'none', marginLeft: '16px' }}
+                  className="btn-unstyled inline-flex min-h-9 items-center rounded-md px-3 py-1.5 text-sm font-medium transition disabled:opacity-50"
+                  style={{
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    marginLeft: '16px',
+                    backgroundColor: '#111827',
+                    border: '1px solid #374151',
+                    color: '#f3f4f6',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
                 >
                   {uploadingAvatar ? 'Uploading...' : profile?.avatar_url ? 'Change photo' : 'Choose photo'}
                 </button>
@@ -814,8 +822,16 @@ function AccountPageContent() {
                       setEditingUsername(profile?.username || '')
                       setIsEditingUsername(true)
                     }}
-                    className="btn-unstyled inline-flex min-h-9 items-center justify-center rounded-md border border-gray-700 bg-black p-2 text-gray-300 hover:border-gray-500 hover:text-white transition"
-                    style={{ WebkitAppearance: 'none', appearance: 'none', marginLeft: '16px' }}
+                    className="btn-unstyled inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
+                    style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      marginLeft: '16px',
+                      backgroundColor: '#111827',
+                      border: '1px solid #374151',
+                      color: '#f3f4f6',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -837,8 +853,15 @@ function AccountPageContent() {
             {!isEditingProfile ? (
               <button
                 onClick={() => setIsEditingProfile(true)}
-                className="btn-unstyled inline-flex min-h-9 items-center gap-1 rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-200 hover:border-gray-500 hover:text-white transition"
-                style={{ WebkitAppearance: 'none', appearance: 'none' }}
+                className="btn-unstyled inline-flex min-h-9 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition"
+                style={{
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  backgroundColor: '#111827',
+                  border: '1px solid #374151',
+                  color: '#f3f4f6',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
               >
                 <Edit className="w-4 h-4" />
                 Edit
@@ -1025,15 +1048,22 @@ function AccountPageContent() {
             <h2 className="font-semibold text-neon-green text-lg" style={{ marginBottom: '14px' }}>
               Social Graph
             </h2>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-5">
               <button
                 type="button"
                 onClick={() => {
                   setSocialGraphType('followers')
                   setIsSocialGraphOpen(true)
                 }}
-                className="btn-unstyled inline-flex min-h-9 items-center rounded-full border border-gray-700 bg-black px-3.5 py-1.5 text-sm font-medium text-gray-200 hover:border-gray-500 hover:text-white transition"
-                style={{ WebkitAppearance: 'none', appearance: 'none' }}
+                className="btn-unstyled inline-flex items-center text-sm font-medium transition hover:text-neon-green"
+                style={{
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ffffff',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
               >
                 {followerCount} Followers
               </button>
@@ -1043,8 +1073,15 @@ function AccountPageContent() {
                   setSocialGraphType('following')
                   setIsSocialGraphOpen(true)
                 }}
-                className="btn-unstyled inline-flex min-h-9 items-center rounded-full border border-gray-700 bg-black px-3.5 py-1.5 text-sm font-medium text-gray-200 hover:border-gray-500 hover:text-white transition"
-                style={{ WebkitAppearance: 'none', appearance: 'none' }}
+                className="btn-unstyled inline-flex items-center text-sm font-medium transition hover:text-neon-green"
+                style={{
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ffffff',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
               >
                 {followingCount} Following
               </button>

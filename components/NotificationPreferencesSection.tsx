@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, ChevronDown } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -63,6 +63,7 @@ export default function NotificationPreferencesSection({
   const [savingField, setSavingField] = useState<NotificationToggleField | null>(null)
   const [savingDelivery, setSavingDelivery] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isOpen, setIsOpen] = useState(true)
   const hasSentViewRef = useRef(false)
 
   const hasAnyDisabled = useMemo(
@@ -336,16 +337,29 @@ export default function NotificationPreferencesSection({
       className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
       style={{ padding: '20px 24px 24px 24px' }}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <Bell className="w-4 h-4 text-neon-green" />
-        <h2 className="font-semibold text-neon-green text-lg">Notification Preferences</h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Bell className="w-4 h-4 text-neon-green" />
+          <h2 className="font-semibold text-neon-green text-lg">Notification Preferences</h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="btn-unstyled ui-pressable inline-flex items-center gap-2 rounded-md border border-gray-700 bg-black px-3 py-1.5 text-xs font-semibold text-neon-green hover:border-gray-500 hover:text-neon-green/80"
+          style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+          aria-expanded={isOpen}
+          aria-label={isOpen ? 'Collapse notification preferences' : 'Expand notification preferences'}
+        >
+          {isOpen ? 'Collapse' : 'Expand'}
+          <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : '-rotate-90'}`} aria-hidden />
+        </button>
       </div>
 
-      <p className="text-sm text-gray-500 mb-4">
+      {!isOpen ? null : <p className="text-sm text-gray-500 mb-4">
         Choose which in-app notifications you want to receive.
-      </p>
+      </p>}
 
-      <div className="mb-4 border border-gray-800 rounded-lg p-3">
+      {!isOpen ? null : <div className="mb-4 border border-gray-800 rounded-lg p-3">
         <p className="text-xs text-gray-400 mb-2">Delivery mode</p>
         <div className="flex items-center gap-2 mb-2">
           <button
@@ -399,11 +413,11 @@ export default function NotificationPreferencesSection({
             Weekly
           </button>
         </div>
-      </div>
+      </div>}
 
-      {error ? <p className="text-xs text-gray-500 mb-3">{error}</p> : null}
+      {!isOpen ? null : error ? <p className="text-xs text-gray-500 mb-3">{error}</p> : null}
 
-      <div className="space-y-2">
+      {!isOpen ? null : <div className="space-y-2">
         {PREFERENCE_FIELDS.map((field) => {
           const enabled = preferences[field]
           const isSaving = savingField === field
@@ -461,9 +475,9 @@ export default function NotificationPreferencesSection({
             </div>
           )
         })}
-      </div>
+      </div>}
 
-      {!loading && hasAnyDisabled ? (
+      {!isOpen ? null : !loading && hasAnyDisabled ? (
         <p className="text-xs text-gray-500 mt-3">Changes apply to future notifications only.</p>
       ) : null}
     </div>

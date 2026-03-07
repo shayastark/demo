@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { DollarSign } from 'lucide-react'
+import { ChevronDown, DollarSign } from 'lucide-react'
 
 interface CreatorEarningsRecentTip {
   amount_cents: number
@@ -60,6 +60,7 @@ export default function CreatorEarningsSnapshot({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [earnings, setEarnings] = useState<CreatorEarningsResponse | null>(null)
+  const [isOpen, setIsOpen] = useState(true)
 
   useEffect(() => {
     if (!authenticated) return
@@ -118,12 +119,25 @@ export default function CreatorEarningsSnapshot({
 
   return (
     <section className="bg-gray-900 rounded-xl mb-6 border border-gray-800" style={{ padding: '20px 24px 24px 24px' }}>
-      <div className="flex items-center gap-2 mb-4">
-        <DollarSign className="w-4 h-4 text-neon-green" />
-        <h2 className="font-semibold text-neon-green text-lg">Earnings</h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-neon-green" />
+          <h2 className="font-semibold text-neon-green text-lg">Earnings</h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="btn-unstyled ui-pressable inline-flex items-center gap-2 rounded-md border border-gray-700 bg-black px-3 py-1.5 text-xs font-semibold text-neon-green hover:border-gray-500 hover:text-neon-green/80"
+          style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+          aria-expanded={isOpen}
+          aria-label={isOpen ? 'Collapse earnings' : 'Expand earnings'}
+        >
+          {isOpen ? 'Collapse' : 'Expand'}
+          <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : '-rotate-90'}`} aria-hidden />
+        </button>
       </div>
 
-      {loading ? (
+      {!isOpen ? null : loading ? (
         <p className="text-sm text-gray-500">Loading earnings...</p>
       ) : error ? (
         <p className="text-sm text-gray-500">{error}</p>
