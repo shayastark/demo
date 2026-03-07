@@ -628,7 +628,8 @@ function AccountPageContent() {
           </Link>
             <button
               onClick={logout}
-              className="text-sm text-gray-400 hover:text-white transition"
+              className="btn-unstyled min-h-9 rounded-md px-2 py-1 text-sm font-medium text-neon-green hover:bg-gray-900 hover:text-neon-green/80 transition"
+              style={{ WebkitAppearance: 'none', appearance: 'none' }}
             >
               Sign out
             </button>
@@ -756,8 +757,8 @@ function AccountPageContent() {
                 <button
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="text-sm text-gray-400 hover:text-white transition disabled:opacity-50"
-                  style={{ marginLeft: '16px' }}
+                  className="btn-unstyled inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-200 hover:border-gray-500 hover:text-white transition disabled:opacity-50"
+                  style={{ WebkitAppearance: 'none', appearance: 'none', marginLeft: '16px' }}
                 >
                   {uploadingAvatar ? 'Uploading...' : profile?.avatar_url ? 'Change photo' : 'Choose photo'}
                 </button>
@@ -813,8 +814,8 @@ function AccountPageContent() {
                       setEditingUsername(profile?.username || '')
                       setIsEditingUsername(true)
                     }}
-                    className="p-1 text-gray-500 hover:text-white transition"
-                    style={{ marginLeft: '16px' }}
+                    className="btn-unstyled inline-flex min-h-9 items-center justify-center rounded-md border border-gray-700 bg-black p-2 text-gray-300 hover:border-gray-500 hover:text-white transition"
+                    style={{ WebkitAppearance: 'none', appearance: 'none', marginLeft: '16px' }}
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -823,39 +824,6 @@ function AccountPageContent() {
             </div>
           </div>
         </div>
-
-        {profile?.id ? (
-          <div
-            className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
-            style={{ padding: '16px 20px' }}
-          >
-            <h2 className="font-semibold text-neon-green text-base" style={{ marginBottom: '10px' }}>
-              Social Graph
-            </h2>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setSocialGraphType('followers')
-                  setIsSocialGraphOpen(true)
-                }}
-                className="text-sm border border-gray-700 rounded-full px-3 py-1.5 text-gray-200 hover:border-gray-600"
-              >
-                {followerCount} Followers
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSocialGraphType('following')
-                  setIsSocialGraphOpen(true)
-                }}
-                className="text-sm border border-gray-700 rounded-full px-3 py-1.5 text-gray-200 hover:border-gray-600"
-              >
-                {followingCount} Following
-              </button>
-            </div>
-          </div>
-        ) : null}
 
         {/* Creator Profile Section */}
         <div 
@@ -869,7 +837,8 @@ function AccountPageContent() {
             {!isEditingProfile ? (
               <button
                 onClick={() => setIsEditingProfile(true)}
-                className="text-sm text-gray-400 hover:text-white flex items-center gap-1 transition"
+                className="btn-unstyled inline-flex min-h-9 items-center gap-1 rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-200 hover:border-gray-500 hover:text-white transition"
+                style={{ WebkitAppearance: 'none', appearance: 'none' }}
               >
                 <Edit className="w-4 h-4" />
                 Edit
@@ -1047,6 +1016,41 @@ function AccountPageContent() {
             </div>
           </div>
         </div>
+
+        {profile?.id ? (
+          <div
+            className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
+            style={{ padding: '20px 24px 24px 24px' }}
+          >
+            <h2 className="font-semibold text-neon-green text-lg" style={{ marginBottom: '14px' }}>
+              Social Graph
+            </h2>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSocialGraphType('followers')
+                  setIsSocialGraphOpen(true)
+                }}
+                className="btn-unstyled inline-flex min-h-9 items-center rounded-full border border-gray-700 bg-black px-3.5 py-1.5 text-sm font-medium text-gray-200 hover:border-gray-500 hover:text-white transition"
+                style={{ WebkitAppearance: 'none', appearance: 'none' }}
+              >
+                {followerCount} Followers
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSocialGraphType('following')
+                  setIsSocialGraphOpen(true)
+                }}
+                className="btn-unstyled inline-flex min-h-9 items-center rounded-full border border-gray-700 bg-black px-3.5 py-1.5 text-sm font-medium text-gray-200 hover:border-gray-500 hover:text-white transition"
+                style={{ WebkitAppearance: 'none', appearance: 'none' }}
+              >
+                {followingCount} Following
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {/* Payments Section */}
         <CreatorEarningsSnapshot
