@@ -186,16 +186,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    let usersById: Record<string, { username: string | null; email: string | null }> = {}
+    let usersById: Record<string, { username: string | null; email: string | null; avatar_url: string | null }> = {}
 
     if (userIds.length > 0) {
       const { data: users } = await supabaseAdmin
         .from('users')
-        .select('id, username, email')
+        .select('id, username, email, avatar_url')
         .in('id', userIds)
 
-      usersById = (users || []).reduce<Record<string, { username: string | null; email: string | null }>>((acc, user) => {
-        acc[user.id] = { username: user.username, email: user.email }
+      usersById = (users || []).reduce<Record<string, { username: string | null; email: string | null; avatar_url: string | null }>>((acc, user) => {
+        acc[user.id] = { username: user.username, email: user.email, avatar_url: user.avatar_url || null }
         return acc
       }, {})
     }
@@ -209,6 +209,7 @@ export async function GET(request: NextRequest) {
         ...comment,
         ...withPinnedFlag(comment),
         author_name: author?.username || author?.email || 'Unknown',
+        avatar_url: author?.avatar_url || null,
         can_edit: isOwner,
         can_delete: isOwner || isCreator,
         can_pin: isCreator,

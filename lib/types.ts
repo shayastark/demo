@@ -50,6 +50,7 @@ export interface Comment {
   created_at: string
   updated_at: string
   author_name?: string
+  avatar_url?: string | null
   can_edit?: boolean
   can_delete?: boolean
   can_pin?: boolean

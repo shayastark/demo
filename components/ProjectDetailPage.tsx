@@ -2457,7 +2457,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
-                      <div className="relative shrink-0 pr-3 pt-1">
+                      <div className="relative shrink-0 pr-4 pt-1">
                         <select
                           value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
                           onChange={async (event) => {
@@ -2496,7 +2496,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               )
                             }
                           }}
-                          className="cursor-pointer appearance-none rounded-lg px-4 pr-12 text-sm font-semibold text-white transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-neon-green/40"
+                          className="cursor-pointer appearance-none rounded-lg px-4 pr-14 text-sm font-semibold text-white transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-neon-green/40"
                           style={{
                             ...COMPACT_DARK_SELECT_STYLE,
                             WebkitAppearance: 'none',
@@ -2509,7 +2509,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             borderRadius: '10px',
                             backgroundColor: '#111827',
                             boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
-                            paddingRight: '46px',
+                            paddingRight: '56px',
                           }}
                           aria-label="Project visibility"
                         >
@@ -2518,11 +2518,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           <option value="private">Private</option>
                         </select>
                         <div
-                          className="pointer-events-none absolute right-9 top-1/2 h-5 -translate-y-1/2 border-l border-gray-500/70"
+                          className="pointer-events-none absolute right-12 top-1/2 h-5 -translate-y-1/2 border-l border-gray-500/70"
                           aria-hidden
                         />
                         <ChevronDown
-                          className="pointer-events-none absolute right-2.5 top-1/2 h-5 w-5 -translate-y-1/2 text-neon-green"
+                          className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neon-green drop-shadow-[0_0_6px_rgba(57,255,20,0.55)]"
                           aria-hidden
                         />
                       </div>
@@ -2540,7 +2540,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Allow others to view this project via share link.
                         </div>
                       </div>
-                      <div className="shrink-0 pr-3 pt-1">
+                      <div className="shrink-0 pr-4 pt-1">
                         <button
                           onClick={async () => {
                             const newValue = !(project.sharing_enabled ?? true)
@@ -2604,7 +2604,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Users can download tracks from this project.
                         </div>
                       </div>
-                      <div className="shrink-0 pr-3 pt-1">
+                      <div className="shrink-0 pr-4 pt-1">
                         <button
                           onClick={async () => {
                             const newValue = !project.allow_downloads
