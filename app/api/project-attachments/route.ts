@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import { parseProjectAttachmentsLimit, validateProjectAttachmentInput } from '@/lib/projectAttachments'
+import { buildProjectAttachmentPaths } from './helpers'
 import { canPostProjectUpdate, canViewProject } from '@/lib/projectAccessPolicyServer'
 import {
   ATTACHMENT_COUNT_PER_PROJECT_LIMIT,
@@ -20,6 +21,14 @@ import {
   getUserDailyUploadedBytes,
   recordUploadQuotaEvent,
 } from '@/lib/uploadQuotas'
+
+function getHostLabel(urlValue: string): string | null {
+  try {
+    return new URL(urlValue).hostname.replace(/^www\./, '')
+  } catch {
+    return null
+  }
+}
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -97,7 +106,23 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       attachments: (attachments || []).map((attachment) => ({
-        ...attachment,
+        id: attachment.id,
+        project_id: attachment.project_id,
+        user_id: attachment.user_id,
+        type: attachment.type,
+        title: attachment.title,
+        mime_type: attachment.mime_type,
+        size_bytes: attachment.size_bytes,
+        created_at: attachment.created_at,
+        host_label: attachment.type === 'link' ? getHostLabel(attachment.url) : null,
+        href:
+          attachment.type === 'image'
+            ? buildProjectAttachmentPaths(attachment.id).viewerPath
+            : attachment.type === 'file'
+              ? buildProjectAttachmentPaths(attachment.id).contentPath
+              : buildProjectAttachmentPaths(attachment.id).openPath,
+        viewer_path: buildProjectAttachmentPaths(attachment.id).viewerPath,
+        content_path: buildProjectAttachmentPaths(attachment.id).contentPath,
         can_delete:
           !!currentUser?.id &&
           (currentUser.id === project.creator_id || (canManage && attachment.user_id === currentUser.id)),

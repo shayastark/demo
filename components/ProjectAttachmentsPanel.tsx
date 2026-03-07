@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { File, Image as ImageIcon, Link as LinkIcon, Paperclip, Trash2, Upload } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import { supabase } from '@/lib/supabase'
@@ -19,10 +19,13 @@ interface ProjectAttachment {
   user_id: string
   type: ProjectAttachmentType
   title: string | null
-  url: string
   mime_type: string | null
   size_bytes: number | null
   created_at: string
+  host_label?: string | null
+  href: string
+  viewer_path?: string | null
+  content_path?: string | null
   can_delete?: boolean
 }
 
@@ -66,6 +69,8 @@ export default function ProjectAttachmentsPanel({
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<Record<string, string>>({})
+  const previewObjectUrlsRef = useRef<string[]>([])
 
   const emitEvent = (detail: Record<string, unknown>) => {
     if (typeof window === 'undefined') return
@@ -110,6 +115,54 @@ export default function ProjectAttachmentsPanel({
     loadAttachments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, authenticated])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const revokeExistingPreviews = () => {
+      previewObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+      previewObjectUrlsRef.current = []
+    }
+
+    const loadPreviews = async () => {
+      const imageAttachments = attachments.filter((attachment) => attachment.type === 'image')
+      if (imageAttachments.length === 0) {
+        revokeExistingPreviews()
+        setImagePreviewUrls({})
+        return
+      }
+
+      revokeExistingPreviews()
+      const nextPreviewUrls: Record<string, string> = {}
+      try {
+        const token = authenticated ? await getAccessToken() : null
+        const headers = token ? { Authorization: `Bearer ${token}` } : undefined
+
+        for (const attachment of imageAttachments) {
+          if (!attachment.content_path) continue
+          const response = await fetch(attachment.content_path, { headers })
+          if (!response.ok) continue
+          const blob = await response.blob()
+          const objectUrl = URL.createObjectURL(blob)
+          previewObjectUrlsRef.current.push(objectUrl)
+          nextPreviewUrls[attachment.id] = objectUrl
+        }
+      } catch (error) {
+        console.error('Error loading attachment previews:', error)
+      }
+
+      if (!isCancelled) {
+        setImagePreviewUrls(nextPreviewUrls)
+      }
+    }
+
+    void loadPreviews()
+
+    return () => {
+      isCancelled = true
+      revokeExistingPreviews()
+    }
+  }, [attachments, authenticated, getAccessToken])
 
   const selectedFileType = useMemo<ProjectAttachmentType>(() => {
     if (type === 'image') return 'image'
@@ -317,9 +370,9 @@ export default function ProjectAttachmentsPanel({
               <li key={attachment.id} className="border-t border-gray-900 px-3 py-3.5 sm:px-4">
                 <div className="flex items-center justify-between gap-3">
                   <a
-                    href={attachment.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={attachment.href}
+                    target={attachment.type === 'image' || attachment.type === 'file' ? '_blank' : undefined}
+                    rel={attachment.type === 'image' || attachment.type === 'file' ? 'noopener noreferrer' : undefined}
                     onClick={() =>
                       emitEvent({
                         action: 'open',
@@ -327,10 +380,22 @@ export default function ProjectAttachmentsPanel({
                         attachment_type: attachment.type,
                       })
                     }
-                    className="min-w-0 flex items-center gap-2.5 hover:opacity-90"
+                    className="min-w-0 flex items-center gap-3 hover:opacity-90"
                   >
                     {attachment.type === 'image' ? (
-                      <ImageIcon className="w-4 h-4 text-neon-green" />
+                      <div className="relative h-14 w-14 overflow-hidden rounded-xl border border-white/8 bg-gray-950 shadow-[0_8px_20px_rgba(0,0,0,0.25)]">
+                        {imagePreviewUrls[attachment.id] ? (
+                          <img
+                            src={imagePreviewUrls[attachment.id]}
+                            alt={attachment.title || 'Image attachment'}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <ImageIcon className="h-5 w-5 text-neon-green" />
+                          </div>
+                        )}
+                      </div>
                     ) : attachment.type === 'file' ? (
                       <File className="w-4 h-4 text-neon-green" />
                     ) : (
@@ -338,12 +403,24 @@ export default function ProjectAttachmentsPanel({
                     )}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-white">
-                        {attachment.title || attachment.url.replace(/^https?:\/\//, '')}
+                        {attachment.title ||
+                          (attachment.type === 'image'
+                            ? 'Image attachment'
+                            : attachment.type === 'file'
+                              ? 'File attachment'
+                              : 'Link attachment')}
                       </p>
                       <p className="text-[11px] text-gray-500">
-                        {attachment.type}
+                        {attachment.type === 'link'
+                          ? 'External link'
+                          : attachment.type === 'image'
+                            ? 'View larger image'
+                            : 'Open attachment'}
                         {attachment.size_bytes ? ` • ${formatBytes(attachment.size_bytes)}` : ''}
                       </p>
+                      {attachment.type === 'link' ? (
+                        <p className="text-[11px] text-gray-600">{attachment.host_label || 'External link'}</p>
+                      ) : null}
                     </div>
                   </a>
 
