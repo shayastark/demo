@@ -26,6 +26,7 @@ import {
   Copy,
   Share2,
   Eye,
+  EyeOff,
   Download,
   Plus,
   Edit,
@@ -183,6 +184,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   } | null>(null)
   const [blockedAccessRequestNote, setBlockedAccessRequestNote] = useState('')
   const [blockedAccessRequestSaving, setBlockedAccessRequestSaving] = useState(false)
+  const [updatingDiscoveryPreference, setUpdatingDiscoveryPreference] = useState(false)
   // Detect mobile vs desktop
   useEffect(() => {
     const checkMobile = () => {
@@ -1438,6 +1440,63 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       return
     }
     showToast('Project removed from library', 'success')
+  }
+
+  const handleHideFromExplore = async () => {
+    if (!project || !user) return
+    setUpdatingDiscoveryPreference(true)
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Not authenticated')
+      const response = await fetch('/api/discovery/preferences', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          target_type: 'project',
+          target_id: project.id,
+          preference: 'hide',
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to update Explore preferences')
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('discovery_preference_event', {
+            detail: {
+              schema: 'discovery_preference.v1',
+              action: 'hide_project',
+              source: 'project_detail',
+              target_type: 'project',
+              target_id: project.id,
+              position_index: null,
+            },
+          })
+        )
+        window.dispatchEvent(
+          new CustomEvent('discovery_feedback_event', {
+            detail: {
+              schema: 'discovery_feedback.v1',
+              action: 'hide_without_reason',
+              source: 'project_detail',
+              target_type: 'project',
+              target_id: project.id,
+              reason_code: null,
+            },
+          })
+        )
+      }
+
+      setIsProjectMenuOpen(false)
+      showToast("We'll show less like this in Explore", 'success')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to update Explore preferences', 'error')
+    } finally {
+      setUpdatingDiscoveryPreference(false)
+    }
   }
 
   const handleViewerNotificationModeChange = async (nextMode: ProjectNotificationMode) => {
@@ -3728,6 +3787,46 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </div>
                     </button>
                   )}
+                  <button
+                    onClick={() => handleHideFromExplore()}
+                    disabled={updatingDiscoveryPreference}
+                    style={{
+                      width: '100%',
+                      padding: '16px 20px',
+                      backgroundColor: '#1f2937',
+                      color: '#fff',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      cursor: updatingDiscoveryPreference ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      textAlign: 'left',
+                      opacity: updatingDiscoveryPreference ? 0.65 : 1,
+                    }}
+                    className="hover:bg-gray-700 transition"
+                  >
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      backgroundColor: '#374151',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <EyeOff style={{ width: '22px', height: '22px', color: '#ef4444' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Not Interested</div>
+                      <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+                        Hide this project from future Explore recommendations
+                      </div>
+                    </div>
+                  </button>
                 </>
               )}
 

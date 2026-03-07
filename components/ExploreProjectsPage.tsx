@@ -1,14 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createPortal } from 'react-dom'
 import { usePrivy } from '@privy-io/react-auth'
-import { BookmarkPlus, EyeOff, ListMusic, Loader2, MoreVertical, Pin, Search, User } from 'lucide-react'
-import { showToast } from '@/components/Toast'
-import { addToQueue } from '@/components/BottomTabBar'
+import { Loader2, Search } from 'lucide-react'
 import { buildDiscoveryImpactEventFields } from '@/lib/discoveryImpactMetrics'
 
 type ExploreSort = 'trending' | 'newest' | 'most_supported'
@@ -34,13 +30,6 @@ interface ExploreResponse {
   nextOffset: number | null
 }
 
-interface HiddenSnapshot {
-  item: ExploreItem
-  targetType: 'project'
-  targetId: string
-  positionIndex: number
-}
-
 const EXPLORE_INPUT_STYLE = {
   WebkitAppearance: 'none' as const,
   appearance: 'none' as const,
@@ -48,15 +37,6 @@ const EXPLORE_INPUT_STYLE = {
   backgroundColor: '#111827',
   border: '1px solid #374151',
   color: '#f9fafb',
-}
-
-const EXPLORE_ACTION_BUTTON_STYLE = {
-  WebkitAppearance: 'none' as const,
-  appearance: 'none' as const,
-  WebkitTapHighlightColor: 'transparent',
-  backgroundColor: '#000000',
-  border: '1px solid #374151',
-  color: '#e5e7eb',
 }
 
 const SORT_OPTIONS: Array<{ value: ExploreSort; label: string }> = [
@@ -87,7 +67,6 @@ function getProjectBadge(item: ExploreItem, sort: ExploreSort) {
 }
 
 export default function ExploreProjectsPage() {
-  const router = useRouter()
   const { ready, authenticated, login, getAccessToken } = usePrivy()
   const [items, setItems] = useState<ExploreItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,11 +77,6 @@ export default function ExploreProjectsPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [nextOffset, setNextOffset] = useState<number | null>(null)
   const [hasMore, setHasMore] = useState(false)
-  const [lastHidden, setLastHidden] = useState<HiddenSnapshot | null>(null)
-  const [preferenceLoadingId, setPreferenceLoadingId] = useState<string | null>(null)
-  const [menuItem, setMenuItem] = useState<ExploreItem | null>(null)
-  const [menuItemIndex, setMenuItemIndex] = useState<number>(-1)
-  const [isMounted, setIsMounted] = useState(false)
   const trackedImpressionKeysRef = useRef<Set<string>>(new Set())
 
   const queryLength = useMemo(() => debouncedQuery.trim().length, [debouncedQuery])
@@ -194,58 +168,12 @@ export default function ExploreProjectsPage() {
     )
   }
 
-  const emitDiscoveryPreferenceEvent = (
-    action: 'hide_project' | 'undo_hide',
-    detail: {
-      target_type: 'project'
-      target_id: string
-      position_index: number
-    }
-  ) => {
-    if (typeof window === 'undefined') return
-    window.dispatchEvent(
-      new CustomEvent('discovery_preference_event', {
-        detail: {
-          schema: 'discovery_preference.v1',
-          action,
-          source: 'explore',
-          ...detail,
-        },
-      })
-    )
-  }
-
-  const emitDiscoveryFeedbackEvent = (
-    action: 'hide_with_reason' | 'hide_without_reason' | 'reason_selected',
-    detail: {
-      target_type: 'project'
-      target_id: string
-      reason_code: string | null
-    }
-  ) => {
-    if (typeof window === 'undefined') return
-    window.dispatchEvent(
-      new CustomEvent('discovery_feedback_event', {
-        detail: {
-          schema: 'discovery_feedback.v1',
-          action,
-          source: 'explore',
-          ...detail,
-        },
-      })
-    )
-  }
-
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setDebouncedQuery(query)
     }, 300)
     return () => window.clearTimeout(timer)
   }, [query])
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
 
   useEffect(() => {
     if (authenticated && !ready) return
@@ -344,181 +272,6 @@ export default function ExploreProjectsPage() {
     }
   }
 
-  const hideTarget = async (args: {
-    item: ExploreItem
-    targetType: 'project'
-    targetId: string
-    positionIndex: number
-  }) => {
-    if (preferenceLoadingId) return
-    setPreferenceLoadingId(args.targetId)
-    const previousItems = items
-    const nextItems = items.filter((row) => row.project_id !== args.item.project_id)
-    setItems(nextItems)
-    setLastHidden({
-      item: args.item,
-      targetType: args.targetType,
-      targetId: args.targetId,
-      positionIndex: args.positionIndex,
-    })
-
-    try {
-      const token = await getAccessToken()
-      if (!token) throw new Error('Not authenticated')
-      const response = await fetch('/api/discovery/preferences', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          target_type: args.targetType,
-          target_id: args.targetId,
-          preference: 'hide',
-        }),
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Failed to save preference')
-
-      emitDiscoveryPreferenceEvent('hide_project', {
-        target_type: args.targetType,
-        target_id: args.targetId,
-        position_index: args.positionIndex,
-      })
-      emitDiscoveryFeedbackEvent('hide_without_reason', {
-        target_type: args.targetType,
-        target_id: args.targetId,
-        reason_code: null,
-      })
-    } catch (error) {
-      console.error('Error hiding discovery target:', error)
-      setItems(previousItems)
-      setLastHidden(null)
-      setError(error instanceof Error ? error.message : 'Failed to save preference')
-    } finally {
-      setPreferenceLoadingId(null)
-    }
-  }
-
-  const withAuthHeaders = async (): Promise<Record<string, string>> => {
-    const token = await getAccessToken()
-    if (!token) throw new Error('Not authenticated')
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    }
-  }
-
-  const saveProjectToLibrary = async (projectId: string) => {
-    try {
-      const response = await fetch('/api/library', {
-        method: 'POST',
-        headers: await withAuthHeaders(),
-        body: JSON.stringify({ project_id: projectId }),
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Failed to save project')
-      showToast(result.message === 'Already in library' ? 'Project already in library' : 'Saved to library', 'success')
-    } catch (actionError) {
-      showToast(actionError instanceof Error ? actionError.message : 'Failed to save project', 'error')
-    }
-  }
-
-  const pinProject = async (projectId: string) => {
-    try {
-      const saveResponse = await fetch('/api/library', {
-        method: 'POST',
-        headers: await withAuthHeaders(),
-        body: JSON.stringify({ project_id: projectId }),
-      })
-      const saveResult = await saveResponse.json()
-      if (!saveResponse.ok) throw new Error(saveResult.error || 'Failed to pin project')
-
-      const pinResponse = await fetch('/api/library', {
-        method: 'PATCH',
-        headers: await withAuthHeaders(),
-        body: JSON.stringify({ project_id: projectId, pinned: true }),
-      })
-      const pinResult = await pinResponse.json()
-      if (!pinResponse.ok) throw new Error(pinResult.error || 'Failed to pin project')
-      showToast('Project pinned to your dashboard', 'success')
-    } catch (actionError) {
-      showToast(actionError instanceof Error ? actionError.message : 'Failed to pin project', 'error')
-    }
-  }
-
-  const addProjectTracksToQueue = async (item: ExploreItem) => {
-    try {
-      const response = await fetch(`/api/tracks?project_id=${encodeURIComponent(item.project_id)}`, {
-        headers: await withAuthHeaders(),
-      })
-      const result = (await response.json()) as {
-        tracks?: Array<{ id: string; title: string; audio_url: string }>
-        error?: string
-      }
-      if (!response.ok) throw new Error(result.error || 'Failed to load tracks')
-      const tracks = result.tracks || []
-      if (tracks.length === 0) {
-        showToast('No tracks available for queue yet', 'info')
-        return
-      }
-      let addedCount = 0
-      tracks.forEach((track) => {
-        const added = addToQueue({
-          id: track.id,
-          title: track.title,
-          projectTitle: item.title,
-          audioUrl: track.audio_url,
-          projectCoverUrl: item.cover_image_url,
-        })
-        if (added) addedCount += 1
-      })
-      if (addedCount > 0) {
-        showToast(`Added ${addedCount} track${addedCount > 1 ? 's' : ''} to queue`, 'success')
-      } else {
-        showToast('Tracks are already in queue', 'info')
-      }
-    } catch (actionError) {
-      showToast(actionError instanceof Error ? actionError.message : 'Failed to add to queue', 'error')
-    }
-  }
-
-  const undoHide = async () => {
-    if (!lastHidden || preferenceLoadingId) return
-    setPreferenceLoadingId(lastHidden.targetId)
-    try {
-      const token = await getAccessToken()
-      if (!token) throw new Error('Not authenticated')
-      const response = await fetch('/api/discovery/preferences', {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          target_type: lastHidden.targetType,
-          target_id: lastHidden.targetId,
-          preference: 'hide',
-        }),
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Failed to undo preference')
-
-      setItems((prev) => [lastHidden.item, ...prev])
-      emitDiscoveryPreferenceEvent('undo_hide', {
-        target_type: lastHidden.targetType,
-        target_id: lastHidden.targetId,
-        position_index: lastHidden.positionIndex,
-      })
-      setLastHidden(null)
-    } catch (error) {
-      console.error('Error undoing discovery preference:', error)
-      setError(error instanceof Error ? error.message : 'Failed to undo preference')
-    } finally {
-      setPreferenceLoadingId(null)
-    }
-  }
-
   if (!ready) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -614,19 +367,6 @@ export default function ExploreProjectsPage() {
           </div>
         ) : (
           <>
-            {lastHidden ? (
-              <div className="ui-card mb-4 flex items-center justify-between gap-3 rounded-xl bg-gray-900 p-3 text-xs text-gray-200">
-                <span>Hidden from Explore.</span>
-                <button
-                  type="button"
-                  onClick={undoHide}
-                  disabled={preferenceLoadingId === lastHidden.targetId}
-                  className="ui-pressable min-h-8 rounded border border-gray-700 px-2 py-1 text-gray-100 hover:border-gray-500"
-                >
-                  Undo
-                </button>
-              </div>
-            ) : null}
             {shelfSections.length > 0 ? (
               <div className="mb-10 space-y-8">
                 {shelfSections.slice(0, 2).map((section) => (
@@ -703,28 +443,6 @@ export default function ExploreProjectsPage() {
                           Demo
                         </div>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          setMenuItem(item)
-                          setMenuItemIndex(index)
-                        }}
-                        className="ui-pressable absolute right-2.5 top-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white backdrop-blur-sm transition hover:border-white/20 hover:bg-black/85"
-                        style={{
-                          ...EXPLORE_ACTION_BUTTON_STYLE,
-                          backgroundColor: 'rgba(0, 0, 0, 0.72)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          color: '#ffffff',
-                          touchAction: 'manipulation',
-                          WebkitTouchCallout: 'none' as const,
-                        }}
-                        aria-label="Project actions"
-                      >
-                        <MoreVertical className="pointer-events-none h-4 w-4" />
-                      </button>
                     </div>
                   </Link>
                   <div className="flex items-start gap-3">
@@ -791,330 +509,6 @@ export default function ExploreProjectsPage() {
           </>
         )}
       </main>
-      {isMounted && menuItem
-        ? createPortal(
-        <>
-          <div
-            className="fixed inset-0 z-[1000] bg-black/70"
-            onClick={() => {
-              setMenuItem(null)
-              setMenuItemIndex(-1)
-            }}
-          />
-          <div
-            className="fixed bottom-0 left-0 right-0 z-[1001] rounded-t-2xl border-t border-gray-700 bg-[#0b1733]"
-            style={{
-              maxHeight: '82vh',
-              overflowY: 'auto',
-            }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '16px 20px',
-                borderBottom: '1px solid #374151',
-                flexDirection: 'column',
-              }}
-            >
-              <div
-                style={{
-                  width: '40px',
-                  height: '4px',
-                  backgroundColor: '#4B5563',
-                  borderRadius: '2px',
-                  marginBottom: '12px',
-                }}
-              />
-              <h2
-                style={{
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: '#fff',
-                  margin: 0,
-                  textAlign: 'center',
-                  maxWidth: '100%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {menuItem.title}
-              </h2>
-            </div>
-
-            <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  router.push(`/creator/${encodeURIComponent(menuItem.creator_id)}`)
-                  setMenuItem(null)
-                  setMenuItemIndex(-1)
-                }}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  backgroundColor: '#1f2937',
-                  color: '#fff',
-                  border: '1px solid #374151',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  textAlign: 'left',
-                }}
-                className="hover:bg-gray-700 transition"
-              >
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    backgroundColor: '#374151',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <User style={{ width: '22px', height: '22px', color: '#39FF14' }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>View Creator</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    See creator profile and contact info
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  void saveProjectToLibrary(menuItem.project_id)
-                  setMenuItem(null)
-                  setMenuItemIndex(-1)
-                }}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  backgroundColor: '#1f2937',
-                  color: '#fff',
-                  border: '1px solid #374151',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  textAlign: 'left',
-                }}
-                className="hover:bg-gray-700 transition"
-              >
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    backgroundColor: '#39FF14',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <BookmarkPlus style={{ width: '22px', height: '22px', color: '#000' }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>Save to Library</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    Add to your saved projects
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  void addProjectTracksToQueue(menuItem)
-                  setMenuItem(null)
-                  setMenuItemIndex(-1)
-                }}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  backgroundColor: '#1f2937',
-                  color: '#fff',
-                  border: '1px solid #374151',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  textAlign: 'left',
-                }}
-                className="hover:bg-gray-700 transition"
-              >
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    backgroundColor: '#374151',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <ListMusic style={{ width: '22px', height: '22px', color: '#39FF14' }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>Add to Queue</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    Add all tracks to play queue
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  void pinProject(menuItem.project_id)
-                  setMenuItem(null)
-                  setMenuItemIndex(-1)
-                }}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  backgroundColor: '#1f2937',
-                  color: '#fff',
-                  border: '1px solid #374151',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  textAlign: 'left',
-                }}
-                className="hover:bg-gray-700 transition"
-              >
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    backgroundColor: '#374151',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Pin style={{ width: '22px', height: '22px', color: '#39FF14' }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>Pin Project</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    Pin to top of your dashboard
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                disabled={preferenceLoadingId === menuItem.project_id}
-                onClick={() => {
-                  const selectedItem = menuItem
-                  const selectedIndex = menuItemIndex >= 0 ? menuItemIndex : 0
-                  setMenuItem(null)
-                  setMenuItemIndex(-1)
-                  void hideTarget({
-                    item: selectedItem,
-                    targetType: 'project',
-                    targetId: selectedItem.project_id,
-                    positionIndex: selectedIndex,
-                  })
-                }}
-                style={{
-                  width: '100%',
-                  padding: '16px 20px',
-                  backgroundColor: '#1f2937',
-                  color: '#fff',
-                  border: '1px solid #374151',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  textAlign: 'left',
-                  opacity: preferenceLoadingId === menuItem.project_id ? 0.65 : 1,
-                }}
-                className="hover:bg-gray-700 transition"
-              >
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    backgroundColor: '#374151',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <EyeOff style={{ width: '22px', height: '22px', color: '#ef4444' }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>Not Interested</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-                    Hide this project from Explore
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            <div style={{ padding: '12px 20px 20px' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuItem(null)
-                  setMenuItemIndex(-1)
-                }}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  backgroundColor: '#374151',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-                className="hover:bg-gray-600 transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </>
-        ,
-        document.body
-      )
-        : null}
     </div>
   )
 }
