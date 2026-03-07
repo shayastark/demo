@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { MessageCircle, ChevronDown, Pencil, Trash2, Send, Pin, Lightbulb, Flame, Check } from 'lucide-react'
+import { MessageCircle, ChevronDown, Pencil, Trash2, Send, Pin, Flame, Meh } from 'lucide-react'
 import { Comment } from '@/lib/types'
 import { showToast } from './Toast'
 import { COMMENT_REACTION_TYPES, type ReactionType } from '@/lib/commentReactions'
@@ -31,10 +31,11 @@ export default function CommentsPanel({
   const [pendingPinCommentId, setPendingPinCommentId] = useState<string | null>(null)
   const supporterImpressionSentRef = useRef<Set<string>>(new Set())
 
-  const reactionMeta: Record<ReactionType, { label: string; icon: typeof Lightbulb }> = {
-    helpful: { label: 'Insightful', icon: Lightbulb },
+  const displayedReactionTypes: ReactionType[] = ['fire', 'agree']
+  const reactionMeta: Record<ReactionType, { label: string; icon: typeof Flame }> = {
+    helpful: { label: 'Insightful', icon: Flame },
     fire: { label: 'Hype', icon: Flame },
-    agree: { label: 'Agree', icon: Check },
+    agree: { label: 'Naw', icon: Meh },
   }
 
   const withAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -415,26 +416,25 @@ export default function CommentsPanel({
       {commentsOpen && (
         <>
           <div className="px-4 pb-4 pt-4 sm:px-5">
-            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(10,12,18,0.96),rgba(6,7,10,0.96))] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
-              <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(10,12,18,0.96),rgba(6,7,10,0.96))] px-4 pb-4 pt-5 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-white">Join the conversation</p>
-                  <p className="text-xs text-gray-500">Thoughtful comments help creators understand what resonates.</p>
                 </div>
               </div>
-              <div className="flex items-end gap-2.5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <textarea
                 value={projectInput}
                 onChange={(e) => setProjectInput(e.target.value)}
                 placeholder={authenticated ? 'Add a comment...' : 'Sign in to add a comment...'}
                 rows={2}
-                className="flex-1 resize-none rounded-2xl border border-white/8 bg-black/70 px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:border-neon-green focus:outline-none"
+                className="block w-full flex-1 resize-none rounded-2xl border border-white/8 bg-black/70 px-4 py-3 text-sm leading-6 text-white placeholder:text-gray-500 focus:border-neon-green focus:outline-none"
               />
               <button
                 onClick={submitProjectComment}
                 disabled={submittingProject || !projectInput.trim()}
                 aria-label="Post comment"
-                className="ui-pressable min-h-11 min-w-[92px] rounded-2xl bg-neon-green px-4 text-sm font-semibold text-black shadow-[0_10px_28px_rgba(57,255,20,0.22)] disabled:opacity-40"
+                className="ui-pressable min-h-11 w-full rounded-2xl bg-neon-green px-4 text-sm font-semibold text-black shadow-[0_10px_28px_rgba(57,255,20,0.22)] disabled:opacity-40 sm:min-w-[92px] sm:w-auto"
               >
                 <span className="inline-flex items-center gap-1">
                   <Send className="w-3.5 h-3.5" />
@@ -560,7 +560,7 @@ export default function CommentsPanel({
                           <>
                             <p className="whitespace-pre-wrap break-words text-sm leading-7 text-gray-100">{comment.content}</p>
                             <div className="mt-4 flex flex-wrap items-center gap-2">
-                              {COMMENT_REACTION_TYPES.map((reactionType) => {
+                              {displayedReactionTypes.map((reactionType) => {
                                 const active = !!comment.viewer_reactions?.[reactionType]
                                 const key = `${comment.id}:${reactionType}`
                                 const isPending = !!pendingReactions[key]
@@ -580,9 +580,9 @@ export default function CommentsPanel({
                                   >
                                     <Icon className="h-3.5 w-3.5" />
                                     <span>{meta.label}</span>
-                                    <span className={`${(comment.reactions?.[reactionType] || 0) > 0 ? 'text-inherit' : 'text-gray-500'}`}>
-                                      {comment.reactions?.[reactionType] || 0}
-                                    </span>
+                                    {(comment.reactions?.[reactionType] || 0) > 0 ? (
+                                      <span>{comment.reactions?.[reactionType] || 0}</span>
+                                    ) : null}
                                   </button>
                                 )
                               })}
