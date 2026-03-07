@@ -108,6 +108,8 @@ const COMPACT_DARK_SELECT_STYLE = {
   color: '#f3f4f6',
   colorScheme: 'dark' as const,
 }
+const NEON_GREEN_SELECT_CARET =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2339FF14' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
 const COMPACT_DANGER_ACTION_BUTTON_CLASS =
   'ui-pressable inline-flex h-9 min-w-[116px] w-auto shrink-0 appearance-none items-center justify-center whitespace-nowrap rounded-full border border-red-400/50 bg-red-500/10 px-4 text-sm font-semibold text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
 
@@ -126,6 +128,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [editingTrackNotes, setEditingTrackNotes] = useState<Record<string, string>>({})
   const [savingNote, setSavingNote] = useState<string | null>(null)
   const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
+  const [creatorAvatarUrl, setCreatorAvatarUrl] = useState<string | null>(null)
   const [creatorId, setCreatorId] = useState<string | null>(null)
   const [showCreatorModal, setShowCreatorModal] = useState(false)
   const [newTracks, setNewTracks] = useState<Array<{ file: File | null; title: string; image?: File; imagePreview?: string }>>([])
@@ -349,16 +352,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         setIsPinned(projectData.pinned)
       }
 
-      // Fetch creator's username
+      // Fetch creator's profile summary
       if (projectData.creator_id) {
         const { data: creatorData } = await supabase
           .from('users')
-          .select('username, email')
+          .select('username, email, avatar_url')
           .eq('id', projectData.creator_id)
           .single()
         
         if (creatorData) {
           setCreatorUsername(creatorData.username || creatorData.email || null)
+          setCreatorAvatarUrl(creatorData.avatar_url || null)
         }
         setCreatorId(projectData.creator_id)
       }
@@ -2347,8 +2351,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         tabIndex={0}
                         onClick={() => setShowCreatorModal(true)}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowCreatorModal(true) }}
-                        className="text-white text-lg font-medium hover:underline underline-offset-4 transition cursor-pointer"
+                        className="inline-flex items-center gap-2 text-white text-lg font-medium hover:underline underline-offset-4 transition cursor-pointer"
                       >
+                        <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-white/8 bg-gray-900 text-xs font-semibold text-gray-200 shadow-[0_6px_16px_rgba(0,0,0,0.25)]">
+                          {creatorAvatarUrl ? (
+                            <img
+                              src={creatorAvatarUrl}
+                              alt={`${creatorUsername} avatar`}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            creatorUsername.trim().charAt(0).toUpperCase()
+                          )}
+                        </span>
                         {creatorUsername}
                       </span>
                     )}
@@ -2457,7 +2472,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
-                      <div className="relative shrink-0 pr-4 pt-1">
+                      <div className="relative shrink-0 pr-5 pt-1">
                         <select
                           value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
                           onChange={async (event) => {
@@ -2508,8 +2523,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             borderColor: '#6b7280',
                             borderRadius: '10px',
                             backgroundColor: '#111827',
+                            backgroundImage: NEON_GREEN_SELECT_CARET,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 12px center',
+                            backgroundSize: '18px 18px',
                             boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
-                            paddingRight: '56px',
+                            paddingRight: '44px',
                           }}
                           aria-label="Project visibility"
                         >
@@ -2517,14 +2536,6 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           <option value="unlisted">Unlisted</option>
                           <option value="private">Private</option>
                         </select>
-                        <div
-                          className="pointer-events-none absolute right-12 top-1/2 h-5 -translate-y-1/2 border-l border-gray-500/70"
-                          aria-hidden
-                        />
-                        <ChevronDown
-                          className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neon-green drop-shadow-[0_0_6px_rgba(57,255,20,0.55)]"
-                          aria-hidden
-                        />
                       </div>
                     </div>
 
@@ -2540,7 +2551,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Allow others to view this project via share link.
                         </div>
                       </div>
-                      <div className="shrink-0 pr-4 pt-1">
+                      <div className="shrink-0 pr-5 pt-1">
                         <button
                           onClick={async () => {
                             const newValue = !(project.sharing_enabled ?? true)
@@ -2604,7 +2615,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Users can download tracks from this project.
                         </div>
                       </div>
-                      <div className="shrink-0 pr-4 pt-1">
+                      <div className="shrink-0 pr-5 pt-1">
                         <button
                           onClick={async () => {
                             const newValue = !project.allow_downloads
