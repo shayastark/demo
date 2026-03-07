@@ -57,6 +57,13 @@ const VIBE_LABELS: Record<OnboardingVibe, string> = {
   cinematic: 'Cinematic',
 }
 
+const TASTE_ACTION_BUTTON_CLASS =
+  'inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-200 transition hover:border-gray-600 hover:text-white'
+const TASTE_CHIP_BUTTON_CLASS =
+  'inline-flex min-h-9 items-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition'
+const TASTE_PRIMARY_BUTTON_CLASS =
+  'inline-flex min-h-10 items-center rounded-md border border-neon-green bg-black px-3 py-1.5 text-xs font-semibold text-neon-green transition hover:opacity-80 disabled:opacity-70'
+
 export default function OnboardingPreferencesSection({
   authenticated,
   getAccessToken,
@@ -240,16 +247,21 @@ export default function OnboardingPreferencesSection({
 
   return (
     <div className="bg-gray-900 rounded-xl mb-6 border border-gray-800" style={{ padding: '20px 24px 24px 24px' }}>
-      <div className="flex items-center justify-between gap-3" style={{ marginBottom: '12px' }}>
+      <div className="flex items-center justify-between gap-3" style={{ marginBottom: '14px' }}>
         <h2 className="font-semibold text-neon-green text-lg">
           {isOnboardingMode ? 'Taste preferences (optional)' : 'Discovery taste preferences'}
         </h2>
-        <span className="text-xs text-gray-400">{selectedCount} selected</span>
+        <span className="inline-flex min-h-8 items-center rounded-md border border-gray-800 bg-black/40 px-2.5 text-xs font-medium text-gray-300">
+          {selectedCount} selected
+        </span>
       </div>
       {shouldShowCompactOnly ? null : (
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="mb-2 text-sm text-gray-400">
           Pick 3-5 options for better Explore and recommendation ordering.
         </p>
+      )}
+      {shouldShowCompactOnly ? null : (
+        <p className="mb-4 text-xs text-gray-500">Used to personalize ranking, not to hide content.</p>
       )}
 
       {loading ? (
@@ -280,7 +292,8 @@ export default function OnboardingPreferencesSection({
               onClick={() => setEditorExpanded(true)}
               aria-expanded={false}
               aria-controls="onboarding-preferences-editor"
-              className="min-h-10 rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:border-gray-600 hover:text-white"
+              className={TASTE_ACTION_BUTTON_CLASS}
+              style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
             >
               Edit preferences
             </button>
@@ -295,7 +308,8 @@ export default function OnboardingPreferencesSection({
                 onClick={() => setEditorExpanded(false)}
                 aria-expanded
                 aria-controls="onboarding-preferences-editor"
-                className="min-h-10 rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:border-gray-600 hover:text-white"
+                className={TASTE_ACTION_BUTTON_CLASS}
+                style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
               >
                 Collapse editor
               </button>
@@ -303,9 +317,9 @@ export default function OnboardingPreferencesSection({
           ) : null}
 
           <div id="onboarding-preferences-editor">
-          <div className="mb-4">
+          <div className="mb-5">
             <p className="text-xs text-gray-400 mb-2">Genres</p>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {ONBOARDING_GENRE_OPTIONS.map((genre) => {
                 const active = prefs.preferred_genres.includes(genre)
                 return (
@@ -313,9 +327,12 @@ export default function OnboardingPreferencesSection({
                     key={genre}
                     type="button"
                     onClick={() => toggleGenre(genre)}
-                    className={`min-h-9 text-xs px-2.5 py-1.5 rounded border ${
-                      active ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
+                    className={`${TASTE_CHIP_BUTTON_CLASS} ${
+                      active
+                        ? 'border-neon-green bg-neon-green/10 text-neon-green'
+                        : 'border-gray-700 bg-black text-gray-300'
                     }`}
+                    style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
                   >
                     {GENRE_LABELS[genre]}
                   </button>
@@ -324,9 +341,9 @@ export default function OnboardingPreferencesSection({
             </div>
           </div>
 
-          <div className="mb-5">
+          <div className="mb-6">
             <p className="text-xs text-gray-400 mb-2">Vibes</p>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {ONBOARDING_VIBE_OPTIONS.map((vibe) => {
                 const active = prefs.preferred_vibes.includes(vibe)
                 return (
@@ -334,9 +351,12 @@ export default function OnboardingPreferencesSection({
                     key={vibe}
                     type="button"
                     onClick={() => toggleVibe(vibe)}
-                    className={`min-h-9 text-xs px-2.5 py-1.5 rounded border ${
-                      active ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
+                    className={`${TASTE_CHIP_BUTTON_CLASS} ${
+                      active
+                        ? 'border-neon-green bg-neon-green/10 text-neon-green'
+                        : 'border-gray-700 bg-black text-gray-300'
                     }`}
+                    style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
                   >
                     {VIBE_LABELS[vibe]}
                   </button>
@@ -350,7 +370,8 @@ export default function OnboardingPreferencesSection({
               type="button"
               onClick={() => save(true)}
               disabled={saving || (!edited && !!prefs.onboarding_completed_at)}
-              className="min-h-10 text-xs px-3 py-1.5 rounded border border-neon-green text-neon-green disabled:opacity-70"
+              className={TASTE_PRIMARY_BUTTON_CLASS}
+              style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
             >
               {saving ? 'Saving...' : isOnboardingMode ? 'Save & continue' : 'Save preferences'}
             </button>
@@ -359,7 +380,8 @@ export default function OnboardingPreferencesSection({
                 type="button"
                 onClick={() => save(false)}
                 disabled={saving}
-                className="min-h-10 text-xs px-3 py-1.5 rounded border border-gray-700 text-gray-300"
+                className={TASTE_ACTION_BUTTON_CLASS}
+                style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
               >
                 Skip for now
               </button>

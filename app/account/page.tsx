@@ -622,14 +622,21 @@ function AccountPageContent() {
           <div className="flex items-center" style={{ gap: '24px' }}>
           <Link
             href="/dashboard"
-              className="text-sm text-neon-green hover:opacity-80 underline-offset-4 hover:underline opacity-70"
+              className="text-sm font-semibold text-white underline underline-offset-4 hover:opacity-80"
           >
               Dashboard
           </Link>
             <button
               onClick={logout}
-              className="inline-flex min-h-10 items-center rounded-md px-2.5 py-1 text-[15px] font-semibold text-neon-green transition hover:bg-gray-900 hover:text-neon-green/80"
-              style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+              className="inline-flex min-h-10 items-center px-0 py-1 text-[15px] font-semibold text-neon-green underline-offset-4 transition hover:opacity-80 hover:underline"
+              style={{
+                WebkitAppearance: 'none',
+                appearance: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+              }}
             >
               Sign out
             </button>

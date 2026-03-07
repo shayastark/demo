@@ -28,6 +28,11 @@ interface HiddenDiscoverySectionProps {
   getAccessToken?: () => Promise<string | null>
 }
 
+const HIDDEN_ACTION_BUTTON_CLASS =
+  'inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-200 transition hover:border-gray-600 hover:text-white'
+const HIDDEN_FILTER_BUTTON_CLASS =
+  'inline-flex min-h-9 items-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition'
+
 export default function HiddenDiscoverySection({ authenticated, getAccessToken }: HiddenDiscoverySectionProps) {
   const collapseStorageKey = 'demo.hidden-discovery.expanded.account'
   const [filter, setFilter] = useState<HiddenFilter>('all')
@@ -186,7 +191,8 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
           onClick={() => setExpandedState(!expanded)}
           aria-expanded={expanded}
           aria-controls="hidden-discovery-content"
-          className="min-h-10 rounded-md border border-gray-700 px-3 py-2 text-xs text-gray-200 hover:border-gray-600 hover:text-white"
+          className={HIDDEN_ACTION_BUTTON_CLASS}
+          style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
         >
           {expanded ? 'Collapse' : 'Manage'}
         </button>
@@ -207,9 +213,12 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
                   setFilter(value)
                   emitManageEvent('filter_change', { target_type: value === 'all' ? null : value })
                 }}
-                className={`min-h-9 text-xs px-2.5 py-1.5 rounded border ${
-                  filter === value ? 'border-neon-green text-neon-green' : 'border-gray-700 text-gray-300'
+                className={`${HIDDEN_FILTER_BUTTON_CLASS} ${
+                  filter === value
+                    ? 'border-neon-green bg-neon-green/10 text-neon-green'
+                    : 'border-gray-700 bg-black text-gray-300'
                 }`}
+                style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
               >
                 {value === 'all' ? 'All' : value === 'creator' ? 'Creators' : 'Projects'}
               </button>
@@ -237,7 +246,8 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
                     type="button"
                     disabled={actionLoadingId === item.target_id}
                     onClick={() => handleUnhide(item)}
-                    className="min-h-9 text-xs px-2.5 py-1.5 rounded border border-gray-700 text-gray-200 inline-flex items-center gap-1"
+                    className={`${HIDDEN_ACTION_BUTTON_CLASS} text-xs`}
+                    style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
                   >
                     {actionLoadingId === item.target_id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                     Unhide
@@ -249,7 +259,8 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
                   type="button"
                   onClick={() => load(false)}
                   disabled={loadingMore}
-                  className="min-h-9 text-xs px-2.5 py-1.5 rounded border border-gray-700 text-gray-200 inline-flex items-center gap-1"
+                  className={`${HIDDEN_ACTION_BUTTON_CLASS} text-xs`}
+                  style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
                 >
                   {loadingMore ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                   {loadingMore ? 'Loading...' : 'Load more'}
