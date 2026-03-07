@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Project } from '@/lib/types'
-import { Plus, Music, Eye, MoreVertical, Share2, Trash2, Pin, X } from 'lucide-react'
+import { Plus, Music, Eye, MoreVertical, Share2, Trash2, Pin, X, ChevronDown } from 'lucide-react'
 import { ProjectCardSkeleton } from './SkeletonLoader'
 import Image from 'next/image'
 import { showToast } from './Toast'
@@ -35,6 +35,7 @@ export default function ClientDashboard() {
   const [shareModalProject, setShareModalProject] = useState<Project | null>(null)
   const [dbUserId, setDbUserId] = useState<string | null>(null)
   const [isMiniPlayerShowing, setIsMiniPlayerShowing] = useState(false)
+  const [savedProjectsOpen, setSavedProjectsOpen] = useState(true)
   const loadingRef = useRef(false)
   const loadedUserIdRef = useRef<string | null>(null)
   const lastProcessedStateRef = useRef<string | null>(null)
@@ -536,9 +537,6 @@ export default function ClientDashboard() {
 
       <main className="relative z-10 mx-auto max-w-7xl overflow-x-hidden px-4 py-8">
         <h1 className="mb-6 text-3xl font-bold text-white">Your Projects</h1>
-        <FollowingFeedSection authenticated={authenticated} getAccessToken={getAccessToken} />
-        <WhoToFollowSection authenticated={authenticated} getAccessToken={getAccessToken} />
-        <SharedWithMeSection authenticated={authenticated} getAccessToken={getAccessToken} />
 
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -671,116 +669,140 @@ export default function ClientDashboard() {
         {/* Saved Projects Section */}
         {!loading && savedProjects.length > 0 && (
           <div style={{ marginTop: '48px' }}>
-            <h2 className="mb-6 text-2xl font-bold text-white">Saved Projects</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 md:gap-6 lg:grid-cols-5">
-              {savedProjects.map((project) => (
-                <div
-                  key={`saved-${project.id}`}
-                  style={{
-                    backgroundColor: '#111827',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    position: 'relative',
-                  }}
-                  className="box-border hover:bg-gray-800 transition group w-full md:max-w-[190px] md:mx-auto"
-                >
-                  {/* Pinned badge */}
-                  {project.pinned && (
-                    <div 
-                      style={{
-                        position: 'absolute',
-                        top: '4px',
-                        left: '4px',
-                        zIndex: 10,
-                        backgroundColor: '#39FF14',
-                        borderRadius: '4px',
-                        padding: '2px 6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}
-                    >
-                      <Pin style={{ width: '10px', height: '10px', color: '#000' }} />
-                      <span style={{ fontSize: '10px', fontWeight: 600, color: '#000' }}>Pinned</span>
-                    </div>
-                  )}
-
-                  {/* Image with menu overlay */}
-                  <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: '12px' }}>
-                    <Link
-                      href={`/share/${project.share_token}`}
-                      style={{ display: 'block', width: '100%', height: '100%' }}
-                    >
-                      {project.cover_image_url ? (
-                        <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
-                          <Image
-                            src={project.cover_image_url}
-                            alt={project.title}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                          />
-                        </div>
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
-                        </div>
-                      )}
-                    </Link>
-                    
-                    {/* Three-dot menu button */}
-                    <div 
-                      ref={(el) => { menuRefs.current[`saved-${project.id}`] = el }}
-                      style={{
-                        position: 'absolute',
-                        top: '6px',
-                        right: '6px',
-                        zIndex: 10,
-                      }}
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          setOpenMenuId(openMenuId === `saved-${project.id}` ? null : `saved-${project.id}`)
-                        }}
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold text-white">Saved Projects</h2>
+              <button
+                type="button"
+                onClick={() => setSavedProjectsOpen((prev) => !prev)}
+                className="btn-unstyled ui-pressable inline-flex items-center gap-2 rounded-md border border-gray-700 bg-black px-3 py-1.5 text-xs font-semibold text-neon-green hover:border-gray-500 hover:text-neon-green/80"
+                style={{ WebkitAppearance: 'none', appearance: 'none' }}
+                aria-expanded={savedProjectsOpen}
+                aria-label={savedProjectsOpen ? 'Collapse saved projects' : 'Expand saved projects'}
+              >
+                {savedProjectsOpen ? 'Collapse' : 'Expand'}
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${savedProjectsOpen ? '' : '-rotate-90'}`}
+                  aria-hidden
+                />
+              </button>
+            </div>
+            {savedProjectsOpen ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 md:gap-6 lg:grid-cols-5">
+                {savedProjects.map((project) => (
+                  <div
+                    key={`saved-${project.id}`}
+                    style={{
+                      backgroundColor: '#111827',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      position: 'relative',
+                    }}
+                    className="box-border hover:bg-gray-800 transition group w-full md:max-w-[190px] md:mx-auto"
+                  >
+                    {/* Pinned badge */}
+                    {project.pinned && (
+                      <div 
                         style={{
-                          width: '28px',
-                          height: '28px',
-                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                          borderRadius: '50%',
+                          position: 'absolute',
+                          top: '4px',
+                          left: '4px',
+                          zIndex: 10,
+                          backgroundColor: '#39FF14',
+                          borderRadius: '4px',
+                          padding: '2px 6px',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          border: 'none',
-                          cursor: 'pointer',
+                          gap: '4px',
                         }}
-                        className="text-white transition shadow-lg hover:bg-black sm:h-8 sm:w-8"
-                        title="More options"
-                        type="button"
                       >
-                        <MoreVertical style={{ width: '14px', height: '14px' }} />
-                      </button>
+                        <Pin style={{ width: '10px', height: '10px', color: '#000' }} />
+                        <span style={{ fontSize: '10px', fontWeight: 600, color: '#000' }}>Pinned</span>
+                      </div>
+                    )}
+
+                    {/* Image with menu overlay */}
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: '12px' }}>
+                      <Link
+                        href={`/share/${project.share_token}`}
+                        style={{ display: 'block', width: '100%', height: '100%' }}
+                      >
+                        {project.cover_image_url ? (
+                          <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+                            <Image
+                              src={project.cover_image_url}
+                              alt={project.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                            />
+                          </div>
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Music className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600" />
+                          </div>
+                        )}
+                      </Link>
+                      
+                      {/* Three-dot menu button */}
+                      <div 
+                        ref={(el) => { menuRefs.current[`saved-${project.id}`] = el }}
+                        style={{
+                          position: 'absolute',
+                          top: '6px',
+                          right: '6px',
+                          zIndex: 10,
+                        }}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setOpenMenuId(openMenuId === `saved-${project.id}` ? null : `saved-${project.id}`)
+                          }}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                          className="text-white transition shadow-lg hover:bg-black sm:h-8 sm:w-8"
+                          title="More options"
+                          type="button"
+                        >
+                          <MoreVertical style={{ width: '14px', height: '14px' }} />
+                        </button>
+                      </div>
                     </div>
+                    
+                    {/* Title and creator */}
+                    <Link
+                      href={`/share/${project.share_token}`}
+                      className="block space-y-1"
+                    >
+                      <h3 className="min-h-[2.5rem] text-sm font-semibold leading-tight text-white line-clamp-2 sm:min-h-[2.75rem] sm:text-base">
+                        {project.title}
+                      </h3>
+                      <p className="truncate text-xs leading-tight text-gray-400">
+                        by {project.creator_username}
+                      </p>
+                    </Link>
                   </div>
-                  
-                  {/* Title and creator */}
-                  <Link
-                    href={`/share/${project.share_token}`}
-                    className="block space-y-1"
-                  >
-                    <h3 className="min-h-[2.5rem] text-sm font-semibold leading-tight text-white line-clamp-2 sm:min-h-[2.75rem] sm:text-base">
-                      {project.title}
-                    </h3>
-                    <p className="truncate text-xs leading-tight text-gray-400">
-                      by {project.creator_username}
-                    </p>
-                  </Link>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         )}
+
+        <div className="mt-12">
+          <SharedWithMeSection authenticated={authenticated} getAccessToken={getAccessToken} />
+          <FollowingFeedSection authenticated={authenticated} getAccessToken={getAccessToken} />
+          <WhoToFollowSection authenticated={authenticated} getAccessToken={getAccessToken} />
+        </div>
       </main>
 
       {/* Share Modal */}
