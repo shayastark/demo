@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { createPortal } from 'react-dom'
 import { usePrivy } from '@privy-io/react-auth'
-import { BookmarkPlus, EyeOff, ListMusic, Loader2, MoreVertical, Pin, Search, User } from 'lucide-react'
+import { BookmarkPlus, ChevronDown, EyeOff, ListMusic, Loader2, MoreVertical, Pin, Search, User } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import { addToQueue } from '@/components/BottomTabBar'
 import { buildDiscoveryImpactEventFields } from '@/lib/discoveryImpactMetrics'
@@ -82,6 +83,7 @@ export default function ExploreProjectsPage() {
   const [preferenceLoadingId, setPreferenceLoadingId] = useState<string | null>(null)
   const [menuItem, setMenuItem] = useState<ExploreItem | null>(null)
   const [menuItemIndex, setMenuItemIndex] = useState<number>(-1)
+  const [isMounted, setIsMounted] = useState(false)
   const trackedImpressionKeysRef = useRef<Set<string>>(new Set())
 
   const queryLength = useMemo(() => debouncedQuery.trim().length, [debouncedQuery])
@@ -171,6 +173,10 @@ export default function ExploreProjectsPage() {
     }, 300)
     return () => window.clearTimeout(timer)
   }, [query])
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     if (authenticated && !ready) return
@@ -482,21 +488,24 @@ export default function ExploreProjectsPage() {
                 style={EXPLORE_INPUT_STYLE}
               />
             </div>
-            <select
-              value={sort}
-              onChange={(event) => {
-                const next = event.target.value as ExploreSort
-                setSort(next)
-                emitEvent('sort_change', { sort: next })
-                emitRankingEvent('sort_change', { sort: next })
-              }}
-              className="min-h-10 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
-              style={EXPLORE_SELECT_STYLE}
-            >
-              <option value="trending">Trending</option>
-              <option value="newest">Newest</option>
-              <option value="most_supported">Most Supported</option>
-            </select>
+            <div className="relative">
+              <select
+                value={sort}
+                onChange={(event) => {
+                  const next = event.target.value as ExploreSort
+                  setSort(next)
+                  emitEvent('sort_change', { sort: next })
+                  emitRankingEvent('sort_change', { sort: next })
+                }}
+                className="min-h-10 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 pr-9 text-sm text-white focus:outline-none focus:border-neon-green"
+                style={EXPLORE_SELECT_STYLE}
+              >
+                <option value="trending">Trending</option>
+                <option value="newest">Newest</option>
+                <option value="most_supported">Most Supported</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neon-green" />
+            </div>
           </div>
         </div>
 
@@ -589,18 +598,6 @@ export default function ExploreProjectsPage() {
                     </Link>
                     <button
                       type="button"
-                      onPointerDown={(event) => {
-                        event.preventDefault()
-                        event.stopPropagation()
-                        setMenuItem(item)
-                        setMenuItemIndex(index)
-                      }}
-                      onTouchStart={(event) => {
-                        event.preventDefault()
-                        event.stopPropagation()
-                        setMenuItem(item)
-                        setMenuItemIndex(index)
-                      }}
                       onClick={(event) => {
                         event.preventDefault()
                         event.stopPropagation()
@@ -611,7 +608,7 @@ export default function ExploreProjectsPage() {
                       style={{
                         ...EXPLORE_ACTION_BUTTON_STYLE,
                         touchAction: 'manipulation',
-                        WebkitTouchCallout: 'none',
+                        WebkitTouchCallout: 'none' as const,
                       }}
                       aria-label="Project actions"
                     >
@@ -665,17 +662,18 @@ export default function ExploreProjectsPage() {
           </>
         )}
       </main>
-      {menuItem ? (
+      {isMounted && menuItem
+        ? createPortal(
         <>
           <div
-            className="fixed inset-0 z-[100] bg-black/70"
+            className="fixed inset-0 z-[1000] bg-black/70"
             onClick={() => {
               setMenuItem(null)
               setMenuItemIndex(-1)
             }}
           />
           <div
-            className="fixed bottom-0 left-0 right-0 z-[101] rounded-t-2xl border-t border-gray-700 bg-[#0b1733]"
+            className="fixed bottom-0 left-0 right-0 z-[1001] rounded-t-2xl border-t border-gray-700 bg-[#0b1733]"
             style={{
               maxHeight: '82vh',
               overflowY: 'auto',
@@ -984,7 +982,10 @@ export default function ExploreProjectsPage() {
             </div>
           </div>
         </>
-      ) : null}
+        ,
+        document.body
+      )
+        : null}
     </div>
   )
 }
