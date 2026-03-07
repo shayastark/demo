@@ -30,6 +30,8 @@ interface HiddenDiscoverySectionProps {
 
 const HIDDEN_ACTION_BUTTON_CLASS =
   'inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-200 transition hover:border-gray-600 hover:text-white'
+const HIDDEN_HEADER_ACTION_CLASS =
+  'inline-flex min-h-9 items-center text-sm font-medium text-gray-400 transition hover:text-white'
 const HIDDEN_FILTER_BUTTON_CLASS =
   'inline-flex min-h-9 items-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition'
 
@@ -191,8 +193,15 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
           onClick={() => setExpandedState(!expanded)}
           aria-expanded={expanded}
           aria-controls="hidden-discovery-content"
-          className={HIDDEN_ACTION_BUTTON_CLASS}
-          style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+          className={HIDDEN_HEADER_ACTION_CLASS}
+          style={{
+            WebkitAppearance: 'none',
+            appearance: 'none',
+            WebkitTapHighlightColor: 'transparent',
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+          }}
         >
           {expanded ? 'Collapse' : 'Manage'}
         </button>

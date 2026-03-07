@@ -59,6 +59,8 @@ const VIBE_LABELS: Record<OnboardingVibe, string> = {
 
 const TASTE_ACTION_BUTTON_CLASS =
   'inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-200 transition hover:border-gray-600 hover:text-white'
+const TASTE_HEADER_ACTION_CLASS =
+  'inline-flex min-h-9 items-center text-sm font-medium text-gray-400 transition hover:text-white'
 const TASTE_CHIP_BUTTON_CLASS =
   'inline-flex min-h-9 items-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition'
 const TASTE_PRIMARY_BUTTON_CLASS =
@@ -292,8 +294,15 @@ export default function OnboardingPreferencesSection({
               onClick={() => setEditorExpanded(true)}
               aria-expanded={false}
               aria-controls="onboarding-preferences-editor"
-              className={TASTE_ACTION_BUTTON_CLASS}
-              style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+              className={TASTE_HEADER_ACTION_CLASS}
+              style={{
+                WebkitAppearance: 'none',
+                appearance: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+              }}
             >
               Edit preferences
             </button>
@@ -308,8 +317,15 @@ export default function OnboardingPreferencesSection({
                 onClick={() => setEditorExpanded(false)}
                 aria-expanded
                 aria-controls="onboarding-preferences-editor"
-                className={TASTE_ACTION_BUTTON_CLASS}
-                style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+                className={TASTE_HEADER_ACTION_CLASS}
+                style={{
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                }}
               >
                 Collapse editor
               </button>
