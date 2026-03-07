@@ -7,6 +7,7 @@ import {
 
 export interface CreatorRecommendationUserRow {
   id: string
+  display_name?: string | null
   username: string | null
   email: string | null
   avatar_url: string | null
@@ -91,7 +92,8 @@ export function buildCreatorRecommendations(args: {
     return {
       creator_id: row.creator_id,
       username: user?.username || null,
-      display_name: user?.username?.trim() || user?.email?.trim() || 'Creator',
+      display_name:
+        user?.display_name?.trim() || user?.username?.trim() || user?.email?.trim() || 'Creator',
       avatar_url: user?.avatar_url || null,
       short_reason:
         reason_code === 'popular_week'

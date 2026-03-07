@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     const creatorIds = Array.from(new Set(rawProjects.map((row) => row.creator_id)))
     const { data: creatorRows, error: creatorError } = await supabaseAdmin
       .from('users')
-      .select('id, username, email')
+      .select('id, display_name, username, email')
       .in('id', creatorIds)
 
     if (creatorError) {
@@ -138,7 +138,11 @@ export async function GET(request: NextRequest) {
     const qFilteredProjects = qLower
       ? hiddenFilteredProjects.filter((project) => {
           const title = project.title?.toLowerCase() || ''
-          const creatorName = creatorsById[project.creator_id]?.username?.toLowerCase() || ''
+          const creatorName = (
+            creatorsById[project.creator_id]?.display_name ||
+            creatorsById[project.creator_id]?.username ||
+            ''
+          ).toLowerCase()
           return title.includes(qLower) || creatorName.includes(qLower)
         })
       : hiddenFilteredProjects

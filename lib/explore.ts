@@ -22,6 +22,7 @@ export interface ExploreProjectRow {
 
 export interface ExploreCreatorRow {
   id: string
+  display_name?: string | null
   username: string | null
   email: string | null
 }
@@ -75,7 +76,13 @@ export function parseExploreProjectsQuery(args: {
   }
 }
 
-export function getExploreCreatorName(args: { username?: string | null; email?: string | null }): string {
+export function getExploreCreatorName(args: {
+  display_name?: string | null
+  username?: string | null
+  email?: string | null
+}): string {
+  const displayName = args.display_name?.trim()
+  if (displayName) return displayName
   return args.username?.trim() || args.email?.trim() || 'Unknown creator'
 }
 
@@ -117,6 +124,7 @@ export function buildExploreProjectItems(args: {
       cover_image_url: project.cover_image_url || null,
       creator_id: project.creator_id,
       creator_name: getExploreCreatorName({
+        display_name: creator?.display_name,
         username: creator?.username,
         email: creator?.email,
       }),

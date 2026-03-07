@@ -203,7 +203,7 @@ export async function GET(request: NextRequest) {
 
     const { data: userRows } = await supabaseAdmin
       .from('users')
-      .select('id, username, email, avatar_url')
+      .select('id, display_name, username, email, avatar_url')
       .in('id', candidateIds)
 
     const usersById = (userRows || []).reduce<Record<string, CreatorRecommendationUserRow>>((acc, user) => {

@@ -4,6 +4,7 @@ const USERNAME_IDENTIFIER_REGEX = /^[a-zA-Z0-9_-]{3,50}$/
 
 export interface PublicCreatorUserRow {
   id: string
+  display_name?: string | null
   username: string | null
   email: string | null
   avatar_url: string | null
@@ -42,9 +43,12 @@ export function parseCreatorIdentifier(value: string | null | undefined): string
 }
 
 export function buildCreatorDisplayName(user: {
+  display_name?: string | null
   username?: string | null
   email?: string | null
 }): string {
+  const displayName = user.display_name?.trim()
+  if (displayName) return displayName
   const username = user.username?.trim()
   if (username) return username
   const email = user.email?.trim()

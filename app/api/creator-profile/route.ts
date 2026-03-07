@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     let creatorQuery = supabaseAdmin
       .from('users')
       .select(
-        'id, username, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster'
+        'id, display_name, username, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster'
       )
       .limit(1)
 

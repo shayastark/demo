@@ -90,6 +90,7 @@ export async function PATCH(request: NextRequest) {
     // Field max lengths for sanitization
     const fieldLimits: Record<string, number> = {
       username: 50,
+      display_name: 80,
       bio: 500,
       contact_email: 254,
       website: 500,
@@ -126,6 +127,8 @@ export async function PATCH(request: NextRequest) {
             )
           }
           updates[field] = username || null
+        } else if (field === 'display_name') {
+          updates[field] = sanitizeText(body[field], fieldLimits[field])
         } else if (field === 'website' && body[field]) {
           // Validate website URL starts with http:// or https://
           const url = String(body[field]).trim()
@@ -147,6 +150,29 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
     }
 
+    if (typeof updates.username === 'string' && updates.username.trim()) {
+      const normalizedUsername = updates.username.trim().toLowerCase()
+      const { data: existingUsername, error: usernameCheckError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .neq('id', user.id)
+        .ilike('username', normalizedUsername)
+        .limit(1)
+        .maybeSingle()
+
+      if (usernameCheckError) {
+        console.error('Error checking username uniqueness:', usernameCheckError)
+        return NextResponse.json({ error: 'Failed to validate username' }, { status: 500 })
+      }
+
+      if (existingUsername?.id) {
+        return NextResponse.json(
+          { error: 'Username is already taken', code: 'username_taken' },
+          { status: 409 }
+        )
+      }
+    }
+
     const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updates)
@@ -156,6 +182,17 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('Error updating user:', error)
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: string }).code === '23505'
+      ) {
+        return NextResponse.json(
+          { error: 'Username is already taken', code: 'username_taken' },
+          { status: 409 }
+        )
+      }
       return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
     }
 

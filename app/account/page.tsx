@@ -25,6 +25,7 @@ import { getCreatorPublicPath } from '@/lib/publicCreatorProfile'
 interface UserProfile {
   id: string
   username: string
+  display_name: string | null
   email: string | null
   avatar_url: string | null
   bio: string | null
@@ -71,6 +72,8 @@ function AccountPageContent() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isEditingUsername, setIsEditingUsername] = useState(false)
   const [editingUsername, setEditingUsername] = useState('')
+  const [isEditingDisplayName, setIsEditingDisplayName] = useState(false)
+  const [editingDisplayName, setEditingDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
   
@@ -165,7 +168,7 @@ function AccountPageContent() {
         // First try to get existing user via public read
         let { data: existingUser } = await supabase
           .from('users')
-          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, wallet_address')
+          .select('id, username, display_name, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, wallet_address')
           .eq('privy_id', privyId)
           .single()
 
@@ -185,6 +188,7 @@ function AccountPageContent() {
         setProfile({
           id: existingUser.id,
           username: existingUser.username || '',
+          display_name: existingUser.display_name || null,
           email: existingUser.email || user.email?.address || null,
           avatar_url: existingUser.avatar_url || null,
           bio: existingUser.bio || null,
@@ -195,6 +199,7 @@ function AccountPageContent() {
           farcaster: existingUser.farcaster || null,
           wallet_address: existingUser.wallet_address || null,
         })
+        setEditingDisplayName(existingUser.display_name || '')
         
         // Initialize edit form
         setEditProfile({
@@ -478,7 +483,33 @@ function AccountPageContent() {
       }
     } catch (error) {
       console.error('Error saving username:', error)
-      showToast('Failed to save username', 'error')
+      if (error instanceof Error && /username.*taken/i.test(error.message)) {
+        showToast('That username is already taken.', 'error')
+      } else {
+        showToast('Failed to save username', 'error')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveDisplayName = async () => {
+    if (!profile) {
+      showToast('Profile not loaded - please refresh the page', 'error')
+      return
+    }
+    setSaving(true)
+    try {
+      const result = await apiRequest('/api/user', {
+        method: 'PATCH',
+        body: { display_name: editingDisplayName.trim() || null },
+      })
+      setProfile({ ...profile, display_name: result.user.display_name || null })
+      setIsEditingDisplayName(false)
+      showToast('Display name saved!', 'success')
+    } catch (error) {
+      console.error('Error saving display name:', error)
+      showToast('Failed to save display name', 'error')
     } finally {
       setSaving(false)
     }
@@ -829,6 +860,64 @@ function AccountPageContent() {
                     onClick={() => {
                       setEditingUsername(profile?.username || '')
                       setIsEditingUsername(true)
+                    }}
+                    className="inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
+                    style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      marginLeft: '16px',
+                      backgroundColor: '#111827',
+                      border: '1px solid #374151',
+                      color: '#f3f4f6',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Display Name */}
+            <div className="flex items-center">
+              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Display Name</label>
+              {isEditingDisplayName ? (
+                <div className="flex items-center gap-2" style={{ flex: '1', minWidth: 0 }}>
+                  <input
+                    type="text"
+                    value={editingDisplayName}
+                    onChange={(e) => setEditingDisplayName(e.target.value)}
+                    placeholder="How your name appears publicly"
+                    className="bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    style={{ flex: '1', minWidth: '100px', maxWidth: '280px' }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSaveDisplayName}
+                    disabled={saving}
+                    className="p-1.5 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50 flex-shrink-0"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingDisplayName(false)
+                      setEditingDisplayName(profile?.display_name || '')
+                    }}
+                    className="p-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center flex-1">
+                  <span className="text-sm text-white">
+                    {profile?.display_name || <span className="text-gray-500 italic">Not set</span>}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setEditingDisplayName(profile?.display_name || '')
+                      setIsEditingDisplayName(true)
                     }}
                     className="inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
                     style={{
