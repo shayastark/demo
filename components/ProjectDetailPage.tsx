@@ -2412,15 +2412,20 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowCreatorModal(true) }}
                         className="inline-flex items-center gap-2 text-white text-lg font-medium hover:underline underline-offset-4 transition cursor-pointer"
                       >
-                        <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-white/8 bg-gray-900 text-xs font-semibold text-gray-200 shadow-[0_6px_16px_rgba(0,0,0,0.25)]">
+                        <span className="relative inline-flex h-7 w-7 min-h-7 min-w-7 max-h-7 max-w-7 flex-shrink-0 items-center justify-center self-center overflow-hidden rounded-full border border-white/8 bg-gray-900 text-[10px] font-semibold text-gray-200 shadow-[0_6px_16px_rgba(0,0,0,0.25)]">
                           {creatorAvatarUrl ? (
                             <img
                               src={creatorAvatarUrl}
                               alt={`${creatorUsername} avatar`}
-                              className="h-full w-full object-cover"
+                              className="absolute inset-0 block h-full w-full object-cover"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              loading="lazy"
+                              draggable={false}
                             />
                           ) : (
-                            creatorUsername.trim().charAt(0).toUpperCase()
+                            <span className="flex h-full w-full items-center justify-center">
+                              {creatorUsername.trim().charAt(0).toUpperCase()}
+                            </span>
                           )}
                         </span>
                         {creatorUsername}
