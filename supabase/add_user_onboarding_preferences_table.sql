@@ -60,7 +60,9 @@ BEGIN
       ADD CONSTRAINT user_onboarding_preferences_genres_check
       CHECK (
         preferred_genres <@ ARRAY[
-          'hip_hop','rnb','electronic','indie','pop','rock','ambient','lofi'
+          'hip_hop','rnb','electronic','indie','pop','rock',
+          'alternative','country','dance','latin','soul_funk','blues',
+          'jazz','gospel','reggae','afrobeats','metal','classical'
         ]::text[]
       );
   END IF;

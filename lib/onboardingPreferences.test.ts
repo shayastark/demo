@@ -16,7 +16,7 @@ test('parseOnboardingPreferencesPatch validates controlled options', () => {
   assert.equal(valid.ok, true)
 
   const invalidGenre = parseOnboardingPreferencesPatch({
-    preferred_genres: ['classical'],
+    preferred_genres: ['ambient'],
   })
   assert.equal(invalidGenre.ok, false)
 
@@ -36,11 +36,11 @@ test('toOnboardingPreferences keeps backward compatibility defaults', () => {
 test('buildProjectPreferenceBoostById scores matching text higher', () => {
   const boosts = buildProjectPreferenceBoostById({
     projects: [
-      { id: 'p1', title: 'Ambient Late Night Tape', description: 'cinematic and chill journey' },
-      { id: 'p2', title: 'Heavy rock demo', description: 'loud and fast' },
+      { id: 'p1', title: 'Jazz Late Night Tape', description: 'cinematic and chill journey' },
+      { id: 'p2', title: 'Heavy metal demo', description: 'loud and fast' },
     ],
     preferences: {
-      preferred_genres: ['ambient'],
+      preferred_genres: ['jazz'],
       preferred_vibes: ['cinematic', 'chill'],
     },
   })
@@ -51,12 +51,12 @@ test('buildProjectPreferenceBoostById scores matching text higher', () => {
 test('buildCreatorPreferenceBoostById applies per-creator max matching score', () => {
   const boosts = buildCreatorPreferenceBoostById({
     projects: [
-      { creator_id: 'c1', title: 'lofi chill beats', description: null },
+      { creator_id: 'c1', title: 'soul funk chill beats', description: null },
       { creator_id: 'c1', title: 'experimental set', description: null },
       { creator_id: 'c2', title: 'rock anthem', description: null },
     ],
     preferences: {
-      preferred_genres: ['lofi'],
+      preferred_genres: ['soul_funk'],
       preferred_vibes: ['chill'],
     },
   })

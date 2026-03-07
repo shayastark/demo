@@ -32,8 +32,18 @@ const GENRE_LABELS: Record<OnboardingGenre, string> = {
   indie: 'Indie',
   pop: 'Pop',
   rock: 'Rock',
-  ambient: 'Ambient',
-  lofi: 'Lo-fi',
+  alternative: 'Alternative',
+  country: 'Country',
+  dance: 'Dance',
+  latin: 'Latin',
+  soul_funk: 'Soul/Funk',
+  blues: 'Blues',
+  jazz: 'Jazz',
+  gospel: 'Gospel',
+  reggae: 'Reggae',
+  afrobeats: 'Afrobeats',
+  metal: 'Metal',
+  classical: 'Classical',
 }
 
 const VIBE_LABELS: Record<OnboardingVibe, string> = {

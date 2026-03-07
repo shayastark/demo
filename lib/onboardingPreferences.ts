@@ -11,8 +11,18 @@ export const ONBOARDING_GENRE_OPTIONS = [
   'indie',
   'pop',
   'rock',
-  'ambient',
-  'lofi',
+  'alternative',
+  'country',
+  'dance',
+  'latin',
+  'soul_funk',
+  'blues',
+  'jazz',
+  'gospel',
+  'reggae',
+  'afrobeats',
+  'metal',
+  'classical',
 ] as const
 
 export const ONBOARDING_VIBE_OPTIONS = [
