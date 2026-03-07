@@ -43,6 +43,43 @@ const REASON_CHIPS: Array<{ code: DiscoveryReasonCode; label: string }> = [
   { code: 'too_many_updates', label: 'Updates' },
 ]
 
+const EXPLORE_INPUT_STYLE = {
+  WebkitAppearance: 'none' as const,
+  appearance: 'none' as const,
+  WebkitTapHighlightColor: 'transparent',
+  backgroundColor: '#111827',
+  border: '1px solid #374151',
+  color: '#f9fafb',
+}
+
+const EXPLORE_SELECT_STYLE = {
+  WebkitAppearance: 'none' as const,
+  appearance: 'none' as const,
+  WebkitTapHighlightColor: 'transparent',
+  backgroundColor: '#111827',
+  border: '1px solid #374151',
+  color: '#f9fafb',
+}
+
+const EXPLORE_ACTION_BUTTON_STYLE = {
+  WebkitAppearance: 'none' as const,
+  appearance: 'none' as const,
+  WebkitTapHighlightColor: 'transparent',
+  backgroundColor: '#000000',
+  border: '1px solid #374151',
+  color: '#e5e7eb',
+}
+
+const EXPLORE_REASON_CHIP_STYLE = {
+  WebkitAppearance: 'none' as const,
+  appearance: 'none' as const,
+  WebkitTapHighlightColor: 'transparent',
+  backgroundColor: 'rgba(17, 24, 39, 0.65)',
+  border: '1px solid rgba(75, 85, 99, 0.8)',
+  color: '#9ca3af',
+  borderRadius: '9999px',
+}
+
 export default function ExploreProjectsPage() {
   const { ready, authenticated, login, getAccessToken } = usePrivy()
   const [items, setItems] = useState<ExploreItem[]>([])
@@ -383,6 +420,7 @@ export default function ExploreProjectsPage() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search title or creator"
                 className="min-h-10 w-64 max-w-[70vw] rounded-lg border border-gray-800 bg-gray-900 pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                style={EXPLORE_INPUT_STYLE}
               />
             </div>
             <select
@@ -394,6 +432,7 @@ export default function ExploreProjectsPage() {
                 emitRankingEvent('sort_change', { sort: next })
               }}
               className="min-h-10 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+              style={EXPLORE_SELECT_STYLE}
             >
               <option value="trending">Trending</option>
               <option value="newest">Newest</option>
@@ -464,10 +503,16 @@ export default function ExploreProjectsPage() {
                         />
                       ) : null}
                     </div>
-                    <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-white">{item.title}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-gray-300">by {item.creator_name}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-neon-green">
-                      {item.supporter_count} {item.supporter_count === 1 ? 'supporter' : 'supporters'}
+                    <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-white" style={{ color: '#ffffff' }}>
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-300" style={{ color: '#d1d5db' }}>
+                      by {item.creator_name}
+                    </p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-gray-500" style={{ color: '#9ca3af' }}>
+                      {item.supporter_count > 0
+                        ? `${item.supporter_count} ${item.supporter_count === 1 ? 'supporter' : 'supporters'}`
+                        : 'New'}
                     </p>
                   </Link>
                   <div className="mt-2 flex items-center gap-2">
@@ -484,6 +529,7 @@ export default function ExploreProjectsPage() {
                         })
                       }
                       className="ui-pressable min-h-8 rounded border border-gray-700 px-2 py-1 text-[11px] text-gray-200 hover:border-gray-500"
+                      style={EXPLORE_ACTION_BUTTON_STYLE}
                     >
                       Not interested
                     </button>
@@ -499,7 +545,15 @@ export default function ExploreProjectsPage() {
                           reasonCode: null,
                         })
                       }
-                      className="ui-pressable min-h-8 rounded border border-gray-700 px-2 py-1 text-[11px] text-gray-200 hover:border-gray-500"
+                      className="ui-pressable min-h-8 px-1 py-1 text-[11px] text-gray-400 hover:text-gray-200"
+                      style={{
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9ca3af',
+                      }}
                     >
                       Hide creator
                     </button>
@@ -520,6 +574,7 @@ export default function ExploreProjectsPage() {
                           })
                         }
                         className="ui-chip ui-pressable text-[10px] text-gray-300"
+                        style={EXPLORE_REASON_CHIP_STYLE}
                       >
                         {reason.label}
                       </button>
