@@ -19,6 +19,7 @@ export interface Track {
   title: string
   audio_url: string
   image_url?: string
+  size_bytes?: number | null
   order: number
   created_at: string
 }

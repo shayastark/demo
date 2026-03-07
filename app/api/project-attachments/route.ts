@@ -4,6 +4,22 @@ import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
 import { parseProjectAttachmentsLimit, validateProjectAttachmentInput } from '@/lib/projectAttachments'
 import { canPostProjectUpdate, canViewProject } from '@/lib/projectAccessPolicyServer'
+import {
+  ATTACHMENT_COUNT_PER_PROJECT_LIMIT,
+  LINKS_PER_PROJECT_LIMIT,
+  MAX_UPLOAD_ATTEMPTS_PER_WINDOW,
+  PROJECT_ATTACHMENT_STORAGE_LIMIT_BYTES,
+  USER_DAILY_UPLOAD_BUDGET_BYTES,
+  getAttachmentsPerProjectErrorMessage,
+  getLinksPerProjectErrorMessage,
+  getProjectAttachmentQuotaUsage,
+  getProjectAttachmentStorageErrorMessage,
+  getRecentUploadAttemptCount,
+  getUploadAttemptsErrorMessage,
+  getUserDailyUploadBudgetErrorMessage,
+  getUserDailyUploadedBytes,
+  recordUploadQuotaEvent,
+} from '@/lib/uploadQuotas'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -140,6 +156,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    const projectUsage = await getProjectAttachmentQuotaUsage(project_id)
+    if (projectUsage.count >= ATTACHMENT_COUNT_PER_PROJECT_LIMIT) {
+      return NextResponse.json({ error: getAttachmentsPerProjectErrorMessage() }, { status: 429 })
+    }
+    if (type === 'link' && projectUsage.linkCount >= LINKS_PER_PROJECT_LIMIT) {
+      return NextResponse.json({ error: getLinksPerProjectErrorMessage() }, { status: 429 })
+    }
+
+    if (type !== 'link') {
+      const uploadSizeBytes = size_bytes || 0
+      const attemptCount = await getRecentUploadAttemptCount(currentUser.id)
+      if (attemptCount >= MAX_UPLOAD_ATTEMPTS_PER_WINDOW) {
+        await recordUploadQuotaEvent({
+          userId: currentUser.id,
+          projectId: project_id,
+          assetClass: 'attachment',
+          byteSize: uploadSizeBytes,
+          attachmentType: type,
+          success: false,
+          reason: 'attempt_window_exceeded',
+        })
+        return NextResponse.json({ error: getUploadAttemptsErrorMessage() }, { status: 429 })
+      }
+
+      const dailyUploadedBytes = await getUserDailyUploadedBytes(currentUser.id)
+      if (dailyUploadedBytes + uploadSizeBytes > USER_DAILY_UPLOAD_BUDGET_BYTES) {
+        await recordUploadQuotaEvent({
+          userId: currentUser.id,
+          projectId: project_id,
+          assetClass: 'attachment',
+          byteSize: uploadSizeBytes,
+          attachmentType: type,
+          success: false,
+          reason: 'daily_budget_exceeded',
+        })
+        return NextResponse.json({ error: getUserDailyUploadBudgetErrorMessage() }, { status: 429 })
+      }
+
+      if (projectUsage.totalBytes + uploadSizeBytes > PROJECT_ATTACHMENT_STORAGE_LIMIT_BYTES) {
+        await recordUploadQuotaEvent({
+          userId: currentUser.id,
+          projectId: project_id,
+          assetClass: 'attachment',
+          byteSize: uploadSizeBytes,
+          attachmentType: type,
+          success: false,
+          reason: 'project_attachment_storage_exceeded',
+        })
+        return NextResponse.json({ error: getProjectAttachmentStorageErrorMessage() }, { status: 429 })
+      }
+    }
+
     const { data: attachment, error } = await supabaseAdmin
       .from('project_attachments')
       .insert({
@@ -157,6 +225,18 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Error creating project attachment:', error)
       return NextResponse.json({ error: 'Failed to create attachment' }, { status: 500 })
+    }
+
+    if (type !== 'link') {
+      await recordUploadQuotaEvent({
+        userId: currentUser.id,
+        projectId: project_id,
+        assetClass: 'attachment',
+        byteSize: size_bytes || 0,
+        attachmentType: type,
+        success: true,
+        reason: 'attachment_created',
+      })
     }
 
     return NextResponse.json({ attachment }, { status: 201 })

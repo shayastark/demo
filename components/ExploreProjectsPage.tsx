@@ -589,6 +589,18 @@ export default function ExploreProjectsPage() {
                     </Link>
                     <button
                       type="button"
+                      onPointerDown={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        setMenuItem(item)
+                        setMenuItemIndex(index)
+                      }}
+                      onTouchStart={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        setMenuItem(item)
+                        setMenuItemIndex(index)
+                      }}
                       onClick={(event) => {
                         event.preventDefault()
                         event.stopPropagation()
@@ -596,7 +608,11 @@ export default function ExploreProjectsPage() {
                         setMenuItemIndex(index)
                       }}
                       className="ui-pressable relative z-10 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-gray-700 bg-gray-950/90 text-gray-200 hover:border-gray-500 hover:bg-gray-900"
-                      style={EXPLORE_ACTION_BUTTON_STYLE}
+                      style={{
+                        ...EXPLORE_ACTION_BUTTON_STYLE,
+                        touchAction: 'manipulation',
+                        WebkitTouchCallout: 'none',
+                      }}
                       aria-label="Project actions"
                     >
                       <MoreVertical className="pointer-events-none h-4 w-4" />

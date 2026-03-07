@@ -6,6 +6,14 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { apiRequest } from '@/lib/api'
+import {
+  AUDIO_FILE_ACCEPT,
+  MAX_AUDIO_UPLOAD_SIZE_BYTES,
+  SUPPORTED_AUDIO_LABEL,
+  getAudioFileValidationError,
+  getAudioUploadContentType,
+  isSupportedAudioFile,
+} from '@/lib/audioUploadPolicy'
 import { Project, Track, ProjectMetrics, ProjectNote, TrackNote } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
 import CommentsPanel from './CommentsPanel'
@@ -1862,28 +1870,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     const uploadPath = `${path}/${timestamp}-${sanitizedName}`
 
     // Apply conservative file size guardrails before upload
-    const isAudioFile = file.type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|flac|ogg)$/i.test(file.name)
-    const maxSize = isAudioFile ? 100 * 1024 * 1024 : 25 * 1024 * 1024
-    if (file.size > maxSize) {
-      const sizeMB = Math.round(maxSize / 1024 / 1024)
-      throw new Error(`"${file.name}" is too large. Maximum size is ${sizeMB}MB.`)
+    const isAudioFile = isSupportedAudioFile(file)
+    if (isAudioFile) {
+      const validationError = getAudioFileValidationError(file)
+      if (validationError) {
+        throw new Error(validationError)
+      }
+    } else if (file.size > 25 * 1024 * 1024) {
+      throw new Error(`"${file.name}" is too large. Maximum size is 25MB.`)
     }
 
-    let contentType = file.type
-    const ext = file.name.toLowerCase().split('.').pop()
-    if (isAudioFile) {
-      const audioMimeTypes: Record<string, string> = {
-        mp3: 'audio/mpeg',
-        wav: 'audio/wav',
-        m4a: 'audio/mp4',
-        aac: 'audio/aac',
-        flac: 'audio/flac',
-        ogg: 'audio/ogg',
-      }
-      if (ext && audioMimeTypes[ext]) {
-        contentType = audioMimeTypes[ext]
-      }
-    }
+    const contentType = isAudioFile ? getAudioUploadContentType(file) : file.type || undefined
 
     const { data, error } = await supabase.storage
       .from('hubba-files')
@@ -1920,6 +1917,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   }
 
   const handleNewTrackFileChange = (index: number, file: File) => {
+    const validationError = getAudioFileValidationError(file)
+    if (validationError) {
+      showToast(validationError, 'error')
+      return
+    }
+
     const updatedTracks = [...newTracks]
     updatedTracks[index].file = file
     if (!updatedTracks[index].title) {
@@ -2056,6 +2059,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             project_id: project.id,
             title: track.title.trim(),
             audio_url: audioUrl,
+            size_bytes: track.file.size,
             image_url: trackImageUrl || null,
             order: nextOrder + i,
           }),
@@ -3088,16 +3092,19 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File (MP3, WAV, M4A, FLAC, OGG) *</label>
+                        <label className="block text-xs text-neon-green opacity-70 mb-1">Audio File ({SUPPORTED_AUDIO_LABEL}) *</label>
                         <input
                           type="file"
-                          accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
+                          accept={AUDIO_FILE_ACCEPT}
                           onChange={(e) => {
                             const file = e.target.files?.[0]
                             if (file) handleNewTrackFileChange(index, file)
                           }}
                           className="w-full text-sm text-white"
                         />
+                        <p className="mt-1 text-[11px] text-gray-500">
+                          {SUPPORTED_AUDIO_LABEL} only, up to {Math.round(MAX_AUDIO_UPLOAD_SIZE_BYTES / 1024 / 1024)}MB.
+                        </p>
                       </div>
 
                           <div>

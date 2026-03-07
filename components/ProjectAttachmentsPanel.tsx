@@ -5,7 +5,13 @@ import { File, Image as ImageIcon, Link as LinkIcon, Paperclip, Trash2, Upload }
 import { showToast } from '@/components/Toast'
 import { supabase } from '@/lib/supabase'
 import type { ProjectAttachmentType } from '@/lib/projectAttachments'
-import { PROJECT_ATTACHMENT_SIZE_LIMITS } from '@/lib/projectAttachments'
+import {
+  PROJECT_ATTACHMENT_ACCEPT,
+  PROJECT_ATTACHMENT_ALLOWED_FORMATS,
+  PROJECT_ATTACHMENT_SIZE_LIMITS,
+  getProjectAttachmentUploadContentType,
+  getProjectAttachmentValidationError,
+} from '@/lib/projectAttachments'
 
 interface ProjectAttachment {
   id: string
@@ -117,7 +123,7 @@ export default function ProjectAttachmentsPanel({
     const { data, error: uploadError } = await supabase.storage
       .from('hubba-files')
       .upload(storagePath, uploadFile, {
-        contentType: uploadFile.type || undefined,
+        contentType: getProjectAttachmentUploadContentType(uploadFile),
         upsert: false,
       })
 
@@ -151,16 +157,9 @@ export default function ProjectAttachmentsPanel({
 
       if (attachmentType !== 'link') {
         if (!file) throw new Error('Select a file to upload')
-        if (attachmentType === 'image' && !file.type.startsWith('image/')) {
-          throw new Error('Image attachments must be image files')
-        }
-        if (attachmentType === 'file' && file.type.startsWith('audio/')) {
-          throw new Error('Audio files are not supported in attachments')
-        }
-        const maxSize =
-          attachmentType === 'image' ? PROJECT_ATTACHMENT_SIZE_LIMITS.image : PROJECT_ATTACHMENT_SIZE_LIMITS.file
-        if (file.size > maxSize) {
-          throw new Error(`File is too large for ${attachmentType} attachment`)
+        const validationError = getProjectAttachmentValidationError(attachmentType, file)
+        if (validationError) {
+          throw new Error(validationError)
         }
 
         payloadUrl = await uploadToStorage(file)
@@ -278,12 +277,18 @@ export default function ProjectAttachmentsPanel({
                 className="w-full rounded-lg border border-gray-800 bg-black px-2.5 py-2 text-xs text-white placeholder:text-gray-500"
               />
             ) : (
-              <input
-                type="file"
-                accept={type === 'image' ? 'image/*' : undefined}
-                onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="w-full text-xs text-gray-300"
-              />
+              <>
+                <input
+                  type="file"
+                  accept={type === 'image' ? PROJECT_ATTACHMENT_ACCEPT.image : PROJECT_ATTACHMENT_ACCEPT.file}
+                  onChange={(event) => setFile(event.target.files?.[0] || null)}
+                  className="w-full text-xs text-gray-300"
+                />
+                <p className="text-[11px] text-gray-500">
+                  {type === 'image' ? PROJECT_ATTACHMENT_ALLOWED_FORMATS.image : PROJECT_ATTACHMENT_ALLOWED_FORMATS.file}
+                  {' '}up to {Math.round((type === 'image' ? PROJECT_ATTACHMENT_SIZE_LIMITS.image : PROJECT_ATTACHMENT_SIZE_LIMITS.file) / 1024 / 1024)}MB.
+                </p>
+              </>
             )}
 
             <button

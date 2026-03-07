@@ -4,6 +4,22 @@ import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { notifyNewTrackAdded } from '@/lib/notifications'
 import { isValidUUID, sanitizeText } from '@/lib/validation'
 import { canViewProject } from '@/lib/projectAccessPolicyServer'
+import { MAX_AUDIO_UPLOAD_SIZE_BYTES, validateStoredAudioUrl } from '@/lib/audioUploadPolicy'
+import {
+  MAX_UPLOAD_ATTEMPTS_PER_WINDOW,
+  PROJECT_AUDIO_STORAGE_LIMIT_BYTES,
+  TRACKS_PER_PROJECT_LIMIT,
+  USER_DAILY_UPLOAD_BUDGET_BYTES,
+  getProjectAudioStorageErrorMessage,
+  getRecentUploadAttemptCount,
+  getTracksPerProjectErrorMessage,
+  getUploadAttemptsErrorMessage,
+  getUserDailyUploadBudgetErrorMessage,
+  getUserDailyUploadedBytes,
+  getProjectTrackQuotaUsage,
+  parseUploadSizeBytes,
+  recordUploadQuotaEvent,
+} from '@/lib/uploadQuotas'
 
 // Helper to verify project ownership and get project details
 async function getProjectIfOwner(projectId: string, userId: string): Promise<{ id: string; title: string; creator_id: string } | null> {
@@ -96,6 +112,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { project_id, audio_url, image_url } = body
+    const sizeBytes = parseUploadSizeBytes(body.size_bytes)
 
     // Validate and sanitize
     const title = sanitizeText(body.title, 200)
@@ -108,11 +125,73 @@ export async function POST(request: NextRequest) {
     if (!title || !audio_url) {
       return NextResponse.json({ error: 'Title and audio URL are required' }, { status: 400 })
     }
+    if (sizeBytes === null) {
+      return NextResponse.json({ error: 'size_bytes must be a non-negative integer' }, { status: 400 })
+    }
+    if (sizeBytes > MAX_AUDIO_UPLOAD_SIZE_BYTES) {
+      return NextResponse.json({ error: `Audio file exceeds the ${Math.round(MAX_AUDIO_UPLOAD_SIZE_BYTES / 1024 / 1024)}MB size limit` }, { status: 400 })
+    }
+
+    const audioUrlError = validateStoredAudioUrl(audio_url)
+    if (audioUrlError) {
+      return NextResponse.json({ error: audioUrlError }, { status: 400 })
+    }
 
     // Verify ownership and get project details
     const project = await getProjectIfOwner(project_id, user.id)
     if (!project) {
       return NextResponse.json({ error: 'Project not found or unauthorized' }, { status: 404 })
+    }
+
+    const attemptCount = await getRecentUploadAttemptCount(user.id)
+    if (attemptCount >= MAX_UPLOAD_ATTEMPTS_PER_WINDOW) {
+      await recordUploadQuotaEvent({
+        userId: user.id,
+        projectId: project_id,
+        assetClass: 'audio',
+        byteSize: sizeBytes,
+        success: false,
+        reason: 'attempt_window_exceeded',
+      })
+      return NextResponse.json({ error: getUploadAttemptsErrorMessage() }, { status: 429 })
+    }
+
+    const [dailyUploadedBytes, projectUsage] = await Promise.all([
+      getUserDailyUploadedBytes(user.id),
+      getProjectTrackQuotaUsage(project_id),
+    ])
+    if (dailyUploadedBytes + sizeBytes > USER_DAILY_UPLOAD_BUDGET_BYTES) {
+      await recordUploadQuotaEvent({
+        userId: user.id,
+        projectId: project_id,
+        assetClass: 'audio',
+        byteSize: sizeBytes,
+        success: false,
+        reason: 'daily_budget_exceeded',
+      })
+      return NextResponse.json({ error: getUserDailyUploadBudgetErrorMessage() }, { status: 429 })
+    }
+    if (projectUsage.count >= TRACKS_PER_PROJECT_LIMIT) {
+      await recordUploadQuotaEvent({
+        userId: user.id,
+        projectId: project_id,
+        assetClass: 'audio',
+        byteSize: sizeBytes,
+        success: false,
+        reason: 'tracks_per_project_exceeded',
+      })
+      return NextResponse.json({ error: getTracksPerProjectErrorMessage() }, { status: 429 })
+    }
+    if (projectUsage.totalBytes + sizeBytes > PROJECT_AUDIO_STORAGE_LIMIT_BYTES) {
+      await recordUploadQuotaEvent({
+        userId: user.id,
+        projectId: project_id,
+        assetClass: 'audio',
+        byteSize: sizeBytes,
+        success: false,
+        reason: 'project_audio_storage_exceeded',
+      })
+      return NextResponse.json({ error: getProjectAudioStorageErrorMessage() }, { status: 429 })
     }
 
     const { data: track, error } = await supabaseAdmin
@@ -122,12 +201,22 @@ export async function POST(request: NextRequest) {
         title,
         audio_url,
         image_url: image_url || null,
+        size_bytes: sizeBytes,
         order: order ?? 0,
       })
       .select()
       .single()
 
     if (error) throw error
+
+    await recordUploadQuotaEvent({
+      userId: user.id,
+      projectId: project_id,
+      assetClass: 'audio',
+      byteSize: sizeBytes,
+      success: true,
+      reason: 'track_created',
+    })
 
     // Notify users who have saved this project about the new track
     // This runs async and doesn't block the response
@@ -163,9 +252,26 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
     const { id, audio_url, image_url } = body
+    const sizeBytes = audio_url !== undefined ? parseUploadSizeBytes(body.size_bytes) : undefined
 
     if (!id || !isValidUUID(id)) {
       return NextResponse.json({ error: 'Valid track ID is required' }, { status: 400 })
+    }
+
+    if (audio_url !== undefined) {
+      if (typeof audio_url !== 'string' || !audio_url.trim()) {
+        return NextResponse.json({ error: 'audio_url must be a non-empty string' }, { status: 400 })
+      }
+      if (sizeBytes === null) {
+        return NextResponse.json({ error: 'size_bytes must be a non-negative integer' }, { status: 400 })
+      }
+      if ((sizeBytes || 0) > MAX_AUDIO_UPLOAD_SIZE_BYTES) {
+        return NextResponse.json({ error: `Audio file exceeds the ${Math.round(MAX_AUDIO_UPLOAD_SIZE_BYTES / 1024 / 1024)}MB size limit` }, { status: 400 })
+      }
+      const audioUrlError = validateStoredAudioUrl(audio_url)
+      if (audioUrlError) {
+        return NextResponse.json({ error: audioUrlError }, { status: 400 })
+      }
     }
 
     // Sanitize optional text fields
@@ -177,7 +283,7 @@ export async function PATCH(request: NextRequest) {
     // Get track and verify ownership via project
     const { data: existingTrack } = await supabaseAdmin
       .from('tracks')
-      .select('project_id')
+      .select('project_id, size_bytes')
       .eq('id', id)
       .single()
 
@@ -189,10 +295,57 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    if (audio_url !== undefined) {
+      const uploadSizeBytes = sizeBytes || 0
+      const attemptCount = await getRecentUploadAttemptCount(user.id)
+      if (attemptCount >= MAX_UPLOAD_ATTEMPTS_PER_WINDOW) {
+        await recordUploadQuotaEvent({
+          userId: user.id,
+          projectId: existingTrack.project_id,
+          assetClass: 'audio',
+          byteSize: uploadSizeBytes,
+          success: false,
+          reason: 'attempt_window_exceeded',
+        })
+        return NextResponse.json({ error: getUploadAttemptsErrorMessage() }, { status: 429 })
+      }
+
+      const [dailyUploadedBytes, projectUsage] = await Promise.all([
+        getUserDailyUploadedBytes(user.id),
+        getProjectTrackQuotaUsage(existingTrack.project_id),
+      ])
+      if (dailyUploadedBytes + uploadSizeBytes > USER_DAILY_UPLOAD_BUDGET_BYTES) {
+        await recordUploadQuotaEvent({
+          userId: user.id,
+          projectId: existingTrack.project_id,
+          assetClass: 'audio',
+          byteSize: uploadSizeBytes,
+          success: false,
+          reason: 'daily_budget_exceeded',
+        })
+        return NextResponse.json({ error: getUserDailyUploadBudgetErrorMessage() }, { status: 429 })
+      }
+
+      const currentTrackSizeBytes = typeof existingTrack.size_bytes === 'number' ? existingTrack.size_bytes : 0
+      const projectedTotalBytes = projectUsage.totalBytes - currentTrackSizeBytes + uploadSizeBytes
+      if (projectedTotalBytes > PROJECT_AUDIO_STORAGE_LIMIT_BYTES) {
+        await recordUploadQuotaEvent({
+          userId: user.id,
+          projectId: existingTrack.project_id,
+          assetClass: 'audio',
+          byteSize: uploadSizeBytes,
+          success: false,
+          reason: 'project_audio_storage_exceeded',
+        })
+        return NextResponse.json({ error: getProjectAudioStorageErrorMessage() }, { status: 429 })
+      }
+    }
+
     // Build update object
     const updates: Record<string, unknown> = {}
     if (title !== undefined) updates.title = title
     if (audio_url !== undefined) updates.audio_url = audio_url
+    if (audio_url !== undefined) updates.size_bytes = sizeBytes || 0
     if (image_url !== undefined) updates.image_url = image_url
     if (order !== undefined) updates.order = order
 
@@ -204,6 +357,17 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    if (audio_url !== undefined) {
+      await recordUploadQuotaEvent({
+        userId: user.id,
+        projectId: existingTrack.project_id,
+        assetClass: 'audio',
+        byteSize: sizeBytes || 0,
+        success: true,
+        reason: 'track_audio_replaced',
+      })
+    }
 
     return NextResponse.json({ track })
   } catch (error) {

@@ -5,6 +5,13 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import {
+  AUDIO_FILE_ACCEPT,
+  MAX_AUDIO_UPLOAD_SIZE_BYTES,
+  SUPPORTED_AUDIO_LABEL,
+  getAudioFileValidationError,
+  getAudioUploadContentType,
+} from '@/lib/audioUploadPolicy'
 import { X, ArrowLeft, ImagePlus, Music2 } from 'lucide-react'
 import { showToast } from './Toast'
 
@@ -52,24 +59,18 @@ export default function NewProjectPage() {
 
   const handleBulkTrackUpload = (fileList: FileList | File[]) => {
     const files = Array.from(fileList)
-    const audioFiles = files.filter((file) => file.type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|flac|ogg)$/i.test(file.name))
-
-    if (audioFiles.length === 0) {
-      showToast('Please upload audio files (MP3, WAV, M4A, AAC, FLAC, or OGG).', 'error')
-      return
-    }
 
     let validFilesCount = 0
-    const maxAudioSize = 100 * 1024 * 1024
-    const preparedTracks = audioFiles
+    const unsupportedFiles = files.filter((file) => getAudioFileValidationError({ name: file.name, type: file.type }) !== null)
+    const preparedTracks = files
       .filter((file) => {
-        const isValidSize = file.size <= maxAudioSize
-        if (!isValidSize) {
-          showToast(`"${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 100MB.`, 'error')
-        } else {
-          validFilesCount += 1
+        const validationError = getAudioFileValidationError(file)
+        if (validationError) {
+          showToast(validationError, 'error')
+          return false
         }
-        return isValidSize
+        validFilesCount += 1
+        return true
       })
       .map((file) => ({
         file,
@@ -77,7 +78,12 @@ export default function NewProjectPage() {
         autoFilledTitle: true,
       }))
 
-    if (preparedTracks.length === 0) return
+    if (preparedTracks.length === 0) {
+      if (unsupportedFiles.length > 0) {
+        showToast(`Supported audio formats: ${SUPPORTED_AUDIO_LABEL}.`, 'error')
+      }
+      return
+    }
 
     setTracks((prev) => [...prev, ...preparedTracks])
 
@@ -100,33 +106,23 @@ export default function NewProjectPage() {
 
   const uploadFile = async (file: File, path: string, fileType: 'audio' | 'image' = 'image'): Promise<string> => {
     // File size limits
-    const maxAudioSize = 100 * 1024 * 1024 // 100MB for audio
     const maxImageSize = 25 * 1024 * 1024 // 25MB for images
-    const maxSize = fileType === 'audio' ? maxAudioSize : maxImageSize
-    
-    if (file.size > maxSize) {
-      const sizeMB = Math.round(maxSize / 1024 / 1024)
+    if (fileType === 'audio') {
+      const validationError = getAudioFileValidationError(file)
+      if (validationError) {
+        throw new Error(validationError)
+      }
+    } else if (file.size > maxImageSize) {
+      const sizeMB = Math.round(maxImageSize / 1024 / 1024)
       throw new Error(`File "${file.name}" is too large. Maximum size is ${sizeMB}MB.`)
     }
 
     console.log(`Uploading ${fileType}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB), type: ${file.type}`)
     
     // Determine correct content type (mobile browsers sometimes send wrong MIME type)
-    let contentType = file.type
-    const ext = file.name.toLowerCase().split('.').pop()
-    if (fileType === 'audio') {
-      const audioMimeTypes: Record<string, string> = {
-        'mp3': 'audio/mpeg',
-        'wav': 'audio/wav',
-        'm4a': 'audio/mp4',
-        'aac': 'audio/aac',
-        'flac': 'audio/flac',
-        'ogg': 'audio/ogg',
-      }
-      if (ext && audioMimeTypes[ext]) {
-        contentType = audioMimeTypes[ext]
-      }
-    }
+    const contentType = fileType === 'audio'
+      ? getAudioUploadContentType(file)
+      : file.type || undefined
     
     try {
       const sanitizedName = sanitizeFileName(file.name) || 'file'
@@ -273,6 +269,7 @@ export default function NewProjectPage() {
               project_id: project.id,
               title: track.title.trim() || `Track ${i + 1}`,
               audio_url: audioUrl,
+              size_bytes: track.file.size,
               order: i,
             }),
           })
@@ -527,13 +524,13 @@ export default function NewProjectPage() {
               <Music2 className="w-7 h-7 text-gray-300" />
               <div className="space-y-1">
                 <p className="text-sm sm:text-base font-medium text-white">Drop audio files here or click to browse</p>
-                <p className="text-xs text-gray-500">MP3, WAV, M4A, AAC, FLAC, OGG (up to 100MB each)</p>
+                <p className="text-xs text-gray-500">{SUPPORTED_AUDIO_LABEL} (up to {Math.round(MAX_AUDIO_UPLOAD_SIZE_BYTES / 1024 / 1024)}MB each)</p>
               </div>
               <input
                 ref={bulkTrackInputRef}
                 type="file"
                 multiple
-                accept="audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg"
+                accept={AUDIO_FILE_ACCEPT}
                 onChange={(e) => {
                   if (e.target.files?.length) handleBulkTrackUpload(e.target.files)
                 }}
