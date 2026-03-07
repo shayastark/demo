@@ -20,10 +20,10 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Demo - Share Music On Your Terms',
+  title: 'Demo - From rough cuts to real support.',
   description: 'From rough cuts to real support.',
   openGraph: {
-    title: 'Demo - Share Music On Your Terms',
+    title: 'Demo - From rough cuts to real support.',
     description: 'From rough cuts to real support.',
     images: [
       {
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Demo - Share Music On Your Terms',
+    title: 'Demo - From rough cuts to real support.',
     description: 'From rough cuts to real support.',
     images: ['/mixtape-cassette.png'],
   },

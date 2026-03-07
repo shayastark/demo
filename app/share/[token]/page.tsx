@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
       throw new Error('Private project metadata hidden')
     }
 
-    const baseTitle = project?.title || 'Demo - Share Music On Your Terms'
+    const baseTitle = project?.title || 'Demo - From rough cuts to real support.'
     const description =
       project?.description || 'Listen to this unreleased project on Demo.'
 
@@ -44,16 +44,16 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
     }
   } catch {
     return {
-      title: 'Demo - Share Music On Your Terms',
+      title: 'Demo - From rough cuts to real support.',
       description: 'Listen to this unreleased project on Demo.',
       openGraph: {
-        title: 'Demo - Share Music On Your Terms',
+        title: 'Demo - From rough cuts to real support.',
         description: 'Listen to this unreleased project on Demo.',
         images: [{ url: '/mixtape-cassette.png' }],
       },
       twitter: {
         card: 'summary_large_image',
-        title: 'Demo - Share Music On Your Terms',
+        title: 'Demo - From rough cuts to real support.',
         description: 'Listen to this unreleased project on Demo.',
         images: ['/mixtape-cassette.png'],
       },
