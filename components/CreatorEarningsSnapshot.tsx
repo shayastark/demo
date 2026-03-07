@@ -127,12 +127,12 @@ export default function CreatorEarningsSnapshot({
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="btn-unstyled ui-pressable inline-flex items-center gap-2 rounded-md border border-gray-700 bg-black px-3 py-1.5 text-xs font-semibold text-neon-green hover:border-gray-500 hover:text-neon-green/80"
+          className="ui-pressable inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-700 bg-black text-neon-green hover:border-gray-500 hover:text-neon-green/80 sm:h-auto sm:w-auto sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs sm:font-semibold"
           style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
           aria-expanded={isOpen}
           aria-label={isOpen ? 'Collapse earnings' : 'Expand earnings'}
         >
-          {isOpen ? 'Collapse' : 'Expand'}
+          <span className="hidden sm:inline">{isOpen ? 'Collapse' : 'Expand'}</span>
           <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : '-rotate-90'}`} aria-hidden />
         </button>
       </div>

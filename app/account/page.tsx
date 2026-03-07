@@ -628,8 +628,8 @@ function AccountPageContent() {
           </Link>
             <button
               onClick={logout}
-              className="btn-unstyled min-h-9 rounded-md px-2 py-1 text-sm font-medium text-neon-green hover:bg-gray-900 hover:text-neon-green/80 transition"
-              style={{ WebkitAppearance: 'none', appearance: 'none' }}
+              className="inline-flex min-h-10 items-center rounded-md px-2.5 py-1 text-[15px] font-semibold text-neon-green transition hover:bg-gray-900 hover:text-neon-green/80"
+              style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
             >
               Sign out
             </button>
@@ -757,7 +757,7 @@ function AccountPageContent() {
                 <button
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="btn-unstyled inline-flex min-h-9 items-center rounded-md px-3 py-1.5 text-sm font-medium transition disabled:opacity-50"
+                  className="inline-flex min-h-9 items-center rounded-md px-3 py-1.5 text-sm font-medium transition disabled:opacity-50"
                   style={{
                     WebkitAppearance: 'none',
                     appearance: 'none',
@@ -822,7 +822,7 @@ function AccountPageContent() {
                       setEditingUsername(profile?.username || '')
                       setIsEditingUsername(true)
                     }}
-                    className="btn-unstyled inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
+                    className="inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
                     style={{
                       WebkitAppearance: 'none',
                       appearance: 'none',
@@ -853,7 +853,7 @@ function AccountPageContent() {
             {!isEditingProfile ? (
               <button
                 onClick={() => setIsEditingProfile(true)}
-                className="btn-unstyled inline-flex min-h-9 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition"
+                className="inline-flex min-h-9 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition"
                 style={{
                   WebkitAppearance: 'none',
                   appearance: 'none',
@@ -1048,24 +1048,24 @@ function AccountPageContent() {
             <h2 className="font-semibold text-neon-green text-lg" style={{ marginBottom: '14px' }}>
               Social Graph
             </h2>
-            <div className="flex items-center gap-5">
+            <div className="grid max-w-sm grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setSocialGraphType('followers')
                   setIsSocialGraphOpen(true)
                 }}
-                className="btn-unstyled inline-flex items-center text-sm font-medium transition hover:text-neon-green"
+                className="inline-flex flex-col items-start rounded-lg border border-gray-800 bg-black/40 px-3 py-2 text-left transition hover:border-gray-600"
                 style={{
                   WebkitAppearance: 'none',
                   appearance: 'none',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ffffff',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                {followerCount} Followers
+                <span className="text-lg font-semibold leading-none text-white">{followerCount}</span>
+                <span className="mt-1 text-[11px] font-medium uppercase tracking-wide text-gray-300">
+                  Followers
+                </span>
               </button>
               <button
                 type="button"
@@ -1073,17 +1073,17 @@ function AccountPageContent() {
                   setSocialGraphType('following')
                   setIsSocialGraphOpen(true)
                 }}
-                className="btn-unstyled inline-flex items-center text-sm font-medium transition hover:text-neon-green"
+                className="inline-flex flex-col items-start rounded-lg border border-gray-800 bg-black/40 px-3 py-2 text-left transition hover:border-gray-600"
                 style={{
                   WebkitAppearance: 'none',
                   appearance: 'none',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ffffff',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                {followingCount} Following
+                <span className="text-lg font-semibold leading-none text-white">{followingCount}</span>
+                <span className="mt-1 text-[11px] font-medium uppercase tracking-wide text-gray-300">
+                  Following
+                </span>
               </button>
             </div>
           </div>

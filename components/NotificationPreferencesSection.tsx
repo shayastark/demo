@@ -337,20 +337,20 @@ export default function NotificationPreferencesSection({
       className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
       style={{ padding: '20px 24px 24px 24px' }}
     >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex items-center gap-2">
           <Bell className="w-4 h-4 text-neon-green" />
-          <h2 className="font-semibold text-neon-green text-lg">Notification Preferences</h2>
+          <h2 className="text-lg font-semibold leading-tight text-neon-green">Notification Preferences</h2>
         </div>
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="btn-unstyled ui-pressable inline-flex items-center gap-2 rounded-md border border-gray-700 bg-black px-3 py-1.5 text-xs font-semibold text-neon-green hover:border-gray-500 hover:text-neon-green/80"
+          className="ui-pressable inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-gray-700 bg-black text-neon-green hover:border-gray-500 hover:text-neon-green/80 sm:h-auto sm:w-auto sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs sm:font-semibold"
           style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
           aria-expanded={isOpen}
           aria-label={isOpen ? 'Collapse notification preferences' : 'Expand notification preferences'}
         >
-          {isOpen ? 'Collapse' : 'Expand'}
+          <span className="hidden sm:inline">{isOpen ? 'Collapse' : 'Expand'}</span>
           <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : '-rotate-90'}`} aria-hidden />
         </button>
       </div>
