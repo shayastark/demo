@@ -622,7 +622,7 @@ function AccountPageContent() {
           <div className="flex items-center" style={{ gap: '24px' }}>
           <Link
             href="/dashboard"
-              className="text-sm font-semibold text-white underline underline-offset-4 hover:opacity-80"
+              className="text-sm font-semibold !text-white underline underline-offset-4 hover:opacity-80"
           >
               Dashboard
           </Link>
@@ -636,6 +636,7 @@ function AccountPageContent() {
                 background: 'transparent',
                 border: 'none',
                 boxShadow: 'none',
+                color: '#39FF14',
               }}
             >
               Sign out
@@ -1067,6 +1068,10 @@ function AccountPageContent() {
                   WebkitAppearance: 'none',
                   appearance: 'none',
                   WebkitTapHighlightColor: 'transparent',
+                  backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                  border: '1px solid rgba(55, 65, 81, 0.9)',
+                  color: '#ffffff',
+                  padding: '8px 12px',
                 }}
               >
                 <span className="text-lg font-semibold leading-none text-white">{followerCount}</span>
@@ -1085,6 +1090,10 @@ function AccountPageContent() {
                   WebkitAppearance: 'none',
                   appearance: 'none',
                   WebkitTapHighlightColor: 'transparent',
+                  backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                  border: '1px solid rgba(55, 65, 81, 0.9)',
+                  color: '#ffffff',
+                  padding: '8px 12px',
                 }}
               >
                 <span className="text-lg font-semibold leading-none text-white">{followingCount}</span>

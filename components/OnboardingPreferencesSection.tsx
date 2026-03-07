@@ -302,6 +302,7 @@ export default function OnboardingPreferencesSection({
                 background: 'transparent',
                 border: 'none',
                 padding: 0,
+                color: '#9ca3af',
               }}
             >
               Edit preferences
@@ -325,6 +326,7 @@ export default function OnboardingPreferencesSection({
                   background: 'transparent',
                   border: 'none',
                   padding: 0,
+                  color: '#9ca3af',
                 }}
               >
                 Collapse editor
@@ -348,7 +350,15 @@ export default function OnboardingPreferencesSection({
                         ? 'border-neon-green bg-neon-green/10 text-neon-green'
                         : 'border-gray-700 bg-black text-gray-300'
                     }`}
-                    style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+                    style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      WebkitTapHighlightColor: 'transparent',
+                      backgroundColor: active ? 'rgba(57,255,20,0.10)' : '#000000',
+                      border: active ? '1px solid #39FF14' : '1px solid #374151',
+                      color: active ? '#39FF14' : '#d1d5db',
+                      borderRadius: '8px',
+                    }}
                   >
                     {GENRE_LABELS[genre]}
                   </button>
@@ -372,7 +382,15 @@ export default function OnboardingPreferencesSection({
                         ? 'border-neon-green bg-neon-green/10 text-neon-green'
                         : 'border-gray-700 bg-black text-gray-300'
                     }`}
-                    style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+                    style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      WebkitTapHighlightColor: 'transparent',
+                      backgroundColor: active ? 'rgba(57,255,20,0.10)' : '#000000',
+                      border: active ? '1px solid #39FF14' : '1px solid #374151',
+                      color: active ? '#39FF14' : '#d1d5db',
+                      borderRadius: '8px',
+                    }}
                   >
                     {VIBE_LABELS[vibe]}
                   </button>
@@ -387,7 +405,15 @@ export default function OnboardingPreferencesSection({
               onClick={() => save(true)}
               disabled={saving || (!edited && !!prefs.onboarding_completed_at)}
               className={TASTE_PRIMARY_BUTTON_CLASS}
-              style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+              style={{
+                WebkitAppearance: 'none',
+                appearance: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                backgroundColor: '#000000',
+                border: '1px solid #39FF14',
+                color: '#39FF14',
+                borderRadius: '8px',
+              }}
             >
               {saving ? 'Saving...' : isOnboardingMode ? 'Save & continue' : 'Save preferences'}
             </button>

@@ -128,7 +128,14 @@ export default function CreatorEarningsSnapshot({
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
           className="ui-pressable inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-700 bg-black text-neon-green hover:border-gray-500 hover:text-neon-green/80 sm:h-auto sm:w-auto sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs sm:font-semibold"
-          style={{ WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent' }}
+          style={{
+            WebkitAppearance: 'none',
+            appearance: 'none',
+            WebkitTapHighlightColor: 'transparent',
+            backgroundColor: '#000000',
+            border: '1px solid #374151',
+            color: '#39FF14',
+          }}
           aria-expanded={isOpen}
           aria-label={isOpen ? 'Collapse earnings' : 'Expand earnings'}
         >

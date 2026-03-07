@@ -201,6 +201,7 @@ export default function HiddenDiscoverySection({ authenticated, getAccessToken }
             background: 'transparent',
             border: 'none',
             padding: 0,
+            color: '#9ca3af',
           }}
         >
           {expanded ? 'Collapse' : 'Manage'}
