@@ -530,22 +530,8 @@ export default function ExploreProjectsPage() {
               {items.map((item, index) => (
                 <div
                   key={item.project_id}
-                  className="ui-card relative rounded-xl border border-gray-800 bg-gray-900 p-3 transition hover:border-gray-700"
+                  className="ui-card rounded-xl border border-gray-800 bg-gray-900 p-3 transition hover:border-gray-700"
                 >
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      setMenuItem(item)
-                      setMenuItemIndex(index)
-                    }}
-                    className="ui-pressable absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-700 bg-black/70 text-gray-200 hover:border-gray-500"
-                    style={EXPLORE_ACTION_BUTTON_STYLE}
-                    aria-label="Project actions"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </button>
                   <Link
                     href={item.target_path}
                     onClick={() => {
@@ -563,7 +549,7 @@ export default function ExploreProjectsPage() {
                         ...impact,
                       })
                     }}
-                    className="block space-y-1"
+                    className="block"
                   >
                     <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-800 mb-3">
                       {item.cover_image_url ? (
@@ -576,10 +562,64 @@ export default function ExploreProjectsPage() {
                         />
                       ) : null}
                     </div>
-                    <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-white" style={{ color: '#ffffff' }}>
-                      {item.title}
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-gray-300" style={{ color: '#d1d5db' }}>
+                  </Link>
+                  <div className="flex items-start gap-2">
+                    <Link
+                      href={item.target_path}
+                      onClick={() => {
+                        const impact = buildDiscoveryImpactEventFields({
+                          preferenceSeedBoost: item.preference_seed_boost,
+                          sortMode: sort,
+                          positionIndex: index,
+                        })
+                        emitEvent('project_click', {
+                          project_id: item.project_id,
+                          ...impact,
+                        })
+                        emitRankingEvent('project_click', {
+                          project_id: item.project_id,
+                          ...impact,
+                        })
+                      }}
+                      className="min-w-0 flex-1"
+                    >
+                      <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-white" style={{ color: '#ffffff' }}>
+                        {item.title}
+                      </p>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuItem(item)
+                        setMenuItemIndex(index)
+                      }}
+                      className="ui-pressable inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-gray-700 bg-gray-950/90 text-gray-200 hover:border-gray-500 hover:bg-gray-900"
+                      style={EXPLORE_ACTION_BUTTON_STYLE}
+                      aria-label="Project actions"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <Link
+                    href={item.target_path}
+                    onClick={() => {
+                      const impact = buildDiscoveryImpactEventFields({
+                        preferenceSeedBoost: item.preference_seed_boost,
+                        sortMode: sort,
+                        positionIndex: index,
+                      })
+                      emitEvent('project_click', {
+                        project_id: item.project_id,
+                        ...impact,
+                      })
+                      emitRankingEvent('project_click', {
+                        project_id: item.project_id,
+                        ...impact,
+                      })
+                    }}
+                    className="mt-1 block"
+                  >
+                    <p className="text-xs leading-relaxed text-gray-300" style={{ color: '#d1d5db' }}>
                       by {item.creator_name}
                     </p>
                     <p className="mt-1 text-[11px] leading-relaxed text-gray-500" style={{ color: '#9ca3af' }}>
