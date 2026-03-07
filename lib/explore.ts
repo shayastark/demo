@@ -25,6 +25,7 @@ export interface ExploreCreatorRow {
   display_name?: string | null
   username: string | null
   email: string | null
+  avatar_url?: string | null
 }
 
 export interface ExploreProjectItem {
@@ -33,6 +34,7 @@ export interface ExploreProjectItem {
   cover_image_url: string | null
   creator_id: string
   creator_name: string
+  creator_avatar_url: string | null
   created_at: string
   supporter_count: number
   preference_seed_boost?: number
@@ -128,6 +130,7 @@ export function buildExploreProjectItems(args: {
         username: creator?.username,
         email: creator?.email,
       }),
+      creator_avatar_url: creator?.avatar_url || null,
       created_at: project.created_at,
       supporter_count: args.supporterCountByProjectId[project.id] || 0,
       preference_seed_boost: capProjectPreferenceBoost(args.projectPreferenceBoostById?.[project.id] || 0),
