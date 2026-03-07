@@ -9,6 +9,20 @@ import {
   type DiscoveryPreferenceListRow,
 } from '@/lib/discoveryPreferences'
 
+function isMissingReasonCodeColumn(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const message = String((error as { message?: string }).message || '')
+  return /reason_code/i.test(message) && /(column|schema cache)/i.test(message)
+}
+
+async function supportsReasonCodeColumn(): Promise<boolean> {
+  const { error } = await supabaseAdmin
+    .from('user_discovery_preferences')
+    .select('reason_code')
+    .limit(1)
+  return !isMissingReasonCodeColumn(error)
+}
+
 async function getAuthenticatedUser(request: NextRequest) {
   const authResult = await verifyPrivyToken(request.headers.get('authorization'))
   if (!authResult.success || !authResult.privyId) return null
@@ -45,13 +59,37 @@ export async function GET(request: NextRequest) {
       query = query.eq('target_type', parsed.target_type)
     }
 
-    const { data: preferenceRows, error } = await query
+    let preferenceRows: Array<Record<string, unknown>> | null = null
+    let error: unknown = null
+    {
+      const initialResult = await query
+      preferenceRows = (initialResult.data as Array<Record<string, unknown>> | null) || null
+      error = initialResult.error
+    }
+    if (isMissingReasonCodeColumn(error)) {
+      let fallbackQuery = supabaseAdmin
+        .from('user_discovery_preferences')
+        .select('target_type, target_id, created_at')
+        .eq('user_id', user.id)
+        .eq('preference', parsed.preference)
+        .order('created_at', { ascending: false })
+        .range(parsed.offset, parsed.offset + parsed.limit)
+      if (parsed.target_type) {
+        fallbackQuery = fallbackQuery.eq('target_type', parsed.target_type)
+      }
+      const fallbackResult = await fallbackQuery
+      preferenceRows = (fallbackResult.data as Array<Record<string, unknown>> | null) || null
+      error = fallbackResult.error
+    }
     if (error) {
       console.error('Error loading discovery preferences:', error)
       return NextResponse.json({ error: 'Failed to load preferences' }, { status: 500 })
     }
 
-    const rows = (preferenceRows || []) as DiscoveryPreferenceListRow[]
+    const rows = ((preferenceRows || []) as DiscoveryPreferenceListRow[]).map((row) => ({
+      ...row,
+      reason_code: row.reason_code || null,
+    }))
     const creatorIds = Array.from(
       new Set(rows.filter((row) => row.target_type === 'creator').map((row) => row.target_id))
     )
@@ -140,18 +178,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
 
+    const payload: Record<string, unknown> = {
+      user_id: user.id,
+      target_type: parsed.target_type,
+      target_id: parsed.target_id,
+      preference: parsed.preference,
+    }
+    if (await supportsReasonCodeColumn()) {
+      payload.reason_code = parsed.reason_code
+    }
+
     const { error } = await supabaseAdmin
       .from('user_discovery_preferences')
-      .upsert(
-        {
-          user_id: user.id,
-          target_type: parsed.target_type,
-          target_id: parsed.target_id,
-          preference: parsed.preference,
-          reason_code: parsed.reason_code,
-        },
-        { onConflict: 'user_id,target_type,target_id,preference' }
-      )
+      .upsert(payload, { onConflict: 'user_id,target_type,target_id,preference' })
     if (error) {
       console.error('Error saving discovery preference:', error)
       return NextResponse.json({ error: 'Failed to save preference' }, { status: 500 })
