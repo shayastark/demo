@@ -589,15 +589,17 @@ export default function ExploreProjectsPage() {
                     </Link>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
                         setMenuItem(item)
                         setMenuItemIndex(index)
                       }}
-                      className="ui-pressable inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-gray-700 bg-gray-950/90 text-gray-200 hover:border-gray-500 hover:bg-gray-900"
+                      className="ui-pressable relative z-10 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-gray-700 bg-gray-950/90 text-gray-200 hover:border-gray-500 hover:bg-gray-900"
                       style={EXPLORE_ACTION_BUTTON_STYLE}
                       aria-label="Project actions"
                     >
-                      <MoreVertical className="h-4 w-4" />
+                      <MoreVertical className="pointer-events-none h-4 w-4" />
                     </button>
                   </div>
                   <Link
