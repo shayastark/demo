@@ -2229,7 +2229,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           </Link>
           <button
             onClick={logout}
-            className="btn-unstyled min-h-10 rounded-md px-2 py-1 text-sm font-medium text-neon-green hover:bg-gray-900 hover:text-neon-green/80 transition"
+            className="inline-flex min-h-10 items-center rounded-md px-2 py-1 text-xl font-bold text-neon-green transition hover:bg-gray-900 hover:text-neon-green/80"
+            style={{
+              WebkitAppearance: 'none',
+              appearance: 'none',
+              background: 'transparent',
+              border: 'none',
+              WebkitTapHighlightColor: 'transparent',
+            }}
           >
             Sign out
           </button>
@@ -2349,7 +2356,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     )}
                   </div>
                 </div>
-                {/* Right: Options button - dark gray background, white text */}
+                {/* Right: Options button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -2359,12 +2366,20 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     }
                     setIsProjectMenuOpen(!isProjectMenuOpen)
                   }}
-                  className="flex min-h-10 flex-shrink-0 items-center gap-2 rounded-full border border-gray-700 bg-gray-900 px-4 py-2 text-white transition-colors hover:border-gray-500 hover:bg-gray-800"
+                  className="ui-pressable inline-flex min-h-10 min-w-10 flex-shrink-0 items-center justify-center gap-2 rounded-full border border-gray-700 bg-gray-950/90 px-3 py-2 text-gray-100 transition hover:border-gray-500 hover:bg-gray-900"
                   title="Options"
                   type="button"
+                  style={{
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    backgroundColor: 'rgba(3, 7, 18, 0.92)',
+                    border: '1px solid rgba(75, 85, 99, 0.95)',
+                    color: '#f3f4f6',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
                 >
-                  <MoreVertical className="w-5 h-5" />
-                  <span className="text-sm font-medium">Options</span>
+                  <MoreVertical className="h-5 w-5 text-neon-green" />
+                  <span className="hidden text-sm font-medium sm:inline">Options</span>
                 </button>
               </div>
               {project.description && (
@@ -2477,7 +2492,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                               )
                             }
                           }}
-                          className="cursor-pointer appearance-none rounded-lg px-4 pr-10 text-sm font-semibold text-white transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-neon-green/40"
+                          className="cursor-pointer appearance-none rounded-lg px-4 pr-12 text-sm font-semibold text-white transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-neon-green/40"
                           style={{
                             ...COMPACT_DARK_SELECT_STYLE,
                             WebkitAppearance: 'none',
@@ -2490,6 +2505,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             borderRadius: '10px',
                             backgroundColor: '#111827',
                             boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
+                            paddingRight: '46px',
                           }}
                           aria-label="Project visibility"
                         >
@@ -2497,8 +2513,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           <option value="unlisted">Unlisted</option>
                           <option value="private">Private</option>
                         </select>
+                        <div
+                          className="pointer-events-none absolute right-9 top-1/2 h-5 -translate-y-1/2 border-l border-gray-500/70"
+                          aria-hidden
+                        />
                         <ChevronDown
-                          className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-300"
+                          className="pointer-events-none absolute right-2.5 top-1/2 h-5 w-5 -translate-y-1/2 text-neon-green"
                           aria-hidden
                         />
                       </div>
