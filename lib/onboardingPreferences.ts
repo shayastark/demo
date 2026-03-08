@@ -39,6 +39,27 @@ export const ONBOARDING_VIBE_OPTIONS = [
 export type OnboardingGenre = (typeof ONBOARDING_GENRE_OPTIONS)[number]
 export type OnboardingVibe = (typeof ONBOARDING_VIBE_OPTIONS)[number]
 
+export const ONBOARDING_GENRE_LABELS: Record<OnboardingGenre, string> = {
+  hip_hop: 'Hip-Hop',
+  rnb: 'R&B',
+  electronic: 'Electronic',
+  indie: 'Indie',
+  pop: 'Pop',
+  rock: 'Rock',
+  alternative: 'Alternative',
+  country: 'Country',
+  dance: 'Dance',
+  latin: 'Latin',
+  soul_funk: 'Soul/Funk',
+  blues: 'Blues',
+  jazz: 'Jazz',
+  gospel: 'Gospel',
+  reggae: 'Reggae',
+  afrobeats: 'Afrobeats',
+  metal: 'Metal',
+  classical: 'Classical',
+}
+
 export interface OnboardingPreferences {
   preferred_genres: OnboardingGenre[]
   preferred_vibes: OnboardingVibe[]

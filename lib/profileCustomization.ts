@@ -1,20 +1,15 @@
-export const PROFILE_TAG_OPTIONS = [
-  { id: 'artist', label: 'Artist' },
-  { id: 'producer', label: 'Producer' },
-  { id: 'songwriter', label: 'Songwriter' },
-  { id: 'vocalist', label: 'Vocalist' },
-  { id: 'engineer', label: 'Engineer' },
-  { id: 'mixing', label: 'Mixing' },
-  { id: 'mastering', label: 'Mastering' },
-  { id: 'pop', label: 'Pop' },
-  { id: 'r-and-b', label: 'R&B' },
-  { id: 'hip-hop', label: 'Hip-Hop' },
-  { id: 'electronic', label: 'Electronic' },
-  { id: 'indie', label: 'Indie' },
-  { id: 'alt-pop', label: 'Alt Pop' },
-] as const
+import {
+  ONBOARDING_GENRE_LABELS,
+  ONBOARDING_GENRE_OPTIONS,
+  type OnboardingGenre,
+} from '@/lib/onboardingPreferences'
 
-export type ProfileTag = (typeof PROFILE_TAG_OPTIONS)[number]['id']
+export const PROFILE_TAG_OPTIONS = ONBOARDING_GENRE_OPTIONS.map((id) => ({
+  id,
+  label: ONBOARDING_GENRE_LABELS[id],
+})) as ReadonlyArray<{ id: OnboardingGenre; label: string }>
+
+export type ProfileTag = OnboardingGenre
 
 export const PROFILE_TAG_LIMIT = 5
 
@@ -27,10 +22,12 @@ export const AVAILABILITY_STATUS_OPTIONS = [
 
 export type AvailabilityStatus = (typeof AVAILABILITY_STATUS_OPTIONS)[number]['id']
 
-const PROFILE_TAG_LABELS = Object.fromEntries(PROFILE_TAG_OPTIONS.map((option) => [option.id, option.label])) as Record<
-  ProfileTag,
-  string
->
+const LEGACY_PROFILE_TAG_ALIASES: Record<string, ProfileTag> = {
+  'hip-hop': 'hip_hop',
+  'r-and-b': 'rnb',
+}
+
+const PROFILE_TAG_LABELS = Object.fromEntries(PROFILE_TAG_OPTIONS.map((option) => [option.id, option.label])) as Record<ProfileTag, string>
 const AVAILABILITY_STATUS_LABELS = Object.fromEntries(
   AVAILABILITY_STATUS_OPTIONS.map((option) => [option.id, option.label])
 ) as Record<AvailabilityStatus, string>
@@ -57,8 +54,12 @@ export function sanitizeProfileTags(value: unknown): ProfileTag[] | null {
 
   const deduped = new Set<ProfileTag>()
   for (const item of value) {
-    if (!isProfileTag(item)) continue
-    deduped.add(item)
+    const normalized =
+      typeof item === 'string' && LEGACY_PROFILE_TAG_ALIASES[item]
+        ? LEGACY_PROFILE_TAG_ALIASES[item]
+        : item
+    if (!isProfileTag(normalized)) continue
+    deduped.add(normalized)
     if (deduped.size >= PROFILE_TAG_LIMIT) break
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import {
   ONBOARDING_GENRE_OPTIONS,
+  ONBOARDING_GENRE_LABELS,
   ONBOARDING_VIBE_OPTIONS,
   type OnboardingGenre,
   type OnboardingVibe,
@@ -23,27 +24,6 @@ interface OnboardingPreferencesSectionProps {
   getAccessToken?: () => Promise<string | null>
   source: Source
   isOnboardingMode?: boolean
-}
-
-const GENRE_LABELS: Record<OnboardingGenre, string> = {
-  hip_hop: 'Hip-Hop',
-  rnb: 'R&B',
-  electronic: 'Electronic',
-  indie: 'Indie',
-  pop: 'Pop',
-  rock: 'Rock',
-  alternative: 'Alternative',
-  country: 'Country',
-  dance: 'Dance',
-  latin: 'Latin',
-  soul_funk: 'Soul/Funk',
-  blues: 'Blues',
-  jazz: 'Jazz',
-  gospel: 'Gospel',
-  reggae: 'Reggae',
-  afrobeats: 'Afrobeats',
-  metal: 'Metal',
-  classical: 'Classical',
 }
 
 const VIBE_LABELS: Record<OnboardingVibe, string> = {
@@ -243,7 +223,7 @@ export default function OnboardingPreferencesSection({
     }
   }
 
-  const genrePreview = prefs.preferred_genres.slice(0, 2).map((genre) => GENRE_LABELS[genre])
+  const genrePreview = prefs.preferred_genres.slice(0, 2).map((genre) => ONBOARDING_GENRE_LABELS[genre])
   const vibePreview = prefs.preferred_vibes.slice(0, 2).map((vibe) => VIBE_LABELS[vibe])
   const shouldShowCompactOnly = !loading && !isEditorExpanded
   const summaryLastUpdated =
@@ -366,7 +346,7 @@ export default function OnboardingPreferencesSection({
                       borderRadius: '8px',
                     }}
                   >
-                    {GENRE_LABELS[genre]}
+                    {ONBOARDING_GENRE_LABELS[genre]}
                   </button>
                 )
               })}

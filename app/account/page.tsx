@@ -1125,175 +1125,6 @@ function AccountPageContent() {
               This information will be visible to users who view your projects.
             </p>
 
-            <div className="rounded-2xl border border-gray-800 bg-black/30 p-4 sm:p-5">
-              <div className="mb-5">
-                <h3 className="text-sm font-semibold text-white">Profile customization</h3>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-400">
-                  Add a banner, highlight one public project, and choose a few profile tags so your public page feels more like you.
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-white">Banner image</label>
-                  <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/80">
-                    {editProfile.banner_image_url ? (
-                      <div className="relative h-28 w-full sm:h-36">
-                        <img
-                          src={editProfile.banner_image_url}
-                          alt="Profile banner preview"
-                          className="h-full w-full object-cover object-center"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-28 items-end bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.16),transparent_32%),linear-gradient(180deg,rgba(14,18,28,1),rgba(8,10,16,1))] px-4 py-4 sm:h-36">
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">No banner yet</p>
-                      </div>
-                    )}
-                  </div>
-                  {isEditingProfile ? (
-                    <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                      <input
-                        ref={bannerInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBannerUpload}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => bannerInputRef.current?.click()}
-                        disabled={uploadingBanner}
-                        className="inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-gray-900 px-3 py-1.5 text-sm font-medium text-white transition disabled:opacity-50"
-                      >
-                        {uploadingBanner ? 'Uploading...' : editProfile.banner_image_url ? 'Change banner' : 'Upload banner'}
-                      </button>
-                      {editProfile.banner_image_url ? (
-                        <button
-                          type="button"
-                          onClick={() => setEditProfile((prev) => ({ ...prev, banner_image_url: '' }))}
-                          className="inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-300 transition hover:text-white"
-                        >
-                          Remove banner
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-white">Pinned project</label>
-                  {isEditingProfile ? (
-                    <select
-                      value={editProfile.pinned_project_id}
-                      onChange={(e) => setEditProfile((prev) => ({ ...prev, pinned_project_id: e.target.value }))}
-                      className="w-full max-w-md rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
-                    >
-                      <option value="">No pinned project</option>
-                      {publicProjects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.title}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-sm text-white">
-                      {publicProjects.find((project) => project.id === profile?.pinned_project_id)?.title || (
-                        <span className="text-gray-600 italic">No pinned project</span>
-                      )}
-                    </p>
-                  )}
-                  {publicProjects.length === 0 ? (
-                    <p className="mt-2 text-sm text-gray-500">Make at least one project public to pin it on your profile.</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-white">Availability</label>
-                  {isEditingProfile ? (
-                    <div className="flex flex-wrap gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setEditProfile((prev) => ({ ...prev, availability_status: null }))}
-                        className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
-                          !editProfile.availability_status
-                            ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
-                            : 'border-gray-700 bg-black text-gray-300 hover:text-white'
-                        }`}
-                      >
-                        None
-                      </button>
-                      {AVAILABILITY_STATUS_OPTIONS.map((option) => (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => setEditProfile((prev) => ({ ...prev, availability_status: option.id }))}
-                          className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
-                            editProfile.availability_status === option.id
-                              ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
-                              : 'border-gray-700 bg-black text-gray-300 hover:text-white'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-white">
-                      {profile?.availability_status ? (
-                        getAvailabilityStatusLabel(profile.availability_status)
-                      ) : (
-                        <span className="text-gray-600 italic">No availability status</span>
-                      )}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <label className="block text-sm font-semibold text-white">Profile tags</label>
-                    <span className="text-xs text-gray-500">
-                      {editProfile.profile_tags.length}/{PROFILE_TAG_LIMIT}
-                    </span>
-                  </div>
-                  {isEditingProfile ? (
-                    <div className="flex flex-wrap gap-2.5">
-                      {PROFILE_TAG_OPTIONS.map((option) => {
-                        const selected = editProfile.profile_tags.includes(option.id)
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            onClick={() => toggleProfileTag(option.id)}
-                            className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
-                              selected
-                                ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
-                                : 'border-gray-700 bg-black text-gray-300 hover:text-white'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  ) : profile?.profile_tags.length ? (
-                    <div className="flex flex-wrap gap-2.5">
-                      {profile.profile_tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="inline-flex min-h-9 items-center rounded-full border border-gray-700 bg-black px-3.5 text-sm font-medium text-gray-200"
-                        >
-                          {getProfileTagLabel(tag)}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-600 italic">No profile tags yet</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
             {/* Bio */}
             <div>
               <label className="block text-sm text-white mb-2" style={{ fontWeight: 600 }}>Bio</label>
@@ -1424,6 +1255,175 @@ function AccountPageContent() {
                     <span className="text-sm text-white">
                       {profile?.farcaster ? `@${profile.farcaster}` : <span className="text-gray-600 italic">Not set</span>}
                     </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-800 bg-black/30 p-4 sm:p-5">
+              <div className="mb-5">
+                <h3 className="text-sm font-semibold text-white">Profile customization</h3>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-400">
+                  Add a banner, highlight one public project, and choose a few genres so your public page feels more like you.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Banner image</label>
+                  <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/80">
+                    {editProfile.banner_image_url ? (
+                      <div className="relative h-28 w-full sm:h-36">
+                        <img
+                          src={editProfile.banner_image_url}
+                          alt="Profile banner preview"
+                          className="h-full w-full object-cover object-center"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-28 items-end bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.16),transparent_32%),linear-gradient(180deg,rgba(14,18,28,1),rgba(8,10,16,1))] px-4 py-4 sm:h-36">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">No banner yet</p>
+                      </div>
+                    )}
+                  </div>
+                  {isEditingProfile ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                      <input
+                        ref={bannerInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => bannerInputRef.current?.click()}
+                        disabled={uploadingBanner}
+                        className="inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-gray-900 px-3 py-1.5 text-sm font-medium text-white transition disabled:opacity-50"
+                      >
+                        {uploadingBanner ? 'Uploading...' : editProfile.banner_image_url ? 'Change banner' : 'Upload banner'}
+                      </button>
+                      {editProfile.banner_image_url ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditProfile((prev) => ({ ...prev, banner_image_url: '' }))}
+                          className="inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-300 transition hover:text-white"
+                        >
+                          Remove banner
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Pinned project</label>
+                  {isEditingProfile ? (
+                    <select
+                      value={editProfile.pinned_project_id}
+                      onChange={(e) => setEditProfile((prev) => ({ ...prev, pinned_project_id: e.target.value }))}
+                      className="w-full max-w-md rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    >
+                      <option value="">No pinned project</option>
+                      {publicProjects.map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.title}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-white">
+                      {publicProjects.find((project) => project.id === profile?.pinned_project_id)?.title || (
+                        <span className="text-gray-600 italic">No pinned project</span>
+                      )}
+                    </p>
+                  )}
+                  {publicProjects.length === 0 ? (
+                    <p className="mt-2 text-sm text-gray-500">Make at least one project public to pin it on your profile.</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Availability</label>
+                  {isEditingProfile ? (
+                    <div className="flex flex-wrap gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditProfile((prev) => ({ ...prev, availability_status: null }))}
+                        className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
+                          !editProfile.availability_status
+                            ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
+                            : 'border-gray-700 bg-black text-gray-300 hover:text-white'
+                        }`}
+                      >
+                        None
+                      </button>
+                      {AVAILABILITY_STATUS_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setEditProfile((prev) => ({ ...prev, availability_status: option.id }))}
+                          className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
+                            editProfile.availability_status === option.id
+                              ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
+                              : 'border-gray-700 bg-black text-gray-300 hover:text-white'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-white">
+                      {profile?.availability_status ? (
+                        getAvailabilityStatusLabel(profile.availability_status)
+                      ) : (
+                        <span className="text-gray-600 italic">No availability status</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <label className="block text-sm font-semibold text-white">Profile genres</label>
+                    <span className="text-xs text-gray-500">
+                      {editProfile.profile_tags.length}/{PROFILE_TAG_LIMIT}
+                    </span>
+                  </div>
+                  {isEditingProfile ? (
+                    <div className="flex flex-wrap gap-2.5">
+                      {PROFILE_TAG_OPTIONS.map((option) => {
+                        const selected = editProfile.profile_tags.includes(option.id)
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => toggleProfileTag(option.id)}
+                            className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
+                              selected
+                                ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
+                                : 'border-gray-700 bg-black text-gray-300 hover:text-white'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : profile?.profile_tags.length ? (
+                    <div className="flex flex-wrap gap-2.5">
+                      {profile.profile_tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex min-h-9 items-center rounded-full border border-gray-700 bg-black px-3.5 text-sm font-medium text-gray-200"
+                        >
+                          {getProfileTagLabel(tag)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 italic">No profile genres yet</p>
                   )}
                 </div>
               </div>
