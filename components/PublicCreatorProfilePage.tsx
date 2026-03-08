@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { usePrivy } from '@privy-io/react-auth'
-import { Loader2, UserCheck, UserPlus } from 'lucide-react'
+import { ExternalLink, Globe, Loader2, Mail, Sparkles, UserCheck, UserPlus } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import { applyFollowerCountDelta } from '@/lib/follows'
 
@@ -44,6 +44,10 @@ interface PublicCreatorApiResponse {
     is_authenticated: boolean
     is_owner_view: boolean
   }
+}
+
+function formatCountLabel(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`
 }
 
 export default function PublicCreatorProfilePage({ identifier }: PublicCreatorProfilePageProps) {
@@ -181,18 +185,18 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
     if (!data) return []
     return [
       data.creator.website
-        ? { label: 'Website', href: data.creator.website }
+        ? { label: 'Website', href: data.creator.website, icon: Globe }
         : null,
       data.creator.instagram
-        ? { label: 'Instagram', href: `https://instagram.com/${data.creator.instagram}` }
+        ? { label: 'Instagram', href: `https://instagram.com/${data.creator.instagram}`, icon: ExternalLink }
         : null,
       data.creator.twitter
-        ? { label: 'X', href: `https://x.com/${data.creator.twitter}` }
+        ? { label: 'X', href: `https://x.com/${data.creator.twitter}`, icon: ExternalLink }
         : null,
       data.creator.farcaster
-        ? { label: 'Farcaster', href: `https://farcaster.xyz/${data.creator.farcaster}` }
+        ? { label: 'Farcaster', href: `https://farcaster.xyz/${data.creator.farcaster}`, icon: ExternalLink }
         : null,
-    ].filter((item): item is { label: string; href: string } => !!item)
+    ].filter((item): item is { label: string; href: string; icon: typeof Globe } => !!item)
   }, [data])
 
   if (loading) {
@@ -223,87 +227,142 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
   return (
     <div className="min-h-screen bg-black pb-24 text-white">
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <div className="ui-card rounded-2xl bg-gray-900/90 p-5 sm:p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-800 text-xl font-semibold text-neon-green">
-                {data.creator.avatar_url ? (
-                  <Image
-                    src={data.creator.avatar_url}
-                    alt={data.creator.display_name}
-                    width={64}
-                    height={64}
-                    className="h-16 w-16 rounded-full object-cover object-center"
-                  />
-                ) : (
-                  data.creator.display_name.charAt(0).toUpperCase()
-                )}
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold truncate">{data.creator.display_name}</h1>
-                <div className="mt-1 flex flex-wrap items-center gap-2.5 text-sm leading-relaxed text-gray-200">
-                  <span>{data.social.followers_count} followers</span>
-                  <span>{data.social.following_count} following</span>
-                  <span>{data.public_projects.length} public projects</span>
+        <div className="ui-card overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.08),transparent_32%),linear-gradient(180deg,rgba(10,12,18,0.98),rgba(6,8,12,0.98))] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.38)] sm:p-7">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+                <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-gray-800 text-2xl font-semibold text-neon-green shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+                  {data.creator.avatar_url ? (
+                    <Image
+                      src={data.creator.avatar_url}
+                      alt={data.creator.display_name}
+                      width={80}
+                      height={80}
+                      className="h-20 w-20 rounded-full object-cover object-center"
+                    />
+                  ) : (
+                    data.creator.display_name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="min-w-0 pt-1">
+                  <h1 className="truncate text-[32px] font-bold leading-none tracking-tight text-white">
+                    {data.creator.display_name}
+                  </h1>
+                  {data.creator.username?.trim() ? (
+                    <p className="mt-2 text-sm font-medium text-gray-400">@{data.creator.username.trim()}</p>
+                  ) : null}
+                  {data.creator.bio ? (
+                    <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-200 sm:text-[15px]">
+                      {data.creator.bio}
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm text-gray-500">
+                      {data.viewer.is_owner_view
+                        ? 'Add a short bio so listeners know what you are about.'
+                        : 'This creator has not added a bio yet.'}
+                    </p>
+                  )}
                 </div>
               </div>
+
+              {!data.viewer.is_owner_view ? (
+                <button
+                  onClick={handleToggleFollow}
+                  disabled={followLoading}
+                  aria-label={data.social.is_following ? 'Unfollow creator' : 'Follow creator'}
+                  className={`inline-flex min-h-11 flex-shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                    data.social.is_following
+                      ? 'border border-white/10 bg-white/[0.04] text-white hover:border-white/20 hover:bg-white/[0.06]'
+                      : 'bg-neon-green text-black hover:bg-[#4cff2e]'
+                  }`}
+                >
+                  {followLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : data.social.is_following ? (
+                    <UserCheck className="h-4 w-4" />
+                  ) : (
+                    <UserPlus className="h-4 w-4" />
+                  )}
+                  {data.social.is_following ? 'Following' : 'Follow'}
+                </button>
+              ) : null}
             </div>
 
-            {!data.viewer.is_owner_view ? (
-              <button
-                onClick={handleToggleFollow}
-                disabled={followLoading}
-                aria-label={data.social.is_following ? 'Unfollow creator' : 'Follow creator'}
-                className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  data.social.is_following
-                    ? 'border border-gray-700 bg-gray-800 text-gray-100 hover:border-gray-500'
-                    : 'bg-neon-green text-black hover:bg-[#4cff2e]'
-                }`}
-              >
-                {followLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : data.social.is_following ? (
-                  <UserCheck className="w-4 h-4" />
-                ) : (
-                  <UserPlus className="w-4 h-4" />
-                )}
-                {data.social.is_following ? 'Following' : 'Follow'}
-              </button>
-            ) : null}
-          </div>
-
-          {data.creator.bio ? <p className="mt-5 text-sm leading-relaxed text-gray-200">{data.creator.bio}</p> : null}
-
-          {(creatorLinks.length > 0 || data.creator.contact_email) ? (
-            <div className="mt-5 flex flex-wrap gap-2.5">
-              {data.creator.contact_email ? (
-                <a
-                  href={`mailto:${data.creator.contact_email}`}
-                  className="rounded-full border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500"
+            <div className="flex flex-wrap gap-2.5">
+              {[
+                formatCountLabel(data.social.followers_count, 'follower'),
+                formatCountLabel(data.social.following_count, 'following', 'following'),
+                formatCountLabel(data.public_projects.length, 'public project'),
+              ].map((label) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5 text-xs font-medium tracking-[0.02em] text-gray-200 sm:text-sm"
                 >
-                  Contact
-                </a>
-              ) : null}
-              {creatorLinks.map((item) => (
-                <a
-                  key={`${item.label}-${item.href}`}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-full border border-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-500"
-                >
-                  {item.label}
-                </a>
+                  {label}
+                </span>
               ))}
             </div>
-          ) : null}
+
+            {(creatorLinks.length > 0 || data.creator.contact_email) ? (
+              <div className="rounded-2xl border border-white/8 bg-black/25 p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Connect</p>
+                <div className="flex flex-wrap gap-2.5">
+                  {data.creator.contact_email ? (
+                    <a
+                      href={`mailto:${data.creator.contact_email}`}
+                      className="inline-flex items-center gap-2 rounded-full border border-neon-green/20 bg-neon-green/10 px-3.5 py-2 text-sm font-medium text-neon-green transition hover:border-neon-green/35 hover:bg-neon-green/15"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Contact
+                    </a>
+                  ) : null}
+                  {creatorLinks.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <a
+                        key={`${item.label}-${item.href}`}
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-sm font-medium text-gray-200 transition hover:border-white/20 hover:bg-white/[0.05]"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </a>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <section className="mt-6">
-          <h2 className="mb-3 text-lg font-semibold text-white">Public projects</h2>
+          <div className="mb-4">
+            <h2 className="text-[28px] font-bold tracking-tight text-white">Public projects</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              {data.public_projects.length > 0
+                ? 'Explore what this creator has shared with everyone.'
+                : data.viewer.is_owner_view
+                  ? 'Projects you publish publicly will appear here.'
+                  : 'Nothing public yet, but this space is ready for future drops.'}
+            </p>
+          </div>
           {data.public_projects.length === 0 ? (
-            <div className="ui-card rounded-xl bg-gray-900/80 p-5 text-sm text-gray-300">
-              No public projects yet.
+            <div className="ui-card overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.96))] p-6 sm:p-7">
+              <div className="flex max-w-2xl flex-col gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-neon-green/20 bg-neon-green/10">
+                  <Sparkles className="h-5 w-5 text-neon-green" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">No public projects yet</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-400">
+                    {data.viewer.is_owner_view
+                      ? 'When you make a project public, it will show up here for listeners and collaborators to discover.'
+                      : 'This creator has not shared anything publicly yet. Check back soon for new releases, experiments, and updates.'}
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -317,9 +376,27 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                       project_target: project.target_path,
                     })
                   }
-                  className="ui-card ui-pressable rounded-xl bg-gray-900/80 p-4 transition hover:border-gray-600"
+                  className="ui-card ui-pressable group overflow-hidden rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.98))] transition hover:border-white/15"
                 >
-                  <p className="text-sm font-semibold text-white">{project.title}</p>
+                  {project.cover_image_url ? (
+                    <div className="relative h-44 w-full overflow-hidden border-b border-white/8 bg-black/30">
+                      <Image
+                        src={project.cover_image_url}
+                        alt={project.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-44 w-full items-end border-b border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.16),transparent_30%),linear-gradient(180deg,rgba(14,18,28,1),rgba(8,10,16,1))] p-4">
+                      <span className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Public project</span>
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <p className="text-base font-semibold text-white">{project.title}</p>
+                    <p className="mt-1 text-sm text-gray-500">Open project</p>
+                  </div>
                 </Link>
               ))}
             </div>
