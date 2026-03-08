@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
-import { hasProjectAccessGrant } from '@/lib/projectAccessServer'
+import { hasProjectAccessGrant, upsertProjectAccessGrant } from '@/lib/projectAccessServer'
 import { canManageProjectAccess } from '@/lib/projectAccessPolicyServer'
 import {
   isProjectAccessRequestStatus,
@@ -277,36 +277,13 @@ export async function PATCH(request: NextRequest) {
 
     let requestStatus: 'approved' | 'denied' = parsed.action === 'approve' ? 'approved' : 'denied'
     if (shouldUpsertAccessGrantOnReview(parsed.action)) {
-      const { data: existingGrant, error: existingGrantError } = await supabaseAdmin
-        .from('project_access_grants')
-        .select('id, role')
-        .eq('project_id', accessRequest.project_id)
-        .eq('user_id', accessRequest.requester_user_id)
-        .maybeSingle()
-      if (existingGrantError) throw existingGrantError
-
-      if (existingGrant) {
-        const { error: updateGrantError } = await supabaseAdmin
-          .from('project_access_grants')
-          .update({
-            granted_by_user_id: currentUser.id,
-            expires_at: null,
-          })
-          .eq('project_id', accessRequest.project_id)
-          .eq('user_id', accessRequest.requester_user_id)
-        if (updateGrantError) throw updateGrantError
-      } else {
-        const { error: createGrantError } = await supabaseAdmin
-          .from('project_access_grants')
-          .insert({
-            project_id: accessRequest.project_id,
-            user_id: accessRequest.requester_user_id,
-            granted_by_user_id: currentUser.id,
-            expires_at: null,
-            role: 'viewer',
-          })
-        if (createGrantError) throw createGrantError
-      }
+      await upsertProjectAccessGrant({
+        projectId: accessRequest.project_id,
+        userId: accessRequest.requester_user_id,
+        grantedByUserId: currentUser.id,
+        role: 'viewer',
+        expiresAt: null,
+      })
     }
 
     const { data: updatedRequest, error: updateError } = await supabaseAdmin

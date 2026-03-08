@@ -169,6 +169,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const addTrackFormRef = useRef<HTMLDivElement>(null)
   const secondaryPanelsSentinelRef = useRef<HTMLDivElement>(null)
   const notesRef = useRef<HTMLDivElement>(null)
+  const accessRequestsSectionRef = useRef<HTMLElement>(null)
+  const accessRequestsFocusHandledRef = useRef<string | null>(null)
   const qualifiedPlayProgressRef = useRef<{
     trackId: string | null
     lastTime: number
@@ -244,6 +246,26 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     })
     return () => window.cancelAnimationFrame(frame)
   }, [showAddTrackForm])
+
+  useEffect(() => {
+    accessRequestsFocusHandledRef.current = null
+  }, [project?.id])
+
+  useEffect(() => {
+    if (!project?.id || !isCreator || typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('access_requests') !== '1') return
+    if (accessRequestsFocusHandledRef.current === project.id) return
+    if (!accessRequestsSectionRef.current) return
+
+    accessRequestsFocusHandledRef.current = project.id
+    setProjectSettingsOpen(true)
+    const timeoutId = window.setTimeout(() => {
+      accessRequestsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 180)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [project?.id, isCreator, projectAccessRequestsLoading])
 
   useEffect(() => {
     if (!project?.id) {
@@ -994,6 +1016,13 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to request access')
+      if (result?.code === 'already_has_access') {
+        setBlockedPrivateAccess(null)
+        setBlockedAccessRequestNote('')
+        await loadProject()
+        showToast('Access already granted. Opening project...', 'success')
+        return
+      }
       setBlockedPrivateAccess({
         ...blockedPrivateAccess,
         requestStatus: 'pending',
@@ -2578,7 +2607,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               </p>
 
               {projectSettingsOpen ? <div className="mt-4 space-y-4">
-                <section className="rounded-lg bg-black/20 p-3 sm:p-4">
+                <section ref={accessRequestsSectionRef} className="rounded-lg bg-black/20 p-3 sm:p-4">
                   <h4 className="text-[17px] font-extrabold leading-6 tracking-tight text-white">Visibility &amp; Sharing</h4>
                   <p className="mt-2 text-sm leading-relaxed text-gray-400">
                     Configure who can discover this project and whether viewers can access shared links or downloads.
