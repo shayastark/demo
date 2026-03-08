@@ -228,8 +228,8 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
     <div className="min-h-screen bg-black pb-24 text-white">
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="ui-card overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.08),transparent_32%),linear-gradient(180deg,rgba(10,12,18,0.98),rgba(6,8,12,0.98))] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.38)] sm:p-7">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex min-w-0 items-start gap-4 sm:gap-5">
                 <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-gray-800 text-2xl font-semibold text-neon-green shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
                   {data.creator.avatar_url ? (
@@ -252,11 +252,11 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                     <p className="mt-2 text-sm font-medium text-gray-400">@{data.creator.username.trim()}</p>
                   ) : null}
                   {data.creator.bio ? (
-                    <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-200 sm:text-[15px]">
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-200 sm:text-[15px]">
                       {data.creator.bio}
                     </p>
                   ) : (
-                    <p className="mt-4 text-sm text-gray-500">
+                    <p className="mt-3 text-sm text-gray-500">
                       {data.viewer.is_owner_view
                         ? 'Add a short bio so listeners know what you are about.'
                         : 'This creator has not added a bio yet.'}
@@ -270,7 +270,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                   onClick={handleToggleFollow}
                   disabled={followLoading}
                   aria-label={data.social.is_following ? 'Unfollow creator' : 'Follow creator'}
-                  className="inline-flex min-h-11 w-auto self-start flex-shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition"
+                  className="inline-flex min-h-11 w-auto self-start flex-shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition"
                   style={{
                     WebkitAppearance: 'none',
                     appearance: 'none',
@@ -293,38 +293,38 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
               ) : null}
             </div>
 
-            <div className="flex flex-wrap gap-2.5">
+            <div className="grid grid-cols-3 gap-2.5">
               {[
                 formatCountLabel(data.social.followers_count, 'follower'),
                 formatCountLabel(data.social.following_count, 'following', 'following'),
                 formatCountLabel(data.public_projects.length, 'public project'),
               ].map((label) => (
-                <span
+                <div
                   key={label}
-                  className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-medium leading-none tracking-[0.02em] text-gray-200 sm:px-[18px] sm:py-2.5 sm:text-sm"
+                  className="flex min-h-[58px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-center text-[12px] font-medium leading-snug tracking-[0.01em] text-gray-200 sm:text-sm"
                 >
                   {label}
-                </span>
+                </div>
               ))}
             </div>
 
             {(creatorLinks.length > 0 || data.creator.contact_email) ? (
-              <div className="rounded-2xl border border-white/8 bg-black/25 p-5">
+              <div className="rounded-2xl border border-white/8 bg-black/25 p-4 sm:p-5">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Connect</p>
                 <div className="flex flex-col gap-3">
                   {data.creator.contact_email ? (
                     <a
                       href={`mailto:${data.creator.contact_email}`}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-neon-green/20 bg-neon-green/10 px-4 py-3 text-left transition hover:border-neon-green/35 hover:bg-neon-green/15"
+                      className="flex items-center gap-3 rounded-2xl border border-neon-green/20 bg-neon-green/10 px-4 py-3.5 text-left transition hover:border-neon-green/35 hover:bg-neon-green/15"
                     >
-                      <div className="min-w-0">
-                        <div className="inline-flex items-center gap-2 text-sm font-medium text-neon-green">
-                          <Mail className="h-4 w-4" />
-                          Contact
-                        </div>
-                        <p className="mt-1 truncate text-sm text-white/90">{data.creator.contact_email}</p>
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-neon-green/25 bg-black/15">
+                        <Mail className="h-4 w-4 text-neon-green" />
                       </div>
-                      <span className="text-xs font-medium text-neon-green">Email</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-neon-green">Contact</div>
+                        <p className="mt-1 break-all pr-2 text-sm leading-relaxed text-white/90">{data.creator.contact_email}</p>
+                      </div>
+                      <span className="text-xs font-medium text-neon-green/80">Email</span>
                     </a>
                   ) : null}
                   {creatorLinks.length > 0 ? (
@@ -371,7 +371,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">No public projects yet</h3>
-                  <p className="mt-3 pr-1 text-sm leading-relaxed text-gray-400">
+                  <p className="mt-3 pr-2 text-sm leading-relaxed text-gray-400">
                     {data.viewer.is_owner_view
                       ? 'When you make a project public, it will show up here for listeners and collaborators to discover.'
                       : 'This creator has not shared anything publicly yet. Check back soon for new releases, experiments, and updates.'}
