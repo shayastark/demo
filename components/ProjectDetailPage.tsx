@@ -1,7 +1,7 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -113,6 +113,8 @@ const NEON_GREEN_SELECT_CARET =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2339FF14' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
 const COMPACT_DANGER_ACTION_BUTTON_CLASS =
   'ui-pressable inline-flex h-9 min-w-[116px] w-auto shrink-0 appearance-none items-center justify-center whitespace-nowrap rounded-full border border-red-400/50 bg-red-500/10 px-4 text-sm font-semibold text-red-300 transition hover:border-red-300/70 hover:text-red-200 disabled:opacity-50'
+const QUALIFIED_PLAY_SECONDS = 14
+const QUALIFIED_PLAY_DELTA_TOLERANCE_SECONDS = 2.5
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { user, logout, getAccessToken } = usePrivy()
@@ -146,6 +148,17 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const projectMenuRef = useRef<HTMLDivElement>(null)
   const addTrackFormRef = useRef<HTMLDivElement>(null)
   const notesRef = useRef<HTMLDivElement>(null)
+  const qualifiedPlayProgressRef = useRef<{
+    trackId: string | null
+    lastTime: number
+    listenedSeconds: number
+    reported: boolean
+  }>({
+    trackId: null,
+    lastTime: 0,
+    listenedSeconds: 0,
+    reported: false,
+  })
   const [editingProject, setEditingProject] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
@@ -207,6 +220,77 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     })
     return () => window.cancelAnimationFrame(frame)
   }, [showAddTrackForm])
+
+  const reportQualifiedPlay = useCallback(
+    async (trackId: string) => {
+      try {
+        const token = user ? await getAccessToken() : null
+        const response = await fetch('/api/track-plays', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            track_id: trackId,
+            listened_seconds: QUALIFIED_PLAY_SECONDS,
+          }),
+        })
+
+        const result = await response.json().catch(() => null)
+        if (!response.ok) {
+          throw new Error(result?.error || 'Failed to record qualified play')
+        }
+
+        if (result?.counted && result?.metrics) {
+          setMetrics(result.metrics)
+        }
+      } catch (error) {
+        console.error('Error tracking qualified play:', error)
+      }
+    },
+    [getAccessToken, user]
+  )
+
+  const handleTrackPlayStart = useCallback((trackId: string) => {
+    qualifiedPlayProgressRef.current = {
+      trackId,
+      lastTime: 0,
+      listenedSeconds: 0,
+      reported: false,
+    }
+  }, [])
+
+  const handlePlaybackSnapshotChange = useCallback(
+    (snapshot: { trackId: string | null; currentTime: number; duration: number }) => {
+      const { trackId, currentTime } = snapshot
+      if (!trackId) return
+
+      const progress = qualifiedPlayProgressRef.current
+      if (progress.trackId !== trackId) {
+        qualifiedPlayProgressRef.current = {
+          trackId,
+          lastTime: currentTime,
+          listenedSeconds: 0,
+          reported: false,
+        }
+        return
+      }
+
+      const delta = currentTime - progress.lastTime
+      if (delta > 0 && delta <= QUALIFIED_PLAY_DELTA_TOLERANCE_SECONDS) {
+        progress.listenedSeconds += delta
+      }
+
+      progress.lastTime = currentTime
+
+      if (!progress.reported && progress.listenedSeconds >= QUALIFIED_PLAY_SECONDS) {
+        progress.reported = true
+        void reportQualifiedPlay(trackId)
+      }
+    },
+    [reportQualifiedPlay]
+  )
 
   // Close project menu when clicking outside (desktop only)
   useEffect(() => {
@@ -3248,55 +3332,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 setTrackMenuOpen(true)
               }}
               forceCloseMenu={isProjectMenuOpen} // Force track menu closed when project menu is open
-              onTrackPlay={async (trackId) => {
-                // Track play in database
-                try {
-                  let userId: string | null = null
-                  if (user) {
-                    const privyId = user.id
-                    const { data: dbUser } = await supabase
-                      .from('users')
-                      .select('id')
-                      .eq('privy_id', privyId)
-                      .single()
-                    userId = dbUser?.id || null
-                  }
-
-                  let ipAddress: string | null = null
-                  try {
-                    const response = await fetch('https://api.ipify.org?format=json')
-                    const data = await response.json()
-                    ipAddress = data.ip || null
-                  } catch (ipError) {
-                    console.warn('Could not fetch IP address:', ipError)
-                  }
-
-                  const { error: playError } = await supabase
-                    .from('track_plays')
-                    .insert({ 
-                      track_id: trackId,
-                      user_id: userId,
-                      ip_address: ipAddress
-                    })
-
-                  if (playError) {
-                    console.error('Error inserting track play:', playError)
-                  }
-
-                  // Atomically increment plays metric via API
-                  const metricsRes = await fetch('/api/metrics', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ project_id: project.id, field: 'plays' }),
-                  })
-                  if (metricsRes.ok) {
-                    const { metrics: updatedMetrics } = await metricsRes.json()
-                    if (updatedMetrics) setMetrics(updatedMetrics)
-                  }
-                } catch (error) {
-                  console.error('Error tracking play:', error)
-                }
-              }}
+              onTrackPlay={handleTrackPlayStart}
+              onPlaybackSnapshotChange={handlePlaybackSnapshotChange}
             />
           )}
           </div>

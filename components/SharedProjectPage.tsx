@@ -34,6 +34,9 @@ type ViewerSubscriptionState = {
   notificationMode: ProjectNotificationMode
 }
 
+const QUALIFIED_PLAY_SECONDS = 14
+const QUALIFIED_PLAY_DELTA_TOLERANCE_SECONDS = 2.5
+
 export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const { ready, authenticated, user, login, getAccessToken } = usePrivy()
   
@@ -76,6 +79,17 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [isMobile, setIsMobile] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
   const projectMenuRef = useRef<HTMLDivElement>(null)
+  const qualifiedPlayProgressRef = useRef<{
+    trackId: string | null
+    lastTime: number
+    listenedSeconds: number
+    reported: boolean
+  }>({
+    trackId: null,
+    lastTime: 0,
+    listenedSeconds: 0,
+    reported: false,
+  })
   const [isCreatorViewer, setIsCreatorViewer] = useState(false)
   const [tipPromptTrigger, setTipPromptTrigger] = useState<TipPromptTrigger | null>(null)
   const [viewerSubscription, setViewerSubscription] = useState<ViewerSubscriptionState>({
@@ -704,59 +718,72 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     setTrackShareModal({ track: null, isOpen: false })
   }
 
-  const handleTrackPlay = async (trackId: string) => {
-    if (!project) return
-
-    try {
-      // Get user ID if authenticated
-      let userId: string | null = null
-      if (user) {
-        const privyId = user.id
-        const { data: dbUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('privy_id', privyId)
-          .single()
-        userId = dbUser?.id || null
-      }
-
-      // Get IP address (client-side approximation)
-      let ipAddress: string | null = null
+  const reportQualifiedPlay = useCallback(
+    async (trackId: string) => {
       try {
-        const response = await fetch('https://api.ipify.org?format=json')
-        const data = await response.json()
-        ipAddress = data.ip || null
-      } catch (ipError) {
-        console.warn('Could not fetch IP address:', ipError)
-      }
-
-      // Insert track play record with user_id and ip_address
-      const { error: playError } = await supabase
-        .from('track_plays')
-        .insert({ 
-          track_id: trackId,
-          user_id: userId,
-          ip_address: ipAddress
-        })
-
-      if (playError) {
-        console.error('Error inserting track play:', playError)
-      }
-
-      // Atomically increment plays metric via API
-      try {
-        await fetch('/api/metrics', {
+        const authToken = authenticated ? await getAccessToken() : null
+        const response = await fetch('/api/track-plays', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ project_id: project.id, field: 'plays' }),
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({
+            track_id: trackId,
+            listened_seconds: QUALIFIED_PLAY_SECONDS,
+          }),
         })
-      } catch (metricsErr) {
-        console.error('Error updating plays metric:', metricsErr)
+
+        const result = await response.json().catch(() => null)
+        if (!response.ok) {
+          throw new Error(result?.error || 'Failed to record qualified play')
+        }
+      } catch (error) {
+        console.error('Error tracking qualified play:', error)
       }
-    } catch (error) {
-      console.error('Error tracking play:', error)
+    },
+    [authenticated, getAccessToken]
+  )
+
+  const handleTrackPlay = useCallback((trackId: string) => {
+    qualifiedPlayProgressRef.current = {
+      trackId,
+      lastTime: 0,
+      listenedSeconds: 0,
+      reported: false,
     }
-  }
+  }, [])
+
+  const handlePlaybackSnapshotChange = useCallback(
+    (snapshot: { trackId: string | null; currentTime: number; duration: number }) => {
+      const { trackId, currentTime } = snapshot
+      if (!trackId) return
+
+      const progress = qualifiedPlayProgressRef.current
+      if (progress.trackId !== trackId) {
+        qualifiedPlayProgressRef.current = {
+          trackId,
+          lastTime: currentTime,
+          listenedSeconds: 0,
+          reported: false,
+        }
+        return
+      }
+
+      const delta = currentTime - progress.lastTime
+      if (delta > 0 && delta <= QUALIFIED_PLAY_DELTA_TOLERANCE_SECONDS) {
+        progress.listenedSeconds += delta
+      }
+
+      progress.lastTime = currentTime
+
+      if (!progress.reported && progress.listenedSeconds >= QUALIFIED_PLAY_SECONDS) {
+        progress.reported = true
+        void reportQualifiedPlay(trackId)
+      }
+    },
+    [reportQualifiedPlay]
+  )
 
   const handleRequireAuthForFeedback = () => {
     if (project) {
@@ -965,6 +992,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
               projectTitle={project.title}
               allowDownloads={project.allow_downloads}
               onTrackPlay={handleTrackPlay}
+              onPlaybackSnapshotChange={handlePlaybackSnapshotChange}
               onMenuOpen={() => {
                 setIsProjectMenuOpen(false) // Close project menu when track menu opens
                 setTrackMenuOpen(true)
