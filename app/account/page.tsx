@@ -1642,7 +1642,7 @@ function AccountPageContent() {
               </div>
             </div>
 
-            {isEditingProfile ? (
+            {publicProfilePath || isEditingProfile ? (
               <div className="flex flex-col gap-3 border-t border-gray-800 pt-2 sm:flex-row sm:items-center sm:justify-between">
                 {publicProfilePath ? (
                   <Link
@@ -1657,15 +1657,19 @@ function AccountPageContent() {
                 ) : (
                   <div />
                 )}
-                <button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  disabled={saving}
-                  className="btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
+                {isEditingProfile ? (
+                  <button
+                    type="button"
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                    className="btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                ) : (
+                  <div />
+                )}
               </div>
             ) : null}
           </div>
