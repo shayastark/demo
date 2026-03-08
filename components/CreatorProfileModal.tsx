@@ -367,6 +367,8 @@ export default function CreatorProfileModal({
     creator?.username?.trim() ||
     creator?.email?.split('@')[0] ||
     'Creator'
+  const creatorPublicPath = creator ? getCreatorPublicPath({ id: creator.id, username: creator.username }) : null
+  const isOwnPreview = !!creator && !!currentDbUserId && currentDbUserId === creator.id
   
   // Check which payment methods are available
   const hasStripe = creator?.stripe_onboarding_complete
@@ -417,7 +419,7 @@ export default function CreatorProfileModal({
           flexShrink: 0,
         }}>
           <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#fff' }}>
-            Creator Profile
+            Profile Preview
           </h2>
           <button
             onClick={onClose}
@@ -572,6 +574,34 @@ export default function CreatorProfileModal({
                   )}
                 </button>
               )}
+
+              {creatorPublicPath ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.push(creatorPublicPath)
+                    onClose()
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    backgroundColor: 'transparent',
+                    color: '#e5e7eb',
+                    borderRadius: '12px',
+                    border: '1px solid #374151',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <ExternalLink style={{ width: '16px', height: '16px' }} />
+                  {isOwnPreview ? 'Preview public profile' : 'View creator profile'}
+                </button>
+              ) : null}
 
               {/* Bio */}
               {creator.bio && (
