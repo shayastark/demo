@@ -12,6 +12,41 @@ async function getOptionalUserFromAuthorizationHeader(value: string | null) {
   return getUserByPrivyId(authResult.privyId)
 }
 
+async function getOptionalProjectSubscription(args: {
+  projectId: string
+  userId: string
+}): Promise<{
+  data: { id: string; notification_mode?: unknown } | null
+  error: unknown | null
+}> {
+  const withMode = await supabaseAdmin
+    .from('project_subscriptions')
+    .select('id, notification_mode')
+    .eq('project_id', args.projectId)
+    .eq('user_id', args.userId)
+    .maybeSingle()
+
+  if (!withMode.error) {
+    return { data: withMode.data, error: null }
+  }
+
+  const fallback = await supabaseAdmin
+    .from('project_subscriptions')
+    .select('id')
+    .eq('project_id', args.projectId)
+    .eq('user_id', args.userId)
+    .maybeSingle()
+
+  if (fallback.error) {
+    return { data: null, error: fallback.error }
+  }
+
+  return {
+    data: fallback.data ? { id: fallback.data.id, notification_mode: null } : null,
+    error: null,
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -112,12 +147,10 @@ export async function GET(request: NextRequest) {
       : Promise.resolve({ data: null, error: null })
 
     const subscriptionPromise = viewerUserId
-      ? supabaseAdmin
-          .from('project_subscriptions')
-          .select('id, notification_mode')
-          .eq('project_id', project.id)
-          .eq('user_id', viewerUserId)
-          .maybeSingle()
+      ? getOptionalProjectSubscription({
+          projectId: project.id,
+          userId: viewerUserId,
+        })
       : Promise.resolve({ data: null, error: null })
 
     const [

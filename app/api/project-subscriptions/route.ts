@@ -33,6 +33,41 @@ async function getProject(projectId: string) {
   return project
 }
 
+async function getOptionalSubscriptionRow(args: {
+  projectId: string
+  userId: string
+}): Promise<{
+  data: { id: string; notification_mode?: unknown } | null
+  error: unknown | null
+}> {
+  const withMode = await supabaseAdmin
+    .from('project_subscriptions')
+    .select('id, notification_mode')
+    .eq('project_id', args.projectId)
+    .eq('user_id', args.userId)
+    .maybeSingle()
+
+  if (!withMode.error) {
+    return { data: withMode.data, error: null }
+  }
+
+  const fallback = await supabaseAdmin
+    .from('project_subscriptions')
+    .select('id')
+    .eq('project_id', args.projectId)
+    .eq('user_id', args.userId)
+    .maybeSingle()
+
+  if (fallback.error) {
+    return { data: null, error: fallback.error }
+  }
+
+  return {
+    data: fallback.data ? { id: fallback.data.id, notification_mode: null } : null,
+    error: null,
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -72,12 +107,13 @@ export async function GET(request: NextRequest) {
     let isSubscribed = false
     let notificationMode: 'all' | 'important' | 'mute' = 'all'
     if (currentUser?.id) {
-      const { data: existingSub } = await supabaseAdmin
-        .from('project_subscriptions')
-        .select('id, notification_mode')
-        .eq('project_id', projectId)
-        .eq('user_id', currentUser.id)
-        .maybeSingle()
+      const { data: existingSub, error: existingSubError } = await getOptionalSubscriptionRow({
+        projectId,
+        userId: currentUser.id,
+      })
+      if (existingSubError) {
+        return NextResponse.json({ error: 'Failed to load subscription status' }, { status: 500 })
+      }
       isSubscribed = !!existingSub
       notificationMode = normalizeProjectSubscriptionNotificationMode(existingSub?.notification_mode)
     }
@@ -130,7 +166,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const { data: createdSub, error: upsertError } = await supabaseAdmin
+    const { error: upsertError } = await supabaseAdmin
       .from('project_subscriptions')
       .upsert(
         {
@@ -139,8 +175,6 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: 'user_id,project_id' }
       )
-      .select('notification_mode')
-      .single()
 
     if (upsertError) {
       return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 })
@@ -154,7 +188,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       isSubscribed: true,
       subscriberCount: subscriberCount || 0,
-      notification_mode: normalizeProjectSubscriptionNotificationMode(createdSub?.notification_mode),
+      notification_mode: 'all',
     })
   } catch (error) {
     console.error('Error in project subscriptions POST:', error)
@@ -238,12 +272,13 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const { data: existingSub } = await supabaseAdmin
-      .from('project_subscriptions')
-      .select('id, notification_mode')
-      .eq('user_id', currentUser.id)
-      .eq('project_id', projectId)
-      .maybeSingle()
+    const { data: existingSub, error: existingSubError } = await getOptionalSubscriptionRow({
+      projectId,
+      userId: currentUser.id,
+    })
+    if (existingSubError) {
+      return NextResponse.json({ error: 'Failed to load existing subscription' }, { status: 500 })
+    }
     if (!existingSub) {
       return NextResponse.json({ error: 'Subscribe to project before changing notification mode' }, { status: 404 })
     }
