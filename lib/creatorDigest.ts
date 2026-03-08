@@ -108,7 +108,9 @@ export function buildCreatorDigestTopProject(args: {
   }
 }
 
-export function buildCreatorDigestHighlights(digest: Omit<CreatorDigestResponse, 'highlights' | 'window_days'>): string[] {
+export function buildCreatorDigestHighlights(
+  digest: Omit<CreatorDigestResponse, 'highlights' | 'window_days' | 'has_complete_window'>
+): string[] {
   const highlights: string[] = []
 
   if (digest.new_followers_count > 0) {
