@@ -1252,7 +1252,13 @@ export default function BottomTabBar() {
   const tabs = [
     { href: '/dashboard', icon: Home, label: 'Home' },
     { href: '/explore', icon: Compass, label: 'Explore' },
-    { href: '#queue', icon: ListMusic, label: 'Queue', onClick: () => setIsQueueOpen(true), badge: queue.length },
+    {
+      href: '#queue',
+      icon: ListMusic,
+      label: 'Queue',
+      onClick: () => setIsQueueOpen(true),
+      badge: queue.length > 0 ? queue.length : null,
+    },
     { href: '#notifications', icon: Bell, label: 'Alerts', onClick: () => {
       setIsNotificationsOpen(true)
       emitNotificationEvent('open')
@@ -1266,7 +1272,7 @@ export default function BottomTabBar() {
       if (unreadIds.length > 0) {
         markNotificationsAsRead(unreadIds)
       }
-    }, badge: unreadNotificationCount },
+    }, badge: unreadNotificationCount > 0 ? unreadNotificationCount : null },
     { href: '/account', icon: User, label: 'Account' },
   ]
 

@@ -5,10 +5,29 @@ import { isValidUUID } from '@/lib/validation'
 import { isReactionType, summarizeCommentReactions, getReactionToggleAction } from '@/lib/commentReactions'
 import { canReactProject, canViewProject } from '@/lib/projectAccessPolicyServer'
 
+let cachedHasCommentReactionsTable: boolean | null = null
+
 async function getAuthenticatedUser(request: NextRequest) {
   const authResult = await verifyPrivyToken(request.headers.get('authorization'))
   if (!authResult.success || !authResult.privyId) return null
   return getUserByPrivyId(authResult.privyId)
+}
+
+async function hasCommentReactionsTable(): Promise<boolean> {
+  if (cachedHasCommentReactionsTable !== null) return cachedHasCommentReactionsTable
+
+  try {
+    const { error } = await supabaseAdmin.from('comment_reactions').select('id').limit(1)
+    cachedHasCommentReactionsTable = !error
+    if (error) {
+      console.error('Comment reactions table unavailable, disabling reaction support:', error)
+    }
+  } catch (error) {
+    console.error('Comment reactions table probe crashed, disabling reaction support:', error)
+    cachedHasCommentReactionsTable = false
+  }
+
+  return cachedHasCommentReactionsTable
 }
 
 export async function GET(request: NextRequest) {
@@ -29,6 +48,10 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await getAuthenticatedUser(request)
+
+    if (!(await hasCommentReactionsTable())) {
+      return NextResponse.json({ reactionsByComment: {}, supported: false })
+    }
 
     const { data: reactions, error } = await supabaseAdmin
       .from('comment_reactions')
@@ -113,6 +136,15 @@ export async function POST(request: NextRequest) {
     })
     if (!canReact) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    if (!(await hasCommentReactionsTable())) {
+      return NextResponse.json({
+        success: false,
+        supported: false,
+        action: 'unsupported',
+        reaction_type: reactionType,
+      })
     }
 
     const { data: existingReaction } = await supabaseAdmin

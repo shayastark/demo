@@ -288,6 +288,11 @@ export default function CommentsPanel({
 
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Failed to update reaction')
+      if (result?.supported === false) {
+        setProjectComments(previousComments)
+        showToast('Comment reactions are not available yet.', 'info')
+        return
+      }
 
       await loadProjectComments()
     } catch (error) {
