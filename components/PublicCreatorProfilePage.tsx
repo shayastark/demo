@@ -449,8 +449,8 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
         {data.featured_project ? (
           <section className="mt-6">
             <div className="mb-4">
-              <h2 className="text-[24px] font-bold tracking-tight text-white">Featured project</h2>
-              <p className="mt-1.5 text-sm text-gray-500">Start with the release this creator wants front and center.</p>
+              <h2 className="text-[24px] font-bold tracking-tight text-white">Featured Project</h2>
+              <p className="mt-1.5 text-sm text-gray-500">Pinned to this creator&apos;s profile.</p>
             </div>
             <Link
               href={data.featured_project.target_path}
@@ -474,7 +474,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                 </div>
               ) : (
                 <div className="flex h-48 w-full items-end border-b border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.16),transparent_30%),linear-gradient(180deg,rgba(14,18,28,1),rgba(8,10,16,1))] p-5 sm:h-56">
-                  <span className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Featured project</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Featured Project</span>
                 </div>
               )}
               <div className="p-5 sm:p-6">
@@ -487,10 +487,10 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
 
         <section className="mt-6">
           <div className="mb-6">
-            <h2 className="text-[28px] font-bold tracking-tight text-white">Public projects</h2>
+            <h2 className="text-[28px] font-bold tracking-tight text-white">Public Projects</h2>
             <p className="mt-1.5 text-sm text-gray-500">
               {remainingProjects.length > 0
-                ? 'Explore what this creator has shared with everyone.'
+                ? 'Explore what this creator has shared.'
                 : data.featured_project
                   ? 'More public releases will show up here.'
                 : data.viewer.is_owner_view
