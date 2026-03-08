@@ -45,6 +45,7 @@ const CryptoTipButton = dynamic(() => import('@/components/CryptoTipButton'), {
 interface CreatorProfile {
   id: string
   username: string | null
+  display_name: string | null
   email: string | null
   avatar_url: string | null
   bio: string | null
@@ -172,7 +173,7 @@ export default function CreatorProfileModal({
         // Fetch creator profile including wallet_address
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('id, username, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, stripe_onboarding_complete, wallet_address')
+          .select('id, username, display_name, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, stripe_onboarding_complete, wallet_address')
           .eq('id', activeCreatorId)
           .single()
 
@@ -361,7 +362,11 @@ export default function CreatorProfileModal({
 
   if (!isOpen) return null
 
-  const displayName = creator?.username || creator?.email?.split('@')[0] || 'Creator'
+  const displayName =
+    creator?.display_name?.trim() ||
+    creator?.username?.trim() ||
+    creator?.email?.split('@')[0] ||
+    'Creator'
   
   // Check which payment methods are available
   const hasStripe = creator?.stripe_onboarding_complete

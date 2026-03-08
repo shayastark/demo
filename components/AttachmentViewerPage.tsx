@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { usePrivy } from '@privy-io/react-auth'
 import { ArrowLeft, ExternalLink, Image as ImageIcon } from 'lucide-react'
 
@@ -26,11 +27,14 @@ function formatBytes(size: number | null): string {
 }
 
 export default function AttachmentViewerPage({ attachmentId }: { attachmentId: string }) {
+  const searchParams = useSearchParams()
   const { ready, authenticated, getAccessToken } = usePrivy()
   const [attachment, setAttachment] = useState<AttachmentMeta | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const returnTo = searchParams.get('from') || '/dashboard'
 
   useEffect(() => {
     let isCancelled = false
@@ -89,7 +93,7 @@ export default function AttachmentViewerPage({ attachmentId }: { attachmentId: s
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <div className="flex items-center justify-between gap-3">
           <Link
-            href="/dashboard"
+            href={returnTo}
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-gray-200 transition hover:border-white/20 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />

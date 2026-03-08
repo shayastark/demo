@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { File, Image as ImageIcon, Link as LinkIcon, Paperclip, Trash2, Upload } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import { supabase } from '@/lib/supabase'
@@ -59,6 +60,8 @@ export default function ProjectAttachmentsPanel({
   onRequireAuth,
   source,
 }: ProjectAttachmentsPanelProps) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [attachments, setAttachments] = useState<ProjectAttachment[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +88,9 @@ export default function ProjectAttachmentsPanel({
       })
     )
   }
+
+  const currentPath =
+    pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '')
 
   const loadAttachments = async () => {
     setLoading(true)
@@ -162,7 +168,10 @@ export default function ProjectAttachmentsPanel({
       isCancelled = true
       revokeExistingPreviews()
     }
-  }, [attachments, authenticated, getAccessToken])
+  // Intentionally exclude getAccessToken identity to avoid revoking
+  // object URLs on unrelated rerenders from provider hook churn.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attachments, authenticated])
 
   const selectedFileType = useMemo<ProjectAttachmentType>(() => {
     if (type === 'image') return 'image'
@@ -370,7 +379,11 @@ export default function ProjectAttachmentsPanel({
               <li key={attachment.id} className="border-t border-gray-900 px-3 py-3.5 sm:px-4">
                 <div className="flex items-center justify-between gap-3">
                   <a
-                    href={attachment.href}
+                    href={
+                      attachment.type === 'image' && attachment.viewer_path
+                        ? `${attachment.viewer_path}?from=${encodeURIComponent(currentPath)}`
+                        : attachment.href
+                    }
                     target={attachment.type === 'image' || attachment.type === 'file' ? '_blank' : undefined}
                     rel={attachment.type === 'image' || attachment.type === 'file' ? 'noopener noreferrer' : undefined}
                     onClick={() =>

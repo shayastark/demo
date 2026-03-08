@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, Mail, MessageSquare, Wallet, HelpCircle, User } from 'lucide-react'
+import { Edit, Check, X, Instagram, Globe, Save, Camera, Loader2, CreditCard, ExternalLink, CheckCircle, Heart, DollarSign, MessageSquare, Wallet, HelpCircle, User } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import Image from 'next/image'
 import { getPendingProject, clearPendingProject } from '@/lib/pendingProject'
@@ -643,6 +643,12 @@ function AccountPageContent() {
     )
   }
 
+  const emailSignIn = profile?.email || user?.email?.address || null
+  const phoneAccount = (user as { phone?: { number?: string; e164?: string; phoneNumber?: string } | null } | null)?.phone
+  const phoneSignIn = phoneAccount?.number || phoneAccount?.e164 || phoneAccount?.phoneNumber || null
+  const signInMethodLabel = emailSignIn ? 'Email' : phoneSignIn ? 'Phone Number' : 'Sign in'
+  const signInMethodValue = emailSignIn || phoneSignIn || 'Not set'
+
   return (
     <div className="min-h-screen bg-black text-white pb-32">
       <nav className="border-b border-gray-800 px-4 py-4">
@@ -732,212 +738,6 @@ function AccountPageContent() {
         
         <h1 className="text-3xl font-bold mb-6 text-white">{isOnboarding ? 'Set Up Your Profile' : 'Account'}</h1>
 
-        {/* Basic Info Section */}
-        <div 
-          className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
-          style={{ padding: '20px 24px 24px 24px' }}
-        >
-          <h2 className="font-semibold text-neon-green text-lg" style={{ marginBottom: '20px' }}>
-            Basic Info
-          </h2>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Profile Picture */}
-            <div className="flex items-center gap-4">
-              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Profile Picture</label>
-              <div className="flex items-center gap-4">
-                {/* Avatar display */}
-                <div 
-                  className="relative"
-                  style={{ width: '80px', height: '80px' }}
-                >
-                  {profile?.avatar_url ? (
-                    <Image
-                      src={profile.avatar_url}
-                      alt="Profile"
-                      width={80}
-                      height={80}
-                      className="rounded-full object-cover"
-                      style={{ width: '80px', height: '80px' }}
-                    />
-                  ) : (
-                    <div 
-                      className="bg-gray-800 rounded-full flex items-center justify-center"
-                      style={{ width: '80px', height: '80px' }}
-                    >
-                      <User className="w-10 h-10 text-gray-500" />
-                    </div>
-                  )}
-                  
-                  {/* Upload overlay */}
-                  <button
-                    onClick={() => avatarInputRef.current?.click()}
-                    disabled={uploadingAvatar}
-                    className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    {uploadingAvatar ? (
-                      <Loader2 className="w-6 h-6 text-white animate-spin" />
-                    ) : (
-                      <Camera className="w-6 h-6 text-white" />
-                    )}
-                  </button>
-                </div>
-                
-                {/* Hidden file input */}
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-                
-                {/* Upload button */}
-                <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="inline-flex min-h-9 items-center rounded-md px-3 py-1.5 text-sm font-medium transition disabled:opacity-50"
-                  style={{
-                    WebkitAppearance: 'none',
-                    appearance: 'none',
-                    marginLeft: '16px',
-                    backgroundColor: '#111827',
-                    border: '1px solid #374151',
-                    color: '#f3f4f6',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                >
-                  {uploadingAvatar ? 'Uploading...' : profile?.avatar_url ? 'Change photo' : 'Choose photo'}
-                </button>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Email <span className="text-gray-500 font-normal" style={{ fontSize: '11px' }}>(Private)</span></label>
-              <span className="text-sm text-white">
-                {profile?.email || user?.email?.address || 'Not set'}
-              </span>
-            </div>
-
-            {/* Username */}
-            <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Username</label>
-              {isEditingUsername ? (
-                <div className="flex items-center gap-2" style={{ flex: '1', minWidth: 0 }}>
-                  <input
-                    type="text"
-                    value={editingUsername}
-                    onChange={(e) => setEditingUsername(e.target.value)}
-                    placeholder="Choose a username"
-                    className="bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
-                    style={{ flex: '1', minWidth: '100px', maxWidth: '200px' }}
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSaveUsername}
-                    disabled={saving}
-                    className="p-1.5 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50 flex-shrink-0"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditingUsername(false)
-                      setEditingUsername(profile?.username || '')
-                    }}
-                    className="p-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition flex-shrink-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center flex-1">
-                  <span className="text-sm text-white">
-                    {profile?.username || 'Not set'}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setEditingUsername(profile?.username || '')
-                      setIsEditingUsername(true)
-                    }}
-                    className="inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
-                    style={{
-                      WebkitAppearance: 'none',
-                      appearance: 'none',
-                      marginLeft: '16px',
-                      backgroundColor: '#111827',
-                      border: '1px solid #374151',
-                      color: '#f3f4f6',
-                      WebkitTapHighlightColor: 'transparent',
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Display Name */}
-            <div className="flex items-center">
-              <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Display Name</label>
-              {isEditingDisplayName ? (
-                <div className="flex items-center gap-2" style={{ flex: '1', minWidth: 0 }}>
-                  <input
-                    type="text"
-                    value={editingDisplayName}
-                    onChange={(e) => setEditingDisplayName(e.target.value)}
-                    placeholder="How your name appears publicly"
-                    className="bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
-                    style={{ flex: '1', minWidth: '100px', maxWidth: '280px' }}
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSaveDisplayName}
-                    disabled={saving}
-                    className="p-1.5 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50 flex-shrink-0"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditingDisplayName(false)
-                      setEditingDisplayName(profile?.display_name || '')
-                    }}
-                    className="p-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition flex-shrink-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center flex-1">
-                  <span className="text-sm text-white">
-                    {profile?.display_name || <span className="text-gray-500 italic">Not set</span>}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setEditingDisplayName(profile?.display_name || '')
-                      setIsEditingDisplayName(true)
-                    }}
-                    className="inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
-                    style={{
-                      WebkitAppearance: 'none',
-                      appearance: 'none',
-                      marginLeft: '16px',
-                      backgroundColor: '#111827',
-                      border: '1px solid #374151',
-                      color: '#f3f4f6',
-                      WebkitTapHighlightColor: 'transparent',
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Creator Profile Section */}
         <div 
           className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
@@ -995,11 +795,201 @@ function AccountPageContent() {
             )}
           </div>
           
-          <p className="text-sm text-gray-500 italic" style={{ marginBottom: '24px' }}>
-            This information will be visible to users who view your projects.
-          </p>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="rounded-2xl border border-gray-800 bg-black/30 p-4 sm:p-5">
+              <div className="mb-5">
+                <h3 className="text-sm font-semibold text-white">User Info</h3>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Profile Picture */}
+                <div className="flex items-center gap-4">
+                  <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Profile Picture</label>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="relative"
+                      style={{ width: '80px', height: '80px' }}
+                    >
+                      {profile?.avatar_url ? (
+                        <Image
+                          src={profile.avatar_url}
+                          alt="Profile"
+                          width={80}
+                          height={80}
+                          className="rounded-full object-cover"
+                          style={{ width: '80px', height: '80px' }}
+                        />
+                      ) : (
+                        <div
+                          className="bg-gray-800 rounded-full flex items-center justify-center"
+                          style={{ width: '80px', height: '80px' }}
+                        >
+                          <User className="w-10 h-10 text-gray-500" />
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={uploadingAvatar}
+                        className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        {uploadingAvatar ? (
+                          <Loader2 className="w-6 h-6 text-white animate-spin" />
+                        ) : (
+                          <Camera className="w-6 h-6 text-white" />
+                        )}
+                      </button>
+                    </div>
+
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+
+                    <button
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="inline-flex min-h-9 items-center rounded-md px-3 py-1.5 text-sm font-medium transition disabled:opacity-50"
+                      style={{
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                        marginLeft: '16px',
+                        backgroundColor: '#111827',
+                        border: '1px solid #374151',
+                        color: '#f3f4f6',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      {uploadingAvatar ? 'Uploading...' : profile?.avatar_url ? 'Change photo' : 'Choose photo'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Username */}
+                <div className="flex items-center">
+                  <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Username</label>
+                  {isEditingUsername ? (
+                    <div className="flex items-center gap-2" style={{ flex: '1', minWidth: 0 }}>
+                      <input
+                        type="text"
+                        value={editingUsername}
+                        onChange={(e) => setEditingUsername(e.target.value)}
+                        placeholder="Choose a username"
+                        className="bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                        style={{ flex: '1', minWidth: '100px', maxWidth: '200px' }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleSaveUsername}
+                        disabled={saving}
+                        className="p-1.5 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50 flex-shrink-0"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditingUsername(false)
+                          setEditingUsername(profile?.username || '')
+                        }}
+                        className="p-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center flex-1">
+                      <span className="text-sm text-white">
+                        {profile?.username || 'Not set'}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setEditingUsername(profile?.username || '')
+                          setIsEditingUsername(true)
+                        }}
+                        className="inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
+                        style={{
+                          WebkitAppearance: 'none',
+                          appearance: 'none',
+                          marginLeft: '16px',
+                          backgroundColor: '#111827',
+                          border: '1px solid #374151',
+                          color: '#f3f4f6',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Display Name */}
+                <div className="flex items-center">
+                  <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Display Name</label>
+                  {isEditingDisplayName ? (
+                    <div className="flex items-center gap-2" style={{ flex: '1', minWidth: 0 }}>
+                      <input
+                        type="text"
+                        value={editingDisplayName}
+                        onChange={(e) => setEditingDisplayName(e.target.value)}
+                        placeholder="How your name appears publicly"
+                        className="bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                        style={{ flex: '1', minWidth: '100px', maxWidth: '280px' }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleSaveDisplayName}
+                        disabled={saving}
+                        className="p-1.5 bg-neon-green text-black rounded-lg hover:opacity-80 transition disabled:opacity-50 flex-shrink-0"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditingDisplayName(false)
+                          setEditingDisplayName(profile?.display_name || '')
+                        }}
+                        className="p-1.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center flex-1">
+                      <span className="text-sm text-white">
+                        {profile?.display_name || <span className="text-gray-500 italic">Not set</span>}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setEditingDisplayName(profile?.display_name || '')
+                          setIsEditingDisplayName(true)
+                        }}
+                        className="inline-flex min-h-9 items-center justify-center rounded-md p-2 transition"
+                        style={{
+                          WebkitAppearance: 'none',
+                          appearance: 'none',
+                          marginLeft: '16px',
+                          backgroundColor: '#111827',
+                          border: '1px solid #374151',
+                          color: '#f3f4f6',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-500 italic">
+              This information will be visible to users who view your projects.
+            </p>
+
             {/* Bio */}
             <div>
               <label className="block text-sm text-white mb-2" style={{ fontWeight: 600 }}>Bio</label>
@@ -1133,6 +1123,23 @@ function AccountPageContent() {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
+          style={{ padding: '20px 24px 24px 24px' }}
+        >
+          <h2 className="font-semibold text-neon-green text-lg" style={{ marginBottom: '16px' }}>
+            Sign in Method
+          </h2>
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-gray-800 bg-black/30 px-4 py-4">
+            <div>
+              <p className="text-sm font-semibold text-white">
+                {signInMethodLabel} <span className="text-gray-500 font-normal text-[11px]">(Private)</span>
+              </p>
+              <p className="mt-1 text-sm text-gray-300 break-all">{signInMethodValue}</p>
             </div>
           </div>
         </div>
