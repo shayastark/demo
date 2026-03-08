@@ -46,6 +46,46 @@ async function hasTipSupportColumns(): Promise<boolean> {
   return cachedHasTipSupportColumns
 }
 
+async function loadReactionSummaryByComment(
+  commentIds: string[],
+  currentUserId?: string
+): Promise<
+  Record<
+    string,
+    {
+      helpful: number
+      fire: number
+      agree: number
+      like: number
+      viewerReactions: Partial<Record<ReactionType, boolean>>
+      viewerReaction: ReactionType | null
+    }
+  >
+> {
+  if (commentIds.length === 0) return {}
+
+  try {
+    const { data: reactions, error } = await supabaseAdmin
+      .from('comment_reactions')
+      .select('comment_id, user_id, reaction_type')
+      .in('comment_id', commentIds)
+
+    if (error) {
+      console.error('Comment reactions unavailable, continuing without reactions:', error)
+      return {}
+    }
+
+    const safeReactions = (reactions || []).filter((row) => isReactionType(row.reaction_type))
+    return summarizeCommentReactions(
+      safeReactions as Array<{ comment_id: string; user_id: string; reaction_type: ReactionType }>,
+      currentUserId
+    )
+  } catch (error) {
+    console.error('Comment reactions lookup crashed, continuing without reactions:', error)
+    return {}
+  }
+}
+
 async function getOrCreateUserByPrivyId(privyId: string) {
   const existingUser = await getUserByPrivyId(privyId)
   if (existingUser) return existingUser
@@ -155,18 +195,7 @@ export async function GET(request: NextRequest) {
         viewerReaction: ReactionType | null
       }
     > = {}
-    if (commentIds.length > 0) {
-      const { data: reactions } = await supabaseAdmin
-        .from('comment_reactions')
-        .select('comment_id, user_id, reaction_type')
-        .in('comment_id', commentIds)
-
-      const safeReactions = (reactions || []).filter((row) => isReactionType(row.reaction_type))
-      reactionSummaryByComment = summarizeCommentReactions(
-        safeReactions as Array<{ comment_id: string; user_id: string; reaction_type: ReactionType }>,
-        currentUser?.id
-      )
-    }
+    reactionSummaryByComment = await loadReactionSummaryByComment(commentIds, currentUser?.id)
 
     const userIds = Array.from(new Set(comments.map((comment) => comment.user_id)))
     let supporterAuthorIds = new Set<string>()
