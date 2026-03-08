@@ -58,6 +58,26 @@ interface ProjectDetailPageProps {
 
 type ProjectNotificationMode = 'all' | 'important' | 'mute'
 
+type ProjectBootstrapResponse = {
+  project: Project
+  tracks?: Track[]
+  metrics?: ProjectMetrics | null
+  creator?: {
+    id: string
+    username: string | null
+    email: string | null
+    avatar_url: string | null
+  } | null
+  viewer?: {
+    is_creator?: boolean
+    saved_to_library?: boolean
+    pinned_in_library?: boolean
+    is_subscribed?: boolean
+    subscriber_count?: number
+    notification_mode?: ProjectNotificationMode
+  } | null
+}
+
 type ProjectAccessGrant = {
   id: string
   project_id: string
@@ -147,6 +167,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [isMobile, setIsMobile] = useState(false)
   const projectMenuRef = useRef<HTMLDivElement>(null)
   const addTrackFormRef = useRef<HTMLDivElement>(null)
+  const secondaryPanelsSentinelRef = useRef<HTMLDivElement>(null)
   const notesRef = useRef<HTMLDivElement>(null)
   const qualifiedPlayProgressRef = useRef<{
     trackId: string | null
@@ -199,6 +220,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [blockedAccessRequestNote, setBlockedAccessRequestNote] = useState('')
   const [blockedAccessRequestSaving, setBlockedAccessRequestSaving] = useState(false)
   const [updatingDiscoveryPreference, setUpdatingDiscoveryPreference] = useState(false)
+  const [showSecondaryPanels, setShowSecondaryPanels] = useState(false)
   // Detect mobile vs desktop
   useEffect(() => {
     const checkMobile = () => {
@@ -220,6 +242,69 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     })
     return () => window.cancelAnimationFrame(frame)
   }, [showAddTrackForm])
+
+  useEffect(() => {
+    if (!project?.id) {
+      setShowSecondaryPanels(false)
+      return
+    }
+    if (showSecondaryPanels) return
+    const node = secondaryPanelsSentinelRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setShowSecondaryPanels(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShowSecondaryPanels(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '320px 0px' }
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [project?.id, showSecondaryPanels])
+
+  useEffect(() => {
+    if (!project?.id || !isCreator || !user) {
+      setProjectNote(null)
+      setProjectNoteContent('')
+      setTrackNotes({})
+      return
+    }
+
+    let cancelled = false
+
+    const loadCreatorNotes = async () => {
+      try {
+        const token = await getAccessToken()
+        if (!token) return
+        const notesResponse = await fetch(`/api/notes?project_id=${project.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!notesResponse.ok) return
+        const notesResult = await notesResponse.json()
+        if (cancelled) return
+
+        const projectNoteData = notesResult.projectNote as ProjectNote | null
+        const trackNotesData = notesResult.trackNotes as Record<string, TrackNote> | null
+        setProjectNote(projectNoteData || null)
+        setProjectNoteContent(projectNoteData?.content || '')
+        setTrackNotes(trackNotesData || {})
+      } catch (notesError) {
+        console.error('Error loading notes:', notesError)
+      }
+    }
+
+    loadCreatorNotes()
+    return () => {
+      cancelled = true
+    }
+  }, [getAccessToken, isCreator, project?.id, user])
 
   const reportQualifiedPlay = useCallback(
     async (trackId: string) => {
@@ -360,57 +445,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
     )
   }
 
-  const loadViewerSaveAndSubscriptionState = async (targetProjectId: string) => {
-    if (!user) {
-      setSavedToLibrary(false)
-      setViewerIsSubscribed(false)
-      setViewerSubscriptionMode('all')
-      return
-    }
-    try {
-      const privyId = user.id
-      const { data: dbUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
-      if (!dbUser?.id) {
-        setSavedToLibrary(false)
-      } else {
-        const { data: savedRow } = await supabase
-          .from('user_projects')
-          .select('id')
-          .eq('user_id', dbUser.id)
-          .eq('project_id', targetProjectId)
-          .maybeSingle()
-        setSavedToLibrary(!!savedRow)
-      }
-
-      const token = await getAccessToken()
-      const response = await fetch(
-        `/api/project-subscriptions?project_id=${encodeURIComponent(targetProjectId)}`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        }
-      )
-      const result = await response.json()
-      if (response.ok) {
-        setViewerIsSubscribed(!!result.isSubscribed)
-        setViewerSubscriptionMode(
-          result.notification_mode === 'important' || result.notification_mode === 'mute'
-            ? result.notification_mode
-            : 'all'
-        )
-      }
-    } catch (error) {
-      console.error('Error loading save/subscription state:', error)
-    }
-  }
-
   const loadProject = async () => {
     try {
+      setLoading(true)
       const token = await getAccessToken()
-      const response = await fetch(`/api/projects?id=${encodeURIComponent(projectId)}`, {
+      const response = await fetch(`/api/projects/bootstrap?id=${encodeURIComponent(projectId)}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       if (!response.ok) {
@@ -428,106 +467,51 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 : null,
           })
           setProject(null)
+          setTracks([])
+          setMetrics(null)
+          setCreatorUsername(null)
+          setCreatorAvatarUrl(null)
+          setCreatorId(null)
+          setIsCreator(false)
           setLoading(false)
           return
         }
         if (response.status === 404) {
           setProject(null)
+          setTracks([])
+          setMetrics(null)
+          setCreatorUsername(null)
+          setCreatorAvatarUrl(null)
+          setCreatorId(null)
+          setIsCreator(false)
           setLoading(false)
           return
         }
         throw new Error(errorData.error || 'Failed to load project')
       }
-      const { project: projectData } = await response.json()
+      const result = (await response.json()) as ProjectBootstrapResponse
+      const projectData = result.project
       setBlockedPrivateAccess(null)
       setProject(projectData)
+      setTracks(result.tracks || [])
+      setMetrics(result.metrics || null)
       
       // Set pinned state for creator's own projects
-      if (projectData.pinned) {
-        setIsPinned(projectData.pinned)
-      }
+      setIsPinned(!!projectData.pinned)
 
-      // Fetch creator's profile summary
-      if (projectData.creator_id) {
-        const { data: creatorData } = await supabase
-          .from('users')
-          .select('username, email, avatar_url')
-          .eq('id', projectData.creator_id)
-          .single()
-        
-        if (creatorData) {
-          setCreatorUsername(creatorData.username || creatorData.email || null)
-          setCreatorAvatarUrl(creatorData.avatar_url || null)
-        }
-        setCreatorId(projectData.creator_id)
-      }
+      const creatorData = result.creator
+      setCreatorUsername(creatorData?.username || creatorData?.email || null)
+      setCreatorAvatarUrl(creatorData?.avatar_url || null)
+      setCreatorId(creatorData?.id || projectData.creator_id || null)
 
-      const tracksResponse = await fetch(`/api/tracks?project_id=${encodeURIComponent(projectId)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      })
-      if (!tracksResponse.ok) {
-        const tracksErrorData = await tracksResponse.json().catch(() => ({}))
-        throw new Error(tracksErrorData.error || 'Failed to load tracks')
-      }
-      const tracksPayload = await tracksResponse.json()
-      setTracks(tracksPayload.tracks || [])
-
-      const { data: metricsData } = await supabase
-        .from('project_metrics')
-        .select('*')
-        .eq('project_id', projectId)
-        .single()
-
-      setMetrics(metricsData)
-
-      // Check if current user is the creator and load notes if so
-      if (user) {
-        const privyId = user.id
-        const { data: dbUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('privy_id', privyId)
-          .single()
-
-        if (dbUser && dbUser.id === projectData.creator_id) {
-          setIsCreator(true)
-
-          try {
-            const token = await getAccessToken()
-            if (token) {
-              const notesResponse = await fetch(`/api/notes?project_id=${projectId}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-              })
-
-              if (notesResponse.ok) {
-                const notesResult = await notesResponse.json()
-                const projectNoteData = notesResult.projectNote as ProjectNote | null
-                const trackNotesData = notesResult.trackNotes as Record<string, TrackNote> | null
-
-                if (projectNoteData) {
-                  setProjectNote(projectNoteData)
-                  setProjectNoteContent(projectNoteData.content)
-                }
-
-                if (trackNotesData) {
-                  setTrackNotes(trackNotesData)
-                }
-              }
-            }
-          } catch (notesError) {
-            console.error('Error loading notes:', notesError)
-          }
-        } else {
-          setIsCreator(false)
-        }
-
-        await loadViewerSaveAndSubscriptionState(projectData.id)
-      } else {
-        setIsCreator(false)
-        setSavedToLibrary(false)
-        setViewerIsSubscribed(false)
-        setViewerSubscriptionMode('all')
-      }
+      setIsCreator(!!result.viewer?.is_creator)
+      setSavedToLibrary(!!result.viewer?.saved_to_library)
+      setViewerIsSubscribed(!!result.viewer?.is_subscribed)
+      setViewerSubscriptionMode(
+        result.viewer?.notification_mode === 'important' || result.viewer?.notification_mode === 'mute'
+          ? result.viewer.notification_mode
+          : 'all'
+      )
     } catch (error) {
       console.error('Error loading project:', error)
     } finally {
@@ -3424,57 +3408,65 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
             </div>
           )}
 
-          <div className="mt-6 space-y-1.5">
-            <CommentsPanel
-              projectId={project.id}
-              authenticated={!!user}
-              getAccessToken={getAccessToken}
-              onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
-            />
-            <TopSupportersCard
-              projectId={project.id}
-              source="project_detail"
-              authenticated={!!user}
-              getAccessToken={getAccessToken}
-              onOpenSupporter={(supporterUserId) => {
-                setCreatorId(supporterUserId)
-                setShowCreatorModal(true)
-              }}
-            />
-            <TipPromptCard
-              source="project_detail"
-              projectId={project.id}
-              creatorId={project.creator_id}
-              authenticated={!!user}
-              isCreator={isCreator}
-              viewerKey={user?.id || null}
-              trackIds={tracks.map((track) => track.id)}
-              onSendTip={(trigger) => {
-                setTipPromptTrigger(trigger)
-                setShowCreatorModal(true)
-              }}
-            />
-            <ProjectUpdatesPanel
-              projectId={project.id}
-              authenticated={!!user}
-              getAccessToken={getAccessToken}
-              onRequireAuth={() => showToast('Please sign in to post updates.', 'error')}
-              source="project_detail"
-            />
-            <ProjectActivityPanel
-              projectId={project.id}
-              authenticated={!!user}
-              getAccessToken={getAccessToken}
-              onRequireAuth={() => showToast('Please sign in to view project activity.', 'error')}
-              source="project_detail"
-            />
-            <ProjectAttachmentsPanel
-              projectId={project.id}
-              authenticated={!!user}
-              getAccessToken={getAccessToken}
-              onRequireAuth={() => showToast('Please sign in to manage attachments.', 'error')}
-              source="project_detail"
-            />
+          <div ref={secondaryPanelsSentinelRef} className="mt-6">
+            {showSecondaryPanels ? (
+              <div className="space-y-1.5">
+                <CommentsPanel
+                  projectId={project.id}
+                  authenticated={!!user}
+                  getAccessToken={getAccessToken}
+                  onRequireAuth={() => showToast('Please sign in to comment.', 'error')}
+                />
+                <TopSupportersCard
+                  projectId={project.id}
+                  source="project_detail"
+                  authenticated={!!user}
+                  getAccessToken={getAccessToken}
+                  onOpenSupporter={(supporterUserId) => {
+                    setCreatorId(supporterUserId)
+                    setShowCreatorModal(true)
+                  }}
+                />
+                <TipPromptCard
+                  source="project_detail"
+                  projectId={project.id}
+                  creatorId={project.creator_id}
+                  authenticated={!!user}
+                  isCreator={isCreator}
+                  viewerKey={user?.id || null}
+                  trackIds={tracks.map((track) => track.id)}
+                  onSendTip={(trigger) => {
+                    setTipPromptTrigger(trigger)
+                    setShowCreatorModal(true)
+                  }}
+                />
+                <ProjectUpdatesPanel
+                  projectId={project.id}
+                  authenticated={!!user}
+                  getAccessToken={getAccessToken}
+                  onRequireAuth={() => showToast('Please sign in to post updates.', 'error')}
+                  source="project_detail"
+                />
+                <ProjectActivityPanel
+                  projectId={project.id}
+                  authenticated={!!user}
+                  getAccessToken={getAccessToken}
+                  onRequireAuth={() => showToast('Please sign in to view project activity.', 'error')}
+                  source="project_detail"
+                />
+                <ProjectAttachmentsPanel
+                  projectId={project.id}
+                  authenticated={!!user}
+                  getAccessToken={getAccessToken}
+                  onRequireAuth={() => showToast('Please sign in to manage attachments.', 'error')}
+                  source="project_detail"
+                />
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-gray-900 bg-gray-950/35 px-4 py-4 text-sm text-gray-500">
+                Loading discussion and updates...
+              </div>
+            )}
           </div>
 
         </div>

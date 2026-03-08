@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePrivy } from '@privy-io/react-auth'
-import { supabase } from '@/lib/supabase'
 import { Project, Track } from '@/lib/types'
 import TrackPlaylist from './TrackPlaylist'
 import CommentsPanel from './CommentsPanel'
@@ -34,11 +33,30 @@ type ViewerSubscriptionState = {
   notificationMode: ProjectNotificationMode
 }
 
+type ProjectBootstrapResponse = {
+  project: Project
+  tracks?: Track[]
+  creator?: {
+    id: string
+    username: string | null
+    email: string | null
+    avatar_url?: string | null
+  } | null
+  viewer?: {
+    is_creator?: boolean
+    saved_to_library?: boolean
+    pinned_in_library?: boolean
+    is_subscribed?: boolean
+    subscriber_count?: number
+    notification_mode?: ProjectNotificationMode
+  } | null
+}
+
 const QUALIFIED_PLAY_SECONDS = 14
 const QUALIFIED_PLAY_DELTA_TOLERANCE_SECONDS = 2.5
 
 export default function SharedProjectPage({ token }: SharedProjectPageProps) {
-  const { ready, authenticated, user, login, getAccessToken } = usePrivy()
+  const { authenticated, user, login, getAccessToken } = usePrivy()
   
   // Helper function for authenticated API requests
   const apiRequest = useCallback(async (
@@ -66,7 +84,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [loading, setLoading] = useState(true)
   const [linkCopied, setLinkCopied] = useState(false)
   const [addedToProject, setAddedToProject] = useState(false)
-  const checkedAddedRef = useRef<string | null>(null) // Track which project/user combo we've checked
   const [creatorUsername, setCreatorUsername] = useState<string | null>(null)
   const [creatorId, setCreatorId] = useState<string | null>(null)
   const [showCreatorModal, setShowCreatorModal] = useState(false)
@@ -77,8 +94,10 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   const [isPinned, setIsPinned] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showSecondaryPanels, setShowSecondaryPanels] = useState(false)
   const [trackMenuOpen, setTrackMenuOpen] = useState(false) // Track when child menu is open
   const projectMenuRef = useRef<HTMLDivElement>(null)
+  const secondaryPanelsSentinelRef = useRef<HTMLDivElement>(null)
   const qualifiedPlayProgressRef = useRef<{
     trackId: string | null
     lastTime: number
@@ -183,64 +202,30 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }, [token, authenticated])
 
   useEffect(() => {
-    // Privy pattern: Always check ready first before checking authenticated
-    if (!ready) {
+    if (!project?.id) {
+      setShowSecondaryPanels(false)
       return
     }
-    
-    // Reset state when not authenticated
-    if (!authenticated || !user) {
-      setAddedToProject(false)
-      setIsPinned(false)
-      checkedAddedRef.current = null
+    if (showSecondaryPanels) return
+    const node = secondaryPanelsSentinelRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setShowSecondaryPanels(true)
       return
     }
-    
-    if (authenticated && user && project) {
-      const checkKey = `${user.id}-${project.id}`
-      // Prevent duplicate checks for the same user/project combo
-      if (checkedAddedRef.current === checkKey) {
-        return
-      }
-      checkedAddedRef.current = checkKey
-      checkIfAdded()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, authenticated, user?.id, project?.id]) // Add ready check following Privy's pattern
 
-  useEffect(() => {
-    const checkCreatorViewer = async () => {
-      if (!authenticated || !creatorId) {
-        setIsCreatorViewer(false)
-        return
-      }
-      try {
-        const token = await getAccessToken()
-        if (!token) {
-          setIsCreatorViewer(false)
-          return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShowSecondaryPanels(true)
+          observer.disconnect()
         }
-        const response = await fetch('/api/user', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (!response.ok) {
-          setIsCreatorViewer(false)
-          return
-        }
-        const data = await response.json()
-        setIsCreatorViewer(data.user?.id === creatorId)
-      } catch {
-        setIsCreatorViewer(false)
-      }
-    }
+      },
+      { rootMargin: '320px 0px' }
+    )
 
-    checkCreatorViewer()
-  }, [authenticated, creatorId, getAccessToken])
-
-  useEffect(() => {
-    if (!project?.id) return
-    loadViewerSubscriptionState(project.id)
-  }, [project?.id, authenticated, loadViewerSubscriptionState])
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [project?.id, showSecondaryPanels])
 
   // Close project menu when clicking outside (desktop only)
   useEffect(() => {
@@ -269,50 +254,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       document.removeEventListener('mousedown', handleClickOutside, true)
     }
   }, [isProjectMenuOpen, isMobile])
-
-  // Check if project is pinned
-  useEffect(() => {
-    if (authenticated && user && project) {
-      checkPinnedStatus()
-    }
-  }, [authenticated, user, project])
-
-  const checkPinnedStatus = async () => {
-    if (!user || !project) {
-      setIsPinned(false)
-      return
-    }
-    try {
-      const privyId = user.id
-      const { data: dbUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
-
-      if (dbUser) {
-        // Use maybeSingle() to avoid throwing on no match
-        const { data, error } = await supabase
-          .from('user_projects')
-          .select('pinned')
-          .eq('user_id', dbUser.id)
-          .eq('project_id', project.id)
-          .maybeSingle()
-
-        // Only set to true if we actually found a record with pinned = true
-        if (!error && data && data.pinned === true) {
-          setIsPinned(true)
-        } else {
-          setIsPinned(false)
-        }
-      } else {
-        setIsPinned(false)
-      }
-    } catch (error) {
-      console.error('Error checking pinned status:', error)
-      setIsPinned(false)
-    }
-  }
 
   const handleTogglePin = async () => {
     if (!authenticated) {
@@ -384,8 +325,9 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
 
   const loadProject = async () => {
     try {
+      setLoading(true)
       const authToken = authenticated ? await getAccessToken() : null
-      const response = await fetch(`/api/projects?share_token=${encodeURIComponent(token)}`, {
+      const response = await fetch(`/api/projects/bootstrap?share_token=${encodeURIComponent(token)}`, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       })
       if (!response.ok) {
@@ -406,37 +348,38 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           setBlockedPrivateAccess(null)
         }
         setProject(null)
+        setTracks([])
+        setCreatorUsername(null)
+        setCreatorId(null)
+        setAddedToProject(false)
+        setIsPinned(false)
+        setIsCreatorViewer(false)
+        setViewerSubscription({
+          isSubscribed: false,
+          subscriberCount: 0,
+          notificationMode: 'all',
+        })
         setLoading(false)
         return
       }
-      const { project: projectData } = await response.json()
+      const result = (await response.json()) as ProjectBootstrapResponse
+      const projectData = result.project
       setBlockedPrivateAccess(null)
       setProject(projectData)
-
-      // Fetch creator's username
-      if (projectData.creator_id) {
-        const { data: creatorData } = await supabase
-          .from('users')
-          .select('username, email')
-          .eq('id', projectData.creator_id)
-          .single()
-        
-        if (creatorData) {
-          setCreatorUsername(creatorData.username || creatorData.email || null)
-        }
-        setCreatorId(projectData.creator_id)
-      }
-
-      const tracksResponse = await fetch(`/api/tracks?project_id=${encodeURIComponent(projectData.id)}`, {
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+      setTracks(result.tracks || [])
+      setCreatorUsername(result.creator?.username || result.creator?.email || null)
+      setCreatorId(result.creator?.id || projectData.creator_id || null)
+      setAddedToProject(!!result.viewer?.saved_to_library)
+      setIsPinned(!!result.viewer?.pinned_in_library)
+      setIsCreatorViewer(!!result.viewer?.is_creator)
+      setViewerSubscription({
+        isSubscribed: !!result.viewer?.is_subscribed,
+        subscriberCount: result.viewer?.subscriber_count || 0,
+        notificationMode:
+          result.viewer?.notification_mode === 'important' || result.viewer?.notification_mode === 'mute'
+            ? result.viewer.notification_mode
+            : 'all',
       })
-      if (!tracksResponse.ok) {
-        const tracksErrorData = await tracksResponse.json().catch(() => ({}))
-        throw new Error(tracksErrorData.error || 'Failed to load tracks')
-      }
-      const tracksPayload = await tracksResponse.json()
-      setTracks(tracksPayload.tracks || [])
-
       // Track view - increment plays metric (only once per page load)
       // We'll track actual plays when tracks are played, not on page load
       // This prevents inflating play counts just from viewing the page
@@ -495,42 +438,6 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       showToast(error instanceof Error ? error.message : 'Failed to request access', 'error')
     } finally {
       setRequestingAccess(false)
-    }
-  }
-
-  const checkIfAdded = async () => {
-    if (!user || !project) return
-
-    try {
-      const privyId = user.id
-      const { data: dbUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', privyId)
-        .single()
-
-      if (dbUser) {
-        // Use maybeSingle() instead of single() to avoid throwing on no match
-        const { data, error } = await supabase
-          .from('user_projects')
-          .select('id')
-          .eq('user_id', dbUser.id)
-          .eq('project_id', project.id)
-          .maybeSingle()
-
-        // Only set to true if we actually found a record
-        if (!error && data) {
-          setAddedToProject(true)
-        } else {
-          setAddedToProject(false)
-        }
-      } else {
-        setAddedToProject(false)
-      }
-    } catch (error) {
-      // User not logged in or error occurred
-      console.error('Error checking if added:', error)
-      setAddedToProject(false)
     }
   }
 
@@ -1002,50 +909,58 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
           )}
         </div>
 
-        <div className="mt-6 space-y-1.5">
-          <CommentsPanel
-            projectId={project.id}
-            authenticated={authenticated}
-            getAccessToken={getAccessToken}
-            onRequireAuth={handleRequireAuthForFeedback}
-          />
-          <TopSupportersCard
-            projectId={project.id}
-            source="shared_project"
-            authenticated={authenticated}
-            getAccessToken={getAccessToken}
-            onOpenSupporter={(supporterUserId) => {
-              setCreatorId(supporterUserId)
-              setShowCreatorModal(true)
-            }}
-          />
-          <TipPromptCard
-            source="shared_project"
-            projectId={project.id}
-            creatorId={project.creator_id}
-            authenticated={authenticated}
-            isCreator={isCreatorViewer}
-            viewerKey={user?.id || null}
-            trackIds={tracks.map((track) => track.id)}
-            onSendTip={(trigger) => {
-              setTipPromptTrigger(trigger)
-              setShowCreatorModal(true)
-            }}
-          />
-          <ProjectUpdatesPanel
-            projectId={project.id}
-            authenticated={authenticated}
-            getAccessToken={getAccessToken}
-            onRequireAuth={handleRequireAuthForFeedback}
-            source="shared_project"
-          />
-          <ProjectAttachmentsPanel
-            projectId={project.id}
-            authenticated={authenticated}
-            getAccessToken={getAccessToken}
-            onRequireAuth={handleRequireAuthForFeedback}
-            source="shared_project"
-          />
+        <div ref={secondaryPanelsSentinelRef} className="mt-6">
+          {showSecondaryPanels ? (
+            <div className="space-y-1.5">
+              <CommentsPanel
+                projectId={project.id}
+                authenticated={authenticated}
+                getAccessToken={getAccessToken}
+                onRequireAuth={handleRequireAuthForFeedback}
+              />
+              <TopSupportersCard
+                projectId={project.id}
+                source="shared_project"
+                authenticated={authenticated}
+                getAccessToken={getAccessToken}
+                onOpenSupporter={(supporterUserId) => {
+                  setCreatorId(supporterUserId)
+                  setShowCreatorModal(true)
+                }}
+              />
+              <TipPromptCard
+                source="shared_project"
+                projectId={project.id}
+                creatorId={project.creator_id}
+                authenticated={authenticated}
+                isCreator={isCreatorViewer}
+                viewerKey={user?.id || null}
+                trackIds={tracks.map((track) => track.id)}
+                onSendTip={(trigger) => {
+                  setTipPromptTrigger(trigger)
+                  setShowCreatorModal(true)
+                }}
+              />
+              <ProjectUpdatesPanel
+                projectId={project.id}
+                authenticated={authenticated}
+                getAccessToken={getAccessToken}
+                onRequireAuth={handleRequireAuthForFeedback}
+                source="shared_project"
+              />
+              <ProjectAttachmentsPanel
+                projectId={project.id}
+                authenticated={authenticated}
+                getAccessToken={getAccessToken}
+                onRequireAuth={handleRequireAuthForFeedback}
+                source="shared_project"
+              />
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-gray-900 bg-gray-950/35 px-4 py-4 text-sm text-gray-500">
+              Loading discussion and updates...
+            </div>
+          )}
         </div>
       </div>
 
