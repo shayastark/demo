@@ -181,6 +181,13 @@ a:active {
   color: #39FF14 !important;
 }
 
+.text-on-neon,
+.text-on-neon:visited,
+.text-on-neon:hover,
+.text-on-neon:active {
+  color: #000 !important;
+}
+
 /* Override any purple/violet/indigo colors that might appear */
 * {
   --purple-50: #39FF14;

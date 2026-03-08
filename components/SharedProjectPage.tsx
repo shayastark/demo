@@ -906,7 +906,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             ) : (
               <Link
                 href="/dashboard"
-                className="flex min-h-10 items-center gap-2 rounded-full bg-neon-green px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/20"
+                className="text-on-neon flex min-h-10 items-center gap-2 rounded-full bg-neon-green px-4 py-2 text-sm font-semibold transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/20"
               >
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard

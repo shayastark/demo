@@ -806,18 +806,14 @@ function AccountPageContent() {
                 <div className="flex items-center gap-4">
                   <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Profile Picture</label>
                   <div className="flex items-center gap-4">
-                    <div
-                      className="relative"
-                      style={{ width: '80px', height: '80px' }}
-                    >
+                    <div className="relative h-20 w-20 overflow-hidden rounded-full">
                       {profile?.avatar_url ? (
                         <Image
                           src={profile.avatar_url}
                           alt="Profile"
-                          width={80}
-                          height={80}
-                          className="rounded-full object-cover"
-                          style={{ width: '80px', height: '80px' }}
+                          fill
+                          sizes="80px"
+                          className="object-cover object-center"
                         />
                       ) : (
                         <div

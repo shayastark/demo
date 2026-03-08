@@ -498,28 +498,28 @@ export default function ClientDashboard() {
       />
       
       <nav className="sticky top-0 z-20 overflow-x-hidden border-b border-gray-800/50 bg-black/80 px-4 py-3 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
-          <Link href="/" className="flex-shrink-0 text-lg font-bold text-white sm:text-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <Link href="/" className="inline-flex min-h-9 flex-shrink-0 items-center text-lg font-bold leading-none text-white sm:text-xl">
             Demo
           </Link>
-          <div className="flex items-center min-w-0 gap-3 max-[390px]:gap-1.5 sm:gap-4 pr-0.5">
+          <div className="flex min-w-0 items-center gap-3 pr-0.5 max-[390px]:gap-1.5 sm:gap-4">
             <Link
               href="/account"
-              className="min-h-8 rounded-md px-1.5 py-1 text-xs text-gray-300 hover:bg-gray-900 hover:text-white sm:text-sm max-[390px]:text-[10px] whitespace-nowrap"
+              className="inline-flex min-h-8 items-center rounded-md px-1.5 py-1 text-xs leading-none whitespace-nowrap text-gray-300 transition hover:bg-gray-900 hover:text-white max-[390px]:text-[10px] sm:text-sm"
             >
               Account
             </Link>
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/explore"
-              className="min-h-8 rounded-md px-1.5 py-1 text-xs text-gray-300 hover:bg-gray-900 hover:text-white sm:text-sm max-[390px]:text-[10px] whitespace-nowrap"
+              className="inline-flex min-h-8 items-center rounded-md px-1.5 py-1 text-xs leading-none whitespace-nowrap text-gray-300 transition hover:bg-gray-900 hover:text-white max-[390px]:text-[10px] sm:text-sm"
             >
               Explore
             </Link>
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/dashboard/projects/new"
-              className="flex min-h-8 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-semibold text-neon-green transition hover:bg-gray-900 hover:text-white sm:text-sm max-[390px]:gap-0.5 max-[390px]:text-[10px] whitespace-nowrap"
+              className="inline-flex min-h-8 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-semibold leading-none whitespace-nowrap text-neon-green transition hover:bg-gray-900 hover:text-white max-[390px]:gap-0.5 max-[390px]:text-[10px] sm:text-sm"
             >
               <Plus className="w-3 h-3 max-[390px]:w-2.5 max-[390px]:h-2.5 sm:w-4 sm:h-4" />
               New Project
@@ -527,7 +527,7 @@ export default function ClientDashboard() {
             <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
             <button
               onClick={logout}
-              className="btn-unstyled min-h-8 rounded-md px-1.5 py-1 text-xs font-medium text-neon-green hover:bg-gray-900 hover:text-neon-green/80 sm:text-sm max-[390px]:text-[10px] whitespace-nowrap"
+              className="btn-unstyled inline-flex min-h-8 items-center rounded-md px-1.5 py-1 text-xs font-medium leading-none whitespace-nowrap text-neon-green transition hover:bg-gray-900 hover:text-neon-green/80 max-[390px]:text-[10px] sm:text-sm"
             >
               Sign out
             </button>

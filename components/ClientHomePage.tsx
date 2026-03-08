@@ -238,7 +238,7 @@ export default function ClientHomePage() {
           
           <Link
             href="/dashboard"
-            className="inline-block min-h-12 rounded-full bg-neon-green px-10 py-3.5 text-lg font-semibold text-black transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/30 active:scale-100"
+            className="text-on-neon inline-block min-h-12 rounded-full bg-neon-green px-10 py-3.5 text-lg font-semibold transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/30 active:scale-100"
           >
             Go to Your Dashboard
           </Link>
