@@ -599,7 +599,7 @@ export default function CreatorProfileModal({
                   }}
                 >
                   <ExternalLink style={{ width: '16px', height: '16px' }} />
-                  {isOwnPreview ? 'Preview public profile' : 'View creator profile'}
+                  View Profile
                 </button>
               ) : null}
 
