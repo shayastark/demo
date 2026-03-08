@@ -99,6 +99,11 @@ export async function PATCH(request: NextRequest) {
       instagram: 100,
       twitter: 100,
       farcaster: 100,
+      youtube_url: 500,
+      tiktok_url: 500,
+      spotify_url: 500,
+      discord_url: 500,
+      other_link_url: 500,
       avatar_url: 1000,
       banner_image_url: 1000,
       availability_status: 50,
@@ -153,12 +158,15 @@ export async function PATCH(request: NextRequest) {
           updates[field] = username || null
         } else if (field === 'display_name') {
           updates[field] = sanitizeText(body[field], fieldLimits[field])
-        } else if (field === 'website' && body[field]) {
-          // Validate website URL starts with http:// or https://
+        } else if (
+          ['website', 'youtube_url', 'tiktok_url', 'spotify_url', 'discord_url', 'other_link_url'].includes(field) &&
+          body[field]
+        ) {
+          // Validate link URLs start with http:// or https://
           const url = String(body[field]).trim()
           if (url && !url.match(/^https?:\/\//)) {
             return NextResponse.json(
-              { error: 'Website must start with http:// or https://' },
+              { error: `${field.replace(/_/g, ' ')} must start with http:// or https://` },
               { status: 400 }
             )
           }

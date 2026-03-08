@@ -36,6 +36,11 @@ interface PublicCreatorApiResponse {
     instagram: string | null
     twitter: string | null
     farcaster: string | null
+    youtube_url: string | null
+    tiktok_url: string | null
+    spotify_url: string | null
+    discord_url: string | null
+    other_link_url: string | null
     canonical_identifier: string
     canonical_path: string
   }
@@ -219,6 +224,21 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
         : null,
       data.creator.farcaster
         ? { label: 'Farcaster', href: `https://farcaster.xyz/${data.creator.farcaster}`, icon: ExternalLink }
+        : null,
+      data.creator.youtube_url
+        ? { label: 'YouTube', href: data.creator.youtube_url, icon: ExternalLink }
+        : null,
+      data.creator.tiktok_url
+        ? { label: 'TikTok', href: data.creator.tiktok_url, icon: ExternalLink }
+        : null,
+      data.creator.spotify_url
+        ? { label: 'Spotify', href: data.creator.spotify_url, icon: ExternalLink }
+        : null,
+      data.creator.discord_url
+        ? { label: 'Discord', href: data.creator.discord_url, icon: ExternalLink }
+        : null,
+      data.creator.other_link_url
+        ? { label: 'Other', href: data.creator.other_link_url, icon: ExternalLink }
         : null,
     ].filter((item): item is { label: string; href: string; icon: typeof Globe } => !!item)
   }, [data])

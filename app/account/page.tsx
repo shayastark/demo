@@ -50,6 +50,11 @@ interface UserProfile {
   instagram: string | null
   twitter: string | null
   farcaster: string | null
+  youtube_url: string | null
+  tiktok_url: string | null
+  spotify_url: string | null
+  discord_url: string | null
+  other_link_url: string | null
   wallet_address: string | null
 }
 
@@ -112,6 +117,11 @@ function AccountPageContent() {
     instagram: '',
     twitter: '',
     farcaster: '',
+    youtube_url: '',
+    tiktok_url: '',
+    spotify_url: '',
+    discord_url: '',
+    other_link_url: '',
   })
   
   // Avatar upload state
@@ -197,7 +207,7 @@ function AccountPageContent() {
         // First try to get existing user via public read
         let { data: existingUser } = await supabase
           .from('users')
-          .select('id, username, display_name, email, avatar_url, banner_image_url, bio, profile_tags, availability_status, pinned_project_id, contact_email, website, instagram, twitter, farcaster, wallet_address')
+          .select('id, username, display_name, email, avatar_url, banner_image_url, bio, profile_tags, availability_status, pinned_project_id, contact_email, website, instagram, twitter, farcaster, youtube_url, tiktok_url, spotify_url, discord_url, other_link_url, wallet_address')
           .eq('privy_id', privyId)
           .single()
 
@@ -237,6 +247,11 @@ function AccountPageContent() {
           instagram: existingUser.instagram || null,
           twitter: existingUser.twitter || null,
           farcaster: existingUser.farcaster || null,
+          youtube_url: existingUser.youtube_url || null,
+          tiktok_url: existingUser.tiktok_url || null,
+          spotify_url: existingUser.spotify_url || null,
+          discord_url: existingUser.discord_url || null,
+          other_link_url: existingUser.other_link_url || null,
           wallet_address: existingUser.wallet_address || null,
         })
         setEditingDisplayName(existingUser.display_name || '')
@@ -253,6 +268,11 @@ function AccountPageContent() {
           farcaster: existingUser.farcaster || '',
           website: existingUser.website || '',
           instagram: existingUser.instagram || '',
+          youtube_url: existingUser.youtube_url || '',
+          tiktok_url: existingUser.tiktok_url || '',
+          spotify_url: existingUser.spotify_url || '',
+          discord_url: existingUser.discord_url || '',
+          other_link_url: existingUser.other_link_url || '',
         })
       } catch (error) {
         console.error('Error loading account profile:', error)
@@ -731,6 +751,11 @@ function AccountPageContent() {
           instagram: editProfile.instagram.trim() || null,
           twitter: editProfile.twitter.trim() || null,
           farcaster: editProfile.farcaster.trim() || null,
+          youtube_url: editProfile.youtube_url.trim() || null,
+          tiktok_url: editProfile.tiktok_url.trim() || null,
+          spotify_url: editProfile.spotify_url.trim() || null,
+          discord_url: editProfile.discord_url.trim() || null,
+          other_link_url: editProfile.other_link_url.trim() || null,
         },
       })
 
@@ -753,6 +778,11 @@ function AccountPageContent() {
         instagram: result.user.instagram,
         twitter: result.user.twitter,
         farcaster: result.user.farcaster,
+        youtube_url: result.user.youtube_url,
+        tiktok_url: result.user.tiktok_url,
+        spotify_url: result.user.spotify_url,
+        discord_url: result.user.discord_url,
+        other_link_url: result.user.other_link_url,
       })
       setIsEditingProfile(false)
       showToast('Profile updated!', 'success')
@@ -916,6 +946,11 @@ function AccountPageContent() {
                       instagram: profile?.instagram || '',
                       twitter: profile?.twitter || '',
                       farcaster: profile?.farcaster || '',
+                      youtube_url: profile?.youtube_url || '',
+                      tiktok_url: profile?.tiktok_url || '',
+                      spotify_url: profile?.spotify_url || '',
+                      discord_url: profile?.discord_url || '',
+                      other_link_url: profile?.other_link_url || '',
                     })
                   }}
                   className="btn-ghost text-sm"
@@ -1254,6 +1289,136 @@ function AccountPageContent() {
                   ) : (
                     <span className="text-sm text-white">
                       {profile?.farcaster ? `@${profile.farcaster}` : <span className="text-gray-600 italic">Not set</span>}
+                    </span>
+                  )}
+                </div>
+
+                {/* YouTube */}
+                <div className="flex items-center" style={{ gap: '12px' }}>
+                  <div style={{ width: '24px', minWidth: '24px' }} className="flex items-center justify-center">
+                    <ExternalLink className="w-5 h-5 text-white" />
+                  </div>
+                  {isEditingProfile ? (
+                    <input
+                      type="url"
+                      value={editProfile.youtube_url}
+                      onChange={(e) => setEditProfile({ ...editProfile, youtube_url: e.target.value })}
+                      placeholder="YouTube link"
+                      className="flex-1 max-w-md bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    />
+                  ) : (
+                    <span className="text-sm text-white">
+                      {profile?.youtube_url ? (
+                        <a href={profile.youtube_url} target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline">
+                          {profile.youtube_url}
+                        </a>
+                      ) : (
+                        <span className="text-gray-600 italic">Not set</span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                {/* TikTok */}
+                <div className="flex items-center" style={{ gap: '12px' }}>
+                  <div style={{ width: '24px', minWidth: '24px' }} className="flex items-center justify-center">
+                    <ExternalLink className="w-5 h-5 text-white" />
+                  </div>
+                  {isEditingProfile ? (
+                    <input
+                      type="url"
+                      value={editProfile.tiktok_url}
+                      onChange={(e) => setEditProfile({ ...editProfile, tiktok_url: e.target.value })}
+                      placeholder="TikTok link"
+                      className="flex-1 max-w-md bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    />
+                  ) : (
+                    <span className="text-sm text-white">
+                      {profile?.tiktok_url ? (
+                        <a href={profile.tiktok_url} target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline">
+                          {profile.tiktok_url}
+                        </a>
+                      ) : (
+                        <span className="text-gray-600 italic">Not set</span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                {/* Spotify */}
+                <div className="flex items-center" style={{ gap: '12px' }}>
+                  <div style={{ width: '24px', minWidth: '24px' }} className="flex items-center justify-center">
+                    <ExternalLink className="w-5 h-5 text-white" />
+                  </div>
+                  {isEditingProfile ? (
+                    <input
+                      type="url"
+                      value={editProfile.spotify_url}
+                      onChange={(e) => setEditProfile({ ...editProfile, spotify_url: e.target.value })}
+                      placeholder="Spotify link"
+                      className="flex-1 max-w-md bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    />
+                  ) : (
+                    <span className="text-sm text-white">
+                      {profile?.spotify_url ? (
+                        <a href={profile.spotify_url} target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline">
+                          {profile.spotify_url}
+                        </a>
+                      ) : (
+                        <span className="text-gray-600 italic">Not set</span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                {/* Discord */}
+                <div className="flex items-center" style={{ gap: '12px' }}>
+                  <div style={{ width: '24px', minWidth: '24px' }} className="flex items-center justify-center">
+                    <ExternalLink className="w-5 h-5 text-white" />
+                  </div>
+                  {isEditingProfile ? (
+                    <input
+                      type="url"
+                      value={editProfile.discord_url}
+                      onChange={(e) => setEditProfile({ ...editProfile, discord_url: e.target.value })}
+                      placeholder="Discord link"
+                      className="flex-1 max-w-md bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    />
+                  ) : (
+                    <span className="text-sm text-white">
+                      {profile?.discord_url ? (
+                        <a href={profile.discord_url} target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline">
+                          {profile.discord_url}
+                        </a>
+                      ) : (
+                        <span className="text-gray-600 italic">Not set</span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                {/* Other Link */}
+                <div className="flex items-center" style={{ gap: '12px' }}>
+                  <div style={{ width: '24px', minWidth: '24px' }} className="flex items-center justify-center">
+                    <ExternalLink className="w-5 h-5 text-white" />
+                  </div>
+                  {isEditingProfile ? (
+                    <input
+                      type="url"
+                      value={editProfile.other_link_url}
+                      onChange={(e) => setEditProfile({ ...editProfile, other_link_url: e.target.value })}
+                      placeholder="Other link"
+                      className="flex-1 max-w-md bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    />
+                  ) : (
+                    <span className="text-sm text-white">
+                      {profile?.other_link_url ? (
+                        <a href={profile.other_link_url} target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline">
+                          {profile.other_link_url}
+                        </a>
+                      ) : (
+                        <span className="text-gray-600 italic">Not set</span>
+                      )}
                     </span>
                   )}
                 </div>

@@ -54,6 +54,11 @@ interface CreatorProfile {
   instagram: string | null
   twitter: string | null
   farcaster: string | null
+  youtube_url: string | null
+  tiktok_url: string | null
+  spotify_url: string | null
+  discord_url: string | null
+  other_link_url: string | null
   stripe_onboarding_complete: boolean | null
   wallet_address: string | null
 }
@@ -173,7 +178,7 @@ export default function CreatorProfileModal({
         // Fetch creator profile including wallet_address
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('id, username, display_name, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, stripe_onboarding_complete, wallet_address')
+          .select('id, username, display_name, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, youtube_url, tiktok_url, spotify_url, discord_url, other_link_url, stripe_onboarding_complete, wallet_address')
           .eq('id', activeCreatorId)
           .single()
 
@@ -369,6 +374,18 @@ export default function CreatorProfileModal({
     'Creator'
   const creatorPublicPath = creator ? getCreatorPublicPath({ id: creator.id, username: creator.username }) : null
   const isOwnPreview = !!creator && !!currentDbUserId && currentDbUserId === creator.id
+  const creatorSocialLinks = creator
+    ? [
+        creator.instagram ? { label: 'Instagram', href: `https://instagram.com/${creator.instagram}` } : null,
+        creator.twitter ? { label: 'X', href: `https://x.com/${creator.twitter}` } : null,
+        creator.farcaster ? { label: 'Farcaster', href: `https://farcaster.xyz/${creator.farcaster}` } : null,
+        creator.youtube_url ? { label: 'YouTube', href: creator.youtube_url } : null,
+        creator.tiktok_url ? { label: 'TikTok', href: creator.tiktok_url } : null,
+        creator.spotify_url ? { label: 'Spotify', href: creator.spotify_url } : null,
+        creator.discord_url ? { label: 'Discord', href: creator.discord_url } : null,
+        creator.other_link_url ? { label: 'Other', href: creator.other_link_url } : null,
+      ].filter((item): item is { label: string; href: string } => !!item)
+    : []
   
   // Check which payment methods are available
   const hasStripe = creator?.stripe_onboarding_complete
@@ -730,81 +747,48 @@ export default function CreatorProfileModal({
                 )}
 
                 {/* Social Links */}
-                {(creator.instagram || creator.twitter || creator.farcaster) && (
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
-                    {/* Instagram */}
-                    {creator.instagram && (
+                {creatorSocialLinks.length > 0 && (
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+                    {creatorSocialLinks.map((item) => (
                       <a
-                        href={`https://instagram.com/${creator.instagram}`}
+                        key={`${item.label}-${item.href}`}
+                        href={item.href}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
-                          width: '48px',
-                          height: '48px',
-                          background: 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%)',
-                          borderRadius: '12px',
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        title={`@${creator.instagram}`}
-                      >
-                        <Instagram style={{ width: '24px', height: '24px', color: '#fff' }} />
-                      </a>
-                    )}
-                    
-                    {/* X (Twitter) */}
-                    {creator.twitter && (
-                      <a
-                        href={`https://x.com/${creator.twitter}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          width: '48px',
-                          height: '48px',
-                          backgroundColor: '#000',
+                          gap: '8px',
+                          padding: '10px 14px',
+                          backgroundColor: '#111827',
                           border: '1px solid #374151',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          borderRadius: '999px',
+                          color: '#e5e7eb',
+                          textDecoration: 'none',
+                          fontSize: '13px',
+                          fontWeight: 500,
                         }}
-                        title={`@${creator.twitter}`}
                       >
-                        <svg width="22" height="22" viewBox="0 0 300 300" fill="white">
-                          <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300h26.46l102.4-116.59L209.66 300H299L178.57 127.15Zm-36.25 41.29-11.87-16.62L36.8 19.5h40.65l76.18 106.7 11.87 16.62 99.03 138.68h-40.65l-80.87-113.06Z"/>
-                        </svg>
+                        <ExternalLink style={{ width: '14px', height: '14px', color: '#9ca3af' }} />
+                        {item.label}
                       </a>
-                    )}
-                    
-                    {/* Farcaster */}
-                    {creator.farcaster && (
-                      <a
-                        href={`https://farcaster.xyz/${creator.farcaster}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          width: '48px',
-                          height: '48px',
-                          backgroundColor: '#8A63D2',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        title={`@${creator.farcaster}`}
-                      >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                          <path d="M3 5V3h18v2h1v2h-1v14h-2v-9a4 4 0 0 0-4-4h-6a4 4 0 0 0-4 4v9H3V7H2V5h1z"/>
-                        </svg>
-                      </a>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
 
               {/* No contact info message */}
-              {!creator.contact_email && !creator.website && !creator.instagram && !creator.twitter && !creator.farcaster && !creator.bio && (
+              {!creator.contact_email &&
+                !creator.website &&
+                !creator.instagram &&
+                !creator.twitter &&
+                !creator.farcaster &&
+                !creator.youtube_url &&
+                !creator.tiktok_url &&
+                !creator.spotify_url &&
+                !creator.discord_url &&
+                !creator.other_link_url &&
+                !creator.bio && (
                 <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
                   <p style={{ margin: 0 }}>This creator hasn&apos;t added their contact info yet.</p>
                 </div>

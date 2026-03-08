@@ -18,6 +18,11 @@ export interface PublicCreatorUserRow {
   instagram: string | null
   twitter: string | null
   farcaster: string | null
+  youtube_url?: string | null
+  tiktok_url?: string | null
+  spotify_url?: string | null
+  discord_url?: string | null
+  other_link_url?: string | null
 }
 
 export interface PublicCreatorProjectRow {

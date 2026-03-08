@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     let creatorQuery = supabaseAdmin
       .from('users')
       .select(
-        'id, display_name, username, email, avatar_url, banner_image_url, bio, profile_tags, availability_status, pinned_project_id, contact_email, website, instagram, twitter, farcaster'
+        'id, display_name, username, email, avatar_url, banner_image_url, bio, profile_tags, availability_status, pinned_project_id, contact_email, website, instagram, twitter, farcaster, youtube_url, tiktok_url, spotify_url, discord_url, other_link_url'
       )
       .limit(1)
 
@@ -161,6 +161,11 @@ export async function GET(request: NextRequest) {
         instagram: creator.instagram || null,
         twitter: creator.twitter || null,
         farcaster: creator.farcaster || null,
+        youtube_url: creator.youtube_url || null,
+        tiktok_url: creator.tiktok_url || null,
+        spotify_url: creator.spotify_url || null,
+        discord_url: creator.discord_url || null,
+        other_link_url: creator.other_link_url || null,
         canonical_identifier: canonicalIdentifier,
         canonical_path: getCreatorPublicPath({ id: creator.id, username: creator.username }),
       },
