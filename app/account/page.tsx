@@ -823,6 +823,9 @@ function AccountPageContent() {
   const phoneSignIn = phoneAccount?.number || phoneAccount?.e164 || phoneAccount?.phoneNumber || null
   const signInMethodLabel = emailSignIn ? 'Email' : phoneSignIn ? 'Phone Number' : 'Sign in'
   const signInMethodValue = emailSignIn || phoneSignIn || 'Not set'
+  const publicProfilePath = profile?.id
+    ? getCreatorPublicPath({ id: profile.id, username: profile.username || null })
+    : null
 
   return (
     <div className="min-h-screen bg-black text-white pb-32">
@@ -913,10 +916,23 @@ function AccountPageContent() {
           className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
           style={{ padding: '20px 24px 24px 24px' }}
         >
-          <div className="flex items-center justify-between" style={{ marginBottom: '20px' }}>
-            <h2 className="font-semibold text-neon-green text-lg">
-              Creator Profile
-            </h2>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style={{ marginBottom: '20px' }}>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="font-semibold text-neon-green text-lg">
+                Creator Profile
+              </h2>
+              {publicProfilePath ? (
+                <Link
+                  href={publicProfilePath}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-9 items-center gap-1 rounded-md border border-gray-700 bg-black/20 px-3 py-1.5 text-sm font-medium text-gray-200 transition hover:border-gray-500 hover:text-white"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Public Profile
+                </Link>
+              ) : null}
+            </div>
             {!isEditingProfile ? (
               <button
                 onClick={() => setIsEditingProfile(true)}
@@ -930,7 +946,7 @@ function AccountPageContent() {
                 Edit
               </button>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => {
                     setIsEditingProfile(false)
@@ -1625,6 +1641,33 @@ function AccountPageContent() {
                 </div>
               </div>
             </div>
+
+            {isEditingProfile ? (
+              <div className="flex flex-col gap-3 border-t border-gray-800 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                {publicProfilePath ? (
+                  <Link
+                    href={publicProfilePath}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-10 items-center justify-center gap-1 rounded-md border border-gray-700 bg-black/20 px-3 py-2 text-sm font-medium text-gray-200 transition hover:border-gray-500 hover:text-white sm:justify-start"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Public Profile
+                  </Link>
+                ) : (
+                  <div />
+                )}
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
 
