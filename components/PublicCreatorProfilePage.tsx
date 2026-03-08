@@ -278,7 +278,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                   onClick={handleToggleFollow}
                   disabled={followLoading}
                   aria-label={data.social.is_following ? 'Unfollow creator' : 'Follow creator'}
-                  className="inline-flex min-h-11 w-auto self-start items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition"
+                  className="mt-1 inline-flex min-h-11 w-auto self-start items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition"
                   style={{
                     WebkitAppearance: 'none',
                     appearance: 'none',
@@ -301,7 +301,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
               ) : null}
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="mt-1 grid grid-cols-3 gap-2.5">
               {[
                 formatCountLabel(data.social.followers_count, 'follower'),
                 formatCountLabel(data.social.following_count, 'following', 'following'),
@@ -312,31 +312,31 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                 return (
                 <div
                   key={label}
-                  className="flex min-h-[68px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-center"
+                  className="flex min-h-[62px] flex-col items-center justify-center rounded-[18px] border border-white/6 bg-white/[0.02] px-3 py-2.5 text-center"
                 >
                   <span className="text-lg font-semibold leading-none text-white sm:text-xl">{value}</span>
-                  <span className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-gray-400 sm:text-xs">
-                    {caption}
+                  <span className="mt-1 text-[11px] font-medium tracking-[0.01em] text-gray-400 sm:text-xs">
+                    {caption.charAt(0).toUpperCase() + caption.slice(1)}
                   </span>
                 </div>
               )})}
             </div>
 
             {(creatorLinks.length > 0 || data.creator.contact_email) ? (
-              <div className="rounded-2xl border border-white/8 bg-black/25 p-4 sm:p-5">
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Connect</p>
+              <div className="mt-1 rounded-2xl border border-white/6 bg-white/[0.015] p-4 sm:p-5">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">Connect</p>
                 <div className="flex flex-col gap-3">
                   {data.creator.contact_email ? (
                     <a
                       href={`mailto:${data.creator.contact_email}`}
-                      className="flex items-center gap-3 rounded-2xl border border-neon-green/20 bg-neon-green/10 px-4 py-3.5 text-left transition hover:border-neon-green/35 hover:bg-neon-green/15"
+                      className="flex items-center gap-3 rounded-[18px] border border-white/6 bg-black/30 px-4 py-3.5 text-left transition hover:border-white/12 hover:bg-white/[0.03]"
                     >
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-neon-green/25 bg-black/15">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/[0.03]">
                         <Mail className="h-4 w-4 text-neon-green" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-neon-green">Contact</div>
-                        <p className="mt-1 break-all pr-2 text-sm leading-relaxed text-white/90">{data.creator.contact_email}</p>
+                        <div className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-400">Contact</div>
+                        <p className="mt-1 break-all pr-2 text-sm leading-relaxed text-white/88">{data.creator.contact_email}</p>
                       </div>
                     </a>
                   ) : null}
@@ -366,9 +366,9 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
         </div>
 
         <section className="mt-6">
-          <div className="mb-5">
+          <div className="mb-4">
             <h2 className="text-[28px] font-bold tracking-tight text-white">Public projects</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1.5 text-sm text-gray-500">
               {data.public_projects.length > 0
                 ? 'Explore what this creator has shared with everyone.'
                 : data.viewer.is_owner_view
