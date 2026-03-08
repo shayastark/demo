@@ -317,6 +317,16 @@ export default function ProjectAttachmentsPanel({
                 }}
                 aria-label="Attachment type"
                 className="rounded-lg border border-gray-800 bg-black px-2 py-2 text-xs text-white"
+                style={{
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5 10 12.5 15 7.5' stroke='%2339FF14' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                  backgroundPosition: 'right 0.6rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '14px 14px',
+                  paddingRight: '2rem',
+                }}
               >
                 <option value="link">Link</option>
                 <option value="image">Image</option>

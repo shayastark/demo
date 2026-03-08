@@ -522,9 +522,9 @@ export default function ClientDashboard() {
               className="app-shell-link ui-link max-[390px]:gap-0.5 max-[390px]:text-[10px] sm:text-sm"
             >
               <Plus className="w-3 h-3 max-[390px]:w-2.5 max-[390px]:h-2.5 sm:w-4 sm:h-4" />
-              New Project
+              <span className="max-[390px]:hidden">New Project</span>
             </Link>
-            <span className="app-shell-divider text-xs max-[390px]:text-[10px] mx-0.5 max-[390px]:mx-0">|</span>
+            <span className="app-shell-divider mx-0.5 text-xs max-[390px]:hidden">|</span>
             <button
               onClick={logout}
               className="btn-unstyled app-shell-link ui-link-muted max-[390px]:text-[10px] sm:text-sm"

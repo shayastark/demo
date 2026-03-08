@@ -799,12 +799,11 @@ function AccountPageContent() {
                   <div className="flex items-center gap-4">
                     <div className="relative h-20 w-20 overflow-hidden rounded-full">
                       {profile?.avatar_url ? (
-                        <Image
+                        <img
                           src={profile.avatar_url}
                           alt="Profile"
-                          fill
-                          sizes="80px"
-                          className="object-cover object-center"
+                          className="block h-full w-full rounded-full object-cover object-center"
+                          style={{ width: '80px', height: '80px' }}
                         />
                       ) : (
                         <div
