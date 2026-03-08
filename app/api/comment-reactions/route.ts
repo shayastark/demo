@@ -14,7 +14,7 @@ async function getAuthenticatedUser(request: NextRequest) {
 }
 
 async function hasCommentReactionsTable(): Promise<boolean> {
-  if (cachedHasCommentReactionsTable !== null) return cachedHasCommentReactionsTable
+  if (cachedHasCommentReactionsTable === true) return true
 
   try {
     const { error } = await supabaseAdmin.from('comment_reactions').select('id').limit(1)
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isReactionType(reactionType)) {
-      return NextResponse.json({ error: 'reaction_type must be one of: helpful, fire, agree' }, { status: 400 })
+      return NextResponse.json({ error: 'reaction_type must be one of: hype, naw' }, { status: 400 })
     }
 
     const { data: comment } = await supabaseAdmin

@@ -1,4 +1,4 @@
-export const COMMENT_REACTION_TYPES = ['helpful', 'fire', 'agree'] as const
+export const COMMENT_REACTION_TYPES = ['hype', 'naw'] as const
 export type ReactionType = (typeof COMMENT_REACTION_TYPES)[number]
 
 export function isReactionType(value: unknown): value is ReactionType {
@@ -12,9 +12,8 @@ export interface CommentReactionRow {
 }
 
 export interface CommentReactionSummary {
-  helpful: number
-  fire: number
-  agree: number
+  hype: number
+  naw: number
   // Legacy compatibility for older clients.
   like: number
   viewerReactions: Partial<Record<ReactionType, boolean>>
@@ -23,9 +22,8 @@ export interface CommentReactionSummary {
 
 function buildEmptySummary(): CommentReactionSummary {
   return {
-    helpful: 0,
-    fire: 0,
-    agree: 0,
+    hype: 0,
+    naw: 0,
     like: 0,
     viewerReactions: {},
     viewerReaction: null,

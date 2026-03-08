@@ -144,6 +144,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const [showNotesModal, setShowNotesModal] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const projectMenuRef = useRef<HTMLDivElement>(null)
+  const addTrackFormRef = useRef<HTMLDivElement>(null)
   const notesRef = useRef<HTMLDivElement>(null)
   const [editingProject, setEditingProject] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -198,6 +199,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   useEffect(() => {
     loadProject()
   }, [projectId])
+
+  useEffect(() => {
+    if (!showAddTrackForm) return
+    const frame = window.requestAnimationFrame(() => {
+      addTrackFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [showAddTrackForm])
 
   // Close project menu when clicking outside (desktop only)
   useEffect(() => {
@@ -3113,7 +3122,11 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         <div>
           {/* Add Track Form (for creators) */}
           {isCreator && showAddTrackForm && (
-            <div className="bg-gray-900 rounded-lg p-4 mb-4 border-2 border-neon-green border-opacity-30">
+            <div
+              ref={addTrackFormRef}
+              className="bg-gray-900 rounded-lg p-4 mb-4 border-2 border-neon-green border-opacity-30"
+              style={{ scrollMarginTop: '88px' }}
+            >
           <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-neon-green">Add New Tracks</h3>
                 <button

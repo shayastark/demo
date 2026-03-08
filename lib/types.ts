@@ -57,13 +57,12 @@ export interface Comment {
   is_pinned?: boolean
   is_supporter_for_project?: boolean
   reactions?: {
-    helpful: number
-    fire: number
-    agree: number
+    hype: number
+    naw: number
     like: number
   }
-  viewer_reactions?: Partial<Record<'helpful' | 'fire' | 'agree', boolean>>
-  viewer_reaction?: 'helpful' | 'fire' | 'agree' | null
+  viewer_reactions?: Partial<Record<'hype' | 'naw', boolean>>
+  viewer_reaction?: 'hype' | 'naw' | null
 }
 
 export interface CreateCommentPayload {

@@ -31,11 +31,10 @@ export default function CommentsPanel({
   const [pendingPinCommentId, setPendingPinCommentId] = useState<string | null>(null)
   const supporterImpressionSentRef = useRef<Set<string>>(new Set())
 
-  const displayedReactionTypes: ReactionType[] = ['fire', 'agree']
+  const displayedReactionTypes: ReactionType[] = ['hype', 'naw']
   const reactionMeta: Record<ReactionType, { label: string; icon: typeof Flame }> = {
-    helpful: { label: 'Insightful', icon: Flame },
-    fire: { label: 'Hype', icon: Flame },
-    agree: { label: 'Naw', icon: Meh },
+    hype: { label: 'Hype', icon: Flame },
+    naw: { label: 'Naw', icon: Meh },
   }
 
   const withAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -217,7 +216,7 @@ export default function CommentsPanel({
     return comments.map((comment) => {
       if (comment.id !== commentId) return comment
 
-      const currentCounts = comment.reactions || { helpful: 0, fire: 0, agree: 0, like: 0 }
+      const currentCounts = comment.reactions || { hype: 0, naw: 0, like: 0 }
       const nextCount = Math.max(0, (currentCounts[reactionType] || 0) + (shouldAdd ? 1 : -1))
       return {
         ...comment,

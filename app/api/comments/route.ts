@@ -53,9 +53,8 @@ async function loadReactionSummaryByComment(
   Record<
     string,
     {
-      helpful: number
-      fire: number
-      agree: number
+      hype: number
+      naw: number
       like: number
       viewerReactions: Partial<Record<ReactionType, boolean>>
       viewerReaction: ReactionType | null
@@ -187,9 +186,8 @@ export async function GET(request: NextRequest) {
     let reactionSummaryByComment: Record<
       string,
       {
-        helpful: number
-        fire: number
-        agree: number
+        hype: number
+        naw: number
         like: number
         viewerReactions: Partial<Record<ReactionType, boolean>>
         viewerReaction: ReactionType | null
@@ -244,9 +242,8 @@ export async function GET(request: NextRequest) {
         can_pin: isCreator,
         is_supporter_for_project: isSupporterForProject(comment.user_id, supporterAuthorIds),
         reactions: {
-          helpful: reactionSummaryByComment[comment.id]?.helpful || 0,
-          fire: reactionSummaryByComment[comment.id]?.fire || 0,
-          agree: reactionSummaryByComment[comment.id]?.agree || 0,
+          hype: reactionSummaryByComment[comment.id]?.hype || 0,
+          naw: reactionSummaryByComment[comment.id]?.naw || 0,
           like: reactionSummaryByComment[comment.id]?.like || 0,
         },
         viewer_reactions: reactionSummaryByComment[comment.id]?.viewerReactions || {},

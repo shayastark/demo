@@ -1,5 +1,7 @@
--- Add lightweight comment reactions (MVP: helpful/fire/agree).
--- Safe to run multiple times.
+-- Comment Reactions MVP
+-- Safe to run multiple times
+-- Rollback notes:
+--   1) DROP TABLE IF EXISTS comment_reactions CASCADE;
 
 CREATE TABLE IF NOT EXISTS comment_reactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -8,12 +10,41 @@ CREATE TABLE IF NOT EXISTS comment_reactions (
   reaction_type TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT comment_reactions_unique UNIQUE (comment_id, user_id, reaction_type),
-  CONSTRAINT comment_reactions_type_check CHECK (reaction_type IN ('helpful', 'fire', 'agree'))
+  CONSTRAINT comment_reactions_type_check CHECK (reaction_type IN ('hype', 'naw'))
 );
 
--- Remove legacy single-reaction-per-comment rows outside supported reaction set.
+ALTER TABLE comment_reactions ADD COLUMN IF NOT EXISTS comment_id UUID;
+ALTER TABLE comment_reactions ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE comment_reactions ADD COLUMN IF NOT EXISTS reaction_type TEXT;
+ALTER TABLE comment_reactions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
 DELETE FROM comment_reactions
-WHERE reaction_type NOT IN ('helpful', 'fire', 'agree');
+WHERE reaction_type NOT IN ('hype', 'naw');
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'comment_reactions_comment_id_fkey'
+      AND conrelid = 'comment_reactions'::regclass
+  ) THEN
+    ALTER TABLE comment_reactions
+      ADD CONSTRAINT comment_reactions_comment_id_fkey
+      FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'comment_reactions_user_id_fkey'
+      AND conrelid = 'comment_reactions'::regclass
+  ) THEN
+    ALTER TABLE comment_reactions
+      ADD CONSTRAINT comment_reactions_user_id_fkey
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -42,7 +73,7 @@ BEGIN
   END IF;
 
   ALTER TABLE comment_reactions
-    ADD CONSTRAINT comment_reactions_type_check CHECK (reaction_type IN ('helpful', 'fire', 'agree'));
+    ADD CONSTRAINT comment_reactions_type_check CHECK (reaction_type IN ('hype', 'naw'));
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_comment_reactions_comment_id
@@ -71,7 +102,6 @@ END $$;
 
 DO $$
 BEGIN
-  -- Remove any legacy permissive write policy if present.
   IF EXISTS (
     SELECT 1
     FROM pg_policies
