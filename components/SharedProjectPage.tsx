@@ -56,7 +56,7 @@ const QUALIFIED_PLAY_SECONDS = 14
 const QUALIFIED_PLAY_DELTA_TOLERANCE_SECONDS = 2.5
 
 export default function SharedProjectPage({ token }: SharedProjectPageProps) {
-  const { authenticated, user, login, getAccessToken } = usePrivy()
+  const { ready, authenticated, user, login, getAccessToken } = usePrivy()
   
   // Helper function for authenticated API requests
   const apiRequest = useCallback(async (
@@ -197,9 +197,10 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
   }, [authenticated, getAccessToken])
 
   useEffect(() => {
+    if (!ready) return
     loadProject()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, authenticated])
+  }, [token, ready, authenticated])
 
   useEffect(() => {
     if (!project?.id) {

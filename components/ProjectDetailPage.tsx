@@ -137,7 +137,7 @@ const QUALIFIED_PLAY_SECONDS = 14
 const QUALIFIED_PLAY_DELTA_TOLERANCE_SECONDS = 2.5
 
 export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
-  const { user, logout, getAccessToken } = usePrivy()
+  const { ready, authenticated, user, logout, getAccessToken } = usePrivy()
   const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
@@ -232,8 +232,10 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   }, [])
 
   useEffect(() => {
+    if (!ready) return
     loadProject()
-  }, [projectId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, ready, authenticated])
 
   useEffect(() => {
     if (!showAddTrackForm) return
@@ -448,7 +450,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
   const loadProject = async () => {
     try {
       setLoading(true)
-      const token = await getAccessToken()
+      const token = authenticated ? await getAccessToken() : null
       const response = await fetch(`/api/projects/bootstrap?id=${encodeURIComponent(projectId)}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
