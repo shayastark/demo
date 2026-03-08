@@ -176,8 +176,41 @@ export async function POST(request: NextRequest) {
       if (insertError) throw insertError
     }
 
+    const { data: reactions, error: summaryError } = await supabaseAdmin
+      .from('comment_reactions')
+      .select('comment_id, user_id, reaction_type')
+      .eq('comment_id', commentId)
+
+    if (summaryError) throw summaryError
+
+    const safeRows = (reactions || []).filter((row) => isReactionType(row.reaction_type))
+    const reactionSummary = summarizeCommentReactions(
+      safeRows as Array<{ comment_id: string; user_id: string; reaction_type: ReactionType }>,
+      user.id
+    )[commentId] || {
+      hype: 0,
+      naw: 0,
+      like: 0,
+      viewerReactions: {},
+      viewerReaction: null,
+    }
+
     return NextResponse.json(
-      { success: true, action, reaction_type: reactionType },
+      {
+        success: true,
+        action,
+        reaction_type: reactionType,
+        comment_id: commentId,
+        summary: {
+          reactions: {
+            hype: reactionSummary.hype,
+            naw: reactionSummary.naw,
+            like: reactionSummary.like,
+          },
+          viewer_reactions: reactionSummary.viewerReactions,
+          viewer_reaction: reactionSummary.viewerReaction,
+        },
+      },
       { status: action === 'add' ? 201 : 200 }
     )
   } catch (error) {

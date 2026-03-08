@@ -233,6 +233,30 @@ export default function CommentsPanel({
     })
   }
 
+  const withServerReactionSummary = (
+    comments: Comment[],
+    commentId: string,
+    summary: {
+      reactions?: { hype?: number; naw?: number; like?: number } | null
+      viewer_reactions?: Partial<Record<ReactionType, boolean>> | null
+      viewer_reaction?: ReactionType | null
+    }
+  ): Comment[] => {
+    return comments.map((comment) => {
+      if (comment.id !== commentId) return comment
+      return {
+        ...comment,
+        reactions: {
+          hype: summary.reactions?.hype || 0,
+          naw: summary.reactions?.naw || 0,
+          like: summary.reactions?.like || 0,
+        },
+        viewer_reactions: summary.viewer_reactions || {},
+        viewer_reaction: summary.viewer_reaction || null,
+      }
+    })
+  }
+
   const withOptimisticPin = (
     comments: Comment[],
     commentId: string,
@@ -292,8 +316,9 @@ export default function CommentsPanel({
         showToast('Comment reactions are not available yet.', 'info')
         return
       }
-
-      await loadProjectComments()
+      if (result?.comment_id === commentId && result?.summary) {
+        setProjectComments((prev) => withServerReactionSummary(prev, commentId, result.summary))
+      }
     } catch (error) {
       setProjectComments(previousComments)
       console.error('Error toggling comment reaction:', error)
