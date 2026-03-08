@@ -8,6 +8,14 @@ import { usePrivy } from '@privy-io/react-auth'
 import { ExternalLink, Globe, Loader2, Mail, Sparkles, UserCheck, UserPlus } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 import { applyFollowerCountDelta } from '@/lib/follows'
+import {
+  getAvailabilityStatusLabel,
+  getProfileTagLabel,
+  isAvailabilityStatus,
+  isProfileTag,
+  type AvailabilityStatus,
+  type ProfileTag,
+} from '@/lib/profileCustomization'
 
 interface PublicCreatorProfilePageProps {
   identifier: string
@@ -19,7 +27,10 @@ interface PublicCreatorApiResponse {
     username: string | null
     display_name: string
     avatar_url: string | null
+    banner_image_url: string | null
     bio: string | null
+    profile_tags: string[]
+    availability_status: AvailabilityStatus | null
     contact_email: string | null
     website: string | null
     instagram: string | null
@@ -40,6 +51,13 @@ interface PublicCreatorApiResponse {
     created_at: string
     target_path: string
   }>
+  featured_project: {
+    id: string
+    title: string
+    cover_image_url: string | null
+    created_at: string
+    target_path: string
+  } | null
   viewer: {
     is_authenticated: boolean
     is_owner_view: boolean
@@ -205,6 +223,21 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
     ].filter((item): item is { label: string; href: string; icon: typeof Globe } => !!item)
   }, [data])
 
+  const profileTags = useMemo(
+    () => (data?.creator.profile_tags || []).filter((tag): tag is ProfileTag => isProfileTag(tag)),
+    [data?.creator.profile_tags]
+  )
+
+  const availabilityLabel = useMemo(() => {
+    const status = data?.creator.availability_status
+    return status && isAvailabilityStatus(status) ? getAvailabilityStatusLabel(status) : null
+  }, [data?.creator.availability_status])
+
+  const remainingProjects = useMemo(() => {
+    if (!data) return []
+    return data.public_projects.filter((project) => project.id !== data.featured_project?.id)
+  }, [data])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -233,8 +266,20 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
   return (
     <div className="min-h-screen bg-black pb-24 text-white">
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <div className="ui-card overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.08),transparent_32%),linear-gradient(180deg,rgba(10,12,18,0.98),rgba(6,8,12,0.98))] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.38)] sm:p-7">
-          <div className="flex flex-col gap-6">
+        <div className="ui-card overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.08),transparent_32%),linear-gradient(180deg,rgba(10,12,18,0.98),rgba(6,8,12,0.98))] shadow-[0_30px_80px_rgba(0,0,0,0.38)]">
+          {data.creator.banner_image_url ? (
+            <div className="relative h-32 w-full overflow-hidden border-b border-white/8 bg-black/40 sm:h-40">
+              <Image
+                src={data.creator.banner_image_url}
+                alt={`${data.creator.display_name} banner`}
+                fill
+                sizes="(max-width: 768px) 100vw, 896px"
+                className="object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.48))]" />
+            </div>
+          ) : null}
+          <div className="flex flex-col gap-6 p-5 sm:p-7">
             <div className="flex flex-col gap-4">
               <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
                 <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-gray-800 text-2xl font-semibold text-neon-green shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
@@ -268,6 +313,23 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                         : 'This creator has not added a bio yet.'}
                     </p>
                   )}
+                  {(availabilityLabel || profileTags.length > 0) ? (
+                    <div className="mt-4 flex flex-wrap items-center gap-2.5">
+                      {availabilityLabel ? (
+                        <span className="inline-flex min-h-9 items-center rounded-full border border-neon-green/20 bg-neon-green/10 px-3.5 text-[12px] font-semibold text-neon-green">
+                          {availabilityLabel}
+                        </span>
+                      ) : null}
+                      {profileTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex min-h-9 items-center rounded-full border border-white/8 bg-white/[0.03] px-3.5 text-[12px] font-medium text-gray-200"
+                        >
+                          {getProfileTagLabel(tag)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -364,27 +426,72 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
           </div>
         </div>
 
+        {data.featured_project ? (
+          <section className="mt-6">
+            <div className="mb-4">
+              <h2 className="text-[24px] font-bold tracking-tight text-white">Featured project</h2>
+              <p className="mt-1.5 text-sm text-gray-500">Start with the release this creator wants front and center.</p>
+            </div>
+            <Link
+              href={data.featured_project.target_path}
+              onClick={() =>
+                emitEvent('project_click', {
+                  project_id: data.featured_project?.id,
+                  project_target: data.featured_project?.target_path,
+                })
+              }
+              className="ui-card ui-pressable group block overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.98))] transition hover:border-white/15"
+            >
+              {data.featured_project.cover_image_url ? (
+                <div className="relative h-48 w-full overflow-hidden border-b border-white/8 bg-black/30 sm:h-56">
+                  <Image
+                    src={data.featured_project.cover_image_url}
+                    alt={data.featured_project.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 896px"
+                    className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-48 w-full items-end border-b border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.16),transparent_30%),linear-gradient(180deg,rgba(14,18,28,1),rgba(8,10,16,1))] p-5 sm:h-56">
+                  <span className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Featured project</span>
+                </div>
+              )}
+              <div className="p-5 sm:p-6">
+                <p className="text-lg font-semibold text-white">{data.featured_project.title}</p>
+                <p className="mt-2 text-sm text-gray-400">Open project</p>
+              </div>
+            </Link>
+          </section>
+        ) : null}
+
         <section className="mt-6">
           <div className="mb-6">
             <h2 className="text-[28px] font-bold tracking-tight text-white">Public projects</h2>
             <p className="mt-1.5 text-sm text-gray-500">
-              {data.public_projects.length > 0
+              {remainingProjects.length > 0
                 ? 'Explore what this creator has shared with everyone.'
+                : data.featured_project
+                  ? 'More public releases will show up here.'
                 : data.viewer.is_owner_view
                   ? 'Projects you publish publicly will appear here.'
                   : 'Nothing public yet, but this space is ready for future drops.'}
             </p>
           </div>
-          {data.public_projects.length === 0 ? (
+          {remainingProjects.length === 0 ? (
             <div className="ui-card overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.96))] px-7 py-8 sm:px-10 sm:py-9">
               <div className="flex max-w-xl flex-col gap-5">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-neon-green/20 bg-neon-green/10">
                   <Sparkles className="h-5 w-5 text-neon-green" />
                 </div>
                 <div className="pr-2">
-                  <h3 className="text-lg font-semibold text-white">No public projects yet</h3>
+                  <h3 className="text-lg font-semibold text-white">
+                    {data.featured_project ? 'No more public projects yet' : 'No public projects yet'}
+                  </h3>
                   <p className="mt-3 max-w-[32ch] text-sm leading-relaxed text-gray-400">
-                    {data.viewer.is_owner_view
+                    {data.featured_project
+                      ? 'This creator has a featured release up top. Additional public projects will appear here over time.'
+                    : data.viewer.is_owner_view
                       ? 'When you make a project public, it will show up here for listeners and collaborators to discover.'
                       : 'This creator has not shared anything publicly yet. Check back soon for new releases, experiments, and updates.'}
                   </p>
@@ -393,7 +500,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {data.public_projects.map((project) => (
+              {remainingProjects.map((project) => (
                 <Link
                   key={project.id}
                   href={project.target_path}

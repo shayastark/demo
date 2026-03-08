@@ -7,9 +7,12 @@ import {
   parseCreatorIdentifier,
   resolveViewerIsFollowing,
   selectPublicCreatorProjects,
+  type PublicCreatorProjectItem,
+  type PublicCreatorProjectRow,
   type PublicCreatorUserRow,
 } from '@/lib/publicCreatorProfile'
 import { parseLimit } from '@/lib/validation'
+import { isAvailabilityStatus } from '@/lib/profileCustomization'
 
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
@@ -68,7 +71,7 @@ export async function GET(request: NextRequest) {
     let creatorQuery = supabaseAdmin
       .from('users')
       .select(
-        'id, display_name, username, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster'
+        'id, display_name, username, email, avatar_url, banner_image_url, bio, profile_tags, availability_status, pinned_project_id, contact_email, website, instagram, twitter, farcaster'
       )
       .limit(1)
 
@@ -121,6 +124,27 @@ export async function GET(request: NextRequest) {
     }
 
     const canonicalIdentifier = creator.username?.trim() || creator.id
+    const publicProjects = selectPublicCreatorProjects((projectsResult.data || []) as PublicCreatorProjectRow[])
+    let featuredProject: PublicCreatorProjectItem | null = null
+
+    if (creator.pinned_project_id) {
+      featuredProject = publicProjects.find((project) => project.id === creator.pinned_project_id) || null
+
+      if (!featuredProject) {
+        const { data: pinnedProjectRow, error: pinnedProjectError } = await supabaseAdmin
+          .from('projects')
+          .select('id, title, share_token, cover_image_url, visibility, sharing_enabled, created_at')
+          .eq('id', creator.pinned_project_id)
+          .eq('creator_id', creator.id)
+          .maybeSingle()
+
+        if (pinnedProjectError) {
+          console.error('Error loading pinned project:', pinnedProjectError)
+        } else if (pinnedProjectRow) {
+          featuredProject = selectPublicCreatorProjects([pinnedProjectRow as PublicCreatorProjectRow])[0] || null
+        }
+      }
+    }
 
     return NextResponse.json({
       creator: {
@@ -128,7 +152,10 @@ export async function GET(request: NextRequest) {
         username: creator.username,
         display_name: buildCreatorDisplayName(creator),
         avatar_url: creator.avatar_url || null,
+        banner_image_url: creator.banner_image_url || null,
         bio: creator.bio || null,
+        profile_tags: Array.isArray(creator.profile_tags) ? creator.profile_tags.filter((tag): tag is string => typeof tag === 'string') : [],
+        availability_status: isAvailabilityStatus(creator.availability_status) ? creator.availability_status : null,
         contact_email: creator.contact_email || null,
         website: creator.website || null,
         instagram: creator.instagram || null,
@@ -146,7 +173,8 @@ export async function GET(request: NextRequest) {
           hasFollowRow,
         }),
       },
-      public_projects: selectPublicCreatorProjects(projectsResult.data || []),
+      featured_project: featuredProject,
+      public_projects: publicProjects,
       viewer: {
         is_authenticated: !!viewer?.id,
         is_owner_view: viewer?.id === creator.id,

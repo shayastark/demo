@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { sanitizeText } from '@/lib/validation'
+import { sanitizeText, isValidUUID } from '@/lib/validation'
+import { resolveProjectVisibility } from '@/lib/projectVisibility'
+import { isAvailabilityStatus, sanitizeProfileTags } from '@/lib/profileCustomization'
 
 // GET /api/user - Get current user's profile
 export async function GET(request: NextRequest) {
@@ -98,10 +100,12 @@ export async function PATCH(request: NextRequest) {
       twitter: 100,
       farcaster: 100,
       avatar_url: 1000,
+      banner_image_url: 1000,
+      availability_status: 50,
       wallet_address: 42,
     }
 
-    const allowedFields = Object.keys(fieldLimits)
+    const allowedFields = [...Object.keys(fieldLimits), 'profile_tags', 'pinned_project_id']
     
     const updates: Record<string, unknown> = {}
     
@@ -117,6 +121,26 @@ export async function PATCH(request: NextRequest) {
             )
           }
           updates[field] = address || null
+        } else if (field === 'profile_tags') {
+          const tags = sanitizeProfileTags(body[field])
+          if (tags === null) {
+            return NextResponse.json({ error: 'profile_tags must be an array of supported tags' }, { status: 400 })
+          }
+          updates[field] = tags.length > 0 ? tags : null
+        } else if (field === 'pinned_project_id') {
+          if (body[field] === null || body[field] === '') {
+            updates[field] = null
+          } else if (typeof body[field] !== 'string' || !isValidUUID(body[field])) {
+            return NextResponse.json({ error: 'Pinned project must be a valid project id' }, { status: 400 })
+          } else {
+            updates[field] = body[field]
+          }
+        } else if (field === 'availability_status') {
+          const value = sanitizeText(body[field], fieldLimits[field])
+          if (value && !isAvailabilityStatus(value)) {
+            return NextResponse.json({ error: 'Invalid availability status' }, { status: 400 })
+          }
+          updates[field] = value || null
         } else if (field === 'username' && body[field]) {
           // Validate username format: alphanumeric, underscores, hyphens, 3-50 chars
           const username = String(body[field]).trim()
@@ -170,6 +194,28 @@ export async function PATCH(request: NextRequest) {
           { error: 'Username is already taken', code: 'username_taken' },
           { status: 409 }
         )
+      }
+    }
+
+    if (typeof updates.pinned_project_id === 'string') {
+      const { data: pinnedProject, error: pinnedProjectError } = await supabaseAdmin
+        .from('projects')
+        .select('id, visibility, sharing_enabled')
+        .eq('id', updates.pinned_project_id)
+        .eq('creator_id', user.id)
+        .maybeSingle()
+
+      if (pinnedProjectError) {
+        console.error('Error validating pinned project:', pinnedProjectError)
+        return NextResponse.json({ error: 'Failed to validate pinned project' }, { status: 500 })
+      }
+
+      if (!pinnedProject) {
+        return NextResponse.json({ error: 'Pinned project must belong to you' }, { status: 400 })
+      }
+
+      if (resolveProjectVisibility(pinnedProject.visibility, pinnedProject.sharing_enabled) !== 'public') {
+        return NextResponse.json({ error: 'Pinned project must be public' }, { status: 400 })
       }
     }
 

@@ -21,6 +21,18 @@ import SocialGraphListModal from '@/components/SocialGraphListModal'
 import type { SocialGraphListType } from '@/lib/socialGraph'
 import { getFollowerIdFromQueryParam } from '@/lib/notificationInbox'
 import { getCreatorPublicPath } from '@/lib/publicCreatorProfile'
+import {
+  AVAILABILITY_STATUS_OPTIONS,
+  getAvailabilityStatusLabel,
+  getProfileTagLabel,
+  isAvailabilityStatus,
+  isProfileTag,
+  PROFILE_TAG_LIMIT,
+  PROFILE_TAG_OPTIONS,
+  type AvailabilityStatus,
+  type ProfileTag,
+} from '@/lib/profileCustomization'
+import { resolveProjectVisibility } from '@/lib/projectVisibility'
 
 interface UserProfile {
   id: string
@@ -28,13 +40,23 @@ interface UserProfile {
   display_name: string | null
   email: string | null
   avatar_url: string | null
+  banner_image_url: string | null
   bio: string | null
+  profile_tags: ProfileTag[]
+  availability_status: AvailabilityStatus | null
+  pinned_project_id: string | null
   contact_email: string | null
   website: string | null
   instagram: string | null
   twitter: string | null
   farcaster: string | null
   wallet_address: string | null
+}
+
+interface SelectablePublicProject {
+  id: string
+  title: string
+  cover_image_url: string | null
 }
 
 interface Tip {
@@ -80,7 +102,11 @@ function AccountPageContent() {
   // Profile editing state
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [editProfile, setEditProfile] = useState({
+    banner_image_url: '',
     bio: '',
+    profile_tags: [] as ProfileTag[],
+    availability_status: null as AvailabilityStatus | null,
+    pinned_project_id: '',
     contact_email: '',
     website: '',
     instagram: '',
@@ -91,6 +117,9 @@ function AccountPageContent() {
   // Avatar upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
+  const [publicProjects, setPublicProjects] = useState<SelectablePublicProject[]>([])
   
   // Stripe Connect state
   const [stripeStatus, setStripeStatus] = useState<{
@@ -168,7 +197,7 @@ function AccountPageContent() {
         // First try to get existing user via public read
         let { data: existingUser } = await supabase
           .from('users')
-          .select('id, username, display_name, email, avatar_url, bio, contact_email, website, instagram, twitter, farcaster, wallet_address')
+          .select('id, username, display_name, email, avatar_url, banner_image_url, bio, profile_tags, availability_status, pinned_project_id, contact_email, website, instagram, twitter, farcaster, wallet_address')
           .eq('privy_id', privyId)
           .single()
 
@@ -185,13 +214,24 @@ function AccountPageContent() {
           throw new Error('Failed to load or create user profile')
         }
 
+        const normalizedProfileTags = Array.isArray(existingUser.profile_tags)
+          ? existingUser.profile_tags.filter((tag: unknown): tag is ProfileTag => isProfileTag(tag))
+          : []
+        const normalizedAvailabilityStatus = isAvailabilityStatus(existingUser.availability_status)
+          ? existingUser.availability_status
+          : null
+
         setProfile({
           id: existingUser.id,
           username: existingUser.username || '',
           display_name: existingUser.display_name || null,
           email: existingUser.email || user.email?.address || null,
           avatar_url: existingUser.avatar_url || null,
+          banner_image_url: existingUser.banner_image_url || null,
           bio: existingUser.bio || null,
+          profile_tags: normalizedProfileTags,
+          availability_status: normalizedAvailabilityStatus,
+          pinned_project_id: existingUser.pinned_project_id || null,
           contact_email: existingUser.contact_email || null,
           website: existingUser.website || null,
           instagram: existingUser.instagram || null,
@@ -203,7 +243,11 @@ function AccountPageContent() {
         
         // Initialize edit form
         setEditProfile({
+          banner_image_url: existingUser.banner_image_url || '',
           bio: existingUser.bio || '',
+          profile_tags: normalizedProfileTags,
+          availability_status: normalizedAvailabilityStatus,
+          pinned_project_id: existingUser.pinned_project_id || '',
           contact_email: existingUser.contact_email || '',
           twitter: existingUser.twitter || '',
           farcaster: existingUser.farcaster || '',
@@ -226,6 +270,36 @@ function AccountPageContent() {
       setIsEditingProfile(true)
     }
   }, [isOnboarding, loaded, profile])
+
+  useEffect(() => {
+    if (!profile?.id) return
+
+    const loadPublicProjects = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('id, title, cover_image_url, visibility, sharing_enabled, created_at')
+          .eq('creator_id', profile.id)
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+
+        setPublicProjects(
+          (data || [])
+            .filter((project) => resolveProjectVisibility(project.visibility, project.sharing_enabled) === 'public')
+            .map((project) => ({
+              id: project.id,
+              title: project.title?.trim() || 'Untitled project',
+              cover_image_url: project.cover_image_url || null,
+            }))
+        )
+      } catch (error) {
+        console.error('Error loading public projects for profile customization:', error)
+      }
+    }
+
+    loadPublicProjects()
+  }, [profile?.id])
 
   // Deep-link entry point: /account?follower_id=<uuid>
   useEffect(() => {
@@ -580,6 +654,62 @@ function AccountPageContent() {
     }
   }
 
+  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !profile) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image file', 'error')
+      return
+    }
+
+    const maxSizeMB = 25
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showToast(`Image is too large. Please use an image under ${maxSizeMB}MB`, 'error')
+      return
+    }
+
+    setUploadingBanner(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${profile.id}-${Date.now()}.${fileExt}`
+      const filePath = `banners/${fileName}`
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true })
+      if (uploadError) throw uploadError
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
+      setEditProfile((prev) => ({ ...prev, banner_image_url: publicUrl }))
+      showToast('Banner image ready to save.', 'success')
+    } catch (error: unknown) {
+      console.error('Error uploading banner:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload banner'
+      showToast(errorMessage, 'error')
+    } finally {
+      setUploadingBanner(false)
+      if (bannerInputRef.current) {
+        bannerInputRef.current.value = ''
+      }
+    }
+  }
+
+  const toggleProfileTag = (tag: ProfileTag) => {
+    setEditProfile((prev) => {
+      const hasTag = prev.profile_tags.includes(tag)
+      if (hasTag) {
+        return { ...prev, profile_tags: prev.profile_tags.filter((item) => item !== tag) }
+      }
+      if (prev.profile_tags.length >= PROFILE_TAG_LIMIT) {
+        showToast(`Choose up to ${PROFILE_TAG_LIMIT} profile tags.`, 'info')
+        return prev
+      }
+      return { ...prev, profile_tags: [...prev.profile_tags, tag] }
+    })
+  }
+
   // Handle saving profile (via secure API)
   const handleSaveProfile = async () => {
     if (!profile) {
@@ -591,7 +721,11 @@ function AccountPageContent() {
       const result = await apiRequest('/api/user', {
         method: 'PATCH',
         body: {
+          banner_image_url: editProfile.banner_image_url.trim() || null,
           bio: editProfile.bio.trim() || null,
+          profile_tags: editProfile.profile_tags,
+          availability_status: editProfile.availability_status,
+          pinned_project_id: editProfile.pinned_project_id || null,
           contact_email: editProfile.contact_email.trim() || null,
           website: editProfile.website.trim() || null,
           instagram: editProfile.instagram.trim() || null,
@@ -599,10 +733,21 @@ function AccountPageContent() {
           farcaster: editProfile.farcaster.trim() || null,
         },
       })
+
+      const normalizedProfileTags = Array.isArray(result.user.profile_tags)
+        ? result.user.profile_tags.filter((tag: unknown): tag is ProfileTag => isProfileTag(tag))
+        : []
+      const normalizedAvailabilityStatus = isAvailabilityStatus(result.user.availability_status)
+        ? result.user.availability_status
+        : null
       
       setProfile({
         ...profile,
+        banner_image_url: result.user.banner_image_url,
         bio: result.user.bio,
+        profile_tags: normalizedProfileTags,
+        availability_status: normalizedAvailabilityStatus,
+        pinned_project_id: result.user.pinned_project_id,
         contact_email: result.user.contact_email,
         website: result.user.website,
         instagram: result.user.instagram,
@@ -761,7 +906,11 @@ function AccountPageContent() {
                     setIsEditingProfile(false)
                     // Reset to current values
                     setEditProfile({
+                      banner_image_url: profile?.banner_image_url || '',
                       bio: profile?.bio || '',
+                      profile_tags: profile?.profile_tags || [],
+                      availability_status: profile?.availability_status || null,
+                      pinned_project_id: profile?.pinned_project_id || '',
                       contact_email: profile?.contact_email || '',
                       website: profile?.website || '',
                       instagram: profile?.instagram || '',
@@ -975,6 +1124,175 @@ function AccountPageContent() {
             <p className="text-sm text-gray-500 italic">
               This information will be visible to users who view your projects.
             </p>
+
+            <div className="rounded-2xl border border-gray-800 bg-black/30 p-4 sm:p-5">
+              <div className="mb-5">
+                <h3 className="text-sm font-semibold text-white">Profile customization</h3>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-400">
+                  Add a banner, highlight one public project, and choose a few profile tags so your public page feels more like you.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Banner image</label>
+                  <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/80">
+                    {editProfile.banner_image_url ? (
+                      <div className="relative h-28 w-full sm:h-36">
+                        <img
+                          src={editProfile.banner_image_url}
+                          alt="Profile banner preview"
+                          className="h-full w-full object-cover object-center"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-28 items-end bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.16),transparent_32%),linear-gradient(180deg,rgba(14,18,28,1),rgba(8,10,16,1))] px-4 py-4 sm:h-36">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">No banner yet</p>
+                      </div>
+                    )}
+                  </div>
+                  {isEditingProfile ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                      <input
+                        ref={bannerInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => bannerInputRef.current?.click()}
+                        disabled={uploadingBanner}
+                        className="inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-gray-900 px-3 py-1.5 text-sm font-medium text-white transition disabled:opacity-50"
+                      >
+                        {uploadingBanner ? 'Uploading...' : editProfile.banner_image_url ? 'Change banner' : 'Upload banner'}
+                      </button>
+                      {editProfile.banner_image_url ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditProfile((prev) => ({ ...prev, banner_image_url: '' }))}
+                          className="inline-flex min-h-9 items-center rounded-md border border-gray-700 bg-black px-3 py-1.5 text-sm font-medium text-gray-300 transition hover:text-white"
+                        >
+                          Remove banner
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Pinned project</label>
+                  {isEditingProfile ? (
+                    <select
+                      value={editProfile.pinned_project_id}
+                      onChange={(e) => setEditProfile((prev) => ({ ...prev, pinned_project_id: e.target.value }))}
+                      className="w-full max-w-md rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-green"
+                    >
+                      <option value="">No pinned project</option>
+                      {publicProjects.map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.title}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-white">
+                      {publicProjects.find((project) => project.id === profile?.pinned_project_id)?.title || (
+                        <span className="text-gray-600 italic">No pinned project</span>
+                      )}
+                    </p>
+                  )}
+                  {publicProjects.length === 0 ? (
+                    <p className="mt-2 text-sm text-gray-500">Make at least one project public to pin it on your profile.</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Availability</label>
+                  {isEditingProfile ? (
+                    <div className="flex flex-wrap gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditProfile((prev) => ({ ...prev, availability_status: null }))}
+                        className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
+                          !editProfile.availability_status
+                            ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
+                            : 'border-gray-700 bg-black text-gray-300 hover:text-white'
+                        }`}
+                      >
+                        None
+                      </button>
+                      {AVAILABILITY_STATUS_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setEditProfile((prev) => ({ ...prev, availability_status: option.id }))}
+                          className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
+                            editProfile.availability_status === option.id
+                              ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
+                              : 'border-gray-700 bg-black text-gray-300 hover:text-white'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-white">
+                      {profile?.availability_status ? (
+                        getAvailabilityStatusLabel(profile.availability_status)
+                      ) : (
+                        <span className="text-gray-600 italic">No availability status</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <label className="block text-sm font-semibold text-white">Profile tags</label>
+                    <span className="text-xs text-gray-500">
+                      {editProfile.profile_tags.length}/{PROFILE_TAG_LIMIT}
+                    </span>
+                  </div>
+                  {isEditingProfile ? (
+                    <div className="flex flex-wrap gap-2.5">
+                      {PROFILE_TAG_OPTIONS.map((option) => {
+                        const selected = editProfile.profile_tags.includes(option.id)
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => toggleProfileTag(option.id)}
+                            className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition ${
+                              selected
+                                ? 'border-neon-green/30 bg-neon-green/10 text-neon-green'
+                                : 'border-gray-700 bg-black text-gray-300 hover:text-white'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : profile?.profile_tags.length ? (
+                    <div className="flex flex-wrap gap-2.5">
+                      {profile.profile_tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex min-h-9 items-center rounded-full border border-gray-700 bg-black px-3.5 text-sm font-medium text-gray-200"
+                        >
+                          {getProfileTagLabel(tag)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 italic">No profile tags yet</p>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Bio */}
             <div>

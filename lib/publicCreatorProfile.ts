@@ -8,7 +8,11 @@ export interface PublicCreatorUserRow {
   username: string | null
   email: string | null
   avatar_url: string | null
+  banner_image_url?: string | null
   bio: string | null
+  profile_tags?: string[] | null
+  availability_status?: string | null
+  pinned_project_id?: string | null
   contact_email: string | null
   website: string | null
   instagram: string | null
