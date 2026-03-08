@@ -270,11 +270,16 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                   onClick={handleToggleFollow}
                   disabled={followLoading}
                   aria-label={data.social.is_following ? 'Unfollow creator' : 'Follow creator'}
-                  className={`inline-flex min-h-11 flex-shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
-                    data.social.is_following
-                      ? 'border border-white/10 bg-white/[0.04] text-white hover:border-white/20 hover:bg-white/[0.06]'
-                      : 'bg-neon-green text-black hover:bg-[#4cff2e]'
-                  }`}
+                  className="inline-flex min-h-11 w-auto self-start flex-shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition"
+                  style={{
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    WebkitTapHighlightColor: 'transparent',
+                    backgroundColor: data.social.is_following ? 'rgba(255, 255, 255, 0.05)' : '#39FF14',
+                    border: data.social.is_following ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid transparent',
+                    color: data.social.is_following ? '#f9fafb' : '#000000',
+                    boxShadow: data.social.is_following ? 'none' : '0 8px 24px rgba(57, 255, 20, 0.18)',
+                  }}
                 >
                   {followLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -296,7 +301,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
               ].map((label) => (
                 <span
                   key={label}
-                  className="inline-flex items-center rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5 text-xs font-medium tracking-[0.02em] text-gray-200 sm:text-sm"
+                  className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-medium leading-none tracking-[0.02em] text-gray-200 sm:px-[18px] sm:py-2.5 sm:text-sm"
                 >
                   {label}
                 </span>
@@ -304,33 +309,43 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
             </div>
 
             {(creatorLinks.length > 0 || data.creator.contact_email) ? (
-              <div className="rounded-2xl border border-white/8 bg-black/25 p-4">
+              <div className="rounded-2xl border border-white/8 bg-black/25 p-5">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Connect</p>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="flex flex-col gap-3">
                   {data.creator.contact_email ? (
                     <a
                       href={`mailto:${data.creator.contact_email}`}
-                      className="inline-flex items-center gap-2 rounded-full border border-neon-green/20 bg-neon-green/10 px-3.5 py-2 text-sm font-medium text-neon-green transition hover:border-neon-green/35 hover:bg-neon-green/15"
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-neon-green/20 bg-neon-green/10 px-4 py-3 text-left transition hover:border-neon-green/35 hover:bg-neon-green/15"
                     >
-                      <Mail className="h-4 w-4" />
-                      Contact
+                      <div className="min-w-0">
+                        <div className="inline-flex items-center gap-2 text-sm font-medium text-neon-green">
+                          <Mail className="h-4 w-4" />
+                          Contact
+                        </div>
+                        <p className="mt-1 truncate text-sm text-white/90">{data.creator.contact_email}</p>
+                      </div>
+                      <span className="text-xs font-medium text-neon-green">Email</span>
                     </a>
                   ) : null}
-                  {creatorLinks.map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <a
-                        key={`${item.label}-${item.href}`}
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-sm font-medium text-gray-200 transition hover:border-white/20 hover:bg-white/[0.05]"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {item.label}
-                      </a>
-                    )
-                  })}
+                  {creatorLinks.length > 0 ? (
+                    <div className="flex flex-wrap gap-2.5">
+                      {creatorLinks.map((item) => {
+                        const Icon = item.icon
+                        return (
+                          <a
+                            key={`${item.label}-${item.href}`}
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-sm font-medium text-gray-200 transition hover:border-white/20 hover:bg-white/[0.05]"
+                          >
+                            <Icon className="h-4 w-4" />
+                            {item.label}
+                          </a>
+                        )
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -349,14 +364,14 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
             </p>
           </div>
           {data.public_projects.length === 0 ? (
-            <div className="ui-card overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.96))] p-6 sm:p-7">
+            <div className="ui-card overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.96))] px-7 py-7 sm:px-8 sm:py-8">
               <div className="flex max-w-2xl flex-col gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-neon-green/20 bg-neon-green/10">
                   <Sparkles className="h-5 w-5 text-neon-green" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">No public projects yet</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-400">
+                  <p className="mt-3 pr-1 text-sm leading-relaxed text-gray-400">
                     {data.viewer.is_owner_view
                       ? 'When you make a project public, it will show up here for listeners and collaborators to discover.'
                       : 'This creator has not shared anything publicly yet. Check back soon for new releases, experiments, and updates.'}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Loader2, UserPlus, UserCheck, X } from 'lucide-react'
+import { ArrowUpRight, Loader2, UserPlus, UserCheck, X } from 'lucide-react'
 import { usePrivy } from '@privy-io/react-auth'
 import { showToast } from '@/components/Toast'
 import type { SocialGraphListType, SocialGraphListItem } from '@/lib/socialGraph'
@@ -184,44 +184,52 @@ export default function SocialGraphListModal({
           left: '50%',
           transform: 'translate(-50%, -50%)',
           width: 'calc(100% - 32px)',
-          maxWidth: '460px',
+          maxWidth: '500px',
           maxHeight: '78vh',
-          backgroundColor: '#111827',
-          borderRadius: '14px',
-          border: '1px solid #374151',
+          background: 'linear-gradient(180deg, rgba(9, 13, 21, 0.98), rgba(5, 7, 12, 0.98))',
+          borderRadius: '24px',
+          border: '1px solid rgba(255, 255, 255, 0.10)',
+          boxShadow: '0 30px 80px rgba(0, 0, 0, 0.45)',
           zIndex: 911,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-          <h3 className="text-base font-semibold text-white">{title}</h3>
+        <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+          <h3 className="text-lg font-semibold text-white">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md hover:bg-gray-800"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] transition hover:border-white/20 hover:bg-white/[0.06]"
+            style={{
+              WebkitAppearance: 'none',
+              appearance: 'none',
+              WebkitTapHighlightColor: 'transparent',
+            }}
           >
-            <X className="w-4 h-4 text-gray-400" />
+            <X className="w-4 h-4 text-gray-300" />
           </button>
         </div>
 
-        <div className="p-3 overflow-y-auto">
+        <div className="overflow-y-auto p-4 sm:p-5">
           {loading ? (
             <p className="text-sm text-gray-500">Loading...</p>
           ) : error ? (
             <p className="text-sm text-gray-500">Couldn&apos;t load this list right now.</p>
           ) : items.length === 0 ? (
-            <p className="text-sm text-gray-500">No users to show yet.</p>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-5 text-sm text-gray-500">
+              No users to show yet.
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {items.map((item) => {
                 const isSelf = !!currentDbUserId && item.user_id === currentDbUserId
                 const isActionLoading = actionLoadingUserId === item.user_id
                 return (
                   <div
                     key={`${listType}-${item.user_id}-${item.followed_at}`}
-                    className="flex items-center justify-between gap-3 border border-gray-800 rounded-lg px-3 py-2"
+                    className="flex items-center justify-between gap-3 rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] px-3.5 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
                   >
                     <button
                       type="button"
@@ -232,25 +240,33 @@ export default function SocialGraphListModal({
                         })
                         onOpenUser(item.user_id)
                       }}
-                      className="min-w-0 flex items-center gap-3 text-left"
+                      className="min-w-0 flex flex-1 items-center gap-3 text-left"
+                      style={{
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                        background: 'transparent',
+                        border: 'none',
+                      }}
                     >
-                      <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center text-neon-green font-semibold">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-gray-800 text-sm font-semibold text-neon-green">
                         {item.avatar_url ? (
                           <Image
                             src={item.avatar_url}
                             alt={item.username}
-                            width={36}
-                            height={36}
-                            className="object-cover w-9 h-9"
+                            width={48}
+                            height={48}
+                            className="h-12 w-12 object-cover"
                           />
                         ) : (
                           item.username.charAt(0).toUpperCase()
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm text-white truncate">{item.username}</p>
-                        <p className="text-xs text-gray-500">Followed {formatRelativeTime(item.followed_at)}</p>
+                        <p className="truncate text-[15px] font-semibold text-white">{item.username}</p>
+                        <p className="mt-1 text-xs text-gray-500">Followed {formatRelativeTime(item.followed_at)}</p>
                       </div>
+                      <ArrowUpRight className="ml-auto hidden h-4 w-4 flex-shrink-0 text-gray-600 sm:block" />
                     </button>
 
                     {authenticated && !isSelf ? (
@@ -261,11 +277,15 @@ export default function SocialGraphListModal({
                           event.stopPropagation()
                           toggleFollowFromList(item.user_id, item.is_following)
                         }}
-                        className={`text-xs px-2.5 py-1.5 rounded-md border ${
-                          item.is_following
-                            ? 'border-gray-700 text-gray-300'
-                            : 'border-neon-green text-neon-green'
-                        }`}
+                        className="inline-flex min-h-10 w-auto flex-shrink-0 items-center justify-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition"
+                        style={{
+                          WebkitAppearance: 'none',
+                          appearance: 'none',
+                          WebkitTapHighlightColor: 'transparent',
+                          backgroundColor: item.is_following ? 'rgba(255, 255, 255, 0.05)' : '#39FF14',
+                          border: item.is_following ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid transparent',
+                          color: item.is_following ? '#f9fafb' : '#000000',
+                        }}
                       >
                         {isActionLoading ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -290,7 +310,12 @@ export default function SocialGraphListModal({
                 <button
                   type="button"
                   onClick={() => loadList({ reset: false })}
-                  className="w-full mt-2 text-sm text-gray-300 border border-gray-700 rounded-lg py-2 hover:border-gray-600"
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] py-3 text-sm font-medium text-gray-300 transition hover:border-white/20 hover:bg-white/[0.05]"
+                  style={{
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
                 >
                   Load more
                 </button>
