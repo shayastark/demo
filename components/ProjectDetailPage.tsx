@@ -2996,7 +2996,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                                 </div>
                               </div>
                               <div className="mt-3.5 flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-3">
-                                <div className="relative shrink-0">
+                                <div className="relative inline-flex w-auto shrink-0 self-start">
                                   <div className="pointer-events-none inline-flex h-9 min-w-[116px] items-center rounded-md border border-gray-700 bg-gray-900 px-2.5 pr-8 text-sm text-gray-100">
                                     Roles
                                   </div>
@@ -3241,7 +3241,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             const file = e.target.files?.[0]
                             if (file) handleNewTrackFileChange(index, file)
                           }}
-                          className="w-full text-sm text-white"
+                          className="w-full cursor-pointer text-sm text-white file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-gray-600 file:bg-gray-800 file:px-3.5 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:border-gray-500 hover:file:bg-gray-700"
                         />
                         <p className="mt-1 text-[11px] text-gray-500">
                           {SUPPORTED_AUDIO_LABEL} only, up to {Math.round(MAX_AUDIO_UPLOAD_SIZE_BYTES / 1024 / 1024)}MB.

@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     question: 'What appears on my creator profile?',
-    answer: 'Your creator profile can show your avatar, display name, username, bio, links, follower counts, and any projects you choose to make public.',
+    answer: 'Your creator profile can show your avatar, display name, username, bio, links, and any projects you choose to make public.',
   },
   {
     question: 'How do follows and updates work?',
