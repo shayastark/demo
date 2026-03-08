@@ -48,7 +48,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'window_days must be an integer between 1 and 30' }, { status: 400 })
     }
 
+    const accountCreatedAt =
+      typeof currentUser.created_at === 'string' ? new Date(currentUser.created_at).getTime() : Number.NaN
     const windowStartIso = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString()
+    const hasCompleteWindow =
+      Number.isFinite(accountCreatedAt) ? accountCreatedAt <= Date.now() - windowDays * 24 * 60 * 60 * 1000 : true
     const followColumn = await resolveFollowColumn()
 
     const { data: projects, error: projectsError } = await supabaseAdmin
@@ -156,6 +160,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       window_days: windowDays,
+      has_complete_window: hasCompleteWindow,
       ...digestCore,
       highlights: buildCreatorDigestHighlights(digestCore),
     })

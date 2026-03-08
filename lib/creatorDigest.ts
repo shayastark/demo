@@ -7,6 +7,7 @@ export interface CreatorDigestTopProject {
 
 export interface CreatorDigestResponse {
   window_days: number
+  has_complete_window: boolean
   new_followers_count: number
   new_comments_count: number
   updates_posted_count: number

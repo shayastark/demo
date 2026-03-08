@@ -13,6 +13,7 @@ interface CreatorDigestTopProject {
 
 interface CreatorDigestResponse {
   window_days: number
+  has_complete_window: boolean
   new_followers_count: number
   new_comments_count: number
   updates_posted_count: number
@@ -111,8 +112,17 @@ export default function CreatorDigestCard({ authenticated, getAccessToken, sourc
         <p className="text-sm text-gray-500">No digest data available.</p>
       ) : !hasActivity ? (
         <div className="text-sm text-gray-500">
-          <p>No new activity in the last {digest.window_days} days.</p>
-          <p className="mt-1">Post an update or share your projects to build momentum.</p>
+          {digest.has_complete_window ? (
+            <>
+              <p>No new activity in the last {digest.window_days} days.</p>
+              <p className="mt-1">Post an update or share your projects to build momentum.</p>
+            </>
+          ) : (
+            <>
+              <p>Check back after a week has gone by.</p>
+              <p className="mt-1">This section fills in once a full weekly window has passed.</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
