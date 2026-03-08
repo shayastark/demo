@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, Mail, Globe, Instagram, ExternalLink, Heart, Loader2, EyeOff, CreditCard, Wallet, UserPlus, UserCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
@@ -68,6 +68,8 @@ interface CreatorProfileModalProps {
   onClose: () => void
   creatorId: string
   openTipComposer?: boolean
+  headerTitle?: string
+  hideViewProfileButton?: boolean
   tipContext?: {
     source: TipPromptSource
     trigger: TipPromptTrigger
@@ -88,6 +90,8 @@ export default function CreatorProfileModal({
   onClose,
   creatorId,
   openTipComposer = false,
+  headerTitle = 'Profile Preview',
+  hideViewProfileButton = false,
   tipContext = null,
   viewerKey = null,
 }: CreatorProfileModalProps) {
@@ -115,6 +119,7 @@ export default function CreatorProfileModal({
   const [processingTip, setProcessingTip] = useState(false)
   const [sendAnonymously, setSendAnonymously] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card')
+  const tipSectionRef = useRef<HTMLDivElement | null>(null)
 
   const TIP_AMOUNTS = [
     { value: 100, label: '$1' },
@@ -245,6 +250,14 @@ export default function CreatorProfileModal({
       setShowTipOptions(true)
     }
   }, [isOpen, openTipComposer])
+
+  useEffect(() => {
+    if (!isOpen || !openTipComposer || !showTipOptions || loading) return
+    const frame = window.requestAnimationFrame(() => {
+      tipSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [isOpen, loading, openTipComposer, showTipOptions])
 
   const handleSendTip = async () => {
     const amount = selectedTip || (customTip ? Math.round(parseFloat(customTip) * 100) : 0)
@@ -436,7 +449,7 @@ export default function CreatorProfileModal({
           flexShrink: 0,
         }}>
           <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#fff' }}>
-            Profile Preview
+            {headerTitle}
           </h2>
           <button
             onClick={onClose}
@@ -592,7 +605,7 @@ export default function CreatorProfileModal({
                 </button>
               )}
 
-              {creatorPublicPath ? (
+              {creatorPublicPath && !hideViewProfileButton ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -796,7 +809,7 @@ export default function CreatorProfileModal({
 
               {/* Tip Section */}
               {canTip && (
-                <div style={{ 
+                <div ref={tipSectionRef} style={{ 
                   borderTop: '1px solid #374151', 
                   paddingTop: '24px',
                   marginTop: '8px',

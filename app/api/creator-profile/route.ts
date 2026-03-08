@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     let creatorQuery = supabaseAdmin
       .from('users')
       .select(
-        'id, display_name, username, email, avatar_url, banner_image_url, bio, profile_tags, availability_status, pinned_project_id, contact_email, website, instagram, twitter, farcaster, youtube_url, tiktok_url, spotify_url, discord_url, other_link_url'
+        'id, display_name, username, email, avatar_url, banner_image_url, bio, profile_tags, availability_status, pinned_project_id, contact_email, website, instagram, twitter, farcaster, youtube_url, tiktok_url, spotify_url, discord_url, other_link_url, stripe_onboarding_complete, wallet_address'
       )
       .limit(1)
 
@@ -166,6 +166,8 @@ export async function GET(request: NextRequest) {
         spotify_url: creator.spotify_url || null,
         discord_url: creator.discord_url || null,
         other_link_url: creator.other_link_url || null,
+        stripe_onboarding_complete: creator.stripe_onboarding_complete ?? null,
+        wallet_address: creator.wallet_address || null,
         canonical_identifier: canonicalIdentifier,
         canonical_path: getCreatorPublicPath({ id: creator.id, username: creator.username }),
       },

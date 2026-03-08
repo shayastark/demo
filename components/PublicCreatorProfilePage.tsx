@@ -5,8 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { usePrivy } from '@privy-io/react-auth'
-import { ExternalLink, Globe, Loader2, Mail, Sparkles, UserCheck, UserPlus } from 'lucide-react'
+import { ExternalLink, Globe, Heart, Loader2, Mail, Sparkles, UserCheck, UserPlus } from 'lucide-react'
 import { showToast } from '@/components/Toast'
+import CreatorProfileModal from '@/components/CreatorProfileModal'
 import { applyFollowerCountDelta } from '@/lib/follows'
 import {
   getAvailabilityStatusLabel,
@@ -41,6 +42,8 @@ interface PublicCreatorApiResponse {
     spotify_url: string | null
     discord_url: string | null
     other_link_url: string | null
+    stripe_onboarding_complete: boolean | null
+    wallet_address: string | null
     canonical_identifier: string
     canonical_path: string
   }
@@ -87,6 +90,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
   const [followLoading, setFollowLoading] = useState(false)
   const [data, setData] = useState<PublicCreatorApiResponse | null>(null)
   const [hasTrackedView, setHasTrackedView] = useState(false)
+  const [isTipModalOpen, setIsTipModalOpen] = useState(false)
 
   const emitEvent = (action: 'view' | 'follow_click' | 'project_click', detail?: Record<string, unknown>) => {
     if (typeof window === 'undefined') return
@@ -258,6 +262,8 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
     return data.public_projects.filter((project) => project.id !== data.featured_project?.id)
   }, [data])
 
+  const canReceiveTips = !!(data?.creator.stripe_onboarding_complete || data?.creator.wallet_address)
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -354,30 +360,42 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
               </div>
 
               {!data.viewer.is_owner_view ? (
-                <button
-                  onClick={handleToggleFollow}
-                  disabled={followLoading}
-                  aria-label={data.social.is_following ? 'Unfollow creator' : 'Follow creator'}
-                  className="mt-1 inline-flex min-h-11 w-auto self-start items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition"
-                  style={{
-                    WebkitAppearance: 'none',
-                    appearance: 'none',
-                    WebkitTapHighlightColor: 'transparent',
-                    backgroundColor: data.social.is_following ? 'rgba(255, 255, 255, 0.05)' : '#39FF14',
-                    border: data.social.is_following ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid transparent',
-                    color: data.social.is_following ? '#f9fafb' : '#000000',
-                    boxShadow: data.social.is_following ? 'none' : '0 8px 24px rgba(57, 255, 20, 0.18)',
-                  }}
-                >
-                  {followLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : data.social.is_following ? (
-                    <UserCheck className="h-4 w-4" />
-                  ) : (
-                    <UserPlus className="h-4 w-4" />
-                  )}
-                  {data.social.is_following ? 'Following' : 'Follow'}
-                </button>
+                <div className="mt-1 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={handleToggleFollow}
+                    disabled={followLoading}
+                    aria-label={data.social.is_following ? 'Unfollow creator' : 'Follow creator'}
+                    className="inline-flex min-h-11 w-auto self-start items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition"
+                    style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      WebkitTapHighlightColor: 'transparent',
+                      backgroundColor: data.social.is_following ? 'rgba(255, 255, 255, 0.05)' : '#39FF14',
+                      border: data.social.is_following ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid transparent',
+                      color: data.social.is_following ? '#f9fafb' : '#000000',
+                      boxShadow: data.social.is_following ? 'none' : '0 8px 24px rgba(57, 255, 20, 0.18)',
+                    }}
+                  >
+                    {followLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : data.social.is_following ? (
+                      <UserCheck className="h-4 w-4" />
+                    ) : (
+                      <UserPlus className="h-4 w-4" />
+                    )}
+                    {data.social.is_following ? 'Following' : 'Follow'}
+                  </button>
+                  {canReceiveTips ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsTipModalOpen(true)}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/18 hover:bg-white/[0.06]"
+                    >
+                      <Heart className="h-4 w-4 text-neon-green" />
+                      Send Tip
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
             </div>
 
@@ -557,6 +575,17 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
           )}
         </section>
       </main>
+      {data && canReceiveTips ? (
+        <CreatorProfileModal
+          isOpen={isTipModalOpen}
+          onClose={() => setIsTipModalOpen(false)}
+          creatorId={data.creator.id}
+          openTipComposer
+          headerTitle="Send Tip"
+          hideViewProfileButton
+          viewerKey={authenticated ? 'public-creator-profile' : null}
+        />
+      ) : null}
     </div>
   )
 }

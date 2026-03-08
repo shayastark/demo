@@ -23,6 +23,8 @@ export interface PublicCreatorUserRow {
   spotify_url?: string | null
   discord_url?: string | null
   other_link_url?: string | null
+  stripe_onboarding_complete?: boolean | null
+  wallet_address?: string | null
 }
 
 export interface PublicCreatorProjectRow {
