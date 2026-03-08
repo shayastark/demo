@@ -52,6 +52,14 @@ function formatRelativeTime(iso: string): string {
   return createdAt.toLocaleDateString()
 }
 
+function formatCalendarDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 export default function CreatorEarningsSnapshot({
   authenticated,
   getAccessToken,
@@ -149,38 +157,40 @@ export default function CreatorEarningsSnapshot({
       ) : error ? (
         <p className="text-sm text-gray-500">{error}</p>
       ) : !earnings || !hasEarnings ? (
-        <div className="text-sm text-gray-500">
-          <p>No earnings yet.</p>
-          <p className="mt-1">When supporters tip your projects, your snapshot will appear here.</p>
+        <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] px-5 py-5 text-sm text-gray-400">
+          <p className="font-medium text-white">No earnings yet.</p>
+          <p className="mt-2 max-w-xl leading-relaxed">When supporters tip your projects, your snapshot will appear here.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-black rounded-lg p-3 border border-gray-800">
-              <p className="text-xs text-gray-500">Total Earned</p>
-              <p className="text-lg font-semibold text-white">{formatUsd(earnings.total_tips_amount_cents)}</p>
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">Total earned</p>
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{formatUsd(earnings.total_tips_amount_cents)}</p>
             </div>
-            <div className="bg-black rounded-lg p-3 border border-gray-800">
-              <p className="text-xs text-gray-500">Last 30 Days</p>
-              <p className="text-lg font-semibold text-white">{formatUsd(earnings.last_30d_amount_cents)}</p>
+            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">Last 30 days</p>
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{formatUsd(earnings.last_30d_amount_cents)}</p>
             </div>
-            <div className="bg-black rounded-lg p-3 border border-gray-800">
-              <p className="text-xs text-gray-500">Tips Count</p>
-              <p className="text-lg font-semibold text-white">{earnings.total_tips_count}</p>
+            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">Tips count</p>
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{earnings.total_tips_count}</p>
             </div>
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Top Projects</p>
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">Top projects</p>
             {topProjects.length === 0 ? (
-              <p className="text-sm text-gray-500">No project-attributed tips yet.</p>
+              <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-4 py-4 text-sm text-gray-400">
+                No project-attributed tips yet.
+              </div>
             ) : (
-              <div className="divide-y divide-gray-800 rounded-lg border border-gray-800 bg-black">
+              <div className="space-y-3">
                 {topProjects.map((project) => (
                   <Link
                     key={project.project_id}
                     href={`/dashboard/projects/${project.project_id}`}
-                    className="flex items-center justify-between px-3 py-2 hover:bg-gray-900 transition"
+                    className="flex items-center justify-between gap-4 rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] px-4 py-4 transition hover:border-white/14"
                     onClick={() => {
                       if (typeof window === 'undefined') return
                       window.dispatchEvent(
@@ -197,10 +207,13 @@ export default function CreatorEarningsSnapshot({
                       )
                     }}
                   >
-                    <span className="text-sm text-white truncate pr-3">{project.project_title}</span>
-                    <span className="text-sm text-gray-300">
-                      {formatUsd(project.amount_cents)} ({project.tips_count})
-                    </span>
+                    <div className="min-w-0 pr-3">
+                      <p className="truncate text-sm font-medium text-white">{project.project_title}</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {project.tips_count} {project.tips_count === 1 ? 'tip' : 'tips'}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-white">{formatUsd(project.amount_cents)}</span>
                   </Link>
                 ))}
               </div>
@@ -208,20 +221,28 @@ export default function CreatorEarningsSnapshot({
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Recent Support Activity</p>
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">Recent support activity</p>
             {recentTips.length === 0 ? (
-              <p className="text-sm text-gray-500">No recent tips.</p>
+              <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-4 py-4 text-sm text-gray-400">
+                No recent tips.
+              </div>
             ) : (
-              <div className="divide-y divide-gray-800 rounded-lg border border-gray-800 bg-black">
+              <div className="space-y-3">
                 {recentTips.map((tip, index) => (
-                  <div key={`${tip.created_at}-${tip.project_id || 'direct'}-${index}`} className="px-3 py-2 flex items-center justify-between">
-                    <div className="min-w-0 pr-3">
-                      <p className="text-sm text-white truncate">
+                  <div
+                    key={`${tip.created_at}-${tip.project_id || 'direct'}-${index}`}
+                    className="flex items-start justify-between gap-4 rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] px-4 py-4"
+                  >
+                    <div className="min-w-0 flex-1 pr-2">
+                      <p className="text-sm font-medium leading-relaxed text-white">
                         {tip.supporter_name} tipped on {tip.project_title}
                       </p>
-                      <p className="text-xs text-gray-500">{formatRelativeTime(tip.created_at)}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                        <span>{formatRelativeTime(tip.created_at)}</span>
+                        <span>{formatCalendarDate(tip.created_at)}</span>
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-300">{formatUsd(tip.amount_cents)}</span>
+                    <span className="shrink-0 text-base font-semibold text-white">{formatUsd(tip.amount_cents)}</span>
                   </div>
                 ))}
               </div>

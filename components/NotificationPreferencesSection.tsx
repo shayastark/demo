@@ -44,7 +44,7 @@ const PREFERENCE_FIELDS: NotificationToggleField[] = [
   'notify_project_saved',
 ]
 
-const PREFERENCE_ROW_CLASS = 'rounded-lg border border-gray-800 px-3 py-3.5 text-left'
+const PREFERENCE_ROW_CLASS = 'rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.86),rgba(7,10,16,0.95))] px-4 py-4 text-left shadow-[0_14px_30px_rgba(0,0,0,0.18)]'
 const PREFERENCE_ROW_GRID_CLASS = 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2'
 const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0'
 const PREFERENCE_TOGGLE_GROUP_CLASS = 'flex items-center gap-2 justify-self-end pr-1 pt-0.5'
@@ -332,6 +332,22 @@ export default function NotificationPreferencesSection({
     }
   }
 
+  const deliveryModeButtonClass = (selected: boolean) =>
+    `inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+      selected
+        ? 'bg-neon-green text-black shadow-[0_10px_24px_rgba(57,255,20,0.2)]'
+        : 'bg-transparent text-gray-300 hover:text-white'
+    }`
+
+  const digestWindowButtonClass = (selected: boolean, disabled: boolean) =>
+    `inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition ${
+      disabled
+        ? 'bg-transparent text-gray-600'
+        : selected
+          ? 'bg-white/[0.09] text-white'
+          : 'bg-transparent text-gray-400 hover:text-white'
+    }`
+
   return (
     <div
       className="bg-gray-900 rounded-xl mb-6 border border-gray-800"
@@ -366,59 +382,60 @@ export default function NotificationPreferencesSection({
         Choose which in-app notifications you want to receive.
       </p>}
 
-      {!isOpen ? null : <div className="mb-4 border border-gray-800 rounded-lg p-3">
-        <p className="text-xs text-gray-400 mb-2">Delivery mode</p>
-        <div className="flex items-center gap-2 mb-2">
-          <button
-            type="button"
-            onClick={() => updateDeliveryPreference({ delivery_mode: 'instant' })}
-            disabled={loading || !!savingField || savingDelivery}
-            className={`text-xs px-2.5 py-1.5 rounded border ${
-              preferences.delivery_mode === 'instant'
-                ? 'border-neon-green text-neon-green'
-                : 'border-gray-700 text-gray-300'
-            } disabled:opacity-60`}
-          >
-            Instant
-          </button>
-          <button
-            type="button"
-            onClick={() => updateDeliveryPreference({ delivery_mode: 'digest' })}
-            disabled={loading || !!savingField || savingDelivery}
-            className={`text-xs px-2.5 py-1.5 rounded border ${
-              preferences.delivery_mode === 'digest'
-                ? 'border-neon-green text-neon-green'
-                : 'border-gray-700 text-gray-300'
-            } disabled:opacity-60`}
-          >
-            Digest
-          </button>
+      {!isOpen ? null : <div className="mb-5 rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+        <div className="mb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">Delivery mode</p>
+          <p className="mt-1 text-sm text-gray-400">
+            Choose whether alerts arrive right away or as a digest.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={preferences.delivery_mode !== 'digest'}
-            onClick={() => updateDeliveryPreference({ digest_window: 'daily' })}
-            className={`text-xs px-2.5 py-1.5 rounded border ${
-              preferences.digest_window === 'daily'
-                ? 'border-neon-green text-neon-green'
-                : 'border-gray-700 text-gray-300'
-            } disabled:opacity-60`}
-          >
-            Daily
-          </button>
-          <button
-            type="button"
-            disabled={preferences.delivery_mode !== 'digest'}
-            onClick={() => updateDeliveryPreference({ digest_window: 'weekly' })}
-            className={`text-xs px-2.5 py-1.5 rounded border ${
-              preferences.digest_window === 'weekly'
-                ? 'border-neon-green text-neon-green'
-                : 'border-gray-700 text-gray-300'
-            } disabled:opacity-60`}
-          >
-            Weekly
-          </button>
+
+        <div className="rounded-2xl border border-white/8 bg-black/30 p-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => updateDeliveryPreference({ delivery_mode: 'instant' })}
+              disabled={loading || !!savingField || savingDelivery}
+              className={deliveryModeButtonClass(preferences.delivery_mode === 'instant')}
+            >
+              Instant
+            </button>
+            <button
+              type="button"
+              onClick={() => updateDeliveryPreference({ delivery_mode: 'digest' })}
+              disabled={loading || !!savingField || savingDelivery}
+              className={deliveryModeButtonClass(preferences.delivery_mode === 'digest')}
+            >
+              Digest
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-white/8 bg-black/20 p-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              disabled={preferences.delivery_mode !== 'digest' || loading || !!savingField || savingDelivery}
+              onClick={() => updateDeliveryPreference({ digest_window: 'daily' })}
+              className={digestWindowButtonClass(
+                preferences.digest_window === 'daily',
+                preferences.delivery_mode !== 'digest' || loading || !!savingField || savingDelivery
+              )}
+            >
+              Daily digest
+            </button>
+            <button
+              type="button"
+              disabled={preferences.delivery_mode !== 'digest' || loading || !!savingField || savingDelivery}
+              onClick={() => updateDeliveryPreference({ digest_window: 'weekly' })}
+              className={digestWindowButtonClass(
+                preferences.digest_window === 'weekly',
+                preferences.delivery_mode !== 'digest' || loading || !!savingField || savingDelivery
+              )}
+            >
+              Weekly digest
+            </button>
+          </div>
         </div>
       </div>}
 
@@ -475,7 +492,7 @@ export default function NotificationPreferencesSection({
                     {isSaving ? '...' : enabled ? 'On' : 'Off'}
                   </span>
                 </div>
-                <p className="col-span-2 text-sm leading-relaxed text-gray-400">
+                <p className="col-span-2 pr-2 text-sm leading-relaxed text-gray-400">
                   {PREFERENCE_DESCRIPTIONS[field]}
                 </p>
               </div>
