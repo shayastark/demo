@@ -612,39 +612,19 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
     // Track share
     if (project) {
       try {
-        // Get user ID if authenticated
-        let userId: string | null = null
-        if (user) {
-          const privyId = user.id
-          const { data: dbUser } = await supabase
-            .from('users')
-            .select('id')
-            .eq('privy_id', privyId)
-            .single()
-          userId = dbUser?.id || null
-        }
+        const authToken = authenticated ? await getAccessToken() : null
+        const response = await fetch('/api/project-shares', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({ project_id: project.id }),
+        })
 
-        // Insert share record with user_id
-        const { error: shareError } = await supabase
-        .from('project_shares')
-          .insert({ 
-            project_id: project.id,
-            user_id: userId
-          })
-
-        if (shareError) {
-          console.error('Error inserting share:', shareError)
-        }
-
-        // Atomically increment shares metric via API
-        try {
-          await fetch('/api/metrics', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ project_id: project.id, field: 'shares' }),
-          })
-        } catch (metricsErr) {
-          console.error('Error updating shares metric:', metricsErr)
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null)
+          throw new Error(payload?.error || 'Failed to track share')
         }
       } catch (error) {
         console.error('Error tracking share:', error)

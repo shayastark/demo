@@ -274,6 +274,91 @@ export async function createFollowerNotification({
   })
 }
 
+function getProjectEngagementActorName(rawName?: string | null): string {
+  const trimmed = rawName?.trim()
+  return trimmed ? trimmed : 'Someone'
+}
+
+function buildProjectEngagementTargetPath(projectId: string): string {
+  return `/dashboard/projects/${encodeURIComponent(projectId)}`
+}
+
+export async function createProjectSavedNotification({
+  creatorId,
+  projectId,
+  projectTitle,
+  saverId,
+  saverName,
+}: {
+  creatorId: string
+  projectId: string
+  projectTitle: string
+  saverId?: string | null
+  saverName?: string | null
+}): Promise<{ success: boolean; error?: string; skippedSelf?: boolean }> {
+  if (saverId && saverId === creatorId) {
+    return { success: true, skippedSelf: true }
+  }
+
+  const actorName = getProjectEngagementActorName(saverName)
+
+  return createNotification({
+    userId: creatorId,
+    type: 'project_saved',
+    title: `${actorName} saved "${projectTitle}"`,
+    message: 'Your project was added to someone\'s library.',
+    data: {
+      project_id: projectId,
+      project_title: projectTitle,
+      actor_user_id: saverId || null,
+      actor_name: actorName,
+      targetPath: buildProjectEngagementTargetPath(projectId),
+      projectId,
+      projectTitle,
+      actorUserId: saverId || null,
+      actorName,
+    },
+  })
+}
+
+export async function createProjectSharedNotification({
+  creatorId,
+  projectId,
+  projectTitle,
+  sharerId,
+  sharerName,
+}: {
+  creatorId: string
+  projectId: string
+  projectTitle: string
+  sharerId?: string | null
+  sharerName?: string | null
+}): Promise<{ success: boolean; error?: string; skippedSelf?: boolean }> {
+  if (sharerId && sharerId === creatorId) {
+    return { success: true, skippedSelf: true }
+  }
+
+  const actorName = getProjectEngagementActorName(sharerName)
+
+  return createNotification({
+    userId: creatorId,
+    type: 'project_shared',
+    title: `${actorName} shared "${projectTitle}"`,
+    message: 'Your project link was shared.',
+    data: {
+      project_id: projectId,
+      project_title: projectTitle,
+      actor_user_id: sharerId || null,
+      actor_name: actorName,
+      targetPath: buildProjectEngagementTargetPath(projectId),
+      projectId,
+      projectTitle,
+      actorUserId: sharerId || null,
+      actorName,
+    },
+  })
+}
+
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
+import { createProjectSavedNotification } from '@/lib/notifications'
 import { normalizeProjectSubscriptionNotificationMode } from '@/lib/projectSubscriptions'
 
 // POST /api/library - Add a project to user's library
@@ -23,6 +24,21 @@ export async function POST(request: NextRequest) {
 
     if (!project_id || !isValidUUID(project_id)) {
       return NextResponse.json({ error: 'Valid project ID is required' }, { status: 400 })
+    }
+
+    const { data: project, error: projectError } = await supabaseAdmin
+      .from('projects')
+      .select('id, title, creator_id')
+      .eq('id', project_id)
+      .maybeSingle()
+
+    if (projectError) {
+      console.error('Error loading project for library save:', projectError)
+      return NextResponse.json({ error: 'Failed to load project' }, { status: 500 })
+    }
+
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
     // Check if already in library
@@ -101,6 +117,20 @@ export async function POST(request: NextRequest) {
 
     if (rpcError) {
       console.error('Error incrementing adds metric:', rpcError)
+    }
+
+    if (project.creator_id) {
+      const notificationResult = await createProjectSavedNotification({
+        creatorId: project.creator_id,
+        projectId: project.id,
+        projectTitle: project.title || 'Untitled project',
+        saverId: user.id,
+        saverName: user.username || user.email || null,
+      })
+
+      if (!notificationResult.success) {
+        console.error('Error creating project saved notification:', notificationResult.error)
+      }
     }
 
     return NextResponse.json(
