@@ -505,11 +505,11 @@ export default function ClientDashboard() {
           <div className="app-shell-actions pr-0.5 max-[390px]:gap-1.5 sm:gap-4">
             <Link
               href="/account"
-              className="app-shell-link max-[390px]:text-[10px] sm:text-sm"
+              className="app-shell-link hidden sm:inline-flex sm:text-sm"
             >
               Account
             </Link>
-            <span className="app-shell-divider text-xs max-[390px]:text-[10px] mx-0.5 max-[390px]:mx-0">|</span>
+            <span className="app-shell-divider mx-0.5 hidden sm:inline">|</span>
             <Link
               href="/explore"
               className="app-shell-link max-[390px]:text-[10px] sm:text-sm"

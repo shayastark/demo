@@ -797,7 +797,7 @@ function AccountPageContent() {
                 <div className="flex items-center gap-4">
                   <label style={{ marginRight: '24px', minWidth: '100px', fontWeight: 600 }} className="text-sm text-white">Profile Picture</label>
                   <div className="flex items-center gap-4">
-                    <div className="relative h-20 w-20 overflow-hidden rounded-full">
+                    <div className="relative aspect-square h-20 w-20 min-h-20 min-w-20 flex-shrink-0 overflow-hidden rounded-full">
                       {profile?.avatar_url ? (
                         <img
                           src={profile.avatar_url}
