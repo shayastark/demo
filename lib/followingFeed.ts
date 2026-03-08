@@ -16,6 +16,7 @@ export interface FeedUpdateRow {
   user_id: string
   content: string
   version_label: string | null
+  published_at: string | null
   created_at: string
 }
 
@@ -53,9 +54,14 @@ export function parseFollowingFeedQuery(args: {
 type ProjectLookup = { id: string; title: string | null; creator_id: string | null }
 type UserLookup = { id: string; username: string | null; email: string | null }
 
+function getFeedUpdateTimestamp(update: Pick<FeedUpdateRow, 'published_at' | 'created_at'>): string {
+  return update.published_at || update.created_at
+}
+
 export function sortFeedUpdatesNewestFirst(updates: FeedUpdateRow[]): FeedUpdateRow[] {
   return [...updates].sort((a, b) => {
-    const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    const timeDiff =
+      new Date(getFeedUpdateTimestamp(b)).getTime() - new Date(getFeedUpdateTimestamp(a)).getTime()
     if (timeDiff !== 0) return timeDiff
     return b.id.localeCompare(a.id)
   })
@@ -87,7 +93,7 @@ export function buildFollowingFeedItems(
       project_title: getProjectTitle(project),
       content: update.content || '',
       version_label: update.version_label || null,
-      created_at: update.created_at,
+      created_at: getFeedUpdateTimestamp(update),
       target_path: update.project_id
         ? `/dashboard/projects/${update.project_id}?update_id=${encodeURIComponent(update.id)}`
         : '/dashboard',

@@ -4,6 +4,7 @@ import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { buildPaginatedItems } from '@/lib/pagination'
 import { buildFollowingFeedItems, parseFollowingFeedQuery, type FeedUpdateRow } from '@/lib/followingFeed'
 import { canViewProject } from '@/lib/projectAccessPolicyServer'
+import { autoPublishScheduledUpdatesForProjects } from '@/lib/projectUpdateAutopublishServer'
 
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
@@ -88,6 +89,52 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    const { data: projectRows, error: projectsError } = await supabaseAdmin
+      .from('projects')
+      .select('id, title, creator_id, visibility, sharing_enabled')
+      .in('creator_id', creatorIds)
+
+    if (projectsError) {
+      console.error('Error fetching followed projects for feed:', projectsError)
+      return NextResponse.json({ error: 'Failed to load feed' }, { status: 500 })
+    }
+
+    const visibleProjectsById: Record<string, { id: string; title: string | null; creator_id: string | null }> = {}
+    for (const project of projectRows || []) {
+      const canAccess = await canViewProject({
+        project: {
+          id: project.id,
+          creator_id: project.creator_id,
+          visibility: project.visibility,
+          sharing_enabled: project.sharing_enabled,
+        },
+        userId: currentUser.id,
+        isDirectAccess: true,
+      })
+      if (canAccess) {
+        visibleProjectsById[project.id] = {
+          id: project.id,
+          title: project.title,
+          creator_id: project.creator_id,
+        }
+      }
+    }
+
+    const visibleProjects = Object.values(visibleProjectsById)
+    if (visibleProjects.length === 0) {
+      return NextResponse.json({
+        items: [],
+        limit,
+        offset,
+        hasMore: false,
+        nextOffset: null,
+      })
+    }
+
+    await autoPublishScheduledUpdatesForProjects(
+      visibleProjects.map((project) => ({ id: project.id, title: project.title }))
+    )
+
     const chunkSize = Math.min(Math.max(limit * 3, 30), 200)
     let rawOffset = 0
     let skippedVisible = 0
@@ -97,8 +144,10 @@ export async function GET(request: NextRequest) {
     while (collected.length < limit + 1) {
       const { data: updateRows, error: updatesError } = await supabaseAdmin
         .from('project_updates')
-        .select('id, project_id, user_id, content, version_label, created_at')
-        .in('user_id', creatorIds)
+        .select('id, project_id, user_id, content, version_label, published_at, created_at')
+        .in('project_id', visibleProjects.map((project) => project.id))
+        .eq('status', 'published')
+        .order('published_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
         .range(rawOffset, rawOffset + chunkSize - 1)
@@ -113,47 +162,18 @@ export async function GET(request: NextRequest) {
       scannedUpdateRows += updates.length
       rawOffset += updates.length
 
-      const projectIds = Array.from(new Set(updates.map((row) => row.project_id)))
       const creatorIdsFromUpdates = Array.from(new Set(updates.map((row) => row.user_id)))
-      const [{ data: projects }, { data: users }] = await Promise.all([
-        supabaseAdmin
-          .from('projects')
-          .select('id, title, creator_id, visibility, sharing_enabled')
-          .in('id', projectIds),
-        supabaseAdmin
-          .from('users')
-          .select('id, username, email')
-          .in('id', creatorIdsFromUpdates),
-      ])
-
-      const visibleProjectsById: Record<string, { id: string; title: string | null; creator_id: string | null }> = {}
-      for (const project of projects || []) {
-        const canAccess = await canViewProject({
-          project: {
-            id: project.id,
-            creator_id: project.creator_id,
-            visibility: project.visibility,
-            sharing_enabled: project.sharing_enabled,
-          },
-          userId: currentUser.id,
-          isDirectAccess: true,
-        })
-        if (canAccess) {
-          visibleProjectsById[project.id] = {
-            id: project.id,
-            title: project.title,
-            creator_id: project.creator_id,
-          }
-        }
-      }
+      const { data: users } = await supabaseAdmin
+        .from('users')
+        .select('id, username, email')
+        .in('id', creatorIdsFromUpdates)
 
       const usersById = (users || []).reduce<Record<string, { id: string; username: string | null; email: string | null }>>((acc, user) => {
         acc[user.id] = { id: user.id, username: user.username, email: user.email }
         return acc
       }, {})
 
-      const visibleUpdates = updates.filter((row) => !!visibleProjectsById[row.project_id])
-      const mapped = buildFollowingFeedItems(visibleUpdates, visibleProjectsById, usersById)
+      const mapped = buildFollowingFeedItems(updates, visibleProjectsById, usersById)
       for (const item of mapped) {
         if (skippedVisible < offset) {
           skippedVisible += 1

@@ -124,7 +124,7 @@ export default function TrackPlaylist({
     // Listen for when queue starts playing (stop our display)
     const handleGlobalPlayback = (e: CustomEvent) => {
       const { source } = e.detail
-      if (source === 'queue') {
+      if (source === 'queue' || source === 'stopped') {
         setIsPlaying(false)
         setCurrentTrackIndex(null)
         setActiveTrackId(null)
@@ -206,7 +206,6 @@ export default function TrackPlaylist({
     } else if (currentTrackIndex === index && !isPlaying) {
       // Resume if same track is paused
       window.dispatchEvent(new Event('demo-cassette-resume'))
-      setIsPlaying(true)
     } else {
       // Play new track
       playTrackAtIndex(index)
@@ -225,7 +224,6 @@ export default function TrackPlaylist({
       setIsPlaying(false)
     } else {
       window.dispatchEvent(new Event('demo-cassette-resume'))
-      setIsPlaying(true)
     }
   }
 

@@ -14,6 +14,7 @@ import {
   type ExploreCreatorRow,
   type ExploreProjectRow,
 } from '@/lib/explore'
+import { autoPublishScheduledUpdatesForProjects } from '@/lib/projectUpdateAutopublishServer'
 
 const SEARCH_SCAN_LIMIT = 1000
 const RECENT_WINDOW_DAYS = 14
@@ -155,6 +156,10 @@ export async function GET(request: NextRequest) {
     if (projectIds.length > 0) {
       const recentIso = new Date(Date.now() - RECENT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
+      await autoPublishScheduledUpdatesForProjects(
+        qFilteredProjects.map((project) => ({ id: project.id, title: project.title || null }))
+      )
+
       const { data: tipRows } = await supabaseAdmin
         .from('tips')
         .select('project_id, tipper_user_id')
@@ -176,8 +181,10 @@ export async function GET(request: NextRequest) {
 
       const { data: updateRows } = await supabaseAdmin
         .from('project_updates')
-        .select('id, project_id, created_at')
+        .select('id, project_id, published_at, created_at')
         .in('project_id', projectIds)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(3000)
 
@@ -185,18 +192,23 @@ export async function GET(request: NextRequest) {
       for (const row of updateRows || []) {
         const projectId = typeof row.project_id === 'string' ? row.project_id : null
         const updateId = typeof row.id === 'string' ? row.id : null
-        const createdAt = typeof row.created_at === 'string' ? row.created_at : null
-        if (!projectId || !updateId || !createdAt) continue
+        const effectiveAt =
+          typeof row.published_at === 'string'
+            ? row.published_at
+            : typeof row.created_at === 'string'
+              ? row.created_at
+              : null
+        if (!projectId || !updateId || !effectiveAt) continue
         updateIds.push(updateId)
 
         const latestForProject = latestUpdateAtByProjectId[projectId]
         if (
           !latestForProject ||
-          new Date(createdAt).getTime() > new Date(latestForProject).getTime()
+          new Date(effectiveAt).getTime() > new Date(latestForProject).getTime()
         ) {
-          latestUpdateAtByProjectId[projectId] = createdAt
+          latestUpdateAtByProjectId[projectId] = effectiveAt
         }
-        if (new Date(createdAt).getTime() >= new Date(recentIso).getTime()) {
+        if (new Date(effectiveAt).getTime() >= new Date(recentIso).getTime()) {
           recentUpdatesCountByProjectId[projectId] = (recentUpdatesCountByProjectId[projectId] || 0) + 1
         }
       }

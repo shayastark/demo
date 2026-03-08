@@ -10,6 +10,7 @@ import {
   paginateProjectActivity,
   parseProjectActivityQuery,
 } from '@/lib/projectActivity'
+import { autoPublishScheduledUpdatesForProjects } from '@/lib/projectUpdateAutopublishServer'
 
 const SOURCE_SCAN_MULTIPLIER = 4
 const SOURCE_SCAN_MAX = 250
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id, creator_id, visibility, sharing_enabled')
+      .select('id, title, creator_id, visibility, sharing_enabled')
       .eq('id', projectId)
       .single()
 
@@ -91,6 +92,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    await autoPublishScheduledUpdatesForProjects([{ id: project.id, title: project.title || null }])
+
     const sourceScanLimit = Math.min(limit * SOURCE_SCAN_MULTIPLIER + offset, SOURCE_SCAN_MAX)
 
     const comments = await safeSelect(
@@ -104,15 +107,21 @@ export async function GET(request: NextRequest) {
     )
     const commentIds = comments.map((row) => row.id).filter((id): id is string => typeof id === 'string')
 
-    const updates = await safeSelect(
+    const rawUpdates = await safeSelect(
       supabaseAdmin
         .from('project_updates')
-        .select('id, user_id, created_at')
+        .select('id, user_id, published_at, created_at')
         .eq('project_id', projectId)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(sourceScanLimit),
       'project_updates'
     )
+    const updates = rawUpdates.map((row) => ({
+      ...row,
+      created_at: row.published_at || row.created_at,
+    }))
     const updateIds = updates.map((row) => row.id).filter((id): id is string => typeof id === 'string')
 
     const [commentReactions, updateReactions, updateComments, attachments, accessGrants] = await Promise.all([

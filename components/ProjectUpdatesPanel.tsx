@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Megaphone, Send, Trash2 } from 'lucide-react'
+import { Calendar, Megaphone, Send, Trash2 } from 'lucide-react'
 import { ProjectUpdate } from '@/lib/types'
 import { showToast } from './Toast'
 import { parseUpdateDeeplink, resolveUpdateIdInList } from '@/lib/updateDeeplink'
@@ -253,10 +253,8 @@ export default function ProjectUpdatesPanel({
       const previousEditingDraft = isEditingDraft
         ? updates.find((update) => update.id === editingDraftId)
         : null
-      const scheduledIso =
-        targetStatus === 'draft' && scheduledPublishAt
-          ? new Date(scheduledPublishAt).toISOString()
-          : null
+      const scheduledIso = scheduledPublishAt ? new Date(scheduledPublishAt).toISOString() : null
+      const resolvedStatus = targetStatus === 'published' && scheduledIso ? 'draft' : targetStatus
       const response = await fetch('/api/project-updates', {
         method: isEditingDraft ? 'PATCH' : 'POST',
         headers: {
@@ -270,16 +268,16 @@ export default function ProjectUpdatesPanel({
                 content: trimmed,
                 version_label: versionLabel.trim() || null,
                 is_important: isImportant,
-                status: targetStatus,
-                scheduled_publish_at: targetStatus === 'draft' ? scheduledIso : null,
+                status: resolvedStatus,
+                scheduled_publish_at: resolvedStatus === 'draft' ? scheduledIso : null,
               }
             : {
                 project_id: projectId,
                 content: trimmed,
                 version_label: versionLabel.trim() || null,
                 is_important: isImportant,
-                status: targetStatus,
-                scheduled_publish_at: targetStatus === 'draft' ? scheduledIso : null,
+                status: resolvedStatus,
+                scheduled_publish_at: resolvedStatus === 'draft' ? scheduledIso : null,
               }
         ),
       })
@@ -296,7 +294,7 @@ export default function ProjectUpdatesPanel({
         project_id: projectId,
         update_id: result.update?.id || null,
       })
-      if (targetStatus === 'draft') {
+      if (resolvedStatus === 'draft') {
         emitDraftEvent(isEditingDraft ? 'edit_draft' : 'save_draft', result.update?.id || null)
         if (scheduledIso) {
           emitScheduleEvent('schedule_set', result.update?.id || null, scheduledIso)
@@ -318,7 +316,7 @@ export default function ProjectUpdatesPanel({
             },
           })
         )
-        if (isImportant && targetStatus === 'published') {
+        if (isImportant && resolvedStatus === 'published') {
           window.dispatchEvent(
             new CustomEvent('project_update_importance_event', {
               detail: {
@@ -334,10 +332,14 @@ export default function ProjectUpdatesPanel({
       }
       await loadUpdates()
       showToast(
-        targetStatus === 'draft'
+        resolvedStatus === 'draft'
           ? isEditingDraft
-            ? 'Draft updated'
-            : 'Draft saved'
+            ? scheduledIso
+              ? 'Draft scheduled'
+              : 'Draft updated'
+            : scheduledIso
+              ? 'Update scheduled'
+              : 'Draft saved'
           : isEditingDraft
             ? 'Draft published'
             : 'Update posted',
@@ -507,6 +509,7 @@ export default function ProjectUpdatesPanel({
     const latest = publishedUpdates[0]
     return latest.version_label ? `${latest.version_label}: ${latest.content}` : latest.content
   }, [publishedUpdates])
+  const hasScheduledPublishAt = scheduledPublishAt.trim().length > 0
 
   return (
     <section
@@ -551,7 +554,7 @@ export default function ProjectUpdatesPanel({
               value={versionLabel}
               onChange={(event) => setVersionLabel(event.target.value)}
               maxLength={40}
-              placeholder="Version (optional)"
+              placeholder="Title (optional)"
               className="w-full rounded-lg border border-gray-800 bg-black/70 px-2.5 py-2 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-neon-green sm:w-36"
             />
             <textarea
@@ -569,7 +572,7 @@ export default function ProjectUpdatesPanel({
             >
               <span className="inline-flex items-center gap-1">
                 <Send className="w-3.5 h-3.5" />
-                {posting ? 'Saving...' : editingDraftId ? 'Publish draft' : 'Post'}
+                {posting ? 'Saving...' : hasScheduledPublishAt ? 'Schedule' : editingDraftId ? 'Publish draft' : 'Post'}
               </span>
             </button>
             <button
@@ -590,12 +593,15 @@ export default function ProjectUpdatesPanel({
             Mark as important
           </label>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <input
-              type="datetime-local"
-              value={scheduledPublishAt}
-              onChange={(event) => setScheduledPublishAt(event.target.value)}
-              className="rounded-md border border-gray-800 bg-black/70 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-green"
-            />
+            <div className="relative">
+              <Calendar className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+              <input
+                type="datetime-local"
+                value={scheduledPublishAt}
+                onChange={(event) => setScheduledPublishAt(event.target.value)}
+                className="rounded-md border border-gray-800 bg-black/70 py-1.5 pl-8 pr-2 text-xs text-white focus:outline-none focus:border-neon-green"
+              />
+            </div>
             <button
               type="button"
               onClick={() => {
@@ -707,7 +713,9 @@ export default function ProjectUpdatesPanel({
                           Important
                         </span>
                       ) : null}
-                      <span className="text-[11px] text-gray-500">{new Date(update.created_at).toLocaleString()}</span>
+                      <span className="text-[11px] text-gray-500">
+                        {new Date(update.published_at || update.created_at).toLocaleString()}
+                      </span>
                     </div>
                     <p className="text-sm text-gray-100 whitespace-pre-wrap break-words">{update.content}</p>
                   </div>

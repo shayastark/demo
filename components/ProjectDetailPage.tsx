@@ -3147,7 +3147,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
               {!editingProjectNote && (
                 <button
                   onClick={() => setEditingProjectNote(true)}
-                  className="text-sm text-black hover:opacity-80 flex items-center gap-1"
+                  className="flex items-center gap-1 text-sm text-gray-200 transition-colors hover:text-white"
                 >
                   <Edit className="w-4 h-4" />
                   {projectNote ? 'Edit' : 'Add Note'}
@@ -3361,7 +3361,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                         {!isEditingNote && (
                           <button
                             onClick={() => startEditingTrackNote(track.id)}
-                            className="text-xs text-black hover:opacity-80 flex items-center gap-1"
+                            className="flex items-center gap-1 text-xs text-gray-200 transition-colors hover:text-white"
                           >
                             <Edit className="w-3 h-3" />
                             {trackNote ? 'Edit' : 'Add'}

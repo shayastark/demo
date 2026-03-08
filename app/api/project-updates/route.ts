@@ -15,7 +15,7 @@ import {
 } from '@/lib/projectUpdates'
 import { notifyFollowersProjectUpdate } from '@/lib/notifications'
 import { canPostProjectUpdate, canViewProject } from '@/lib/projectAccessPolicyServer'
-import { autoPublishScheduledProjectUpdates } from '@/lib/projectUpdateAutopublish'
+import { autoPublishScheduledUpdatesForProjects } from '@/lib/projectUpdateAutopublishServer'
 
 async function getOptionalCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -38,62 +38,6 @@ async function getProject(projectId: string) {
     .eq('id', projectId)
     .single()
   return project
-}
-
-async function autoPublishScheduledUpdates(args: {
-  projectId: string
-  projectTitle: string
-}): Promise<void> {
-  const debug = process.env.PROJECT_UPDATE_SCHEDULE_DEBUG === 'true'
-  await autoPublishScheduledProjectUpdates({
-    projectId: args.projectId,
-    projectTitle: args.projectTitle,
-    debug,
-    fetchDueDrafts: async (projectId, nowIso) => {
-      const { data, error } = await supabaseAdmin
-        .from('project_updates')
-        .select('id, project_id, user_id, content, version_label, is_important, status, scheduled_publish_at')
-        .eq('project_id', projectId)
-        .eq('status', 'draft')
-        .lte('scheduled_publish_at', nowIso)
-      if (error) {
-        console.error('Error fetching scheduled updates for autopublish:', error)
-        return []
-      }
-      return (data || []) as ProjectUpdateRow[]
-    },
-    transitionDueDrafts: async (projectId, dueIds, nowIso) => {
-      if (dueIds.length === 0) return []
-      const { data, error } = await supabaseAdmin
-        .from('project_updates')
-        .update({
-          status: 'published',
-          published_at: nowIso,
-          scheduled_publish_at: null,
-        })
-        .eq('project_id', projectId)
-        .eq('status', 'draft')
-        .in('id', dueIds)
-        .lte('scheduled_publish_at', nowIso)
-        .select('id, project_id, user_id, content, version_label, is_important')
-      if (error) {
-        console.error('Error auto-publishing scheduled updates:', error)
-        return []
-      }
-      return data || []
-    },
-    notifyFollowers: async (row, projectTitle) => {
-      await notifyFollowersProjectUpdate({
-        creatorId: row.user_id,
-        projectId: row.project_id,
-        updateId: row.id,
-        projectTitle,
-        content: row.content,
-        versionLabel: row.version_label,
-        isImportant: row.is_important,
-      })
-    },
-  })
 }
 
 export async function GET(request: NextRequest) {
@@ -124,10 +68,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    await autoPublishScheduledUpdates({
-      projectId: project.id,
-      projectTitle: project.title,
-    })
+    await autoPublishScheduledUpdatesForProjects([{ id: project.id, title: project.title }])
 
     const canManage = await canPostProjectUpdate({
       project: {

@@ -6,6 +6,7 @@ import {
   buildCreatorDigestTopProject,
   parseCreatorDigestWindowDays,
 } from '@/lib/creatorDigest'
+import { autoPublishScheduledUpdatesForProjects } from '@/lib/projectUpdateAutopublishServer'
 
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
@@ -71,6 +72,10 @@ export async function GET(request: NextRequest) {
       return acc
     }, {})
 
+    await autoPublishScheduledUpdatesForProjects(
+      (projects || []).map((project) => ({ id: project.id, title: project.title || null }))
+    )
+
     const followerCountPromise = supabaseAdmin
       .from('user_follows')
       .select('id', { count: 'exact', head: true })
@@ -90,7 +95,8 @@ export async function GET(request: NextRequest) {
       .from('project_updates')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', currentUser.id)
-      .gte('created_at', windowStartIso)
+      .eq('status', 'published')
+      .gte('published_at', windowStartIso)
 
     const tipsRowsPromise = supabaseAdmin
       .from('tips')
@@ -112,7 +118,8 @@ export async function GET(request: NextRequest) {
       .from('project_updates')
       .select('project_id')
       .eq('user_id', currentUser.id)
-      .gte('created_at', windowStartIso)
+      .eq('status', 'published')
+      .gte('published_at', windowStartIso)
 
     const [followerResult, commentsResult, updatesResult, tipsResult, commentProjectsResult, updateProjectsResult] =
       await Promise.all([

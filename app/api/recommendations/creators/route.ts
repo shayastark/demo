@@ -13,6 +13,7 @@ import {
   buildCreatorPreferenceBoostById,
   toOnboardingPreferences,
 } from '@/lib/onboardingPreferences'
+import { autoPublishScheduledUpdatesForProjects } from '@/lib/projectUpdateAutopublishServer'
 
 type FollowColumnName = 'following_id' | 'followed_id'
 let cachedFollowColumn: FollowColumnName | null = null
@@ -130,15 +131,21 @@ export async function GET(request: NextRequest) {
     })
     const publicProjectIds = visibleProjectRows.map((row) => row.id)
 
+    await autoPublishScheduledUpdatesForProjects(
+      visibleProjectRows.map((project) => ({ id: project.id, title: project.title || null }))
+    )
+
     const { data: updateRows } = publicProjectIds.length
       ? await supabaseAdmin
           .from('project_updates')
-          .select('project_id, created_at')
+          .select('project_id, published_at, created_at')
           .in('project_id', publicProjectIds)
-          .gte('created_at', twoWeeksAgoIso)
+          .eq('status', 'published')
+          .gte('published_at', twoWeeksAgoIso)
+          .order('published_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(1500)
-      : { data: [] as Array<{ project_id: string; created_at: string }> }
+      : { data: [] as Array<{ project_id: string; published_at: string | null; created_at: string }> }
 
     const creatorActivity: Record<string, CreatorRecommendationActivityStats> = {}
     const projectCreatorById = visibleProjectRows.reduce<Record<string, string>>((acc, row) => {
@@ -168,19 +175,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    for (const update of (updateRows || []) as Array<{ project_id: string; created_at: string }>) {
+    for (const update of (updateRows || []) as Array<{ project_id: string; published_at: string | null; created_at: string }>) {
       const creatorId = projectCreatorById[update.project_id]
       if (!creatorId) continue
       const existing = creatorActivity[creatorId]
       if (!existing) continue
-      if (new Date(update.created_at).getTime() >= new Date(oneWeekAgoIso).getTime()) {
+      const effectiveAt = update.published_at || update.created_at
+      if (new Date(effectiveAt).getTime() >= new Date(oneWeekAgoIso).getTime()) {
         existing.recent_public_updates_count += 1
       }
       if (
         !existing.latest_public_activity_at ||
-        new Date(update.created_at).getTime() > new Date(existing.latest_public_activity_at).getTime()
+        new Date(effectiveAt).getTime() > new Date(existing.latest_public_activity_at).getTime()
       ) {
-        existing.latest_public_activity_at = update.created_at
+        existing.latest_public_activity_at = effectiveAt
       }
     }
 

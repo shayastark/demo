@@ -126,6 +126,40 @@ export default function BottomTabBar() {
   const setExternalTrack = setCassetteTrack
   const setExternalIsPlaying = setCassetteIsPlaying
 
+  const resetCassetteProgress = useCallback(() => {
+    setCassetteCurrentTime(0)
+    setCassetteDuration(0)
+  }, [])
+
+  const broadcastCassettePlaybackState = useCallback(
+    (playing: boolean, options?: { ended?: boolean; trackId?: string | null }) => {
+      if (typeof window === 'undefined') return
+
+      const trackId = options?.trackId || cassetteTrack?.id || lastPlayedTrackIdRef.current
+      if (!trackId) return
+
+      window.dispatchEvent(
+        new CustomEvent('demo-playback-state', {
+          detail: {
+            isPlaying: playing,
+            trackId,
+            ended: options?.ended === true,
+          },
+        })
+      )
+    },
+    [cassetteTrack]
+  )
+
+  const emitPlaybackReset = useCallback(() => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('demo-global-playback', {
+        detail: { source: 'stopped' },
+      })
+    )
+  }, [])
+
   const emitNotificationEvent = useCallback(
     (
       action: 'open' | 'read' | 'delete' | 'click',
@@ -324,16 +358,16 @@ export default function BottomTabBar() {
     lastPlayedTrackIdRef.current = track.id
     
     if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
       audioRef.current.src = track.audioUrl
       audioRef.current.load()
+      resetCassetteProgress()
       audioRef.current.play().then(() => {
-        setCassetteIsPlaying(true)
-        // Notify cassette UI that playback started
-        window.dispatchEvent(new CustomEvent('demo-playback-state', {
-          detail: { isPlaying: true, trackId: track.id }
-        }))
       }).catch(err => {
         console.error('Error playing cassette track:', err)
+        setCassetteIsPlaying(false)
+        broadcastCassettePlaybackState(false, { trackId: track.id })
         showToast('Failed to play track', 'error')
       })
     }
@@ -342,30 +376,21 @@ export default function BottomTabBar() {
   const pauseCassettePlayback = () => {
     if (audioRef.current) {
       audioRef.current.pause()
-      setCassetteIsPlaying(false)
-      // Dispatch event with track id if available
-      const trackId = cassetteTrack?.id || lastPlayedTrackIdRef.current
-      if (trackId) {
-        window.dispatchEvent(new CustomEvent('demo-playback-state', {
-          detail: { isPlaying: false, trackId }
-        }))
-      }
     }
   }
 
   const resumeCassettePlayback = () => {
     if (audioRef.current && audioRef.current.src) {
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume().catch((error) => {
+          console.warn('Could not resume audio context:', error)
+        })
+      }
       audioRef.current.play().then(() => {
-        setCassetteIsPlaying(true)
-        // Dispatch event with track id if available
-        const trackId = cassetteTrack?.id || lastPlayedTrackIdRef.current
-        if (trackId) {
-          window.dispatchEvent(new CustomEvent('demo-playback-state', {
-            detail: { isPlaying: true, trackId }
-          }))
-        }
-      }).catch(() => {
-        // Audio play failed (possibly no src loaded)
+      }).catch((error) => {
+        console.warn('Could not resume cassette playback:', error)
+        setCassetteIsPlaying(false)
+        broadcastCassettePlaybackState(false)
       })
     }
   }
@@ -448,6 +473,7 @@ export default function BottomTabBar() {
         // Queue player started - clear cassette track display
         setCassetteTrack(null)
         setCassetteIsPlaying(false)
+        resetCassetteProgress()
       }
     }
 
@@ -476,7 +502,7 @@ export default function BottomTabBar() {
       window.removeEventListener('demo-global-playback', handleGlobalPlayback as EventListener)
       window.removeEventListener('demo-volume-change', handleVolumeChange as EventListener)
     }
-  }, [cassetteTrack])
+  }, [broadcastCassettePlaybackState, cassetteTrack, resetCassetteProgress])
 
   // Broadcast time updates for all playback (cassette and queue)
   useEffect(() => {
@@ -504,6 +530,40 @@ export default function BottomTabBar() {
       setCassetteDuration(audio.duration || 0)
     }
 
+    const handlePlaying = () => {
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume().catch((error) => {
+          console.warn('Could not resume audio context:', error)
+        })
+      }
+
+      if (cassetteTrack) {
+        setCassetteIsPlaying(true)
+        broadcastCassettePlaybackState(true, { trackId: cassetteTrack.id })
+      } else if (currentQueueIndex !== null) {
+        setIsPlaying(true)
+      }
+    }
+
+    const handlePause = () => {
+      if (cassetteTrack) {
+        setCassetteIsPlaying(false)
+        broadcastCassettePlaybackState(false, { trackId: cassetteTrack.id })
+      } else if (currentQueueIndex !== null) {
+        setIsPlaying(false)
+      }
+    }
+
+    const handleEmptied = () => {
+      if (cassetteTrack) {
+        setCassetteIsPlaying(false)
+        resetCassetteProgress()
+        broadcastCassettePlaybackState(false, { trackId: cassetteTrack.id })
+      } else if (currentQueueIndex === null) {
+        setIsPlaying(false)
+      }
+    }
+
     const handleEnded = () => {
       if (cassetteTrack) {
         // Try to play next track if available
@@ -516,24 +576,44 @@ export default function BottomTabBar() {
         }
         // End of playlist
         setCassetteIsPlaying(false)
-        window.dispatchEvent(new CustomEvent('demo-playback-state', {
-          detail: { isPlaying: false, trackId: cassetteTrack.id, ended: true }
-        }))
+        broadcastCassettePlaybackState(false, { trackId: cassetteTrack.id, ended: true })
       } else if (currentQueueIndex !== null) {
         playNext()
       }
     }
 
+    const handleVisibilityRecovery = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      if (audio.paused) return
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume().catch((error) => {
+          console.warn('Could not recover suspended audio context:', error)
+        })
+      }
+    }
+
     audio.addEventListener('timeupdate', handleTimeUpdate)
     audio.addEventListener('durationchange', handleDurationChange)
+    audio.addEventListener('playing', handlePlaying)
+    audio.addEventListener('pause', handlePause)
+    audio.addEventListener('emptied', handleEmptied)
     audio.addEventListener('ended', handleEnded)
+    document.addEventListener('visibilitychange', handleVisibilityRecovery)
+    window.addEventListener('pageshow', handleVisibilityRecovery)
+    window.addEventListener('focus', handleVisibilityRecovery)
     
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
       audio.removeEventListener('durationchange', handleDurationChange)
+      audio.removeEventListener('playing', handlePlaying)
+      audio.removeEventListener('pause', handlePause)
+      audio.removeEventListener('emptied', handleEmptied)
       audio.removeEventListener('ended', handleEnded)
+      document.removeEventListener('visibilitychange', handleVisibilityRecovery)
+      window.removeEventListener('pageshow', handleVisibilityRecovery)
+      window.removeEventListener('focus', handleVisibilityRecovery)
     }
-  }, [cassetteTrack, currentQueueIndex, queue])
+  }, [broadcastCassettePlaybackState, cassetteTrack, currentQueueIndex, queue, resetCassetteProgress])
 
   // Queue playback functions
   const playQueue = (startIndex: number = 0) => {
@@ -555,7 +635,6 @@ export default function BottomTabBar() {
       audioRef.current.src = queue[index].audioUrl
       audioRef.current.load()
       audioRef.current.play().then(() => {
-        setIsPlaying(true)
         showToast(`Now playing: ${queue[index].title}`, 'success')
       }).catch(err => {
         console.error('Error playing audio:', err)
@@ -570,9 +649,10 @@ export default function BottomTabBar() {
     
     if (isPlaying) {
       audioRef.current.pause()
-      setIsPlaying(false)
     } else {
-      audioRef.current.play().then(() => setIsPlaying(true))
+      audioRef.current.play().catch((error) => {
+        console.error('Error resuming audio:', error)
+      })
     }
   }
 
@@ -601,24 +681,31 @@ export default function BottomTabBar() {
   const stopPlayback = () => {
     if (audioRef.current) {
       audioRef.current.pause()
-      audioRef.current.src = ''
+      audioRef.current.removeAttribute('src')
+      audioRef.current.load()
     }
     setIsPlaying(false)
     setCurrentQueueIndex(null)
+    resetCassetteProgress()
+    emitPlaybackReset()
   }
 
-  // Handle audio ended event
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const handleEnded = () => {
-      playNext()
+  const closeCassettePlayback = () => {
+    const trackId = cassetteTrack?.id || lastPlayedTrackIdRef.current
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.removeAttribute('src')
+      audioRef.current.load()
     }
-
-    audio.addEventListener('ended', handleEnded)
-    return () => audio.removeEventListener('ended', handleEnded)
-  }, [currentQueueIndex, queue])
+    lastPlayedTrackIdRef.current = null
+    setCassetteTrack(null)
+    setCassetteIsPlaying(false)
+    resetCassetteProgress()
+    if (trackId) {
+      broadcastCassettePlaybackState(false, { trackId })
+    }
+    emitPlaybackReset()
+  }
 
   // Lock body scroll when queue modal is open (prevents mobile viewport issues)
   useEffect(() => {
@@ -1426,10 +1513,7 @@ export default function BottomTabBar() {
                 </div>
 
                 <button
-                  onClick={() => {
-                    setExternalTrack(null)
-                    setExternalIsPlaying(false)
-                  }}
+                  onClick={closeCassettePlayback}
                   style={{
                     width: '36px',
                     height: '36px',
