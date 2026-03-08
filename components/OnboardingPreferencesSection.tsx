@@ -195,6 +195,10 @@ export default function OnboardingPreferencesSection({
 
   const save = async (completed: boolean) => {
     if (!authenticated || !getAccessToken || saving) return
+    if (!edited && !isOnboardingMode) {
+      setEditorExpanded(false)
+      return
+    }
     setSaving(true)
     try {
       const token = await getAccessToken()
@@ -253,9 +257,11 @@ export default function OnboardingPreferencesSection({
         <h2 className="font-semibold text-neon-green text-lg">
           {isOnboardingMode ? 'Taste preferences (optional)' : 'Discovery taste preferences'}
         </h2>
-        <span className="inline-flex min-h-8 items-center rounded-md border border-gray-800 bg-black/40 px-2.5 text-xs font-medium text-gray-300">
-          {selectedCount} selected
-        </span>
+        {!shouldShowCompactOnly ? (
+          <span className="inline-flex min-h-8 items-center rounded-md border border-gray-800 bg-black/40 px-2.5 text-xs font-medium text-gray-300">
+            {selectedCount} selected
+          </span>
+        ) : null}
       </div>
       {shouldShowCompactOnly ? null : (
         <p className="mb-2 text-sm text-gray-400">
@@ -403,7 +409,7 @@ export default function OnboardingPreferencesSection({
             <button
               type="button"
               onClick={() => save(true)}
-              disabled={saving || (!edited && !!prefs.onboarding_completed_at)}
+              disabled={saving}
               className={TASTE_PRIMARY_BUTTON_CLASS}
               style={{
                 WebkitAppearance: 'none',
@@ -415,7 +421,13 @@ export default function OnboardingPreferencesSection({
                 borderRadius: '8px',
               }}
             >
-              {saving ? 'Saving...' : isOnboardingMode ? 'Save & continue' : 'Save preferences'}
+              {saving
+                ? 'Saving...'
+                : isOnboardingMode
+                  ? 'Save & continue'
+                  : edited
+                    ? 'Save preferences'
+                    : 'Done'}
             </button>
             {isOnboardingMode ? (
               <button
