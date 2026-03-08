@@ -11,23 +11,43 @@ interface FAQModalProps {
 const faqs = [
   {
     question: 'What is Demo?',
-    answer: 'Demo lets you share unreleased music with fans, collaborators, or any specific audience. Control track permissions, view project metrics, and receive tips from fans.',
+    answer: 'Demo is a space for creators to share projects, build a public profile, post updates, attach supporting materials, and receive support from listeners. It is designed for rough cuts, works in progress, and finished releases alike.',
   },
   {
-    question: 'How do I create a project?',
-    answer: 'Head to your Dashboard and tap "New Project." Add a cover image, title, and upload your tracks. Share the link with whoever you want.',
+    question: 'What can I do as a creator on Demo?',
+    answer: 'You can create projects, upload tracks, customize your creator profile, choose whether a project is public, unlisted, or private, post updates, share attachments, and receive tips from supporters.',
   },
   {
-    question: 'Can I share music privately?',
-    answer: 'Yes! Each project has its own unique link. Only people with the link can access it.',
+    question: 'What can I do as a listener or supporter?',
+    answer: 'You can explore public projects, follow creators, save projects, listen to tracks, comment on releases, view updates and attachments, and support creators through tips when payments are enabled.',
+  },
+  {
+    question: 'What is the difference between public, unlisted, and private projects?',
+    answer: 'Public projects can appear on your creator profile. Unlisted projects are available by direct link but are not broadly listed. Private projects are limited to approved viewers and collaborators.',
+  },
+  {
+    question: 'What appears on my creator profile?',
+    answer: 'Your creator profile can show your avatar, display name, username, bio, links, follower counts, and any projects you choose to make public.',
+  },
+  {
+    question: 'How do follows and updates work?',
+    answer: 'Following a creator makes it easier to keep up with what they share. Depending on your notification settings, you can also stay on top of project activity, creator updates, and other changes that matter to you.',
+  },
+  {
+    question: 'What are comments, updates, and attachments for?',
+    answer: 'Comments let listeners and collaborators respond directly to a project. Updates let creators share progress or announcements. Attachments let creators include links, files, and extra context alongside the work.',
   },
   {
     question: 'How do tips work?',
-    answer: 'Listeners can send you tips directly through your creator profile by accessing any of your projects. Transactions from Debit Cards/Credit Cards are handled by Stripe. Cryptocurrency transactions are handled by Daimo Pay. Connect your payment account or Web3 wallet in your creator profile to receive them.',
+    answer: 'Supporters can tip creators through enabled payment methods. Card payments are handled through Stripe, and crypto support can be enabled through a connected wallet setup in your account.',
   },
   {
-    question: 'Can listeners download my tracks?',
-    answer: 'Only if you allow it. You control download permissions and share permissions, independently, for each project.',
+    question: 'Can people download my tracks?',
+    answer: 'Only if you allow downloads for that specific project. Download permissions are controlled separately from visibility and sharing settings.',
+  },
+  {
+    question: 'Is Demo only for finished releases?',
+    answer: 'No. Demo is built for sharing music at any stage, whether you are testing an idea, collecting feedback, sharing with close collaborators, or putting out something ready for the public.',
   },
 ]
 
