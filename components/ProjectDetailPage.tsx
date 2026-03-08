@@ -2524,8 +2524,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                   </p>
 
                   <div className="mt-4 space-y-5">
-                    <div className="flex items-start justify-between gap-5 rounded-lg bg-gray-950/40 p-4 sm:p-5">
-                      <div className="min-w-0 flex-1 pr-1">
+                    <div className="flex flex-col gap-4 rounded-xl bg-gray-950/40 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-5 sm:p-5">
+                      <div className="min-w-0 flex-1 sm:pr-2">
                         <div
                           className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
                           style={{ fontWeight: 800, marginBottom: '14px' }}
@@ -2536,7 +2536,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Public: profile listing. Unlisted: link-only. Private: invite-only.
                         </div>
                       </div>
-                      <div className="relative shrink-0 rounded-xl border border-white/6 bg-black/30 p-2">
+                      <div className="relative w-full rounded-[16px] border border-white/6 bg-black/30 p-2.5 sm:w-auto sm:shrink-0">
                         <select
                           value={resolveProjectVisibility(project.visibility, project.sharing_enabled)}
                           onChange={async (event) => {
@@ -2581,6 +2581,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                             WebkitAppearance: 'none',
                             appearance: 'none',
                             height: '46px',
+                            width: '100%',
                             minWidth: '164px',
                             borderWidth: '2px',
                             borderStyle: 'solid',
@@ -2603,8 +2604,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </div>
                     </div>
 
-                    <div className="flex items-start justify-between gap-5 rounded-lg bg-gray-950/40 p-4 sm:p-5">
-                      <div className="min-w-0 flex-1 pr-1">
+                    <div className="flex flex-col gap-4 rounded-xl bg-gray-950/40 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-5 sm:p-5">
+                      <div className="min-w-0 flex-1 sm:pr-2">
                         <div
                           className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
                           style={{ fontWeight: 800, marginBottom: '14px' }}
@@ -2615,7 +2616,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Allow others to view this project via share link.
                         </div>
                       </div>
-                      <div className="shrink-0 rounded-xl border border-white/6 bg-black/30 p-2">
+                      <div className="self-start rounded-[16px] border border-white/6 bg-black/30 p-2.5 sm:shrink-0">
                         <button
                           onClick={async () => {
                             const newValue = !(project.sharing_enabled ?? true)
@@ -2667,8 +2668,8 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                       </div>
                     </div>
 
-                    <div className="flex items-start justify-between gap-5 rounded-lg bg-gray-950/40 p-4 sm:p-5">
-                      <div className="min-w-0 flex-1 pr-1">
+                    <div className="flex flex-col gap-4 rounded-xl bg-gray-950/40 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-5 sm:p-5">
+                      <div className="min-w-0 flex-1 sm:pr-2">
                         <div
                           className="text-[17px] font-extrabold leading-6 tracking-tight text-white"
                           style={{ fontWeight: 800, marginBottom: '14px' }}
@@ -2679,7 +2680,7 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                           Users can download tracks from this project.
                         </div>
                       </div>
-                      <div className="shrink-0 rounded-xl border border-white/6 bg-black/30 p-2">
+                      <div className="self-start rounded-[16px] border border-white/6 bg-black/30 p-2.5 sm:shrink-0">
                         <button
                           onClick={async () => {
                             const newValue = !project.allow_downloads

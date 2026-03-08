@@ -44,13 +44,13 @@ const PREFERENCE_FIELDS: NotificationToggleField[] = [
   'notify_project_saved',
 ]
 
-const PREFERENCE_ROW_CLASS = 'rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.86),rgba(7,10,16,0.95))] px-4 py-4 text-left shadow-[0_14px_30px_rgba(0,0,0,0.18)]'
-const PREFERENCE_ROW_GRID_CLASS = 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2'
+const PREFERENCE_ROW_CLASS = 'rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.86),rgba(7,10,16,0.95))] px-5 py-5 text-left shadow-[0_14px_30px_rgba(0,0,0,0.18)]'
+const PREFERENCE_ROW_GRID_CLASS = 'grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-x-4 sm:gap-y-3'
 const PREFERENCE_TEXT_BLOCK_CLASS = 'min-w-0'
-const PREFERENCE_TOGGLE_GROUP_CLASS = 'flex items-center gap-2 justify-self-end pr-1 pt-0.5'
+const PREFERENCE_TOGGLE_GROUP_CLASS = 'inline-flex items-center gap-3 justify-self-start rounded-full border border-white/6 bg-black/25 px-3 py-2 sm:justify-self-end sm:self-start'
 const PREFERENCE_TOGGLE_BUTTON_CLASS =
   'relative inline-flex h-8 w-14 min-w-14 flex-shrink-0 items-center rounded-full border-0 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/70 disabled:opacity-60'
-const PREFERENCE_STATUS_LABEL_CLASS = 'inline-flex min-w-7 items-center justify-end text-right text-xs font-medium leading-none'
+const PREFERENCE_STATUS_LABEL_CLASS = 'inline-flex min-w-8 items-center justify-end text-right text-xs font-semibold leading-none'
 
 export default function NotificationPreferencesSection({
   authenticated,
@@ -333,19 +333,19 @@ export default function NotificationPreferencesSection({
   }
 
   const deliveryModeButtonClass = (selected: boolean) =>
-    `inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+    `inline-flex min-h-[52px] items-center justify-center rounded-[14px] border px-4 py-3 text-sm font-semibold transition ${
       selected
-        ? 'bg-neon-green text-black shadow-[0_10px_24px_rgba(57,255,20,0.2)]'
-        : 'bg-transparent text-gray-300 hover:text-white'
+        ? 'border-neon-green/40 bg-neon-green text-black shadow-[0_10px_24px_rgba(57,255,20,0.2)]'
+        : 'border-white/6 bg-transparent text-gray-300 hover:border-white/12 hover:text-white'
     }`
 
   const digestWindowButtonClass = (selected: boolean, disabled: boolean) =>
-    `inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition ${
+    `inline-flex min-h-[52px] items-center justify-center rounded-[14px] border px-4 py-3 text-sm font-medium transition ${
       disabled
-        ? 'bg-transparent text-gray-600'
+        ? 'border-transparent bg-transparent text-gray-600'
         : selected
-          ? 'bg-white/[0.09] text-white'
-          : 'bg-transparent text-gray-400 hover:text-white'
+          ? 'border-neon-green/25 bg-neon-green/[0.14] text-neon-green shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+          : 'border-white/6 bg-transparent text-gray-400 hover:border-white/12 hover:text-white'
     }`
 
   return (
@@ -382,7 +382,7 @@ export default function NotificationPreferencesSection({
         Choose which in-app notifications you want to receive.
       </p>}
 
-      {!isOpen ? null : <div className="mb-5 rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+      {!isOpen ? null : <div className="mb-5 rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)] sm:p-6">
         <div className="mb-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">Delivery mode</p>
           <p className="mt-1 text-sm text-gray-400">
@@ -390,7 +390,7 @@ export default function NotificationPreferencesSection({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/8 bg-black/30 p-1.5">
+        <div className="rounded-[18px] border border-white/8 bg-black/30 p-2">
           <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
@@ -411,7 +411,7 @@ export default function NotificationPreferencesSection({
           </div>
         </div>
 
-        <div className="mt-3 rounded-2xl border border-white/8 bg-black/20 p-1.5">
+        <div className="mt-3 rounded-[18px] border border-white/8 bg-black/20 p-2">
           <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
@@ -492,7 +492,7 @@ export default function NotificationPreferencesSection({
                     {isSaving ? '...' : enabled ? 'On' : 'Off'}
                   </span>
                 </div>
-                <p className="col-span-2 pr-2 text-sm leading-relaxed text-gray-400">
+                <p className="text-sm leading-relaxed text-gray-400 sm:col-span-2 sm:pr-8">
                   {PREFERENCE_DESCRIPTIONS[field]}
                 </p>
               </div>

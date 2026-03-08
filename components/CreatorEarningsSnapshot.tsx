@@ -164,17 +164,17 @@ export default function CreatorEarningsSnapshot({
       ) : (
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+            <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-5 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">Total earned</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{formatUsd(earnings.total_tips_amount_cents)}</p>
+              <p className="mt-4 text-[28px] font-semibold tracking-tight text-white">{formatUsd(earnings.total_tips_amount_cents)}</p>
             </div>
-            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+            <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-5 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">Last 30 days</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{formatUsd(earnings.last_30d_amount_cents)}</p>
+              <p className="mt-4 text-[28px] font-semibold tracking-tight text-white">{formatUsd(earnings.last_30d_amount_cents)}</p>
             </div>
-            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+            <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(7,10,16,0.98))] px-5 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">Tips count</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{earnings.total_tips_count}</p>
+              <p className="mt-4 text-[28px] font-semibold tracking-tight text-white">{earnings.total_tips_count}</p>
             </div>
           </div>
 
@@ -190,7 +190,7 @@ export default function CreatorEarningsSnapshot({
                   <Link
                     key={project.project_id}
                     href={`/dashboard/projects/${project.project_id}`}
-                    className="flex items-center justify-between gap-4 rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] px-4 py-4 transition hover:border-white/14"
+                    className="flex flex-col gap-3 rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] px-5 py-4 transition hover:border-white/14 sm:flex-row sm:items-center sm:justify-between"
                     onClick={() => {
                       if (typeof window === 'undefined') return
                       window.dispatchEvent(
@@ -207,13 +207,15 @@ export default function CreatorEarningsSnapshot({
                       )
                     }}
                   >
-                    <div className="min-w-0 pr-3">
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-white">{project.project_title}</p>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1.5 text-xs text-gray-500">
                         {project.tips_count} {project.tips_count === 1 ? 'tip' : 'tips'}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-white">{formatUsd(project.amount_cents)}</span>
+                    <span className="inline-flex shrink-0 items-center rounded-full bg-black/25 px-3.5 py-1.5 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      {formatUsd(project.amount_cents)}
+                    </span>
                   </Link>
                 ))}
               </div>
@@ -231,18 +233,24 @@ export default function CreatorEarningsSnapshot({
                 {recentTips.map((tip, index) => (
                   <div
                     key={`${tip.created_at}-${tip.project_id || 'direct'}-${index}`}
-                    className="flex items-start justify-between gap-4 rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] px-4 py-4"
+                    className="flex flex-col gap-3 rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.88),rgba(7,10,16,0.96))] px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
                   >
-                    <div className="min-w-0 flex-1 pr-2">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium leading-relaxed text-white">
                         {tip.supporter_name} tipped on {tip.project_title}
                       </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                        <span>{formatRelativeTime(tip.created_at)}</span>
-                        <span>{formatCalendarDate(tip.created_at)}</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                        <span className="inline-flex items-center rounded-full bg-black/25 px-2.5 py-1">
+                          {formatRelativeTime(tip.created_at)}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-black/25 px-2.5 py-1">
+                          {formatCalendarDate(tip.created_at)}
+                        </span>
                       </div>
                     </div>
-                    <span className="shrink-0 text-base font-semibold text-white">{formatUsd(tip.amount_cents)}</span>
+                    <span className="inline-flex shrink-0 items-center self-start rounded-full bg-black/25 px-3.5 py-1.5 text-base font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      {formatUsd(tip.amount_cents)}
+                    </span>
                   </div>
                 ))}
               </div>

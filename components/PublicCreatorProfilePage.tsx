@@ -48,7 +48,10 @@ interface PublicCreatorApiResponse {
 
 function formatCountLabel(count: number, singular: string, plural = `${singular}s`) {
   return {
-    value: count.toLocaleString(),
+    value: new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      maximumFractionDigits: count >= 1000 ? 1 : 0,
+    }).format(count),
     label: count === 1 ? singular : plural,
   }
 }
@@ -233,7 +236,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
         <div className="ui-card overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.08),transparent_32%),linear-gradient(180deg,rgba(10,12,18,0.98),rgba(6,8,12,0.98))] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.38)] sm:p-7">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4">
-              <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
                 <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-gray-800 text-2xl font-semibold text-neon-green shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
                   {data.creator.avatar_url ? (
                     <Image
@@ -248,7 +251,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                   )}
                 </div>
                 <div className="min-w-0 pt-1">
-                  <h1 className="truncate text-[32px] font-bold leading-none tracking-tight text-white">
+                  <h1 className="text-[30px] font-bold leading-[1.02] tracking-tight text-white sm:truncate sm:text-[32px]">
                     {data.creator.display_name}
                   </h1>
                   {data.creator.username?.trim() ? (
@@ -296,41 +299,39 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
               ) : null}
             </div>
 
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-white/6 pt-1.5 sm:gap-x-8">
               {[
-                formatCountLabel(data.social.followers_count, 'follower'),
-                formatCountLabel(data.social.following_count, 'following', 'following'),
-                formatCountLabel(data.public_projects.length, 'public project'),
+                formatCountLabel(data.social.followers_count, 'Follower'),
+                formatCountLabel(data.social.following_count, 'Following', 'Following'),
+                formatCountLabel(data.public_projects.length, 'Public project'),
               ].map((stat) => {
                 return (
-                  <div
-                    key={`${stat.value}-${stat.label}`}
-                    className="flex min-h-[74px] flex-col justify-center rounded-[20px] border border-white/8 bg-black/25 px-4 py-3 text-left"
-                  >
-                    <span className="text-xl font-semibold leading-none text-white">{stat.value}</span>
-                    <span className="mt-2 text-[12px] font-medium leading-none text-gray-400">
-                      {stat.label.charAt(0).toUpperCase() + stat.label.slice(1)}
+                  <div key={`${stat.value}-${stat.label}`} className="inline-flex min-w-0 items-baseline gap-2.5 whitespace-nowrap">
+                    <span className="text-lg font-semibold leading-none text-white sm:text-[19px]">{stat.value}</span>
+                    <span className="text-[12px] font-medium leading-none text-gray-400 sm:text-[13px]">
+                      {stat.label}
                     </span>
                   </div>
-              )})}
+                )
+              })}
             </div>
 
             {(creatorLinks.length > 0 || data.creator.contact_email) ? (
-              <div className="rounded-2xl border border-white/6 bg-white/[0.015] px-5 py-5 sm:px-6 sm:py-6">
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Connect</p>
-                <div className="flex flex-col gap-3">
+              <div className="rounded-[24px] border border-white/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))] px-5 py-5 shadow-[0_18px_45px_rgba(0,0,0,0.14)] sm:px-6 sm:py-6">
+                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">Connect</p>
+                <div className="flex flex-col gap-3.5">
                   {data.creator.contact_email ? (
                     <a
                       href={`mailto:${data.creator.contact_email}`}
-                      className="flex items-start gap-4 rounded-[20px] border border-white/6 bg-black/30 px-4 py-4 text-left transition hover:border-white/10 hover:bg-white/[0.02]"
+                      className="flex items-start gap-4 rounded-[22px] bg-black/30 px-4 py-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:bg-white/[0.02] sm:px-5 sm:py-5"
                     >
-                      <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/[0.03]">
+                      <div className="mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[14px] bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                         <Mail className="h-4 w-4 text-neon-green" />
                       </div>
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 max-w-[34ch] flex-1">
                         <div className="text-sm font-semibold text-white">Contact</div>
                         <p
-                          className="mt-2 pr-4 text-sm leading-relaxed text-gray-300"
+                          className="mt-2 text-sm leading-relaxed text-gray-300"
                           style={{ overflowWrap: 'anywhere' }}
                         >
                           {data.creator.contact_email}
@@ -339,7 +340,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                     </a>
                   ) : null}
                   {creatorLinks.length > 0 ? (
-                    <div className="flex flex-wrap gap-2.5">
+                    <div className="flex flex-wrap gap-3">
                       {creatorLinks.map((item) => {
                         const Icon = item.icon
                         return (
@@ -348,7 +349,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                             href={item.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-sm font-medium text-gray-200 transition hover:border-white/20 hover:bg-white/[0.05]"
+                            className="inline-flex items-center gap-2.5 rounded-full border border-white/8 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-gray-200 transition hover:border-white/16 hover:bg-white/[0.05]"
                           >
                             <Icon className="h-4 w-4" />
                             {item.label}
@@ -375,14 +376,14 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
             </p>
           </div>
           {data.public_projects.length === 0 ? (
-            <div className="ui-card overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.96))] px-8 py-8 sm:px-10 sm:py-9">
-              <div className="flex max-w-lg flex-col gap-4 pl-2 sm:pl-3">
+            <div className="ui-card overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.96))] px-7 py-8 sm:px-10 sm:py-9">
+              <div className="flex max-w-xl flex-col gap-5">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-neon-green/20 bg-neon-green/10">
                   <Sparkles className="h-5 w-5 text-neon-green" />
                 </div>
-                <div>
+                <div className="pr-2">
                   <h3 className="text-lg font-semibold text-white">No public projects yet</h3>
-                  <p className="mt-3 max-w-[28ch] pr-4 text-sm leading-relaxed text-gray-400">
+                  <p className="mt-3 max-w-[32ch] text-sm leading-relaxed text-gray-400">
                     {data.viewer.is_owner_view
                       ? 'When you make a project public, it will show up here for listeners and collaborators to discover.'
                       : 'This creator has not shared anything publicly yet. Check back soon for new releases, experiments, and updates.'}
