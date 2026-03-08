@@ -478,6 +478,18 @@ export default function CreatorProfileModal({
                   <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', margin: 0 }}>
                     {displayName}
                   </h3>
+                  {creator.username?.trim() ? (
+                    <p
+                      style={{
+                        margin: '4px 0 0',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        color: '#9ca3af',
+                      }}
+                    >
+                      @{creator.username.trim()}
+                    </p>
+                  ) : null}
                   <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '14px', color: '#9ca3af' }}>
                       {projectCount} {projectCount === 1 ? 'project' : 'projects'}
