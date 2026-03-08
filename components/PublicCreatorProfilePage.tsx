@@ -231,7 +231,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
     <div className="min-h-screen bg-black pb-24 text-white">
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="ui-card overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(57,255,20,0.08),transparent_32%),linear-gradient(180deg,rgba(10,12,18,0.98),rgba(6,8,12,0.98))] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.38)] sm:p-7">
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4">
               <div className="flex min-w-0 items-start gap-4 sm:gap-5">
                 <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-gray-800 text-2xl font-semibold text-neon-green shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
@@ -296,7 +296,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
               ) : null}
             </div>
 
-            <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
               {[
                 formatCountLabel(data.social.followers_count, 'follower'),
                 formatCountLabel(data.social.following_count, 'following', 'following'),
@@ -305,31 +305,34 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
                 return (
                   <div
                     key={`${stat.value}-${stat.label}`}
-                    className="inline-flex items-baseline gap-1.5 text-left"
+                    className="flex min-h-[74px] flex-col justify-center rounded-[20px] border border-white/8 bg-black/25 px-4 py-3 text-left"
                   >
-                    <span className="text-[18px] font-semibold leading-none text-white">{stat.value}</span>
-                    <span className="text-[12px] font-medium leading-none text-gray-400">
-                      {stat.label}
+                    <span className="text-xl font-semibold leading-none text-white">{stat.value}</span>
+                    <span className="mt-2 text-[12px] font-medium leading-none text-gray-400">
+                      {stat.label.charAt(0).toUpperCase() + stat.label.slice(1)}
                     </span>
                   </div>
               )})}
             </div>
 
             {(creatorLinks.length > 0 || data.creator.contact_email) ? (
-              <div className="mt-2 rounded-2xl border border-white/6 bg-white/[0.015] px-5 py-4 sm:px-6 sm:py-5">
+              <div className="rounded-2xl border border-white/6 bg-white/[0.015] px-5 py-5 sm:px-6 sm:py-6">
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Connect</p>
                 <div className="flex flex-col gap-3">
                   {data.creator.contact_email ? (
                     <a
                       href={`mailto:${data.creator.contact_email}`}
-                      className="flex items-start gap-3 rounded-[18px] bg-black/20 px-1 py-1 text-left transition hover:bg-white/[0.02]"
+                      className="flex items-start gap-4 rounded-[20px] border border-white/6 bg-black/30 px-4 py-4 text-left transition hover:border-white/10 hover:bg-white/[0.02]"
                     >
                       <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/[0.03]">
                         <Mail className="h-4 w-4 text-neon-green" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-400">Contact</div>
-                        <p className="mt-1 break-all pr-3 text-sm leading-relaxed text-white/88">
+                        <div className="text-sm font-semibold text-white">Contact</div>
+                        <p
+                          className="mt-2 pr-4 text-sm leading-relaxed text-gray-300"
+                          style={{ overflowWrap: 'anywhere' }}
+                        >
                           {data.creator.contact_email}
                         </p>
                       </div>
@@ -361,7 +364,7 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
         </div>
 
         <section className="mt-6">
-          <div className="mb-5">
+          <div className="mb-6">
             <h2 className="text-[28px] font-bold tracking-tight text-white">Public projects</h2>
             <p className="mt-1.5 text-sm text-gray-500">
               {data.public_projects.length > 0
@@ -372,14 +375,14 @@ export default function PublicCreatorProfilePage({ identifier }: PublicCreatorPr
             </p>
           </div>
           {data.public_projects.length === 0 ? (
-            <div className="ui-card overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.96))] px-7 py-7 sm:px-8 sm:py-8">
-              <div className="flex max-w-xl flex-col gap-4 pl-1 sm:pl-2">
+            <div className="ui-card overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(7,10,16,0.96))] px-8 py-8 sm:px-10 sm:py-9">
+              <div className="flex max-w-lg flex-col gap-4 pl-2 sm:pl-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-neon-green/20 bg-neon-green/10">
                   <Sparkles className="h-5 w-5 text-neon-green" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">No public projects yet</h3>
-                  <p className="mt-3 max-w-[30ch] pr-3 text-sm leading-relaxed text-gray-400">
+                  <p className="mt-3 max-w-[28ch] pr-4 text-sm leading-relaxed text-gray-400">
                     {data.viewer.is_owner_view
                       ? 'When you make a project public, it will show up here for listeners and collaborators to discover.'
                       : 'This creator has not shared anything publicly yet. Check back soon for new releases, experiments, and updates.'}
