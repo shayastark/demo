@@ -1,11 +1,12 @@
 import { isProjectAccessGrantActive, resolveProjectAccessRole, type ProjectAccessRole } from './projectAccess'
+import { buildCollaboratorProjectPath } from './projectAccessLinks'
 import { resolveProjectVisibility, type ProjectVisibility } from './projectVisibility'
 
 export interface SharedWithMeGrantRow {
   project_id: string
   created_at: string
-  expires_at: string | null
-  role: unknown
+  expires_at?: string | null
+  role?: unknown
 }
 
 export interface SharedWithMeProjectLookup {
@@ -125,7 +126,7 @@ export function buildSharedWithMeItems(args: {
       expires_at: grant.expires_at || null,
       is_expired: isExpired,
       role: resolveProjectAccessRole(grant.role),
-      target_path: `/dashboard/projects/${project.id}`,
+      target_path: buildCollaboratorProjectPath(project.id),
     })
   }
 

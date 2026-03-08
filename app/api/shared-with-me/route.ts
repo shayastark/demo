@@ -4,10 +4,46 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { buildPaginatedItems } from '@/lib/pagination'
 import { buildSharedWithMeItems, parseSharedWithMeQuery, type SharedWithMeGrantRow } from '@/lib/sharedWithMe'
 
+type GrantColumnSupport = {
+  hasExpiresAt: boolean
+  hasRole: boolean
+}
+
+let cachedGrantColumnSupport: GrantColumnSupport | null = null
+
 async function getRequiredCurrentUser(request: NextRequest) {
   const authResult = await verifyPrivyToken(request.headers.get('authorization'))
   if (!authResult.success || !authResult.privyId) return null
   return getUserByPrivyId(authResult.privyId)
+}
+
+async function resolveGrantColumnSupport(): Promise<GrantColumnSupport> {
+  if (cachedGrantColumnSupport) return cachedGrantColumnSupport
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('information_schema.columns')
+      .select('column_name')
+      .eq('table_schema', 'public')
+      .eq('table_name', 'project_access_grants')
+      .in('column_name', ['expires_at', 'role'])
+
+    if (error) throw error
+
+    const columnNames = new Set((data || []).map((row) => row.column_name))
+    cachedGrantColumnSupport = {
+      hasExpiresAt: columnNames.has('expires_at'),
+      hasRole: columnNames.has('role'),
+    }
+  } catch (error) {
+    console.error('Error probing project_access_grants columns:', error)
+    cachedGrantColumnSupport = {
+      hasExpiresAt: false,
+      hasRole: true,
+    }
+  }
+
+  return cachedGrantColumnSupport
 }
 
 export async function GET(request: NextRequest) {
@@ -29,8 +65,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
     const nowIso = new Date().toISOString()
+    const grantColumnSupport = await resolveGrantColumnSupport()
     const chunkSize = Math.min(Math.max(parsed.limit * 3, 30), 200)
-    const phases: Array<'active' | 'expired'> = parsed.includeExpired ? ['active', 'expired'] : ['active']
+    const phases: Array<'active' | 'expired'> =
+      parsed.includeExpired && grantColumnSupport.hasExpiresAt ? ['active', 'expired'] : ['active']
     const phaseOffsets: Record<'active' | 'expired', number> = {
       active: 0,
       expired: 0,
@@ -43,15 +81,24 @@ export async function GET(request: NextRequest) {
       while (collected.length < parsed.limit + 1) {
         let grantsQuery = supabaseAdmin
           .from('project_access_grants')
-          .select('project_id, created_at, expires_at, role')
+          .select(
+            [
+              'project_id',
+              'created_at',
+              grantColumnSupport.hasExpiresAt ? 'expires_at' : null,
+              grantColumnSupport.hasRole ? 'role' : null,
+            ]
+              .filter(Boolean)
+              .join(', ')
+          )
           .eq('user_id', currentUser.id)
           .order('created_at', { ascending: false })
           .order('project_id', { ascending: false })
           .range(phaseOffsets[phase], phaseOffsets[phase] + chunkSize - 1)
 
-        if (phase === 'active') {
+        if (grantColumnSupport.hasExpiresAt && phase === 'active') {
           grantsQuery = grantsQuery.or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-        } else {
+        } else if (grantColumnSupport.hasExpiresAt) {
           grantsQuery = grantsQuery
             .not('expires_at', 'is', null)
             .lte('expires_at', nowIso)
@@ -60,7 +107,7 @@ export async function GET(request: NextRequest) {
         const { data: grants, error: grantsError } = await grantsQuery
         if (grantsError) throw grantsError
 
-        const grantRows = (grants || []) as SharedWithMeGrantRow[]
+        const grantRows = ((grants || []) as unknown) as SharedWithMeGrantRow[]
         if (grantRows.length === 0) break
         scannedGrantRows += grantRows.length
         phaseOffsets[phase] += grantRows.length

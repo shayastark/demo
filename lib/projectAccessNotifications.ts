@@ -1,3 +1,5 @@
+import { buildCollaboratorProjectPath } from './projectAccessLinks'
+
 export type ProjectAccessNotificationAction = 'created' | 'skipped_self' | 'skipped_preference'
 
 export function getProjectAccessGrantorName(value?: string | null): string {
@@ -6,7 +8,7 @@ export function getProjectAccessGrantorName(value?: string | null): string {
 }
 
 export function buildProjectAccessInviteTargetPath(projectId: string): string {
-  return `/dashboard/projects/${projectId}`
+  return buildCollaboratorProjectPath(projectId)
 }
 
 export function buildProjectAccessInviteTitle(args: {

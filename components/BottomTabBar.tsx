@@ -22,6 +22,7 @@ import {
   splitNotificationsBySnooze,
   type NotificationSnoozeRow,
 } from '@/lib/notificationSnooze'
+import { buildCollaboratorProjectPath } from '@/lib/projectAccessLinks'
 
 // Create a Supabase client for realtime subscriptions
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -1117,6 +1118,7 @@ export default function BottomTabBar() {
     const target = getNotificationTargetPath(notification)
     const isAccessInvite = isProjectAccessInviteNotification(notification)
     const projectId = isAccessInvite ? getProjectAccessInviteProjectId(notification) : null
+    const resolvedTarget = isAccessInvite && projectId ? buildCollaboratorProjectPath(projectId) : target
     const grantedByUserId =
       typeof notification.data?.granted_by_user_id === 'string'
         ? notification.data.granted_by_user_id
@@ -1127,7 +1129,7 @@ export default function BottomTabBar() {
     emitNotificationEvent('click', {
       notificationId: notification.id,
       notificationType: notification.type,
-      targetPath: target,
+      targetPath: resolvedTarget,
     })
 
     if (!notification.is_read) {
@@ -1143,46 +1145,9 @@ export default function BottomTabBar() {
       })
     }
 
-    if (target) {
-      if (isAccessInvite && projectId) {
-        try {
-          const token = await getAccessToken()
-          const accessResponse = await fetch(`/api/projects?id=${encodeURIComponent(projectId)}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          })
-          if (!accessResponse.ok) {
-            emitProjectAccessNotificationEvent('revoked_before_open', {
-              projectId,
-              recipientUserId: userId,
-              grantedByUserId,
-              notificationType: notification.type,
-            })
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(
-                new CustomEvent('project_access_expiry_event', {
-                  detail: {
-                    schema: 'project_access_expiry.v1',
-                    action: 'expired_block',
-                    project_id: projectId,
-                    target_user_id: userId,
-                    expires_at: null,
-                    source: 'bottom_tab_bar',
-                  },
-                })
-              )
-            }
-            showToast('Access to this private project was removed.', 'error')
-            setIsNotificationsOpen(false)
-            router.push('/dashboard')
-            return
-          }
-        } catch (error) {
-          console.error('Error validating project access before open:', error)
-        }
-      }
-
+    if (resolvedTarget) {
       setIsNotificationsOpen(false)
-      router.push(target)
+      router.push(resolvedTarget)
     }
   }
 
