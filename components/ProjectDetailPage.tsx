@@ -2456,22 +2456,33 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
 
           {/* Metrics - Only show for creators */}
           {isCreator && metrics && (
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-gray-900 rounded-lg p-4 text-center">
-                <Eye className="w-6 h-6 mx-auto mb-2 text-neon-green opacity-70" />
-                <div className="text-2xl font-bold text-neon-green">{metrics.plays || 0}</div>
-                <div className="text-sm text-neon-green opacity-70">Plays</div>
+            <div className="mb-6 rounded-xl border border-gray-800/70 bg-gray-900/70 p-3 sm:p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
+                  Private creator stats
+                </p>
+                <p className="text-[11px] text-gray-500">Only visible to you</p>
               </div>
-              <div className="bg-gray-900 rounded-lg p-4 text-center">
-                <Share2 className="w-6 h-6 mx-auto mb-2 text-neon-green opacity-70" />
-                <div className="text-2xl font-bold text-neon-green">{metrics.shares || 0}</div>
-                <div className="text-sm text-neon-green opacity-70">Shares</div>
+              <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+                <div className="rounded-lg border border-gray-800/80 bg-black/25 px-3 py-3 text-center">
+                  <Eye className="mx-auto mb-1.5 h-4.5 w-4.5 text-neon-green/70" />
+                  <div className="text-xl font-bold leading-none text-neon-green">{metrics.plays || 0}</div>
+                  <div className="mt-1 text-xs text-neon-green/70">Plays</div>
+                </div>
+                <div className="rounded-lg border border-gray-800/80 bg-black/25 px-3 py-3 text-center">
+                  <Share2 className="mx-auto mb-1.5 h-4.5 w-4.5 text-neon-green/70" />
+                  <div className="text-xl font-bold leading-none text-neon-green">{metrics.shares || 0}</div>
+                  <div className="mt-1 text-xs text-neon-green/70">Shares</div>
+                </div>
+                <div className="rounded-lg border border-gray-800/80 bg-black/25 px-3 py-3 text-center">
+                  <Plus className="mx-auto mb-1.5 h-4.5 w-4.5 text-neon-green/70" />
+                  <div className="text-xl font-bold leading-none text-neon-green">{metrics.adds || 0}</div>
+                  <div className="mt-1 text-xs text-neon-green/70">Adds</div>
+                </div>
               </div>
-              <div className="bg-gray-900 rounded-lg p-4 text-center">
-                <Plus className="w-6 h-6 mx-auto mb-2 text-neon-green opacity-70" />
-                <div className="text-2xl font-bold text-neon-green">{metrics.adds || 0}</div>
-                <div className="text-sm text-neon-green opacity-70">Adds</div>
-              </div>
+              <p className="mt-3 text-xs leading-relaxed text-gray-500">
+                These totals help you track engagement without affecting the public project view.
+              </p>
             </div>
           )}
 
