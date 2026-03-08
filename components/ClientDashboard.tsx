@@ -497,37 +497,37 @@ export default function ClientDashboard() {
         }}
       />
       
-      <nav className="sticky top-0 z-20 overflow-x-hidden border-b border-gray-800/50 bg-black/80 px-4 py-3 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <Link href="/" className="inline-flex min-h-9 flex-shrink-0 items-center text-lg font-bold leading-none text-white sm:text-xl">
+      <nav className="app-shell-nav">
+        <div className="app-shell-inner max-w-7xl">
+          <Link href="/" className="app-shell-brand sm:text-xl">
             Demo
           </Link>
-          <div className="flex min-w-0 items-center gap-3 pr-0.5 max-[390px]:gap-1.5 sm:gap-4">
+          <div className="app-shell-actions pr-0.5 max-[390px]:gap-1.5 sm:gap-4">
             <Link
               href="/account"
-              className="inline-flex min-h-8 items-center rounded-md px-1.5 py-1 text-xs leading-none whitespace-nowrap text-gray-300 transition hover:bg-gray-900 hover:text-white max-[390px]:text-[10px] sm:text-sm"
+              className="app-shell-link max-[390px]:text-[10px] sm:text-sm"
             >
               Account
             </Link>
-            <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
+            <span className="app-shell-divider text-xs max-[390px]:text-[10px] mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/explore"
-              className="inline-flex min-h-8 items-center rounded-md px-1.5 py-1 text-xs leading-none whitespace-nowrap text-gray-300 transition hover:bg-gray-900 hover:text-white max-[390px]:text-[10px] sm:text-sm"
+              className="app-shell-link max-[390px]:text-[10px] sm:text-sm"
             >
               Explore
             </Link>
-            <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
+            <span className="app-shell-divider text-xs max-[390px]:text-[10px] mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/dashboard/projects/new"
-              className="inline-flex min-h-8 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-semibold leading-none whitespace-nowrap text-neon-green transition hover:bg-gray-900 hover:text-white max-[390px]:gap-0.5 max-[390px]:text-[10px] sm:text-sm"
+              className="app-shell-link ui-link max-[390px]:gap-0.5 max-[390px]:text-[10px] sm:text-sm"
             >
               <Plus className="w-3 h-3 max-[390px]:w-2.5 max-[390px]:h-2.5 sm:w-4 sm:h-4" />
               New Project
             </Link>
-            <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
+            <span className="app-shell-divider text-xs max-[390px]:text-[10px] mx-0.5 max-[390px]:mx-0">|</span>
             <button
               onClick={logout}
-              className="btn-unstyled inline-flex min-h-8 items-center rounded-md px-1.5 py-1 text-xs font-medium leading-none whitespace-nowrap text-neon-green transition hover:bg-gray-900 hover:text-neon-green/80 max-[390px]:text-[10px] sm:text-sm"
+              className="btn-unstyled app-shell-link ui-link-muted max-[390px]:text-[10px] sm:text-sm"
             >
               Sign out
             </button>
@@ -545,12 +545,15 @@ export default function ClientDashboard() {
             ))}
           </div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="ui-empty-state text-center py-12">
             <Music className="w-16 h-16 mx-auto mb-4 text-neon-green opacity-50" />
-            <p className="text-neon-green mb-4">No projects yet</p>
+            <p className="ui-empty-title">No projects yet</p>
+            <p className="ui-empty-copy mx-auto max-w-sm">
+              Start your first drop, upload a cover, and build a space listeners can come back to.
+            </p>
             <Link
               href="/dashboard/projects/new"
-              className="inline-block bg-white text-black px-6 py-2 rounded-full font-semibold"
+              className="btn-primary mt-5"
             >
               Create Your First Project
             </Link>

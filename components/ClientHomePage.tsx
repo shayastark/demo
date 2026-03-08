@@ -119,16 +119,16 @@ export default function ClientHomePage() {
         
         {/* Header with FAQ + sign in */}
         <header className="relative z-10 px-4 py-4 sm:py-5">
-          <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
             <button
               onClick={() => setShowFAQ(true)}
-              className="rounded-full border border-gray-700 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-500 hover:text-white"
+              className="btn-ghost"
             >
               FAQ
             </button>
             <button
               onClick={login}
-              className="rounded-full border border-neon-green px-3.5 py-1.5 text-sm font-semibold text-neon-green hover:bg-neon-green/10"
+              className="btn-primary"
               aria-label="Sign in"
             >
               Sign in
@@ -185,32 +185,32 @@ export default function ClientHomePage() {
         }}
       />
       
-      <nav className="sticky top-0 z-20 overflow-x-hidden border-b border-gray-800/50 bg-black/80 px-4 py-3 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
+      <nav className="app-shell-nav">
+        <div className="app-shell-inner max-w-7xl">
           <Link
             href="/dashboard"
-            className="text-lg sm:text-xl font-semibold tracking-tight text-white hover:text-neon-green transition flex-shrink-0"
+            className="app-shell-brand sm:text-xl"
           >
             Dashboard
           </Link>
-          <div className="flex items-center min-w-0 gap-3 max-[390px]:gap-1.5 sm:gap-4 pr-0.5">
+          <div className="app-shell-actions pr-0.5 max-[390px]:gap-1.5 sm:gap-4">
             <button
               onClick={() => setShowFAQ(true)}
-              className="btn-unstyled text-xs max-[390px]:text-[10px] sm:text-sm text-neon-green underline underline-offset-4 decoration-neon-green/80 hover:opacity-80 transition whitespace-nowrap flex-shrink-0"
+              className="btn-unstyled ui-link text-xs max-[390px]:text-[10px] sm:text-sm whitespace-nowrap"
             >
               FAQ
             </button>
-            <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
+            <span className="app-shell-divider text-xs max-[390px]:text-[10px] mx-0.5 max-[390px]:mx-0">|</span>
             <Link
               href="/account"
-              className="min-h-8 rounded-md px-1 py-1 text-xs max-[390px]:text-[10px] sm:text-sm text-gray-300 hover:bg-gray-900 hover:text-white transition truncate max-w-[72px] sm:max-w-[220px]"
+              className="app-shell-link truncate max-w-[72px] max-[390px]:text-[10px] sm:max-w-[220px] sm:text-sm"
             >
               {loadingProfile ? 'Loading...' : username || user?.email?.address || 'Set username'}
             </Link>
-            <span className="text-gray-600 text-xs max-[390px]:text-[10px] select-none mx-0.5 max-[390px]:mx-0">|</span>
+            <span className="app-shell-divider text-xs max-[390px]:text-[10px] mx-0.5 max-[390px]:mx-0">|</span>
             <button
               onClick={logout}
-              className="btn-unstyled min-h-8 rounded-md px-1 py-1 text-xs max-[390px]:text-[10px] sm:text-sm text-gray-400 hover:bg-gray-900 hover:text-white transition whitespace-nowrap flex-shrink-0"
+              className="btn-unstyled app-shell-link ui-link-muted text-xs max-[390px]:text-[10px] sm:text-sm whitespace-nowrap"
             >
               Sign out
             </button>
@@ -238,7 +238,7 @@ export default function ClientHomePage() {
           
           <Link
             href="/dashboard"
-            className="text-on-neon inline-block min-h-12 rounded-full bg-neon-green px-10 py-3.5 text-lg font-semibold transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/30 active:scale-100"
+            className="btn-primary px-10 py-3.5 text-lg"
           >
             Go to Your Dashboard
           </Link>

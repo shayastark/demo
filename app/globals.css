@@ -163,22 +163,46 @@ h3 { font-size: 1.5rem; line-height: 1.3; }
   h3 { font-size: 1.75rem; }
 }
 
-/* Global link styling - replace any purple/blue with neon green */
-a {
+/* Keep classless content links branded without overriding styled links/buttons. */
+a:not([class]) {
+  color: #39FF14 !important;
+  text-underline-offset: 0.18em;
+}
+
+a:not([class]):visited {
   color: #39FF14 !important;
 }
 
-a:visited {
-  color: #39FF14 !important;
-}
-
-a:hover {
+a:not([class]):hover {
   color: #39FF14 !important;
   opacity: 0.8;
 }
 
-a:active {
+a:not([class]):active {
   color: #39FF14 !important;
+}
+
+.ui-link,
+.ui-link:visited,
+.ui-link:active {
+  color: #39FF14 !important;
+  text-underline-offset: 0.18em;
+}
+
+.ui-link:hover {
+  color: #39FF14 !important;
+  opacity: 0.82;
+}
+
+.ui-link-muted,
+.ui-link-muted:visited,
+.ui-link-muted:active {
+  color: #d1d5db !important;
+}
+
+.ui-link-muted:hover {
+  color: #fff !important;
+  opacity: 1;
 }
 
 .text-on-neon,
@@ -332,85 +356,109 @@ a:active {
   }
   
   /* Button styles */
-  .btn-primary {
-    background: var(--gradient-primary);
-    color: #000;
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     border-radius: 9999px;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
     transition: all 180ms ease;
-    box-shadow: var(--shadow-md);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-primary {
+    border: 1px solid transparent;
+    background: #39FF14;
+    color: #000;
+    box-shadow: 0 10px 28px rgba(57, 255, 20, 0.22);
   }
   
   .btn-primary:hover {
-    background: var(--gradient-primary-hover);
-    box-shadow: var(--shadow-lg), var(--shadow-glow);
+    background: #4cff2e;
+    color: #000;
+    box-shadow: 0 12px 32px rgba(57, 255, 20, 0.28);
     transform: translateY(-1px);
   }
   
   .btn-primary:active {
     transform: translateY(1px) scale(0.995);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 12px rgba(57, 255, 20, 0.14);
   }
   
-  /* Secondary button - outlined */
   .btn-secondary {
-    background: transparent;
-    color: var(--neon-green);
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
-    border-radius: 9999px;
-    border: 1.5px solid var(--neon-green);
-    transition: all 180ms ease;
+    border: 1px solid rgba(75, 85, 99, 0.95);
+    background: rgba(3, 7, 18, 0.92);
+    color: #f3f4f6;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   }
   
   .btn-secondary:hover {
-    background: rgba(57, 255, 20, 0.1);
-    box-shadow: 0 0 20px rgba(57, 255, 20, 0.2);
+    border-color: rgba(107, 114, 128, 0.95);
+    background: rgba(17, 24, 39, 0.98);
+    color: #fff;
   }
   
   .btn-secondary:active {
-    background: rgba(57, 255, 20, 0.15);
     transform: translateY(1px) scale(0.995);
   }
   
-  /* Ghost button */
   .btn-ghost {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    min-height: 2rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #d1d5db;
+    padding: 0.5rem 0.625rem;
     font-weight: 500;
-    padding: 0.75rem 1.5rem;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 180ms ease;
   }
   
   .btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(17, 24, 39, 0.95);
+    color: #fff;
   }
 
   .btn-ghost:active {
     transform: translateY(1px) scale(0.995);
   }
+
+  .btn-danger {
+    border: 1px solid rgba(248, 113, 113, 0.45);
+    background: rgba(127, 29, 29, 0.16);
+    color: #fecaca;
+  }
+
+  .btn-danger:hover {
+    border-color: rgba(252, 165, 165, 0.7);
+    background: rgba(153, 27, 27, 0.22);
+    color: #fee2e2;
+  }
   
   /* Icon button */
   .btn-icon {
-    display: flex;
+    display: inline-flex;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
     align-items: center;
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #9ca3af;
+    border-radius: 9999px;
+    background: rgba(3, 7, 18, 0.92);
+    border: 1px solid rgba(75, 85, 99, 0.95);
+    color: #e5e7eb;
     transition: all 180ms ease;
   }
   
   .btn-icon:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(17, 24, 39, 0.98);
+    border-color: rgba(107, 114, 128, 0.95);
     color: #fff;
   }
   
@@ -452,6 +500,108 @@ a:active {
     padding: 0;
     margin: 0;
     line-height: 1;
+  }
+
+  .app-shell-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    overflow-x: hidden;
+    border-bottom: 1px solid rgba(31, 41, 55, 0.5);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 0.75rem 1rem;
+    backdrop-filter: blur(12px);
+  }
+
+  .app-shell-inner {
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .app-shell-brand {
+    display: inline-flex;
+    min-height: 2.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    color: #fff;
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  .app-shell-actions {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .app-shell-link {
+    display: inline-flex;
+    min-height: 2rem;
+    align-items: center;
+    border-radius: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    color: #d1d5db;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    text-decoration: none;
+    transition: all 180ms ease;
+    white-space: nowrap;
+  }
+
+  .app-shell-link:hover {
+    background: rgba(17, 24, 39, 0.96);
+    color: #fff;
+  }
+
+  .app-shell-link-current {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-color: rgba(57, 255, 20, 0.7);
+    text-underline-offset: 0.24em;
+  }
+
+  .app-shell-divider {
+    color: #4b5563;
+    font-size: 0.75rem;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .ui-feedback-note {
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.88), rgba(7, 10, 16, 0.96));
+    padding: 1rem 1.125rem;
+  }
+
+  .ui-empty-state {
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.88), rgba(7, 10, 16, 0.96));
+    padding: 1.25rem;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  }
+
+  .ui-empty-title {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .ui-empty-copy {
+    margin-top: 0.625rem;
+    color: #9ca3af;
+    font-size: 0.875rem;
+    line-height: 1.6;
   }
   
   /* Cassette reel animations */

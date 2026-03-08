@@ -878,12 +878,12 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
       />
       
       {/* Simple app header so users can discover Demo from shared links */}
-      <header className="sticky top-0 z-10 border-b border-gray-800/50 bg-black/80 px-4 py-3 backdrop-blur-sm">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-white">
+      <header className="app-shell-nav">
+        <div className="app-shell-inner max-w-3xl">
+          <Link href="/" className="app-shell-brand">
             Demo
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="app-shell-actions gap-2">
             {!authenticated ? (
               <button
                 onClick={() => {
@@ -897,7 +897,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   }
                   login()
                 }}
-                className="flex min-h-10 items-center gap-2 rounded-full bg-neon-green px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/20"
+                className="btn-primary text-sm"
                 title="Sign in to access your dashboard"
               >
                 <LayoutDashboard className="w-4 h-4" />
@@ -906,7 +906,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
             ) : (
               <Link
                 href="/dashboard"
-                className="text-on-neon flex min-h-10 items-center gap-2 rounded-full bg-neon-green px-4 py-2 text-sm font-semibold transition-all hover:bg-[#4cff2e] hover:shadow-lg hover:shadow-neon-green/20"
+                className="btn-primary text-sm"
               >
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
@@ -955,7 +955,7 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
                   }
                   setIsProjectMenuOpen(!isProjectMenuOpen)
                 }}
-                className="flex min-h-10 flex-shrink-0 items-center gap-2 rounded-full border border-gray-700 bg-gray-900 px-4 py-2 text-white transition-colors hover:border-gray-500 hover:bg-gray-800"
+                className="btn-secondary flex-shrink-0 text-sm"
                 title="Options"
                 aria-label="Project options"
               >
@@ -972,8 +972,11 @@ export default function SharedProjectPage({ token }: SharedProjectPageProps) {
         {/* Tracks */}
         <div className="space-y-4">
           {tracks.length === 0 ? (
-            <div className="text-center py-12 bg-gray-900/50 rounded-xl border border-gray-800/50">
-              <p className="text-gray-500">No tracks in this project yet.</p>
+            <div className="ui-empty-state text-center py-12">
+              <p className="ui-empty-title">No tracks in this project yet</p>
+              <p className="ui-empty-copy mx-auto max-w-sm">
+                This page is ready for future uploads, revisions, and shared listening sessions.
+              </p>
             </div>
           ) : (
             <TrackPlaylist

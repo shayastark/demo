@@ -2285,23 +2285,21 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
         }}
       />
       
-      <nav className="sticky top-0 z-20 border-b border-gray-800/50 bg-black/80 px-4 py-4 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <Link href="/dashboard" className="flex min-h-10 items-center gap-2 rounded-md px-2 py-1 text-gray-300 hover:bg-gray-900 hover:text-white transition">
+      <nav className="app-shell-nav py-4">
+        <div className="app-shell-inner max-w-4xl">
+          <Link href="/dashboard" className="app-shell-link gap-2">
             <ArrowLeft className="w-4 h-4" />
             Dashboard
           </Link>
-          <Link href="/" className="text-xl font-bold text-white">
+          <Link href="/" className="app-shell-brand text-xl">
             Demo
           </Link>
           <button
             onClick={logout}
-            className="inline-flex min-h-10 items-center rounded-md px-2 py-1 text-xl font-bold text-neon-green transition hover:bg-gray-900 hover:text-neon-green/80"
+            className="btn-unstyled app-shell-link ui-link-muted text-sm sm:text-base"
             style={{
               WebkitAppearance: 'none',
               appearance: 'none',
-              background: 'transparent',
-              border: 'none',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
@@ -2378,14 +2376,14 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                 <button
                   onClick={cancelEditingProject}
                   disabled={savingProject}
-                  className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                  className="btn-ghost rounded-lg px-4 py-2 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveProject}
                   disabled={savingProject || !editTitle.trim()}
-                  className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+                  className="btn-primary rounded-lg px-4 py-2 disabled:opacity-50"
                 >
                   {savingProject ? 'Saving...' : (
                     <>
@@ -2449,15 +2447,12 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
                     }
                     setIsProjectMenuOpen(!isProjectMenuOpen)
                   }}
-                  className="ui-pressable inline-flex min-h-10 min-w-10 flex-shrink-0 items-center justify-center gap-2 rounded-full border border-gray-700 bg-gray-950/90 px-3 py-2 text-gray-100 transition hover:border-gray-500 hover:bg-gray-900"
+                  className="btn-secondary flex-shrink-0 px-3 text-sm"
                   title="Options"
                   type="button"
                   style={{
                     WebkitAppearance: 'none',
                     appearance: 'none',
-                    backgroundColor: 'rgba(3, 7, 18, 0.92)',
-                    border: '1px solid rgba(75, 85, 99, 0.95)',
-                    color: '#f3f4f6',
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
@@ -3224,12 +3219,15 @@ export default function ProjectDetailPage({ projectId }: ProjectDetailPageProps)
           {/* Tracks Section - with spacing from Project Notes */}
           <div style={{ marginTop: '32px' }}>
           {tracks.length === 0 ? (
-            <div className="text-center py-12 bg-gray-900 rounded-lg">
-              <p className="text-gray-400 mb-4">No tracks in this project yet.</p>
+            <div className="ui-empty-state text-center py-12">
+              <p className="ui-empty-title">No tracks in this project yet</p>
+              <p className="ui-empty-copy mx-auto max-w-sm">
+                Add your first track to unlock playback, updates, comments, and a shareable listening page.
+              </p>
               {isCreator && (
                 <button
                   onClick={handleAddNewTrack}
-                  className="inline-flex items-center gap-2 bg-neon-green text-black px-6 py-3 rounded-full font-semibold hover:bg-opacity-90 transition"
+                  className="btn-primary mt-5 px-6 py-3"
                 >
                   <Plus className="w-5 h-5" />
                   Add Track

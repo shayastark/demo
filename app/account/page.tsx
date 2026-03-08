@@ -651,29 +651,25 @@ function AccountPageContent() {
 
   return (
     <div className="min-h-screen bg-black text-white pb-32">
-      <nav className="border-b border-gray-800 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-white">
+      <nav className="app-shell-nav">
+        <div className="app-shell-inner max-w-4xl">
+          <Link href="/" className="app-shell-brand text-2xl">
             Demo
           </Link>
-          <div className="flex items-center" style={{ gap: '24px' }}>
+          <div className="app-shell-actions" style={{ gap: '16px' }}>
           <Link
             href="/dashboard"
-              className="text-sm font-semibold !text-white underline underline-offset-4 hover:opacity-80"
+              className="app-shell-link sm:text-sm"
           >
               Dashboard
           </Link>
             <button
               onClick={logout}
-              className="inline-flex min-h-10 items-center px-0 py-1 text-[15px] font-semibold text-neon-green underline-offset-4 transition hover:opacity-80 hover:underline"
+              className="btn-unstyled app-shell-link ui-link-muted text-[15px]"
               style={{
                 WebkitAppearance: 'none',
                 appearance: 'none',
                 WebkitTapHighlightColor: 'transparent',
-                background: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-                color: '#39FF14',
               }}
             >
               Sign out
@@ -695,9 +691,8 @@ function AccountPageContent() {
             </p>
             <p className="text-sm text-gray-400 mb-4">
               When you&apos;re ready, head to your{' '}
-              <span
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 onClick={(e) => {
                   if (!profile?.username) {
                     e.preventDefault()
@@ -716,10 +711,10 @@ function AccountPageContent() {
                     }
                   }
                 }}
-                className="text-neon-green hover:underline underline-offset-4 font-medium cursor-pointer"
+                className="btn-unstyled ui-link font-medium cursor-pointer"
               >
                 Dashboard
-              </span>
+              </button>
               {' '}to create and manage your projects.
             </p>
             <p className="text-sm text-gray-400">
@@ -727,7 +722,7 @@ function AccountPageContent() {
               <button 
                 type="button"
                 onClick={() => setShowFAQ(true)}
-                className="text-neon-green hover:underline underline-offset-4 font-medium cursor-pointer bg-transparent border-none p-0 m-0"
+                className="ui-link font-medium cursor-pointer bg-transparent border-none p-0 m-0"
                 style={{ background: 'none', border: 'none', padding: 0, margin: 0, font: 'inherit' }}
               >
                 FAQs
@@ -750,14 +745,10 @@ function AccountPageContent() {
             {!isEditingProfile ? (
               <button
                 onClick={() => setIsEditingProfile(true)}
-                className="inline-flex min-h-9 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition"
+                className="btn-secondary rounded-md px-3 py-1.5 text-sm"
                 style={{
                   WebkitAppearance: 'none',
                   appearance: 'none',
-                  backgroundColor: '#111827',
-                  border: '1px solid #374151',
-                  color: '#f3f4f6',
-                  WebkitTapHighlightColor: 'transparent',
                 }}
               >
                 <Edit className="w-4 h-4" />
@@ -778,7 +769,7 @@ function AccountPageContent() {
                       farcaster: profile?.farcaster || '',
                     })
                   }}
-                  className="text-sm text-gray-400 hover:text-white transition"
+                  className="btn-ghost text-sm"
                 >
                   Cancel
                 </button>
@@ -786,7 +777,7 @@ function AccountPageContent() {
                   type="button"
                   onClick={handleSaveProfile}
                   disabled={saving}
-                  className="text-sm bg-neon-green text-black px-4 py-1.5 rounded-lg font-medium hover:opacity-80 transition disabled:opacity-50 flex items-center gap-1"
+                  className="btn-primary rounded-lg px-4 py-1.5 text-sm disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? 'Saving...' : 'Save'}

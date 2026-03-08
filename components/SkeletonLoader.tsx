@@ -49,8 +49,8 @@ export function TrackSkeleton() {
 export function ProjectDetailSkeleton() {
   return (
     <div className="min-h-screen bg-black">
-      <div className="border-b border-gray-800 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
+      <div className="app-shell-nav py-4">
+        <div className="app-shell-inner max-w-4xl">
           <SkeletonBlock className="h-8 w-24" />
           <SkeletonBlock className="h-8 w-20 rounded-full" />
         </div>
@@ -103,8 +103,8 @@ export function TipsSkeleton() {
 export function AccountSkeleton() {
   return (
     <div className="min-h-screen bg-black">
-      <div className="border-b border-gray-800 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
+      <div className="app-shell-nav py-4">
+        <div className="app-shell-inner max-w-4xl">
           <SkeletonBlock className="h-8 w-24" />
           <div className="flex gap-4">
             <SkeletonBlock className="h-6 w-20" />
@@ -147,8 +147,8 @@ export function AccountSkeleton() {
 export function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-black">
-      <div className="border-b border-gray-800 px-4 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <div className="app-shell-nav">
+        <div className="app-shell-inner max-w-7xl">
           <SkeletonBlock className="h-8 w-24" />
           <div className="flex gap-4">
             <SkeletonBlock className="h-8 w-28 rounded-full" />
