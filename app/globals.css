@@ -852,3 +852,23 @@ iframe[src*="privy.io"] {
   outline: revert !important;
   outline-offset: revert !important;
 }
+
+/* Keep mobile auth sheets usable when the virtual keyboard shrinks the viewport. */
+@media (max-width: 640px), (hover: none) and (pointer: coarse) {
+  [data-privy-portal] input,
+  [data-privy-root] input,
+  [data-privy-portal] textarea,
+  [data-privy-root] textarea,
+  [data-privy-portal] select,
+  [data-privy-root] select {
+    font-size: 16px !important;
+  }
+
+  [data-privy-portal] [role="dialog"],
+  [data-privy-root] [role="dialog"] {
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
