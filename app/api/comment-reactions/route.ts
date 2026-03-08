@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyPrivyToken, getUserByPrivyId } from '@/lib/auth'
 import { isValidUUID } from '@/lib/validation'
-import { isReactionType, summarizeCommentReactions, getReactionToggleAction } from '@/lib/commentReactions'
+import {
+  isReactionType,
+  summarizeCommentReactions,
+  getReactionToggleAction,
+  type ReactionType,
+} from '@/lib/commentReactions'
 import { canReactProject, canViewProject } from '@/lib/projectAccessPolicyServer'
 
 let cachedHasCommentReactionsTable: boolean | null = null
