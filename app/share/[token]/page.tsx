@@ -25,7 +25,9 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
     const description =
       project?.description || 'Listen to this unreleased project on Demo.'
 
-    const imageUrl = project?.cover_image_url || '/mixtape-cassette.png'
+    const imageUrl = project?.cover_image_url
+      ? `/api/og?token=${encodeURIComponent(token)}`
+      : '/mixtape-cassette.png'
 
     return {
       title: baseTitle,
@@ -33,7 +35,7 @@ export async function generateMetadata({ params }: SharePageParams): Promise<Met
       openGraph: {
         title: baseTitle,
         description,
-        images: [{ url: imageUrl }],
+        images: [{ url: imageUrl, width: 1200, height: 630 }],
       },
       twitter: {
         card: 'summary_large_image',
