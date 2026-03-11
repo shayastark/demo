@@ -48,6 +48,7 @@ export default function ProjectUpdatesPanel({
   const deeplinkHandledRef = useRef(false)
   const highlightTimeoutRef = useRef<number | null>(null)
   const deeplinkAttemptedRef = useRef(false)
+  const hasInitiallyLoadedRef = useRef(false)
   const updatesContainerRef = useRef<HTMLDivElement>(null)
 
   const emitEvent = (detail: Record<string, unknown>) => {
@@ -156,6 +157,7 @@ export default function ProjectUpdatesPanel({
       setCanManage(false)
     } finally {
       setLoading(false)
+      hasInitiallyLoadedRef.current = true
     }
   }
 
@@ -165,6 +167,7 @@ export default function ProjectUpdatesPanel({
     deeplinkFromNotificationRef.current = false
     deeplinkHandledRef.current = false
     deeplinkAttemptedRef.current = false
+    hasInitiallyLoadedRef.current = false
     setDeeplinkNotice(null)
     setHighlightedUpdateId(null)
     if (highlightTimeoutRef.current) {
@@ -198,7 +201,7 @@ export default function ProjectUpdatesPanel({
 
     const targetUpdateId = deeplinkTargetRef.current
     if (!targetUpdateId) return
-    if (loading) return
+    if (loading || !hasInitiallyLoadedRef.current) return
     if (deeplinkAttemptedRef.current) return
 
     deeplinkAttemptedRef.current = true
