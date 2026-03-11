@@ -123,9 +123,9 @@ export default function SharedWithMeSection({ authenticated, getAccessToken }: S
           ))}
         </div>
       ) : error ? (
-        <p className="px-4 py-4 text-sm text-gray-500">Couldn&apos;t load shared projects right now.</p>
+        <p className="px-4 py-4 text-sm text-gray-500">Shared projects are taking a moment — check back shortly!</p>
       ) : items.length === 0 ? (
-        <p className="px-4 py-4 text-sm text-gray-500">No shared projects yet.</p>
+        <p className="px-4 py-4 text-sm text-gray-500">When someone shares a project with you, it will show up here.</p>
       ) : (
         <ul className="divide-y divide-gray-900/90">
           {items.map((item) => (

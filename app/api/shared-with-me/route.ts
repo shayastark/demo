@@ -20,29 +20,20 @@ async function getRequiredCurrentUser(request: NextRequest) {
 async function resolveGrantColumnSupport(): Promise<GrantColumnSupport> {
   if (cachedGrantColumnSupport) return cachedGrantColumnSupport
 
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'project_access_grants')
-      .in('column_name', ['expires_at', 'role'])
-
-    if (error) throw error
-
-    const columnNames = new Set((data || []).map((row) => row.column_name))
-    cachedGrantColumnSupport = {
-      hasExpiresAt: columnNames.has('expires_at'),
-      hasRole: columnNames.has('role'),
-    }
-  } catch (error) {
-    console.error('Error probing project_access_grants columns:', error)
-    cachedGrantColumnSupport = {
-      hasExpiresAt: false,
-      hasRole: true,
-    }
+  const probeColumn = async (column: string): Promise<boolean> => {
+    const { error } = await supabaseAdmin
+      .from('project_access_grants')
+      .select(column)
+      .limit(1)
+    return !error
   }
 
+  const [hasExpiresAt, hasRole] = await Promise.all([
+    probeColumn('expires_at'),
+    probeColumn('role'),
+  ])
+
+  cachedGrantColumnSupport = { hasExpiresAt, hasRole }
   return cachedGrantColumnSupport
 }
 

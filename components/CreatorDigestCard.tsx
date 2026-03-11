@@ -62,7 +62,7 @@ export default function CreatorDigestCard({ authenticated, getAccessToken, sourc
         setDigest(result as CreatorDigestResponse)
       } catch (loadError) {
         console.error('Error loading creator digest:', loadError)
-        setError('Unable to load your weekly digest right now.')
+        setError('Your digest is taking a moment — check back shortly!')
       } finally {
         setLoading(false)
       }
@@ -109,18 +109,18 @@ export default function CreatorDigestCard({ authenticated, getAccessToken, sourc
       ) : error ? (
         <p className="text-sm text-gray-500">{error}</p>
       ) : !digest ? (
-        <p className="text-sm text-gray-500">No digest data available.</p>
+        <p className="text-sm text-gray-500">Your weekly digest is on the way — stay tuned!</p>
       ) : !hasActivity ? (
         <div className="text-sm text-gray-500">
           {digest.has_complete_window ? (
             <>
-              <p>No new activity in the last {digest.window_days} days.</p>
-              <p className="mt-1">Post an update or share your projects to build momentum.</p>
+              <p>A fresh start! No new activity in the last {digest.window_days} days.</p>
+              <p className="mt-1">Post an update or share a project to get things moving.</p>
             </>
           ) : (
             <>
-              <p>Check back after a week has gone by.</p>
-              <p className="mt-1">This section fills in once a full weekly window has passed.</p>
+              <p>Your first weekly digest is brewing!</p>
+              <p className="mt-1">Check back once a full week has passed to see your activity summary.</p>
             </>
           )}
         </div>
