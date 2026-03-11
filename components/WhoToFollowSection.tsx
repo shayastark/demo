@@ -292,9 +292,9 @@ export default function WhoToFollowSection({ authenticated, getAccessToken }: Wh
       {loading ? (
         <p className="px-4 py-4 text-sm text-gray-500">Loading recommendations...</p>
       ) : error ? (
-        <p className="px-4 py-4 text-sm text-gray-500">Couldn&apos;t load recommendations right now.</p>
+        <p className="px-4 py-4 text-sm text-gray-500">Recommendations are taking a moment — check back shortly!</p>
       ) : items.length === 0 ? (
-        <p className="px-4 py-4 text-sm text-gray-500">No recommendations right now.</p>
+        <p className="px-4 py-4 text-sm text-gray-500">New creator recommendations are coming soon — keep exploring!</p>
       ) : (
         <>
           {lastHidden ? (

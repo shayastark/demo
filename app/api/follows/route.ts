@@ -11,33 +11,26 @@ let cachedFollowColumn: FollowColumnName | null = null
 async function resolveFollowColumn(): Promise<FollowColumnName> {
   if (cachedFollowColumn) return cachedFollowColumn
 
-  const { data: newColumn } = await supabaseAdmin
-    .from('information_schema.columns')
-    .select('column_name')
-    .eq('table_schema', 'public')
-    .eq('table_name', 'user_follows')
-    .eq('column_name', 'following_id')
-    .maybeSingle()
+  const { error: followingProbeError } = await supabaseAdmin
+    .from('user_follows')
+    .select('following_id')
+    .limit(1)
 
-  if (newColumn?.column_name === 'following_id') {
+  if (!followingProbeError) {
     cachedFollowColumn = 'following_id'
     return cachedFollowColumn
   }
 
-  const { data: legacyColumn } = await supabaseAdmin
-    .from('information_schema.columns')
-    .select('column_name')
-    .eq('table_schema', 'public')
-    .eq('table_name', 'user_follows')
-    .eq('column_name', 'followed_id')
-    .maybeSingle()
+  const { error: followedProbeError } = await supabaseAdmin
+    .from('user_follows')
+    .select('followed_id')
+    .limit(1)
 
-  if (legacyColumn?.column_name === 'followed_id') {
+  if (!followedProbeError) {
     cachedFollowColumn = 'followed_id'
     return cachedFollowColumn
   }
 
-  // Default to latest schema if detection fails.
   cachedFollowColumn = 'following_id'
   return cachedFollowColumn
 }

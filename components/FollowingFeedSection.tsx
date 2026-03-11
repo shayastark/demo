@@ -94,9 +94,9 @@ export default function FollowingFeedSection({ authenticated, getAccessToken }: 
           ))}
         </div>
       ) : error ? (
-        <p className="px-4 py-4 text-sm text-gray-500">Couldn&apos;t load feed right now.</p>
+        <p className="px-4 py-4 text-sm text-gray-500">Your feed is taking a moment — check back shortly!</p>
       ) : items.length === 0 ? (
-        <p className="px-4 py-4 text-sm text-gray-500">Follow creators to see updates here.</p>
+        <p className="px-4 py-4 text-sm text-gray-500">Follow creators you love and their latest updates will appear here.</p>
       ) : (
         <ul className="divide-y divide-gray-900/90">
           {items.map((item) => (

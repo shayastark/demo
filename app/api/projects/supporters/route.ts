@@ -14,20 +14,17 @@ let cachedHasTipSupportColumns: boolean | null = null
 async function hasTipSupportColumns(): Promise<boolean> {
   if (cachedHasTipSupportColumns !== null) return cachedHasTipSupportColumns
 
-  const { data: columns, error } = await supabaseAdmin
-    .from('information_schema.columns')
-    .select('column_name')
-    .eq('table_schema', 'public')
-    .eq('table_name', 'tips')
-    .in('column_name', ['project_id', 'tipper_user_id'])
-
-  if (error) {
-    cachedHasTipSupportColumns = false
-    return cachedHasTipSupportColumns
+  const probeColumn = async (column: string): Promise<boolean> => {
+    const { error } = await supabaseAdmin.from('tips').select(column).limit(1)
+    return !error
   }
 
-  const names = new Set((columns || []).map((column) => column.column_name))
-  cachedHasTipSupportColumns = names.has('project_id') && names.has('tipper_user_id')
+  const [hasProjectId, hasTipperUserId] = await Promise.all([
+    probeColumn('project_id'),
+    probeColumn('tipper_user_id'),
+  ])
+
+  cachedHasTipSupportColumns = hasProjectId && hasTipperUserId
   return cachedHasTipSupportColumns
 }
 

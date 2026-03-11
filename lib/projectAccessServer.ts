@@ -34,33 +34,29 @@ type ProjectAccessGrantRow = {
 
 let cachedProjectAccessGrantColumnSupport: ProjectAccessGrantColumnSupport | null = null
 
+async function probeGrantColumn(column: string): Promise<boolean> {
+  const { error } = await supabaseAdmin
+    .from('project_access_grants')
+    .select(column)
+    .limit(1)
+  return !error
+}
+
 async function resolveProjectAccessGrantColumnSupport(): Promise<ProjectAccessGrantColumnSupport> {
   if (cachedProjectAccessGrantColumnSupport) return cachedProjectAccessGrantColumnSupport
 
-  const { data, error } = await supabaseAdmin
-    .from('information_schema.columns')
-    .select('column_name')
-    .eq('table_schema', 'public')
-    .eq('table_name', 'project_access_grants')
-    .in('column_name', ['granted_by_user_id', 'role', 'expires_at', 'created_at'])
+  const [hasGrantedByUserId, hasRole, hasExpiresAt, hasCreatedAt] = await Promise.all([
+    probeGrantColumn('granted_by_user_id'),
+    probeGrantColumn('role'),
+    probeGrantColumn('expires_at'),
+    probeGrantColumn('created_at'),
+  ])
 
-  if (error) {
-    console.error('Error probing project_access_grants columns:', error)
-    cachedProjectAccessGrantColumnSupport = {
-      hasGrantedByUserId: false,
-      hasRole: false,
-      hasExpiresAt: false,
-      hasCreatedAt: false,
-    }
-    return cachedProjectAccessGrantColumnSupport
-  }
-
-  const columns = new Set((data || []).map((row) => row.column_name))
   cachedProjectAccessGrantColumnSupport = {
-    hasGrantedByUserId: columns.has('granted_by_user_id'),
-    hasRole: columns.has('role'),
-    hasExpiresAt: columns.has('expires_at'),
-    hasCreatedAt: columns.has('created_at'),
+    hasGrantedByUserId,
+    hasRole,
+    hasExpiresAt,
+    hasCreatedAt,
   }
   return cachedProjectAccessGrantColumnSupport
 }
