@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   buildExploreProjectItems,
   filterExploreRowsByHiddenTargets,
+  getSupportScore,
   parseExploreProjectsQuery,
   selectPublicExploreRows,
   type ExploreProjectRow,
@@ -365,6 +366,64 @@ test('pagination correctness for explore items', () => {
   assert.equal(page.items.length, 2)
   assert.equal(page.hasMore, true)
   assert.equal(page.nextOffset, 4)
+})
+
+test('getSupportScore weighs supporters, amount, and creator supporters', () => {
+  const base = getSupportScore({ supporterCount: 0, tipAmountCents: 0, creatorSupporterCount: 0 })
+  assert.equal(base, 0)
+
+  const withSupporters = getSupportScore({ supporterCount: 10, tipAmountCents: 0, creatorSupporterCount: 0 })
+  const withAmount = getSupportScore({ supporterCount: 0, tipAmountCents: 2000, creatorSupporterCount: 0 })
+  const withCreator = getSupportScore({ supporterCount: 0, tipAmountCents: 0, creatorSupporterCount: 10 })
+
+  // Supporters should carry the most weight
+  assert.ok(withSupporters > withAmount, 'supporters should outweigh amount')
+  assert.ok(withAmount > withCreator, 'amount should outweigh creator signal')
+  assert.ok(withCreator > base, 'creator signal should be positive')
+})
+
+test('most_supported uses composite score (supporters + amount + creator)', () => {
+  const rows: ExploreProjectRow[] = [
+    {
+      id: 'p-few-supporters-big-tips',
+      title: 'Few but big',
+      cover_image_url: null,
+      creator_id: 'c1',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'a',
+      created_at: '2026-03-01T00:00:00.000Z',
+    },
+    {
+      id: 'p-many-supporters-small-tips',
+      title: 'Many but small',
+      cover_image_url: null,
+      creator_id: 'c2',
+      visibility: 'public',
+      sharing_enabled: true,
+      share_token: 'b',
+      created_at: '2026-03-01T00:00:00.000Z',
+    },
+  ]
+
+  const items = buildExploreProjectItems({
+    projects: rows,
+    creatorsById: {
+      c1: { id: 'c1', username: 'alpha', email: null },
+      c2: { id: 'c2', username: 'beta', email: null },
+    },
+    supporterCountByProjectId: { 'p-few-supporters-big-tips': 2, 'p-many-supporters-small-tips': 8 },
+    tipAmountByProjectId: { 'p-few-supporters-big-tips': 50000, 'p-many-supporters-small-tips': 800 },
+    creatorSupporterCountById: { c1: 15, c2: 3 },
+    engagementCountByProjectId: {},
+    recentUpdatesCountByProjectId: {},
+    latestUpdateAtByProjectId: {},
+    sort: 'most_supported',
+  })
+
+  // p-few-supporters-big-tips has fewer supporters but large tips + strong creator signal
+  // Composite score should place it first
+  assert.equal(items[0].project_id, 'p-few-supporters-big-tips')
 })
 
 test('stable ordering keeps pagination deterministic for same-score rows', () => {

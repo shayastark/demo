@@ -106,10 +106,23 @@ export function filterExploreRowsByHiddenTargets(args: {
   )
 }
 
+export function getSupportScore(args: {
+  supporterCount: number
+  tipAmountCents: number
+  creatorSupporterCount: number
+}): number {
+  const supporterSignal = Math.log1p(args.supporterCount) * 3.0
+  const amountSignal = Math.log1p(args.tipAmountCents / 100) * 2.0
+  const creatorSignal = Math.log1p(args.creatorSupporterCount) * 1.0
+  return supporterSignal + amountSignal + creatorSignal
+}
+
 export function buildExploreProjectItems(args: {
   projects: ExploreProjectRow[]
   creatorsById: Record<string, ExploreCreatorRow>
   supporterCountByProjectId: Record<string, number>
+  tipAmountByProjectId?: Record<string, number>
+  creatorSupporterCountById?: Record<string, number>
   engagementCountByProjectId: Record<string, number>
   recentUpdatesCountByProjectId: Record<string, number>
   latestUpdateAtByProjectId: Record<string, string | null>
@@ -183,9 +196,17 @@ export function buildExploreProjectItems(args: {
     }
 
     if (args.sort === 'most_supported') {
-      if (b.supporter_count !== a.supporter_count) {
-        return b.supporter_count - a.supporter_count
-      }
+      const scoreA = getSupportScore({
+        supporterCount: a.supporter_count,
+        tipAmountCents: args.tipAmountByProjectId?.[a.project_id] || 0,
+        creatorSupporterCount: args.creatorSupporterCountById?.[a.creator_id] || 0,
+      })
+      const scoreB = getSupportScore({
+        supporterCount: b.supporter_count,
+        tipAmountCents: args.tipAmountByProjectId?.[b.project_id] || 0,
+        creatorSupporterCount: args.creatorSupporterCountById?.[b.creator_id] || 0,
+      })
+      if (scoreB !== scoreA) return scoreB - scoreA
       const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       if (timeDiff !== 0) return timeDiff
     }
