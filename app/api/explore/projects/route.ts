@@ -22,6 +22,8 @@ const RECENT_WINDOW_DAYS = 14
 type TipSupportRow = {
   project_id: string | null
   tipper_user_id: string | null
+  creator_id: string | null
+  amount: number | null
 }
 
 async function getOptionalCurrentUser(request: NextRequest) {
@@ -150,6 +152,8 @@ export async function GET(request: NextRequest) {
 
     const projectIds = qFilteredProjects.map((project) => project.id)
     let supporterCountByProjectId: Record<string, number> = {}
+    let tipAmountByProjectId: Record<string, number> = {}
+    let creatorSupporterCountById: Record<string, number> = {}
     let engagementCountByProjectId: Record<string, number> = {}
     let recentUpdatesCountByProjectId: Record<string, number> = {}
     let latestUpdateAtByProjectId: Record<string, string | null> = {}
@@ -162,20 +166,41 @@ export async function GET(request: NextRequest) {
 
       const { data: tipRows } = await supabaseAdmin
         .from('tips')
-        .select('project_id, tipper_user_id')
+        .select('project_id, tipper_user_id, creator_id, amount')
         .in('project_id', projectIds)
         .eq('status', 'completed')
-        .not('tipper_user_id', 'is', null)
 
       const supporterSets: Record<string, Set<string>> = {}
+      const tipAmountSums: Record<string, number> = {}
+      const creatorSupporterSets: Record<string, Set<string>> = {}
       for (const row of (tipRows || []) as TipSupportRow[]) {
-        if (!row.project_id || !row.tipper_user_id) continue
-        if (!supporterSets[row.project_id]) supporterSets[row.project_id] = new Set<string>()
-        supporterSets[row.project_id].add(row.tipper_user_id)
+        if (!row.project_id) continue
+        // Count unique supporters per project (skip rows without tipper_user_id)
+        if (row.tipper_user_id) {
+          if (!supporterSets[row.project_id]) supporterSets[row.project_id] = new Set<string>()
+          supporterSets[row.project_id].add(row.tipper_user_id)
+        }
+        // Sum tip amounts per project
+        if (typeof row.amount === 'number' && row.amount > 0) {
+          tipAmountSums[row.project_id] = (tipAmountSums[row.project_id] || 0) + row.amount
+        }
+        // Aggregate unique supporters per creator (for creator-level signal)
+        if (row.creator_id && row.tipper_user_id) {
+          if (!creatorSupporterSets[row.creator_id]) creatorSupporterSets[row.creator_id] = new Set<string>()
+          creatorSupporterSets[row.creator_id].add(row.tipper_user_id)
+        }
       }
 
       supporterCountByProjectId = Object.keys(supporterSets).reduce<Record<string, number>>((acc, projectId) => {
         acc[projectId] = supporterSets[projectId].size
+        return acc
+      }, {})
+      tipAmountByProjectId = Object.keys(tipAmountSums).reduce<Record<string, number>>((acc, projectId) => {
+        acc[projectId] = tipAmountSums[projectId]
+        return acc
+      }, {})
+      creatorSupporterCountById = Object.keys(creatorSupporterSets).reduce<Record<string, number>>((acc, creatorId) => {
+        acc[creatorId] = creatorSupporterSets[creatorId].size
         return acc
       }, {})
 
@@ -269,6 +294,8 @@ export async function GET(request: NextRequest) {
       projects: qFilteredProjects,
       creatorsById,
       supporterCountByProjectId,
+      tipAmountByProjectId,
+      creatorSupporterCountById,
       engagementCountByProjectId,
       recentUpdatesCountByProjectId,
       latestUpdateAtByProjectId,
